@@ -1,3 +1,4 @@
+import { INQUIRY_STATUS, inquiryStatusLabels, type InquiryStatus } from "@repo/config";
 import {
   NavigationLink,
   Page,
@@ -5,12 +6,6 @@ import {
   StatusMessage,
   formatWarekiDateTime,
 } from "@repo/ui";
-
-import {
-  INQUIRY_STATUS,
-  inquiryStatusLabel,
-  type InquiryStatus,
-} from "#pages/inquiries/model/status-label.ts";
 
 import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
 import type { ReactElement } from "react";
@@ -50,7 +45,7 @@ function InquiriesView({
             }}
             className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
           >
-            {inquiryStatusLabel(value)}
+            {inquiryStatusLabels[value]}
           </button>
         ))}
       </div>
@@ -83,7 +78,7 @@ function InquiriesView({
                   </NavigationLink>
                 </td>
                 <td className="p-2">会員</td>
-                <td className="p-2">{inquiryStatusLabel(inquiry.status)}</td>
+                <td className="p-2">{inquiryStatusLabels[inquiry.status]}</td>
                 <td className="p-2">{inquiry.memberName}</td>
                 <td className="p-2">{formatWarekiDateTime(inquiry.updatedAt.getTime())}</td>
               </tr>

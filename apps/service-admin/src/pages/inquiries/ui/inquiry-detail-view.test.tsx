@@ -6,7 +6,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { InquiryDetailView, MemberSummaryView } from "./inquiry-detail-view.tsx";
 
 import type { AdminInquiryDetail, AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
-import type { InquiryStatus } from "#pages/inquiries/model/status-label.ts";
+import type { InquiryStatus } from "@repo/config";
 
 const sentAt = DateTime.toDate(DateTime.makeUnsafe("2026-04-01T09:00:00Z"));
 

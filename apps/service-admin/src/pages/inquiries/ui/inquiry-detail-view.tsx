@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { inquiryStatusLabels, ROLE } from "@repo/config";
 import {
   Heading,
   NavigationLink,
@@ -9,7 +9,7 @@ import {
   type UiNode,
 } from "@repo/ui";
 
-import { inquiryStatusLabel, isInquiryClosed } from "#pages/inquiries/model/status-label.ts";
+import { isInquiryClosed } from "#pages/inquiries/model/status-label.ts";
 
 import type {
   AdminInquiryDetail,
@@ -58,7 +58,7 @@ function InquiryConversation({
         {inquiry.subject}
       </Heading>
       <p className="text-sm leading-normal text-muted-foreground">
-        会員・{inquiryStatusLabel(inquiry.status)}
+        会員・{inquiryStatusLabels[inquiry.status]}
       </p>
       <ul className="flex flex-col gap-3">
         {inquiry.messages.map((message) => (

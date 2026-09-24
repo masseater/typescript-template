@@ -8,7 +8,7 @@ const warekiOf = (gregorian: Date | string): string => {
   return wareki.isValid ? wareki.result : wareki.formatted;
 };
 
-const formatWarekiDate = (gregorianInstant: Date): string => warekiOf(gregorianInstant);
+const formatWarekiDate: (gregorianInstant: Date) => string = warekiOf;
 
 const formatWarekiMonth = (yearMonth: string): string =>
   formatWarekiDate(DateTime.toDate(DateTime.makeUnsafe(`${yearMonth}-01T00:00:00Z`))).replace(

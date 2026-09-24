@@ -1,7 +1,8 @@
 import { Effect, Stream, type PlatformError } from "effect";
 import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
-import { isSignalName, nativeFailure, spawner } from "./host.ts";
+import { isSignalName } from "./host-facts.ts";
+import { nativeFailure, spawner } from "./host.ts";
 
 type CapturedExit = {
   readonly error?: Error;

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { bashCommandOf } from "../bash-command.ts";
-import { resolvePath } from "../host.ts";
+import { paths } from "../host.ts";
 import { findWorktreeAdds, unresolvedWord, type WorktreeAdd } from "./find-worktree-adds.ts";
 import { insideRepositoryReason, unresolvedDestinationReason } from "./message.ts";
 
@@ -30,11 +30,11 @@ const reasonForAdd = (
   if (!words.every(isLiteral)) {
     return Effect.succeed(unresolvedDestinationReason);
   }
-  const base = resolvePath(
+  const base = paths.resolve(
     inquiry.cwd,
     ...worktreeAdd.directories.map((directory) => expandedHome(directory, inquiry.home)),
   );
-  const destination = resolvePath(base, expandedHome(worktreeAdd.target ?? "", inquiry.home));
+  const destination = paths.resolve(base, expandedHome(worktreeAdd.target ?? "", inquiry.home));
   return inquiry
     .repositoryRootOf(base)
     .pipe(

@@ -6,7 +6,7 @@ import {
   epochMillis,
   fileExists,
   filesystem,
-  joinPath,
+  paths,
   readDirectory,
   readFileString,
   removePath,
@@ -174,7 +174,7 @@ describe("runThrottle", () => {
     const it = throttleTest
       .extend("theCodeOfAFractionalTimeout", ({ slotDirectory }) =>
         runThrottle(["--timeout", "1.5", ...TRIVIAL_COMMAND], {
-          slotDir: joinPath(slotDirectory, "slots"),
+          slotDir: paths.join(slotDirectory, "slots"),
           limit: 1,
           waitBudgetMs: 15_000,
           pollMs: 50,
@@ -186,7 +186,7 @@ describe("runThrottle", () => {
           Effect.gen(function* () {
             yield* Effect.promise(() =>
               runThrottle(["--timeout", "1.5", ...TRIVIAL_COMMAND], {
-                slotDir: joinPath(slotDirectory, "slots"),
+                slotDir: paths.join(slotDirectory, "slots"),
                 limit: 1,
                 waitBudgetMs: 15_000,
                 pollMs: 50,
@@ -202,14 +202,14 @@ describe("runThrottle", () => {
           Effect.gen(function* () {
             yield* Effect.promise(() =>
               runThrottle(["--timeout", "1.5", ...TRIVIAL_COMMAND], {
-                slotDir: joinPath(slotDirectory, "slots"),
+                slotDir: paths.join(slotDirectory, "slots"),
                 limit: 1,
                 waitBudgetMs: 15_000,
                 pollMs: 50,
                 isInteractive: false,
               }),
             );
-            return yield* fileExists(joinPath(slotDirectory, "slots"));
+            return yield* fileExists(paths.join(slotDirectory, "slots"));
           }),
         ),
       );
@@ -231,7 +231,7 @@ describe("runThrottle", () => {
     const it = throttleTest
       .extend("theCodeOfANegativeTimeout", ({ slotDirectory }) =>
         runThrottle(["--timeout=-9", ...TRIVIAL_COMMAND], {
-          slotDir: joinPath(slotDirectory, "slots"),
+          slotDir: paths.join(slotDirectory, "slots"),
           limit: 1,
           waitBudgetMs: 15_000,
           pollMs: 50,
@@ -243,7 +243,7 @@ describe("runThrottle", () => {
           Effect.gen(function* () {
             yield* Effect.promise(() =>
               runThrottle(["--timeout=-9", ...TRIVIAL_COMMAND], {
-                slotDir: joinPath(slotDirectory, "slots"),
+                slotDir: paths.join(slotDirectory, "slots"),
                 limit: 1,
                 waitBudgetMs: 15_000,
                 pollMs: 50,
@@ -301,7 +301,7 @@ describe("runThrottle", () => {
               "--",
               process.execPath,
               "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
+              `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
             ],
             seams,
           ),
@@ -310,7 +310,7 @@ describe("runThrottle", () => {
               "--",
               process.execPath,
               "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
+              `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
             ],
             seams,
           ),
@@ -333,7 +333,7 @@ describe("runThrottle", () => {
                     "--",
                     process.execPath,
                     "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
+                    `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
                   ],
                   seams,
                 ),
@@ -342,16 +342,16 @@ describe("runThrottle", () => {
                     "--",
                     process.execPath,
                     "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
+                    `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
                   ],
                   seams,
                 ),
               ]),
             );
-            const aStart = Number(yield* readFileString(joinPath(stampsDirectory, "a-start")));
-            const aEnd = Number(yield* readFileString(joinPath(stampsDirectory, "a-end")));
-            const bStart = Number(yield* readFileString(joinPath(stampsDirectory, "b-start")));
-            const bEnd = Number(yield* readFileString(joinPath(stampsDirectory, "b-end")));
+            const aStart = Number(yield* readFileString(paths.join(stampsDirectory, "a-start")));
+            const aEnd = Number(yield* readFileString(paths.join(stampsDirectory, "a-end")));
+            const bStart = Number(yield* readFileString(paths.join(stampsDirectory, "b-start")));
+            const bEnd = Number(yield* readFileString(paths.join(stampsDirectory, "b-end")));
             return aStart <= bStart ? bStart >= aEnd : aStart >= bEnd;
           }),
         ),
@@ -375,7 +375,7 @@ describe("runThrottle", () => {
                       "--",
                       process.execPath,
                       "-e",
-                      `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
+                      `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
                     ],
                     seams,
                   ),
@@ -384,7 +384,7 @@ describe("runThrottle", () => {
                       "--",
                       process.execPath,
                       "-e",
-                      `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
+                      `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
                     ],
                     seams,
                   ),
@@ -491,10 +491,10 @@ describe("runThrottle", () => {
               "--",
               process.execPath,
               "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
+              `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
             ],
             {
-              slotDir: joinPath(slotDirectory, "a"),
+              slotDir: paths.join(slotDirectory, "a"),
               limit: 1,
               waitBudgetMs: 15_000,
               pollMs: 50,
@@ -506,10 +506,10 @@ describe("runThrottle", () => {
               "--",
               process.execPath,
               "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
+              `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
             ],
             {
-              slotDir: joinPath(slotDirectory, "b"),
+              slotDir: paths.join(slotDirectory, "b"),
               limit: 1,
               waitBudgetMs: 15_000,
               pollMs: 50,
@@ -528,10 +528,10 @@ describe("runThrottle", () => {
                     "--",
                     process.execPath,
                     "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
+                    `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
                   ],
                   {
-                    slotDir: joinPath(slotDirectory, "a"),
+                    slotDir: paths.join(slotDirectory, "a"),
                     limit: 1,
                     waitBudgetMs: 15_000,
                     pollMs: 50,
@@ -543,10 +543,10 @@ describe("runThrottle", () => {
                     "--",
                     process.execPath,
                     "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
+                    `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
                   ],
                   {
-                    slotDir: joinPath(slotDirectory, "b"),
+                    slotDir: paths.join(slotDirectory, "b"),
                     limit: 1,
                     waitBudgetMs: 15_000,
                     pollMs: 50,
@@ -555,10 +555,10 @@ describe("runThrottle", () => {
                 ),
               ]),
             );
-            const aStart = Number(yield* readFileString(joinPath(stampsDirectory, "a-start")));
-            const aEnd = Number(yield* readFileString(joinPath(stampsDirectory, "a-end")));
-            const bStart = Number(yield* readFileString(joinPath(stampsDirectory, "b-start")));
-            const bEnd = Number(yield* readFileString(joinPath(stampsDirectory, "b-end")));
+            const aStart = Number(yield* readFileString(paths.join(stampsDirectory, "a-start")));
+            const aEnd = Number(yield* readFileString(paths.join(stampsDirectory, "a-end")));
+            const bStart = Number(yield* readFileString(paths.join(stampsDirectory, "b-start")));
+            const bEnd = Number(yield* readFileString(paths.join(stampsDirectory, "b-end")));
             return aStart < bEnd && bStart < aEnd;
           }),
         ),
@@ -590,7 +590,7 @@ describe("runThrottle", () => {
                 "--",
                 process.execPath,
                 "-e",
-                `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-start`)}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-end`)}", String(Date.now())); }, 1500);`,
+                `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, `${stampPrefix}-start`)}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, `${stampPrefix}-end`)}", String(Date.now())); }, 1500);`,
               ],
               seams,
             ),
@@ -615,7 +615,7 @@ describe("runThrottle", () => {
                       "--",
                       process.execPath,
                       "-e",
-                      `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-start`)}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-end`)}", String(Date.now())); }, 1500);`,
+                      `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, `${stampPrefix}-start`)}", String(Date.now())); setTimeout(() => { writeFileSync("${paths.join(stampsDirectory, `${stampPrefix}-end`)}", String(Date.now())); }, 1500);`,
                     ],
                     seams,
                   ),
@@ -624,8 +624,8 @@ describe("runThrottle", () => {
             );
             const spans = yield* Effect.forEach(["a", "b", "c"], (stampPrefix) =>
               Effect.all({
-                start: readFileString(joinPath(stampsDirectory, `${stampPrefix}-start`)),
-                end: readFileString(joinPath(stampsDirectory, `${stampPrefix}-end`)),
+                start: readFileString(paths.join(stampsDirectory, `${stampPrefix}-start`)),
+                end: readFileString(paths.join(stampsDirectory, `${stampPrefix}-end`)),
               }).pipe(Effect.map(({ start, end }) => ({ start: Number(start), end: Number(end) }))),
             );
             return Math.max(
@@ -662,7 +662,7 @@ describe("runThrottle", () => {
                   "--",
                   process.execPath,
                   "-e",
-                  `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now()));`,
+                  `const { writeFileSync } = require("node:fs"); writeFileSync("${paths.join(stampsDirectory, "a-start")}", String(Date.now()));`,
                 ],
                 {
                   slotDir: slotDirectory,
@@ -672,7 +672,7 @@ describe("runThrottle", () => {
                 },
               ),
             );
-            return yield* fileExists(joinPath(slotDirectory, "slot-1"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-1"));
           }),
         ),
     );
@@ -780,11 +780,11 @@ describe("runThrottle", () => {
       .extend("theCodeOfAnUnusableSlotArea", ({ slotDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const plainFile = joinPath(slotDirectory, "plain-file");
+            const plainFile = paths.join(slotDirectory, "plain-file");
             yield* writeFileString({ location: plainFile, written: "" });
             return yield* Effect.promise(() =>
               runThrottle(TRIVIAL_COMMAND, {
-                slotDir: joinPath(plainFile, "nested"),
+                slotDir: paths.join(plainFile, "nested"),
                 limit: 1,
                 waitBudgetMs: 15_000,
                 pollMs: 50,
@@ -797,11 +797,11 @@ describe("runThrottle", () => {
       .extend("theFailureNamedForAnUnusableSlotArea", ({ slotDirectory, stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const plainFile = joinPath(slotDirectory, "plain-file");
+            const plainFile = paths.join(slotDirectory, "plain-file");
             yield* writeFileString({ location: plainFile, written: "" });
             yield* Effect.promise(() =>
               runThrottle(TRIVIAL_COMMAND, {
-                slotDir: joinPath(plainFile, "nested"),
+                slotDir: paths.join(plainFile, "nested"),
                 limit: 1,
                 waitBudgetMs: 15_000,
                 pollMs: 50,
@@ -815,11 +815,11 @@ describe("runThrottle", () => {
       .extend("theUsageNamedForAnUnusableSlotArea", ({ slotDirectory, stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const plainFile = joinPath(slotDirectory, "plain-file");
+            const plainFile = paths.join(slotDirectory, "plain-file");
             yield* writeFileString({ location: plainFile, written: "" });
             yield* Effect.promise(() =>
               runThrottle(TRIVIAL_COMMAND, {
-                slotDir: joinPath(plainFile, "nested"),
+                slotDir: paths.join(plainFile, "nested"),
                 limit: 1,
                 waitBudgetMs: 15_000,
                 pollMs: 50,

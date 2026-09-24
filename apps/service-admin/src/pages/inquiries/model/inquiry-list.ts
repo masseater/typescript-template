@@ -5,8 +5,8 @@ import { Atom } from "effect/unstable/reactivity";
 
 import { loadInquiries } from "#pages/inquiries/api/inquiries.ts";
 
+import type { InquiryStatus } from "@repo/config";
 import type { AdminInquirySummary } from "./inquiry.ts";
-import type { InquiryStatus } from "./status-label.ts";
 
 const listPageSize = 50;
 

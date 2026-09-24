@@ -23,14 +23,12 @@ const deploymentValues = (content: string): DeploymentValue[] => {
 
 type PrefixScan = "separated" | "word";
 
-const quoted = (value: string): string => RegExp.escape(value);
-
 const wordPattern = (value: string): RegExp => {
-  return new RegExp(`(?<![0-9A-Za-z])${quoted(value)}(?![0-9A-Za-z])`, "u");
+  return new RegExp(`(?<![0-9A-Za-z])${RegExp.escape(value)}(?![0-9A-Za-z])`, "u");
 };
 
 const separatedPattern = (value: string): RegExp => {
-  return new RegExp(`(?<![0-9A-Za-z_-])${quoted(value)}(?=[-/])`, "u");
+  return new RegExp(`(?<![0-9A-Za-z_-])${RegExp.escape(value)}(?=[-/])`, "u");
 };
 
 const prefixPattern = (value: string, scan: PrefixScan): RegExp => {

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, paths } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { hook } from "./hook.ts";
 import { insideRepositoryReason } from "./message.ts";
@@ -56,7 +56,7 @@ describe("worktree-home hook", () => {
               hookEventName: "PreToolUse",
               permissionDecision: "deny",
               permissionDecisionReason: insideRepositoryReason(
-                joinPath(theCheckout, ".claude", "worktrees", "x"),
+                paths.join(theCheckout, ".claude", "worktrees", "x"),
                 theCheckout,
               ),
             },

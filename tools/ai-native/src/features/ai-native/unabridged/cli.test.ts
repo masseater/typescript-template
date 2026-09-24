@@ -3,13 +3,13 @@ import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { joinPath } from "../host.ts";
+import { paths } from "../host.ts";
 import { hook } from "./hook.ts";
 import { denyReasonFor } from "./message.ts";
 
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
-const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
+const CLI_PATH = paths.join(import.meta.dirname, "cli.ts");
 
 const SLICING_COMMAND_PAYLOAD =
   '{"cwd":"/repo","hook_event_name":"PreToolUse","session_id":"session","tool_input":{"command":"vp test | tail -50"},"tool_name":"Bash","tool_use_id":"toolu_1","transcript_path":"/repo/transcript.jsonl"}';

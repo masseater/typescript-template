@@ -5,7 +5,7 @@ import { describe, expect } from "vite-plus/test";
 import {
   epochMillis,
   filesystem,
-  joinPath,
+  paths,
   readDirectory,
   removePath,
   writeFileString,
@@ -124,7 +124,7 @@ describe("waitForSlot", () => {
             yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
             yield* Effect.sleep("200 millis");
-            const waiting = (yield* readDirectory(joinPath(slotDirectory, "waiters"))).map(
+            const waiting = (yield* readDirectory(paths.join(slotDirectory, "waiters"))).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
             yield* Effect.promise(() => hold.release());
@@ -154,7 +154,7 @@ describe("waitForSlot", () => {
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
             yield* Effect.sleep("200 millis");
             yield* writeFileString({
-              location: joinPath(
+              location: paths.join(
                 slotDirectory,
                 "waiters",
                 `0000000000000-${String(EXITED_PID)}-deadbeef`,
@@ -162,7 +162,7 @@ describe("waitForSlot", () => {
               written: `${String(EXITED_PID)}\n`,
             });
             yield* Effect.sleep("200 millis");
-            const waiting = (yield* readDirectory(joinPath(slotDirectory, "waiters"))).map(
+            const waiting = (yield* readDirectory(paths.join(slotDirectory, "waiters"))).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
             yield* Effect.promise(() => hold.release());
@@ -193,7 +193,7 @@ describe("waitForSlot", () => {
             yield* Effect.sleep("200 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.sleep("150 millis");
-            const waiting = (yield* readDirectory(joinPath(slotDirectory, "waiters"))).map(
+            const waiting = (yield* readDirectory(paths.join(slotDirectory, "waiters"))).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
             yield* Effect.promise(() => runA);
@@ -224,7 +224,7 @@ describe("waitForSlot", () => {
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
-            return yield* readDirectory(joinPath(slotDirectory, "waiters"));
+            return yield* readDirectory(paths.join(slotDirectory, "waiters"));
           }),
         ),
       )
@@ -424,7 +424,7 @@ describe("waitForSlot", () => {
               }),
             );
             yield* Effect.promise(() => hold.release());
-            return yield* readDirectory(joinPath(slotDirectory, "waiters"));
+            return yield* readDirectory(paths.join(slotDirectory, "waiters"));
           }),
         ),
       )
