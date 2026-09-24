@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { clockDate } from "./clock-date.ts";
@@ -10,6 +10,8 @@ const draftColumns = {
   baseRevision: wikiDraft.baseRevision,
   markdown: wikiDraft.markdown,
   path: wikiDraft.path,
+  publishedRevision: wikiDraft.publishedRevision,
+  publishedUrl: wikiDraft.publishedUrl,
   updatedAt: wikiDraft.updatedAt,
   version: wikiDraft.version,
 };
@@ -39,7 +41,14 @@ export const saveWikiDraft = Effect.fn("saveWikiDraft")(function* saveWikiDraft(
           .returning({ version: wikiDraft.version })
       : database
           .update(wikiDraft)
-          .set({ markdown, updatedAt, updatedBy, version: version + 1 })
+          .set({
+            markdown,
+            publishedRevision: sql`CASE WHEN ${wikiDraft.markdown} = ${markdown} THEN ${wikiDraft.publishedRevision} END`,
+            publishedUrl: sql`CASE WHEN ${wikiDraft.markdown} = ${markdown} THEN ${wikiDraft.publishedUrl} END`,
+            updatedAt,
+            updatedBy,
+            version: version + 1,
+          })
           .where(and(eq(wikiDraft.path, path), eq(wikiDraft.version, version)))
           .returning({ version: wikiDraft.version }),
   );
@@ -63,5 +72,26 @@ export const discardWikiDraft = Effect.fn("discardWikiDraft")(function* discardW
     return yield* new WikiDraftConflict();
   }
 });
+
+export const markWikiDraftPublished = Effect.fn("markWikiDraftPublished")(
+  function* markWikiDraftPublished(publication: {
+    readonly path: string;
+    readonly revision: string;
+    readonly url: string;
+    readonly version: number;
+  }) {
+    const { path, revision, url, version } = publication;
+    const [marked] = yield* query((database) =>
+      database
+        .update(wikiDraft)
+        .set({ publishedRevision: revision, publishedUrl: url })
+        .where(and(eq(wikiDraft.path, path), eq(wikiDraft.version, version)))
+        .returning({ path: wikiDraft.path }),
+    );
+    if (marked === undefined) {
+      return yield* new WikiDraftConflict();
+    }
+  },
+);
 
 export { WikiDraftConflict } from "./wiki-draft-conflict.ts";

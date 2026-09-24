@@ -22,6 +22,8 @@ export {
 } from "./recordings.ts";
 export {
   WikiDraftDiscard,
+  WikiDraftPublish,
+  WikiDraftPublished,
   WikiDraftSave,
   WikiDraftSaved,
   WikiImageUpload,

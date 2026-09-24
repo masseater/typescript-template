@@ -29,7 +29,7 @@ import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { memberLeavePurgeCron } from "./member-leave-purge.ts";
-import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { authSecret, otlpAuthorization, settings, wikiPublishSettings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 import { wikiWorkerRef } from "./wiki-program.ts";
@@ -118,6 +118,7 @@ const targetEnv = Effect.fn("targetEnv")(function* targetEnv(
     FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
     FLAGSHIP_APP_ID: flags.appId,
     ...(yield* wikiBindings()),
+    ...(yield* Effect.orDie(wikiPublishSettings)),
   };
 });
 

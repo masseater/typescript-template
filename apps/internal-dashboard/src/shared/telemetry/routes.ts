@@ -17,6 +17,7 @@ export const routes = {
   "/api/wiki-edit/draft": "wiki-draft",
   "/api/wiki-edit/images": "wiki-image-upload",
   "/api/wiki-edit/images/*": "wiki-image",
+  "/api/wiki-edit/publish": "wiki-publish",
   "/api/wiki-edit/source": "wiki-source",
   "/audit": "audit",
   "/consent": "consent",

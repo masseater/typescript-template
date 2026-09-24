@@ -17,6 +17,7 @@ import {
   wikiApiBinding,
   wikiApiEntrypoint,
   wikiPagesBinding,
+  wikiPublishKey,
   wikiWorker,
 } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
@@ -113,6 +114,9 @@ function wikiBindings(app: Application): readonly string[] {
         `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
         `${wikiApiBinding}:service:entrypoint=${wikiApiEntrypoint}:service=${stackName(wikiWorker)}.Worker.workerName`,
         `${wikiPagesBinding}:service:service=${stackName(wikiWorker)}.Worker.workerName`,
+        plainText(wikiPublishKey.appId, verificationSettings.wikiPublish.appId),
+        `${wikiPublishKey.privateKey}:secret_text:text=$${deploymentKey.wikiPublishPrivateKey}`,
+        plainText(wikiPublishKey.repository, verificationSettings.wikiPublish.repository),
       ]
     : [];
 }
