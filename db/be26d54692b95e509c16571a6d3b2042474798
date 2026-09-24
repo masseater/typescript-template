@@ -1,1 +1,6 @@
-全スタックが prefix と違う stage で止まることを確かめるテストを足した。
+Revision history for #1558:
+
+rev 2 (content) 2026-09-24 09:26 UTC — 全スタックが prefix と違う stage で止まることを確かめるテストを足した。
+rev 1 (initial) 2026-09-24 09:26 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1558,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"b11ad3b635702b7b37e20596bb3f48b7c264a77d","timestamp_iso":"2026-09-24T09:26:07Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"b11ad3b635702b7b37e20596bb3f48b7c264a77d","new_sha":"dbbe26d54692b95e509c16571a6d3b2042474798","timestamp_iso":"2026-09-24T09:26:07Z","reason":"全スタックが prefix と違う stage で止まることを確かめるテストを足した。","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/b11ad3b635702b7b37e20596bb3f48b7c264a77d...dbbe26d54692b95e509c16571a6d3b2042474798"}]} -->
