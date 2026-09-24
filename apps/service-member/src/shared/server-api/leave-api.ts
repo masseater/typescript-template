@@ -1,8 +1,8 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { acceptRecovery, declineRecovery, findRecoveryOffer } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
-import { createApi, readJsonBody } from "@repo/runtime/http";
+import { sessionFailures } from "@repo/runtime/account";
+import { createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import {
@@ -17,7 +17,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   MemberLeaveUnavailable: {
     message: "退会できません。",
     status: httpStatus.forbidden,
@@ -33,9 +33,11 @@ const failures = {
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-const submitLeave = Effect.fn("leave.submit")(function* submitLeave(request: Request) {
+const submitLeave = Effect.fn("leave.submit")(function* submitLeave(
+  request: Request,
+  { immediate }: typeof LeaveRequest.Type,
+) {
   const { user } = yield* verifySession(request.headers);
-  const { immediate } = yield* readJsonBody(LeaveRequest, request);
   yield* withdrawWithPhotos(user.id, { immediate });
   return { ok: true as const };
 });
@@ -65,10 +67,22 @@ const submitRecoveryDecline = Effect.fn("leave.recoveryDecline")(function* submi
 
 function leaveApi(api: ApiRoutes<AppServices | PhotoStore>) {
   return createApi("")
-    .post("/leave", api.route(LeaveAccepted, submitLeave, failures))
-    .get("/recovery-offer", api.route(RecoveryOfferView, loadRecoveryOffer, failures))
-    .post("/recovery/accept", api.route(RecoveryAccepted, submitRecoveryAccept, failures))
-    .post("/recovery/decline", api.route(RecoveryAccepted, submitRecoveryDecline, failures));
+    .post(
+      "/leave",
+      ...api.route({ body: LeaveRequest, response: LeaveAccepted }, submitLeave, failures),
+    )
+    .get(
+      "/recovery-offer",
+      ...api.route({ response: RecoveryOfferView }, loadRecoveryOffer, failures),
+    )
+    .post(
+      "/recovery/accept",
+      ...api.route({ response: RecoveryAccepted }, submitRecoveryAccept, failures),
+    )
+    .post(
+      "/recovery/decline",
+      ...api.route({ response: RecoveryAccepted }, submitRecoveryDecline, failures),
+    );
 }
 
 export { leaveApi };

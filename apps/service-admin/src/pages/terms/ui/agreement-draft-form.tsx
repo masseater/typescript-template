@@ -7,7 +7,6 @@ import {
   maximumBodyLength,
   maximumSummaryLength,
   maximumVersionLength,
-  versionLabelPattern,
 } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
@@ -38,8 +37,6 @@ function AgreementDraftForm(): ReactElement {
           maxLength={maximumVersionLength}
           name="version"
           onValueChange={form.handleVersionChange}
-          pattern={versionLabelPattern.source}
-          required
           value={form.version}
         />
         <Field
@@ -55,7 +52,6 @@ function AgreementDraftForm(): ReactElement {
           multiline
           name="body"
           onValueChange={form.handleBodyChange}
-          required
           value={form.body}
         />
       </FormColumn>

@@ -10,7 +10,7 @@ const useSent = localState(false);
 
 function ContactPage(): ReactElement {
   const [sent, setSent] = useSent();
-  const form = useContactForm(() => {
+  const formState = useContactForm(() => {
     setSent(true);
   });
   if (sent) {
@@ -24,7 +24,7 @@ function ContactPage(): ReactElement {
   return (
     <CardPage title="お問い合わせ">
       <p className="text-base leading-normal">会員登録前のご相談など、運営へお送りください。</p>
-      <ContactFormFields form={form} />
+      <ContactFormFields formState={formState} />
     </CardPage>
   );
 }

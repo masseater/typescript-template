@@ -114,10 +114,14 @@ describe.for(rejections)(
       .extend("rejectedAnswer", () =>
         Effect.runPromise(
           Effect.gen(function* rejectedAnswerProgram() {
-            const echo = api.route(EchoBody, (asked) => readJsonBody(EchoBody, asked), {});
+            const echo = api.route(
+              { body: EchoBody, response: EchoBody },
+              (_asked, mutation) => Effect.succeed(mutation),
+              {},
+            );
             const {
               handlers: { ANY: answerAny },
-            } = elysiaServer(createApi("").patch("/api/profile", echo));
+            } = elysiaServer(createApi("").patch("/api/profile", ...echo));
             const answered = yield* startRoute({
               fetch: (rendered) => answerAny({ request: rendered }),
             })(
@@ -175,10 +179,14 @@ describe("an api route behind a start server route given invalid input", () => {
   const it = test.extend("invalidAnswer", () =>
     Effect.runPromise(
       Effect.gen(function* invalidAnswerProgram() {
-        const echo = api.route(EchoBody, (asked) => readJsonBody(EchoBody, asked), {});
+        const echo = api.route(
+          { body: EchoBody, response: EchoBody },
+          (_asked, mutation) => Effect.succeed(mutation),
+          {},
+        );
         const {
           handlers: { ANY: answerAny },
-        } = elysiaServer(createApi("").patch("/api/profile", echo));
+        } = elysiaServer(createApi("").patch("/api/profile", ...echo));
         const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "private-profile-text".repeat(repeatedPrivateText),
           profile: 1,
@@ -218,7 +226,7 @@ describe("an event stream route fed as values happen", () => {
         yield* Queue.offer(ticks, firstTick);
         const app = createApi("/api").get(
           "/events",
-          api.events(Tick, () => Effect.succeed(Stream.fromQueue(ticks)), {}),
+          ...api.events(Tick, () => Effect.succeed(Stream.fromQueue(ticks)), {}),
         );
         const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
         const frames: ReadableStreamDefaultReader<unknown> = (
@@ -248,7 +256,7 @@ describe("an event stream route's headers", () => {
       Effect.gen(function* streamHeadersProgram() {
         const app = createApi("/api").get(
           "/events",
-          api.events(Tick, () => Effect.succeed(Stream.make(firstTick)), {}),
+          ...api.events(Tick, () => Effect.succeed(Stream.make(firstTick)), {}),
         );
         const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
         yield* Effect.promise(() => opened.body?.cancel() ?? Promise.resolve());
@@ -274,7 +282,7 @@ describe("an event stream route whose viewer goes away while nothing is happenin
         );
         const app = createApi("/api").get(
           "/events",
-          api.events(Tick, () => Effect.succeed(ticks), {}),
+          ...api.events(Tick, () => Effect.succeed(ticks), {}),
         );
         const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
         const frames: ReadableStreamDefaultReader<unknown> = (
@@ -298,7 +306,7 @@ describe("an event stream route whose source dies after it opened", () => {
         const ticks = Stream.make(firstTick).pipe(Stream.concat(Stream.die("source died")));
         const app = createApi("/api").get(
           "/events",
-          api.events(Tick, () => Effect.succeed(ticks), {}),
+          ...api.events(Tick, () => Effect.succeed(ticks), {}),
         );
         const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
         const frames: ReadableStreamDefaultReader<unknown> = (
@@ -330,7 +338,7 @@ describe("a HEAD request to an event stream route", () => {
         const ticks = api.events(Tick, () => Effect.succeed(silentAfterFirst), {});
         const {
           handlers: { HEAD: answerHead },
-        } = elysiaServer(createApi("/api").get("/events", ticks));
+        } = elysiaServer(createApi("/api").get("/events", ...ticks));
         const answered = yield* Effect.promise(() =>
           answerHead({ request: new Request(`${origin}/api/events`, { method: "HEAD" }) }),
         );
@@ -360,7 +368,7 @@ describe("an event stream route that fails before the stream opens", () => {
             ),
           {},
         );
-        const app = createApi("/api").get("/events", ticks);
+        const app = createApi("/api").get("/events", ...ticks);
         const answered = yield* Effect.promise(() =>
           app.handle(new Request(`${origin}/api/events`)),
         );
@@ -386,7 +394,7 @@ describe("an event stream route seen by the typed client", () => {
           () => Effect.succeed(Stream.make(firstTick, secondTick)),
           {},
         );
-        const client = apiServerClient(createApi("/api").get("/events", ticks), {});
+        const client = apiServerClient(createApi("/api").get("/events", ...ticks), {});
         const eventReply = yield* Effect.promise(() => client.api.events.get());
         const tickEvents = eventReply.data;
         if (tickEvents === null || !(Symbol.asyncIterator in tickEvents)) {

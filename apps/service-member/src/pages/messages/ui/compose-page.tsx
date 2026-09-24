@@ -45,7 +45,6 @@ function ComposePage({
             multiline
             name="body"
             onValueChange={form.handleBodyChange}
-            required
             value={form.body}
           />
           <div>

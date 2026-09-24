@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 
 import { PhotoSlotEditor } from "./photo-slot-editor.tsx";
 
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import type { Profile } from "#entities/profile/index.ts";
 import type { ReactElement } from "react";
 function PhotoEditor({
   profile,

@@ -32,7 +32,6 @@ export {
   maximumBodyLength,
   maximumSummaryLength,
   maximumVersionLength,
-  versionLabelPattern,
 } from "./agreements.ts";
 export {
   ReportAction,
