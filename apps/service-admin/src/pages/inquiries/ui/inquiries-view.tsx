@@ -1,4 +1,4 @@
-import { INQUIRY_STATUS, inquiryStatusLabels, type InquiryStatus } from "@repo/config";
+import { inquiryStatusLabels, inquiryStatuses, type InquiryStatus } from "@repo/config";
 import {
   NavigationLink,
   Page,
@@ -9,12 +9,6 @@ import {
 
 import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
 import type { ReactElement } from "react";
-
-const statusFilters = [
-  INQUIRY_STATUS.open,
-  INQUIRY_STATUS.answered,
-  INQUIRY_STATUS.closed,
-] as const;
 
 function InquiriesView({
   error,
@@ -35,7 +29,7 @@ function InquiriesView({
         <p className="text-sm leading-normal text-muted-foreground">対応待ち: {pendingCount} 件</p>
       )}
       <div className="flex flex-wrap gap-2">
-        {statusFilters.map((value) => (
+        {inquiryStatuses.map((value) => (
           <button
             key={value}
             type="button"
