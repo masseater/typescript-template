@@ -1,6 +1,1 @@
-Revision history for #1534:
-
-rev 2 (rebase) 2026-09-24 08:08 UTC
-rev 1 (initial) 2026-09-24 08:08 UTC
-
-<!-- mergify-revision-data: {"schema_version":1,"pull_number":1534,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"63e03ead67e300b3ede0c677371408879b2659c7","timestamp_iso":"2026-09-24T08:08:22Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"63e03ead67e300b3ede0c677371408879b2659c7","new_sha":"85845524075c367ed9fe745738380e0e8afc40f6","timestamp_iso":"2026-09-24T08:08:22Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/63e03ead67e300b3ede0c677371408879b2659c7...85845524075c367ed9fe745738380e0e8afc40f6"}]} -->
+請求書状態を語彙登録すると一般語がリポジトリ全体で奪われるため、状態は文字列で持ち未収額は Stripe の amount_remaining を記録する形に変えた。与信は加算、返金は累計の最大、どちらも状態の順序ガードから外した。
