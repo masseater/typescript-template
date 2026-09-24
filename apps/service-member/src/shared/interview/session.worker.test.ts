@@ -2,10 +2,12 @@ import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
 import { findInterview } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
+import { appEnvironment } from "@repo/runtime/testing";
 import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { HttpResponse, http } from "msw";
 
+import { Stripe } from "#shared/billing/index.ts";
 import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { Interviewer } from "./interviewer.ts";
@@ -20,6 +22,7 @@ const greeting = { role: "interviewer", text: "はじめまして。なんて呼
 const layoutEndpoint =
   "https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions";
 const layoutAccess = { accountId: "account", apiKey: "test-token" } as const;
+const stripeTestLayer = Layer.orDie(Stripe.fromEnvironment(appEnvironment()));
 
 function layoutCompletion(content: unknown): Response {
   return HttpResponse.json({
@@ -49,13 +52,17 @@ function addMember(id: string): Effect.Effect<unknown, unknown> {
 function services(
   understand: Understand,
 ): Layer.Layer<
-  Layer.Success<typeof TestDatabase> | Interviewer | ProfileLayoutAssembler,
+  | Layer.Success<typeof TestDatabase>
+  | Interviewer
+  | ProfileLayoutAssembler
+  | Layer.Success<typeof stripeTestLayer>,
   Layer.Error<typeof TestDatabase>
 > {
   return Layer.mergeAll(
     TestDatabase,
     Layer.succeed(Interviewer, Interviewer.of({ understand })),
     ProfileLayoutAssembler.layer(),
+    stripeTestLayer,
   );
 }
 
@@ -63,6 +70,7 @@ const withoutModel = Layer.mergeAll(
   TestDatabase,
   Interviewer.layer(),
   ProfileLayoutAssembler.layer(),
+  stripeTestLayer,
 );
 
 it.effect("an interview that was left midway resumes with the same conversation", () =>
@@ -223,7 +231,12 @@ it.effect("saving stores a model-assembled layout with the sheet", () =>
     );
   }).pipe(
     Effect.provide(
-      Layer.mergeAll(TestDatabase, Interviewer.layer(), ProfileLayoutAssembler.layer(layoutAccess)),
+      Layer.mergeAll(
+        TestDatabase,
+        Interviewer.layer(),
+        ProfileLayoutAssembler.layer(layoutAccess),
+        stripeTestLayer,
+      ),
     ),
   ),
 );

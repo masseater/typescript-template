@@ -17,6 +17,7 @@ import type { App, Credentials } from "./local-environment.ts";
 const sharedRunnerSeed = "continuous-integration";
 
 const stripePlaceholders = {
+  meteredPriceId: "price_localMeteredPlaceholderNotReal",
   priceId: "price_localPlaceholderNotReal",
   secretKey: "sk_test_localPlaceholderNotAReal",
   webhookSecret: "whsec_localPlaceholderNotReal",
@@ -47,6 +48,7 @@ function billingVariables(app: App, credentials: Credentials): Readonly<Record<s
   const stripe = credentials.stripe ?? stripePlaceholders;
   return {
     STRIPE_AUTOMATIC_TAX: String(stripeAutomaticTax),
+    STRIPE_METERED_PRICE_ID: stripe.meteredPriceId,
     STRIPE_PRICE_ID: stripe.priceId,
     STRIPE_SECRET_KEY: stripe.secretKey,
     STRIPE_TRIAL_PERIOD_DAYS: String(stripeTrialPeriodDays),

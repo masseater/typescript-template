@@ -3,6 +3,8 @@
 import { markFailed, reportFailed, runCli } from "@repo/cli";
 import {
   APPLICATION,
+  aiMeterEventName,
+  aiUsageUnitAmount,
   appEnvKey,
   applications,
   grants,
@@ -138,6 +140,7 @@ const capabilityBindings: readonly (readonly [Capability, readonly string[]])[] 
     "billing",
     [
       plainText("STRIPE_AUTOMATIC_TAX", String(stripeAutomaticTax)),
+      "STRIPE_METERED_PRICE_ID:deferred:<unresolved PropExpr>",
       "STRIPE_PRICE_ID:deferred:<unresolved PropExpr>",
       `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
       plainText("STRIPE_TRIAL_PERIOD_DAYS", String(stripeTrialPeriodDays)),
@@ -180,6 +183,29 @@ function billingResources(app: Application): Readonly<Record<string, ResourceInv
     return {};
   }
   return {
+    AiUsage: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        defaultAggregation: { formula: "sum" },
+        displayName: `${prefix} AI usage`,
+        eventName: aiMeterEventName,
+      },
+      removalPolicy: "destroy",
+      type: "Stripe.BillingMeter",
+    },
+    AiUsageMonthly: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        currency: "jpy",
+        product: "<unresolved PropExpr>",
+        recurring: { interval: "month", meter: "<unresolved PropExpr>", usageType: "metered" },
+        unitAmount: aiUsageUnitAmount,
+      },
+      removalPolicy: "destroy",
+      type: "Stripe.Price",
+    },
     BillingWebhook: {
       adopt: false,
       bindings: [],

@@ -138,6 +138,7 @@ export {
   settleInvoicePayment,
 } from "./invoice.ts";
 export type { InvoiceState } from "./invoice.ts";
+export { aiUsageSince, markAiUsageReported, recordAiUsage } from "./ai-usage.ts";
 export {
   TrustSubjectNotFound,
   TrustTargetUnavailable,

@@ -70,4 +70,21 @@ const customerInvoice = sqliteTable(
   ],
 );
 
-export { customerInvoice, planSubscription, stripeEvent };
+const aiUsageEvent = sqliteTable(
+  "ai_usage_event",
+  {
+    identifier: text("identifier").notNull(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
+    quantity: integer("quantity").notNull(),
+    reportedAt: integer("reported_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.identifier] }),
+    index("ai_usage_event_member_occurred_idx").on(table.memberId, table.occurredAt),
+  ],
+);
+
+export { aiUsageEvent, customerInvoice, planSubscription, stripeEvent };

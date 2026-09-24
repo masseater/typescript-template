@@ -22,6 +22,7 @@ const appEnvironment = (
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
     STRIPE_AUTOMATIC_TAX: "false",
+    STRIPE_METERED_PRICE_ID: "price_TestMetered",
     STRIPE_PRICE_ID: "price_TestMonthly",
     STRIPE_SECRET_KEY: "sk_test_placeholder",
     STRIPE_TRIAL_PERIOD_DAYS: "0",
