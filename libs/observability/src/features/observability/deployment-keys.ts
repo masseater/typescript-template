@@ -15,6 +15,9 @@ const deploymentKey = {
   stripePriceId: "TEMPLATE_STRIPE_PRICE_ID",
   stripeSecretKey: "TEMPLATE_STRIPE_SECRET_KEY",
   stripeWebhookSecret: "TEMPLATE_STRIPE_WEBHOOK_SECRET",
+  wikiPublishAppId: "TEMPLATE_WIKI_PUBLISH_APP_ID",
+  wikiPublishPrivateKey: "TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY",
+  wikiPublishRepository: "TEMPLATE_WIKI_PUBLISH_REPOSITORY",
 } as const;
 const deploymentKeys = [
   deploymentKey.alertEmail,
@@ -35,6 +38,9 @@ const optionalDeploymentKeys = [
   deploymentKey.otlpAuthorization,
   deploymentKey.otlpEnabled,
   deploymentKey.otlpEndpoint,
+  deploymentKey.wikiPublishAppId,
+  deploymentKey.wikiPublishPrivateKey,
+  deploymentKey.wikiPublishRepository,
 ] as const;
 const privateDeploymentKeys: readonly string[] = [
   ...deploymentKeys.filter((settingName) => settingName !== deploymentKey.budgetJpy),

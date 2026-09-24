@@ -45,6 +45,9 @@ type WikiEnv = SharedEnv &
     FLAGSHIP_APP_ID: string;
     WIKI: WorkerEntrypointBinding;
     WIKI_API: WorkerEntrypointBinding;
+    WIKI_PUBLISH_APP_ID?: string;
+    WIKI_PUBLISH_PRIVATE_KEY?: Redacted.Redacted;
+    WIKI_PUBLISH_REPOSITORY?: string;
   }>;
 
 interface CapabilityEnv {

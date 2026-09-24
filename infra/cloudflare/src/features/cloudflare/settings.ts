@@ -1,4 +1,4 @@
-import { GoogleAnalyticsMeasurementId } from "@repo/config";
+import { GoogleAnalyticsMeasurementId, readWikiPublishConfig, wikiPublishKey } from "@repo/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Config, Effect, Option, Redacted, Schema } from "effect";
 
@@ -71,4 +71,35 @@ const stripeSettings = Config.all({
   STRIPE_WEBHOOK_SECRET: Config.Redacted(deploymentKey.stripeWebhookSecret),
 });
 
-export { authSecret, otlpAuthorization, settings, stripeSettings };
+const wikiPublishSettings = Config.all({
+  appId: optional(Config.String(deploymentKey.wikiPublishAppId)),
+  privateKey: optional(Config.Redacted(deploymentKey.wikiPublishPrivateKey)),
+  repository: optional(Config.String(deploymentKey.wikiPublishRepository)),
+}).pipe(
+  Effect.flatMap(({ appId, privateKey, repository }) =>
+    readWikiPublishConfig(
+      Object.fromEntries(
+        [
+          [wikiPublishKey.appId, appId],
+          [
+            wikiPublishKey.privateKey,
+            privateKey === undefined ? undefined : Redacted.value(privateKey),
+          ],
+          [wikiPublishKey.repository, repository],
+        ].filter(([, value]) => value !== undefined),
+      ),
+    ).pipe(
+      Effect.map((config) =>
+        config === undefined
+          ? undefined
+          : {
+              [wikiPublishKey.appId]: config.appId,
+              [wikiPublishKey.privateKey]: config.privateKey,
+              [wikiPublishKey.repository]: `${config.owner}/${config.repository}`,
+            },
+      ),
+    ),
+  ),
+);
+
+export { authSecret, otlpAuthorization, settings, stripeSettings, wikiPublishSettings };

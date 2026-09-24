@@ -94,6 +94,9 @@ jobs:
           TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
           TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
           TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
+          TEMPLATE_WIKI_PUBLISH_APP_ID: ${{ secrets.TEMPLATE_WIKI_PUBLISH_APP_ID }}
+          TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY }}
+          TEMPLATE_WIKI_PUBLISH_REPOSITORY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_REPOSITORY }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'

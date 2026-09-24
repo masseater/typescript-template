@@ -9,6 +9,7 @@ const httpStatus = {
   methodNotAllowed: 405,
   noContent: 204,
   notFound: 404,
+  notImplemented: 501,
   ok: 200,
   payloadTooLarge: 413,
   paymentRequired: 402,

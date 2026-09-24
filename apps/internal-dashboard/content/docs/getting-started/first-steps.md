@@ -54,6 +54,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。
     - `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID`: `G-` で始まる Google Analytics の測定 ID。
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
+    - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。App には Contents と Pull requests の書き込み権限を付け、このリポジトリにインストールします。秘密鍵は GitHub が配る PKCS#1 のままでも、PKCS#8 に変えたものでも読めます。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。
 - 検索エンジン設定:
   - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/worker.ts`）。
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。

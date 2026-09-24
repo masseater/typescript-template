@@ -480,6 +480,8 @@ erDiagram
     text base_revision "nullable"
     text markdown
     text path PK
+    text published_revision "nullable"
+    text published_url "nullable"
     integer updated_at
     text updated_by FK "nullable"
     integer version

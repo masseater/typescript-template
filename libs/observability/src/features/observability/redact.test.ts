@@ -31,6 +31,11 @@ describe.for([
   ],
   ["a bearer credential", `authorization: Bearer ${secret}`, "authorization: [redacted]"],
   [
+    "a private key binding in JSON",
+    JSON.stringify({ WIKI_PUBLISH_PRIVATE_KEY: secret }),
+    '{"WIKI_PUBLISH_PRIVATE_KEY":"[redacted]"}',
+  ],
+  [
     "two secret names in one object",
     JSON.stringify({ clientSecret: secret, password: secret }),
     '{"clientSecret":"[redacted]","password":"[redacted]"}',
@@ -136,6 +141,8 @@ describe.for([
 describe.for([
   ["an environment secret", "AUTH_SECRET", "[redacted]"],
   ["a camel-cased secret", "clientSecret", "[redacted]"],
+  ["a private key binding", "WIKI_PUBLISH_PRIVATE_KEY", "[redacted]"],
+  ["a camel-cased private key", "privateKey", "[redacted]"],
   ["a prefixed secret", "TEMPLATE_PREFIX", "[redacted]"],
   ["a reason", "reason", { nested: secret }],
   ["a query", "query", { nested: secret }],

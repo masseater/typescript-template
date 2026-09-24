@@ -1,6 +1,7 @@
 import { deploymentKey } from "@repo/observability/deployment-keys";
 
 const HEX_ID_LENGTH = 32;
+const pemLabel = "PRIVATE KEY";
 const verificationAuthSecret = "verification-test-secret-0123456789abcdef";
 
 const verificationSettings = {
@@ -24,6 +25,11 @@ const verificationSettings = {
     secretKey: "sk_test_stackVerificationNotAReal",
     webhookSecret: "whsec_stackVerificationNotReal",
   },
+  wikiPublish: {
+    appId: "424242",
+    privateKey: `-----BEGIN ${pemLabel}-----\nstack-verification-not-a-real-key\n-----END ${pemLabel}-----\n`,
+    repository: "template-verify/wiki",
+  },
   zoneId: "b".repeat(HEX_ID_LENGTH),
 };
 
@@ -44,6 +50,9 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.stripePriceId]: verificationSettings.stripe.priceId,
   [deploymentKey.stripeSecretKey]: verificationSettings.stripe.secretKey,
   [deploymentKey.stripeWebhookSecret]: verificationSettings.stripe.webhookSecret,
+  [deploymentKey.wikiPublishAppId]: verificationSettings.wikiPublish.appId,
+  [deploymentKey.wikiPublishPrivateKey]: verificationSettings.wikiPublish.privateKey,
+  [deploymentKey.wikiPublishRepository]: verificationSettings.wikiPublish.repository,
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };
