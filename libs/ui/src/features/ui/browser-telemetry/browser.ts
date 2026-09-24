@@ -15,6 +15,7 @@ import {
   type Correlation,
 } from "@repo/observability";
 import { Crypto, DateTime, Effect, Fiber, Schedule, Schema } from "effect";
+import { clamp } from "es-toolkit";
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
@@ -188,7 +189,7 @@ const observeVitals = (recorder: Recorder): (() => void) => {
       ...documentFields(recorder),
       kind: "vital",
       name: metric.name,
-      value: Math.min(Math.max(metric.value, 0), maximumMeasurement),
+      value: clamp(metric.value, 0, maximumMeasurement),
     });
     recorder.queue.flushInBackground();
   });

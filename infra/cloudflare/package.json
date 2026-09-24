@@ -35,7 +35,8 @@
     "@repo/vite-config": "workspace:*",
     "alchemy": "catalog:",
     "drizzle-orm": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "es-toolkit": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",

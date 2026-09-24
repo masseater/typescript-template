@@ -34,6 +34,7 @@
     "alchemy": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:",
+    "es-toolkit": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
