@@ -1,4 +1,4 @@
-import { Clock, Effect, Encoding } from "effect";
+import { Clock, Effect, Encoding, Redacted } from "effect";
 
 import { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
@@ -37,14 +37,14 @@ function sameDigest(expected: string, candidate: string): boolean {
 }
 
 const signPayload = Effect.fn("signStripePayload")(function* signStripePayload(
-  secret: string,
+  secret: Redacted.Redacted,
   signedPayload: string,
 ) {
   const encoder = new TextEncoder();
   const key = yield* Effect.promise(() =>
     crypto.subtle.importKey(
       "raw",
-      encoder.encode(secret),
+      encoder.encode(Redacted.value(secret)),
       { hash: "SHA-256", name: "HMAC" },
       false,
       ["sign"],
@@ -57,7 +57,7 @@ const signPayload = Effect.fn("signStripePayload")(function* signStripePayload(
 });
 
 const verifyStripeSignature = Effect.fn("verifyStripeSignature")(function* verifyStripeSignature(
-  secret: string,
+  secret: Redacted.Redacted,
   payload: string,
   header: string | null,
 ) {

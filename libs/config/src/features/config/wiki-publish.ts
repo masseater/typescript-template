@@ -1,4 +1,4 @@
-import { Effect, Redacted, Schema } from "effect";
+import { Effect, Schema, type Redacted } from "effect";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
 
@@ -22,7 +22,7 @@ const PrivateKeyPem = Schema.String.check(
 
 const WikiPublishScalars = Schema.Struct({
   [wikiPublishKey.appId]: Schema.optionalKey(GitHubAppId),
-  [wikiPublishKey.privateKey]: Schema.optionalKey(PrivateKeyPem),
+  [wikiPublishKey.privateKey]: Schema.optionalKey(Schema.RedactedFromValue(PrivateKeyPem)),
   [wikiPublishKey.repository]: Schema.optionalKey(GitHubRepository),
 });
 
@@ -54,7 +54,7 @@ const readWikiPublishConfig = Effect.fn("readWikiPublishConfig")(function* readW
   return {
     appId,
     owner,
-    privateKey: Redacted.make(privateKey),
+    privateKey,
     repository: repositoryName,
   } satisfies WikiPublishConfig;
 });

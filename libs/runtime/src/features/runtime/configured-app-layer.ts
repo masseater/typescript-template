@@ -1,7 +1,7 @@
 import { Auth, type AuthFailure } from "@repo/auth";
 import { Database } from "@repo/db";
 import { Telemetry, type TelemetryFlusher, type TelemetryInvalid } from "@repo/observability";
-import { Layer } from "effect";
+import { Layer, Redacted } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
@@ -40,7 +40,7 @@ const configuredAppLayer = (
   const auth = Auth.layer({
     audience: asked.audience,
     baseURL: asked.appConfig.APP_ORIGIN,
-    secret: asked.appConfig.AUTH_SECRET,
+    secret: Redacted.value(asked.appConfig.AUTH_SECRET),
     mail: asked.appConfig,
   }).pipe(Layer.provideMerge(database));
   const otlp =

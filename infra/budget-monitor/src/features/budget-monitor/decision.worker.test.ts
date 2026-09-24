@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { DateTime, Effect } from "effect";
+import { DateTime, Effect, Redacted } from "effect";
 import { FetchHttpClient } from "effect/unstable/http";
 import { HttpResponse, http } from "msw";
 
@@ -66,7 +66,7 @@ const usageFrom = (asked: {
       fetchUsage({
         accountId: asked.accountId,
         observedAt: asked.observedAt,
-        token: "test-token",
+        token: Redacted.make("test-token"),
       }).pipe(Effect.provideService(FetchHttpClient.Fetch, globalThis.fetch)),
     (network) =>
       Effect.sync(() => {

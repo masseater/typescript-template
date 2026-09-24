@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
@@ -15,7 +15,14 @@ const localBindings = {
 describe("readEnvironment", () => {
   describe("local bindings without a release", () => {
     const it = test.extend("localEnvironment", () =>
-      Effect.runPromise(readEnvironment(localBindings)));
+      Effect.runPromise(
+        readEnvironment(localBindings).pipe(
+          Effect.map((environment) => ({
+            ...environment,
+            AUTH_SECRET: Redacted.value(environment.AUTH_SECRET),
+          })),
+        ),
+      ));
 
     it("marks the environment local, names the release local and derives the Mailpit endpoint", ({
       localEnvironment,
@@ -35,7 +42,12 @@ describe("readEnvironment", () => {
         readEnvironment({
           ...localBindings,
           APP_ORIGIN: "https://template-user.local.example.test",
-        }),
+        }).pipe(
+          Effect.map((environment) => ({
+            ...environment,
+            AUTH_SECRET: Redacted.value(environment.AUTH_SECRET),
+          })),
+        ),
       ));
 
     it("is local development", ({ lanEnvironment }) => {
@@ -57,7 +69,12 @@ describe("readEnvironment", () => {
           ...remoteBindings,
           APP_ORIGIN: "https://app.example.test",
           APP_RELEASE: "1.2.3",
-        }),
+        }).pipe(
+          Effect.map((environment) => ({
+            ...environment,
+            AUTH_SECRET: Redacted.value(environment.AUTH_SECRET),
+          })),
+        ),
       );
     });
 
@@ -161,7 +178,12 @@ describe("an OTLP switch beside an endpoint", () => {
         ...localBindings,
         OTLP_ENABLED: "true",
         OTLP_ENDPOINT: localBindings.MAILPIT_URL,
-      }),
+      }).pipe(
+        Effect.map((environment) => ({
+          ...environment,
+          AUTH_SECRET: Redacted.value(environment.AUTH_SECRET),
+        })),
+      ),
     ));
 
   it("is read as it was written", ({ otlpEnvironment }) => {
@@ -186,7 +208,15 @@ const stripeBindings = {
 describe("readStripeConfig", () => {
   describe("test-mode keys on a local origin", () => {
     const it = test.extend("stripeConfig", () =>
-      Effect.runPromise(readStripeConfig(stripeBindings)));
+      Effect.runPromise(
+        readStripeConfig(stripeBindings).pipe(
+          Effect.map((stripeConfig) => ({
+            ...stripeConfig,
+            secretKey: Redacted.value(stripeConfig.secretKey),
+            webhookSecret: Redacted.value(stripeConfig.webhookSecret),
+          })),
+        ),
+      ));
 
     it("is read as a test-mode configuration", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
@@ -205,7 +235,13 @@ describe("readStripeConfig", () => {
           ...stripeBindings,
           APP_ORIGIN: "https://member.example.test",
           STRIPE_SECRET_KEY: "rk_live_placeholder",
-        }),
+        }).pipe(
+          Effect.map((stripeConfig) => ({
+            ...stripeConfig,
+            secretKey: Redacted.value(stripeConfig.secretKey),
+            webhookSecret: Redacted.value(stripeConfig.webhookSecret),
+          })),
+        ),
       ));
 
     it("is read as a live-mode configuration", ({ stripeConfig }) => {
@@ -269,7 +305,12 @@ describe("an analytics measurement id beside a public origin", () => {
         APP_ORIGIN: "https://app.example.test",
         APP_RELEASE: "1.2.3",
         GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
-      }),
+      }).pipe(
+        Effect.map((environment) => ({
+          ...environment,
+          AUTH_SECRET: Redacted.value(environment.AUTH_SECRET),
+        })),
+      ),
     );
   });
 
@@ -292,7 +333,12 @@ describe("an analytics measurement id on localhost", () => {
       readEnvironment({
         ...localBindings,
         GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-LOCALMEASURE",
-      }),
+      }).pipe(
+        Effect.map((environment) => ({
+          ...environment,
+          AUTH_SECRET: Redacted.value(environment.AUTH_SECRET),
+        })),
+      ),
     ));
 
   it("still marks the environment local and keeps the id available to the reader", ({

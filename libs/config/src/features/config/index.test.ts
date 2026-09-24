@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Redacted, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
@@ -59,7 +59,11 @@ const brokenBindings = [
 
 describe("readConfig", () => {
   const it = test.extend("workerConfig", () =>
-    Effect.runPromise(readConfig({ ...local, ...workerBindings })));
+    Effect.runPromise(
+      readConfig({ ...local, ...workerBindings }).pipe(
+        Effect.map((config) => ({ ...config, AUTH_SECRET: Redacted.value(config.AUTH_SECRET) })),
+      ),
+    ));
 
   it("accepts the bindings the worker declares", ({ workerConfig }) => {
     expect(workerConfig).toStrictEqual({

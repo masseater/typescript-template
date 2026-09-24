@@ -1,4 +1,4 @@
-import { Effect, Predicate, Schema } from "effect";
+import { Effect, Predicate, Redacted, Schema } from "effect";
 
 import { loopbackHosts, mailpitSendPath } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
@@ -33,6 +33,7 @@ const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u))
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
+const NonEmptySecret = Schema.RedactedFromValue(NonEmpty);
 
 const distinctOrigins = (origins: readonly string[]): boolean =>
   new Set(origins).size === origins.length;
@@ -56,15 +57,15 @@ const appEnvKey = {
 const Scalars = Schema.Struct({
   [appEnvKey.appOrigin]: Origin,
   [appEnvKey.appRelease]: Schema.optionalKey(Release),
-  [appEnvKey.authSecret]: AuthSecret,
+  [appEnvKey.authSecret]: Schema.RedactedFromValue(AuthSecret),
   [appEnvKey.emailFrom]: Email,
   [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
-  [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
   [appEnvKey.googleAnalyticsMeasurementId]: Schema.optionalKey(GoogleAnalyticsMeasurementId),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
-  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });
@@ -101,10 +102,12 @@ const AiBindings = Schema.Struct({
 
 const stripeKeyModes = ["live", "test"] as const;
 type StripeKeyMode = (typeof stripeKeyModes)[number];
-const StripeSecretKey = Schema.String.check(
-  Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u),
+const StripeSecretKey = Schema.RedactedFromValue(
+  Schema.String.check(Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u)),
 );
-const StripeWebhookSecret = Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u));
+const StripeWebhookSecret = Schema.RedactedFromValue(
+  Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u)),
+);
 const StripePriceId = Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u));
 const StripeScalars = Schema.Struct({
   APP_ORIGIN: Origin,
@@ -113,8 +116,8 @@ const StripeScalars = Schema.Struct({
   STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
 });
 
-const stripeKeyMode = (secretKey: string): StripeKeyMode =>
-  secretKey.split("_")[1] === "live" ? "live" : "test";
+const stripeKeyMode = (secretKey: Redacted.Redacted): StripeKeyMode =>
+  Redacted.value(secretKey).split("_")[1] === "live" ? "live" : "test";
 
 const isLocalLanHostname = (hostname: string): boolean =>
   /^[a-z0-9-]+\.local$/u.test(hostname) || /^[a-z0-9-]+\.local\.example\.test$/u.test(hostname);
@@ -205,7 +208,7 @@ type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
 const SiteEnvironment = Schema.Struct({
   [appEnvKey.appRelease]: Release,
-  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),

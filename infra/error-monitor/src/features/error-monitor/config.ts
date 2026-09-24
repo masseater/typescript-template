@@ -15,7 +15,7 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
 
 const ErrorMonitorEnvironment = Schema.Struct({
   [errorMonitorEnv.accountId]: CloudflareId,
-  [errorMonitorEnv.observabilityToken]: CloudflareApiToken,
+  [errorMonitorEnv.observabilityToken]: Schema.RedactedFromValue(CloudflareApiToken),
 });
 
 type ErrorMonitorEnv = typeof ErrorMonitorEnvironment.Encoded;
