@@ -660,6 +660,7 @@ const lintOptions = {
                 from: "package",
                 name: [
                   "Codec",
+                  "Command",
                   "Deferred",
                   "Duration",
                   "Effect",
