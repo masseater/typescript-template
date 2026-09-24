@@ -270,7 +270,6 @@ export {
   readList,
   readPages,
   readRequired,
-  readResource,
   readVerdict,
   requestReason,
   unreadableState,
