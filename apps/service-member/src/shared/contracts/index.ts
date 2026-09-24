@@ -12,6 +12,7 @@ export {
   InvoiceList,
   OfferView,
   PlanView,
+  QuoteList,
   UsageView,
   WebhookReceipt,
   readCheckoutReturn,
