@@ -36,7 +36,6 @@ describe("DECLARED_RULE_SETS", () => {
     it("carries the chain rule together with the clause it feeds", ({ rulesOfTheSet }) => {
       expect(rulesOfTheSet).toStrictEqual([
         "no-promise-chain--use-async-await",
-        "no-empty-catch--throw-or-handle",
         "no-silent-catch--rethrow-or-handle",
         "no-floating-promise--await-the-result",
       ]);
