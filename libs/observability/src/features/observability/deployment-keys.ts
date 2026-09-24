@@ -5,6 +5,7 @@ const deploymentKey = {
   budgetJpy: "BUDGET_JPY",
   cloudflareAccountId: "CLOUDFLARE_ACCOUNT_ID",
   cloudflareApiToken: "CLOUDFLARE_API_TOKEN",
+  cloudflareWorkersSubdomain: "CLOUDFLARE_WORKERS_SUBDOMAIN",
   cloudflareZoneId: "CLOUDFLARE_ZONE_ID",
   mailFrom: "TEMPLATE_MAIL_FROM",
   otlpAuthorization: "TEMPLATE_OTLP_AUTHORIZATION",
@@ -21,6 +22,7 @@ const deploymentKeys = [
   deploymentKey.budgetJpy,
   deploymentKey.cloudflareAccountId,
   deploymentKey.cloudflareApiToken,
+  deploymentKey.cloudflareWorkersSubdomain,
   deploymentKey.cloudflareZoneId,
   deploymentKey.appDomain,
   deploymentKey.authSecret,
@@ -37,7 +39,11 @@ const optionalDeploymentKeys = [
   deploymentKey.otlpEndpoint,
 ] as const;
 const privateDeploymentKeys: readonly string[] = [
-  ...deploymentKeys.filter((settingName) => settingName !== deploymentKey.budgetJpy),
+  ...deploymentKeys.filter(
+    (settingName) =>
+      settingName !== deploymentKey.budgetJpy &&
+      settingName !== deploymentKey.cloudflareWorkersSubdomain,
+  ),
   ...optionalDeploymentKeys,
 ];
 export { deploymentKey, deploymentKeys, optionalDeploymentKeys, privateDeploymentKeys };

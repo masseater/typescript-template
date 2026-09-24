@@ -6,7 +6,6 @@ import {
   endpoint,
   readList,
   readRequired,
-  readResource,
 } from "./account-read.ts";
 
 import type { AccountAccess } from "./account-read.ts";
@@ -15,9 +14,6 @@ const SECRETS_STORE_PAGE_SIZE = 100;
 
 const Domains = Schema.Struct({
   result: Schema.Array(Schema.Struct({ hostname: Schema.String, service: Schema.String })),
-});
-const Subdomain = Schema.Struct({
-  result: Schema.Struct({ subdomain: Schema.optional(Schema.String) }),
 });
 const VerifiedToken = Schema.Struct({ result: Schema.Struct({ id: Schema.String }) });
 const Group = Schema.Struct({
@@ -60,17 +56,6 @@ const attachedService = Effect.fn("attachedService")(function* attachedService(
     Domains,
   );
   return listed.result.find((domain) => domain.hostname === hostname)?.service;
-});
-
-const workersSubdomain = Effect.fn("workersSubdomain")(function* workersSubdomain(
-  access: AccountAccess,
-) {
-  const found = yield* readResource(
-    access,
-    endpoint`accounts/${access.accountId}/workers/subdomain`,
-    Subdomain,
-  );
-  return found?.result.subdomain;
 });
 
 const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
@@ -118,5 +103,4 @@ export {
   recordsPresent,
   secretsStoreCount,
   workerNames,
-  workersSubdomain,
 };
