@@ -23,15 +23,16 @@ const ghCliToken = Effect.fn("ghCliToken")(function* ghCliToken() {
 
 const credentials = Layer.unwrap(Effect.map(ghCliToken(), (token) => GitHub.fromToken(token)));
 
-const providers = Layer.effect(
-  GitHub.Providers,
-  collection([GitHub.Ruleset, GitHub.Secret, GitHubApp]),
-).pipe(
-  Layer.provide(
-    Layer.mergeAll(GitHub.RulesetProvider(), GitHub.SecretProvider(), gitHubAppProvider()),
-  ),
+const rulesetProviders = Layer.effect(GitHub.Providers, collection([GitHub.Ruleset])).pipe(
+  Layer.provide(GitHub.RulesetProvider()),
   Layer.provideMerge(credentials),
   Layer.orDie,
 );
 
-export { providers };
+const appProviders = Layer.effect(GitHub.Providers, collection([GitHub.Secret, GitHubApp])).pipe(
+  Layer.provide(Layer.merge(GitHub.SecretProvider(), gitHubAppProvider())),
+  Layer.provideMerge(credentials),
+  Layer.orDie,
+);
+
+export { appProviders, rulesetProviders };

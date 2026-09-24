@@ -50,13 +50,14 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_OTLP_ENDPOINT`: https の URL。置いたときだけトレースとログをここへ送ります。
     - `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID`: `G-` で始まる Google Analytics の測定 ID。
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
-    - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。手では置かず、下の `infra/github` の適用で作ります。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。
+    - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。手では置かず、下の `infra/wiki-publisher` の適用で作ります。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。
 - 検索エンジン設定:
   - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/features/runtime/responses.ts`）。
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。
 - Alchemy によるインフラ適用:
   - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。
-  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールと wiki 公開用の GitHub App を作ります。
+  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールを作ります。
+  - `infra/wiki-publisher` の `vp run plan` と `vp run deploy` は、同じログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。
     - 初回の deploy は端末に `http://127.0.0.1:<port>/` を出して待ちます。ブラウザで開くと GitHub の App 作成画面へ進むので、作成を押します。App の名前は `{TEMPLATE_PREFIX} wiki publisher` で、権限は Contents と Pull requests の書き込みだけです。
     - 作成の後はインストール画面へ移ります。このリポジトリを選んでインストールすると、deploy が App ID、秘密鍵、`owner/repository` を Environment `production` の secret に書き込みます。
     - 作成画面で 15 分待っても作成されないときは、何も作らずに deploy が失敗します。もう一度 deploy します。

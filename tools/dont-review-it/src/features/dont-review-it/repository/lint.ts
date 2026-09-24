@@ -904,7 +904,7 @@ const lintOptions = {
       },
     },
     {
-      files: ["infra/github/**"],
+      files: ["infra/github/**", "infra/wiki-publisher/**"],
       rules: {
         "new-cap": [
           LINT_SEVERITY.ERROR,
