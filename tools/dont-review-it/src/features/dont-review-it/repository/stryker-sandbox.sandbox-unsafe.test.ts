@@ -8,7 +8,7 @@ import {
   sandboxUnsafeTestPattern,
   sandboxUnsafeTests,
 } from "./stryker-sandbox-test-fixture.ts";
-import configuration from "./stryker-test-fixture.ts";
+import configuration from "./stryker.config.ts";
 
 const qualityDirectory = filePathOf(new URL(".", import.meta.url));
 
