@@ -77,18 +77,13 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),
   ];
-  const filesystem = yield* FileSystem.FileSystem;
   const runnerTemp = environment["RUNNER_TEMP"];
   const filename =
     destination ??
     (runnerTemp === undefined
-      ? path.join(
-          yield* filesystem
-            .makeTempDirectory({ prefix: "template-cloudflare-" })
-            .pipe(Effect.mapError(unwritable)),
-          "cloudflare.env",
-        )
+      ? yield* new PrepareCiEnvFailure({ code: "ci_env_incomplete", keys: ["RUNNER_TEMP"] })
       : path.join(runnerTemp, "template-cloudflare", "cloudflare.env"));
+  const filesystem = yield* FileSystem.FileSystem;
   const directory = path.dirname(filename);
   yield* filesystem
     .makeDirectory(directory, { mode: 0o700, recursive: true })

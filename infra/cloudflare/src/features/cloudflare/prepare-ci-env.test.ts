@@ -73,6 +73,16 @@ it.effect("writes an owner-only env file from required deployment keys", () =>
   }).pipe(Effect.scoped),
 );
 
+it.effect("refuses to pick a secrets location outside the runner temp directory", () =>
+  Effect.gen(function* program() {
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const failure = yield* writeCiSecretsFile(required).pipe(Effect.flip);
+    assert.deepStrictEqual([failure.code, failure.keys], ["ci_env_incomplete", ["RUNNER_TEMP"]]);
+  }),
+);
+
 it.effect("reports unconfigured when every deployment key is absent", () =>
   Effect.gen(function* program() {
     const directory = yield* temporaryDirectory();
