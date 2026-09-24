@@ -1,14 +1,19 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { repositoryRoot } from "@repo/config/repository-root";
+import { Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { parseBaseline, serializeBaseline } from "./effect-typecheck-baseline.ts";
 import { compileWorkspace } from "./effect-typecheck-compiler.ts";
 import { parseTscOutput } from "./effect-typecheck-diagnostics.ts";
 import { workspaceOf } from "./effect-typecheck-path.ts";
-import { runTypecheckGate } from "./effect-typecheck.ts";
+import { baselinePath, runTypecheckGate } from "./effect-typecheck.ts";
+import { filesystem, paths } from "./host.ts";
+
+class CompilerMissing extends Schema.TaggedError<CompilerMissing>()("CompilerMissing", {}) {
+  override get message(): string {
+    return "typecheck gate: compiler not found";
+  }
+}
 
 const assignabilityDiagnostic =
   "value.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.\n";
@@ -24,48 +29,42 @@ const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as
 describe("effect typecheck gate", () => {
   const it = test
     .extend("newDiagnostic", () =>
-      runTypecheckGate({ compilerTranscript: assignabilityDiagnostic, status: 1 }))
+      Effect.runPromise(
+        runTypecheckGate({ compilerTranscript: assignabilityDiagnostic, status: 1 }),
+      ))
     .extend("snapshottedDiagnostic", () =>
-      runTypecheckGate({
-        baselineText: assignabilityBaseline,
-        compilerTranscript: assignabilityDiagnostic,
-        status: 1,
-      }),
+      Effect.runPromise(
+        runTypecheckGate({
+          baselineText: assignabilityBaseline,
+          compilerTranscript: assignabilityDiagnostic,
+          status: 1,
+        }),
+      ),
     )
-    .extend("repositoryWorkspace", () => workspaceOf(repositoryRoot, repositoryRoot))
+    .extend("repositoryWorkspace", () =>
+      Effect.runPromise(workspaceOf(repositoryRoot, repositoryRoot)),
+    )
     .extend("packageWorkspace", () =>
-      workspaceOf(path.join(repositoryRoot, "libs/vite-config"), repositoryRoot),
+      Effect.runPromise(
+        workspaceOf(paths.join(repositoryRoot, "libs/vite-config"), repositoryRoot),
+      ),
     )
-    .extend("outsideWorkspaceMessage", () => {
-      try {
-        workspaceOf(path.join(repositoryRoot, ".."), repositoryRoot);
-        throw new Error("workspaceOf accepted a directory outside the repository");
-      } catch (workspaceFailure: unknown) {
-        return workspaceFailure instanceof Error ? workspaceFailure.message : "unknown failure";
-      }
-    })
+    .extend("outsideWorkspaceMessage", () =>
+      Effect.runPromise(
+        workspaceOf(paths.join(repositoryRoot, ".."), repositoryRoot).pipe(
+          Effect.flip,
+          Effect.map((outside) => outside.message),
+        ),
+      ),
+    )
     .extend("canonicalBaseline", () =>
-      serializeBaseline(
-        parseBaseline(
-          readFileSync(
-            path.join(
-              repositoryRoot,
-              "libs/vite-config/src/features/vite-config/effect-typecheck-baseline.json",
-            ),
-            "utf-8",
-          ),
+      Effect.runPromise(
+        Effect.map(filesystem.readFileString(baselinePath), (baselineText) =>
+          serializeBaseline(parseBaseline(baselineText)),
         ),
       ),
     )
-    .extend("committedBaseline", () =>
-      readFileSync(
-        path.join(
-          repositoryRoot,
-          "libs/vite-config/src/features/vite-config/effect-typecheck-baseline.json",
-        ),
-        "utf-8",
-      ),
-    )
+    .extend("committedBaseline", () => Effect.runPromise(filesystem.readFileString(baselinePath)))
     .extend("looseDiagnostic", () =>
       parseTscOutput("error TS2688: Cannot find type definition file for 'node'.\n"),
     )
@@ -75,80 +74,88 @@ describe("effect typecheck gate", () => {
       ),
     )
     .extend("locatedCompiler", () =>
-      compileWorkspace({
-        cwd: path.join(repositoryRoot, "libs/vite-config"),
-        locate: () => {
-          throw new Error("typecheck gate: compiler not found");
-        },
-      }),
+      Effect.runPromise(
+        compileWorkspace({
+          cwd: paths.join(repositoryRoot, "libs/vite-config"),
+          locate: Effect.fail(new CompilerMissing()),
+        }),
+      ),
     )
     .extend("unknownFlag", () =>
-      runTypecheckGate({ gateArguments: ["--rewrite"], compilerTranscript: "", status: 0 }),
+      Effect.runPromise(
+        runTypecheckGate({ gateArguments: ["--rewrite"], compilerTranscript: "", status: 0 }),
+      ),
     )
     .extend("silentCompiler", () =>
-      runTypecheckGate({ compilerTranscript: "effect-tsgo: not found", status: 1 }),
+      Effect.runPromise(
+        runTypecheckGate({ compilerTranscript: "effect-tsgo: not found", status: 1 }),
+      ),
     )
     .extend("portableDiagnostic", () => {
       const checkout = "/checkout";
       const compilerTranscript = `src/monitor-fixture.ts(48,7): error TS4023: Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "${checkout}/libs/monitor/src/index" but cannot be named.\n`;
-      return runTypecheckGate({
-        cwd: checkout,
-        repositoryRootPath: checkout,
-        compilerTranscript,
-        baselineText: serializeBaseline({
-          version: 1,
-          workspaces: {
-            ".": [
-              {
-                file: "src/monitor-fixture.ts",
-                code: "TS4023",
-                message:
-                  "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
-                count: 1,
-              },
-            ],
-          },
+      return Effect.runPromise(
+        runTypecheckGate({
+          cwd: checkout,
+          repositoryRootPath: checkout,
+          compilerTranscript,
+          baselineText: serializeBaseline({
+            version: 1,
+            workspaces: {
+              ".": [
+                {
+                  file: "src/monitor-fixture.ts",
+                  code: "TS4023",
+                  message:
+                    "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
+                  count: 1,
+                },
+              ],
+            },
+          }),
         }),
-      });
+      );
     })
     .extend("disappearedDiagnostic", () =>
-      runTypecheckGate({ compilerTranscript: "", status: 0, baselineText: assignabilityBaseline }),
+      Effect.runPromise(
+        runTypecheckGate({
+          compilerTranscript: "",
+          status: 0,
+          baselineText: assignabilityBaseline,
+        }),
+      ),
     )
     .extend("snapshottedExportCodes", () =>
-      Object.values(
-        parseBaseline(
-          readFileSync(
-            path.join(
-              repositoryRoot,
-              "libs/vite-config/src/features/vite-config/effect-typecheck-baseline.json",
-            ),
-            "utf-8",
-          ),
-        ).workspaces,
-      )
-        .flat()
-        .map((diagnostic) => diagnostic.code)
-        .filter((code) => missingExportCodes.some((missingCode) => missingCode === code)),
+      Effect.runPromise(
+        Effect.map(filesystem.readFileString(baselinePath), (baselineText) =>
+          Object.values(parseBaseline(baselineText).workspaces)
+            .flat()
+            .map((diagnostic) => diagnostic.code)
+            .filter((code) => missingExportCodes.some((missingCode) => missingCode === code)),
+        ),
+      ),
     )
     .extend("missingExportDiagnostic", () => {
       const compilerTranscript =
         "src/index.ts(1,10): error TS2305: Module '\"./missing\"' has no exported member 'Gone'.\n";
-      return runTypecheckGate({
-        compilerTranscript,
-        baselineText: serializeBaseline({
-          version: 1,
-          workspaces: {
-            ".": [
-              {
-                file: "src/index.ts",
-                code: "TS2305",
-                message: "Module '\"./missing\"' has no exported member 'Gone'.",
-                count: 1,
-              },
-            ],
-          },
+      return Effect.runPromise(
+        runTypecheckGate({
+          compilerTranscript,
+          baselineText: serializeBaseline({
+            version: 1,
+            workspaces: {
+              ".": [
+                {
+                  file: "src/index.ts",
+                  code: "TS2305",
+                  message: "Module '\"./missing\"' has no exported member 'Gone'.",
+                  count: 1,
+                },
+              ],
+            },
+          }),
         }),
-      });
+      );
     });
 
   it("fails a new assignability error that is not on the snapshot", ({ newDiagnostic }) => {
@@ -177,7 +184,7 @@ describe("effect typecheck gate", () => {
 
   it("rejects a directory outside the repository", ({ outsideWorkspaceMessage }) => {
     expect(outsideWorkspaceMessage).toBe(
-      `${path.resolve(repositoryRoot, "..")} is outside ${path.resolve(repositoryRoot)}`,
+      `${paths.resolve(repositoryRoot, "..")} is outside ${paths.resolve(repositoryRoot)}`,
     );
   });
 

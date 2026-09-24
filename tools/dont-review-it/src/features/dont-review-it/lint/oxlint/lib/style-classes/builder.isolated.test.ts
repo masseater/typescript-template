@@ -1,6 +1,3 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync } from "node:fs";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
@@ -93,9 +90,14 @@ layer(NodeServices.layer)("loadStyleClassIndex", (it) => {
         paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
         ".ghost {\n  color: red;\n}\n",
       );
+      const listedSources = yield* Effect.promise(() =>
+        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
+          "../canonical-values/source-files.ts",
+        ),
+      );
       // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a style sheet is still there when the boundary reads it is settled between the listing and the read, both of which happen inside the boundary this spec replaces
       vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(VANISHED_FILE_NAME) ? null : readFileSync(path, "utf8"),
+        path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
       );
       return loadStyleClassIndex({ repositoryRoot });
     });
