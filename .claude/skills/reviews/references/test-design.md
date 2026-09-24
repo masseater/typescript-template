@@ -63,3 +63,81 @@ expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effe
 - 変更で不要になった fixture、mock、helper も削除する。
 - 残すかどうかは、そのテストが失敗したときにどの仕様、振る舞い、制約が破れたかを説明できるかで決める。「現在こう書かれている」としか説明できないなら不要。互換性、不変条件、意図的な禁止のように、その状態の維持自体が仕様なら残す。
 - カバレッジ不足だけを理由に、実装詳細を固定するテストを足さない。
+
+## 書き方の例
+
+指示なしで頼むと、次の形が出てくる。このリポジトリの lint はこの形を通さない。
+
+```ts
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
+import { openPullRequestOf, type CommandRunner } from "./read-open-pr.ts";
+
+describe("openPullRequestOf", () => {
+  let run: ReturnType<typeof vi.fn<CommandRunner>>;
+
+  beforeEach(() => {
+    run = vi.fn<CommandRunner>();
+  });
+
+  it("parses an open pull request", () => {
+    run.mockReturnValue({
+      status: 0,
+      stdout:
+        '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":3,"url":"https://example.com/3"}',
+    });
+    const result = openPullRequestOf("/work", run);
+    expect(result).toBeDefined();
+    expect(result?.number).toBe(3);
+    expect(run).toHaveBeenCalledWith({
+      cwd: "/work",
+      executable: "gh",
+      handed: ["pr", "view", "--json", "number,url,baseRefName,mergeStateStatus"],
+    });
+  });
+
+  it("returns undefined when gh fails", () => {
+    run.mockReturnValue({ status: 1, stdout: "no pull requests found" });
+    expect(openPullRequestOf("/work", run)).toBeUndefined();
+  });
+});
+```
+
+同じ対象を、このリポジトリでは次のように書く（`tools/ai-native/src/features/ai-native/sync-base/read-open-pr.test.ts`）。
+
+```ts
+import { describe, expect, test } from "vite-plus/test";
+
+import { openPullRequestOf } from "./read-open-pr.ts";
+
+describe("openPullRequestOf", () => {
+  describe("a successful gh pr view of an open pull request", () => {
+    const it = test.extend("thePullRequest", () =>
+      openPullRequestOf("/work", () => ({
+        status: 0,
+        stdout:
+          '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":3,"url":"https://example.com/3"}',
+      })),
+    );
+
+    it("returns the parsed pull request", ({ thePullRequest }) => {
+      expect(thePullRequest).toStrictEqual({
+        baseRefName: "main",
+        mergeStateStatus: "BEHIND",
+        number: 3,
+        url: "https://example.com/3",
+      });
+    });
+  });
+
+  describe("a gh pr view that fails", () => {
+    const it = test.extend("thePullRequestWhenGhFails", () =>
+      openPullRequestOf("/work", () => ({ status: 1, stdout: "no pull requests found" })),
+    );
+
+    it("returns nothing", ({ thePullRequestWhenGhFails }) => {
+      expect(thePullRequestWhenGhFails).toBe(undefined);
+    });
+  });
+});
+```
