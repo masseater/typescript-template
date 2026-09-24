@@ -4,16 +4,12 @@
   "ignoreDependencies": [
     "@effect/tsgo",
     "@scalar/api-reference",
-    "@shadcn/lint",
     "@storybook/addon-mcp",
     "@tanstack/intent",
     "agent-browser",
-    "jiti",
     "oxc-transform-react",
     "playwright",
-    "portless",
-    "steiger",
-    "zod"
+    "portless"
   ],
   "usedClassMembers": [
     "fetch",

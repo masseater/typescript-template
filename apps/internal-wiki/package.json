@@ -31,8 +31,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "source-map": "0.8.0",
-    "unist-util-visit-parents": "6.0.2",
-    "zod": "catalog:"
+    "unist-util-visit-parents": "6.0.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
@@ -46,7 +45,6 @@
     "@types/react-dom": "catalog:",
     "remark": "catalog:",
     "remark-mdx": "catalog:",
-    "steiger": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

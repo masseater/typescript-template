@@ -48,7 +48,6 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "msw": "catalog:",
-    "steiger": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
