@@ -1,4 +1,4 @@
-import { Effect, Path } from "effect";
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
@@ -22,11 +22,7 @@ const streamConsumers = process.getBuiltinModule("stream/consumers") as {
   readonly text: (readable: unknown) => Promise<string>;
 };
 
-const CLI_PATH = Effect.runSync(
-  Effect.flatMap(Path.Path, (path) => path.fromFileUrl(new URL("./cli.ts", import.meta.url))).pipe(
-    Effect.provide(Path.layer),
-  ),
-);
+const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
 
 const TWO_STREAM_SCRIPT =
   "process.stdout.write('alpha\\nbeta\\n'); process.stderr.write('gamma\\ndelta\\n');";
