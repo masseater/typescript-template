@@ -4,40 +4,23 @@ description: 予算か人を割くと決めてから、範囲と期限と予算�
 ---
 
 - 始めるきっかけ: 予算か人を割くと決めたとき
-- 終わる条件: 範囲、期限、予算が文書にあり、決める人が承認している
+- 終わる条件: [サービスの定義](/decisions/service) の各節が埋まり、決める人が承認している
 
-## 統制
+この場面で決めたことの多くは [サービスの定義](/decisions/service) に入ります。作り始める前に決めておかないと、作っている途中で範囲と期限が揺れます。
 
-- 品質の定義と観測の方法を決めます。機能ごとに、良い状態と、それを何で測るかを書きます。例: [SLI / SLO](/observability/sli-slo)
-- 変更の審査の手順を決めます。誰が、何を見て、どこで決めるかです。使う場面は [変更や問題が起きたとき](/checklists/change) です。
-- 決めたことの置き場所を決めます。仕様は wiki（`apps/internal-dashboard/content/docs`）、経緯はコミットログと issue に置きます。
+## 最初に決めること
 
-## 範囲
+- 決める人と関係者、報告の頻度を決めます。書く場所: [サービスの定義](/decisions/service#決める人と関係者)
+- サービスの性質と規模をまとめます。DB と決済代行業者の判断の前提になります。書く場所: [サービスの定義](/decisions/service#性質と規模)
+- 最初の公開に入れるものと入れないものを決めます。書く場所: [サービスの定義](/decisions/service#最初の公開の範囲)。入れるものは [データモデル](/data-model/overview) と [ページ構成](/pages/internal-dashboard-layout) にも反映します。
 
-- サービスの性質と規模をまとめます。[使い始める手順](/getting-started/first-steps) の 1. がこの成果物です。
-- 最初の公開に入れるものと入れないものを決め、[データモデル](/data-model/overview) と [ページ構成](/pages/internal-dashboard-layout) に反映します。
-- 受け入れの条件を決めます。何が満たされたら公開してよいかです。
+## 作り始める前に決めること
 
-## 日程
-
-- 公開日を決め、そこから逆算した節目を [GitHub の milestone](https://docs.github.com/ja/issues/using-labels-and-milestones-to-track-work/about-milestones) にします。
-
-## 資金
-
-- 固定費と変動費を見積もり、月の予算と予備費を決めます。予算は [GitHub Environment](https://docs.github.com/ja/actions/deployment/targeting-different-environments/using-environments-for-deployment) に入れ、超えそうなときは予算監視が警告します。入れるキーは [使い始める手順](/getting-started/first-steps) の 3. にあります。
-- 収益の見込みと、赤字を続けてよい期間を決めます。
-
-## 関係者
-
-- 関係者の一覧と連絡先を作ります。障害と予算の警告の宛先も GitHub Environment に入れます。
-- 誰に、何を、どの頻度で報告するかを決めます。
-
-## 資源
-
-- 人、外注、外部サービスを決め、それぞれのアカウントの持ち主を決めます。
-- 足りない技能を、採用、外注、学習のどれで埋めるかを決めます。
-
-## リスク
-
-- 脅威と機会を挙げ、1 件ずつ対応と担当を決めます。issue にリスク用のラベルを付けて並べ、これをリスクの一覧にします。
-- 本番のデータが入ってからでは戻しにくいものを先に決めます。DB の選択は [使い始める手順](/getting-started/first-steps) の 4. にあります。
+- 受け入れの条件を決めます。何が満たされたら公開してよいかです。書く場所: [サービスの定義](/decisions/service#受け入れの条件)
+- 品質の定義と観測の方法を決めます。機能ごとの良い状態と、その測り方です。書く場所: [サービスの定義](/decisions/service#品質の定義)
+- 公開日と、そこから逆算した節目を決めます。書く場所: [サービスの定義](/decisions/service#公開日と節目) と [GitHub の milestone](https://docs.github.com/ja/issues/using-labels-and-milestones-to-track-work/about-milestones)
+- 固定費と変動費を見積もります。そのうえで月の予算と予備費、赤字を続けてよい期間を決めます。書く場所: [サービスの定義](/decisions/service#予算)
+- 人、外注、外部サービスと、それぞれのアカウントの持ち主を決めます。足りない技能を採用、外注、学習のどれで埋めるかも決めます。書く場所: [事業の決めごと](/decisions/business#ドメインとアカウント)
+- 変更の審査の手順を決めます。誰が何を見てどこで決めるかです。使う場面は [変更や問題が起きたとき](/checklists/change) です。書く場所: [サービスの定義](/decisions/service#決める人と関係者)
+- 脅威と機会を挙げ、1 件ずつ対応と担当を決めます。書く場所: リスク用のラベルを付けた issue。そのラベルの issue の一覧がリスクの一覧です。
+- 利用者間のメッセージや送金のように、届出や許可が要りうるものが範囲に入るかを確かめます。項目は [ビジネス面のチェックリスト](/getting-started/business-checklist) の「やると決めたとき」にあります。書く場所: [事業の決めごと](/decisions/business#法令と届出)
