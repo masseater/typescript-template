@@ -11,6 +11,7 @@ import {
 import { logAt } from "@repo/observability";
 import { DateTime, Effect, Option, Schema } from "effect";
 
+import { meterAiTurn } from "#shared/billing/index.ts";
 import { assembleProfileLayout } from "#shared/profile-layout/assembler.ts";
 import { writeSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { viewOf } from "./contracts.ts";
@@ -76,14 +77,19 @@ const current = Effect.fn("interview.current")(function* current(userId: string)
 const understood = Effect.fn("interview.understand")(function* understood(
   state: InterviewState,
   utterance: MemberUtterance,
-  userId: string,
+  turn: Readonly<{ userId: string; version: number }>,
 ) {
   if (!needsModel(utterance)) {
     return { source: "rules" } satisfies Reading;
   }
-  yield* countInterviewTurn(userId, dailyModelTurns);
+  yield* countInterviewTurn(turn.userId, dailyModelTurns);
   const interviewer = yield* Interviewer;
-  return yield* interviewer.understand(state, spoken(utterance));
+  const reading = yield* interviewer.understand(state, spoken(utterance));
+  yield* meterAiTurn({
+    identifier: `interview:${turn.userId}:${turn.version}`,
+    memberId: turn.userId,
+  });
+  return reading;
 });
 
 const openInterview = Effect.fn("interview.open")(function* openInterview(userId: string) {
@@ -99,7 +105,10 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
   if (!accepts(state, utterance)) {
     return yield* new TurnRejected();
   }
-  const { source, understanding }: Reading = yield* understood(state, utterance, userId);
+  const { source, understanding }: Reading = yield* understood(state, utterance, {
+    userId,
+    version,
+  });
   const next = advance(state, utterance, understanding);
   const view = yield* replace(userId, version, { state: next });
   yield* logAt("Info", {

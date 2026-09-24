@@ -35,6 +35,7 @@ type App = ReturnType<typeof billingApp>;
 const origin = origins[APPLICATION.user];
 const stripeApi = "https://api.stripe.com/v1";
 const priceId = "price_TestMonthly";
+const meteredPriceId = "price_TestMetered";
 const webhookSecret = "whsec_testsecret";
 const checkoutUrl = "https://checkout.stripe.com/c/pay/cs_test_session";
 const portalUrl = "https://billing.stripe.com/p/session/test_portal";
@@ -60,6 +61,7 @@ function billingApp() {
     APP_ORIGIN: origin,
     AUTH_SECRET: authTestSecret,
     STRIPE_AUTOMATIC_TAX: "true",
+    STRIPE_METERED_PRICE_ID: meteredPriceId,
     STRIPE_PRICE_ID: priceId,
     STRIPE_SECRET_KEY: "sk_test_placeholder",
     STRIPE_TRIAL_PERIOD_DAYS: String(trialPeriodDays),
@@ -389,6 +391,7 @@ describe("billing api", () => {
       expect(first).toMatchObject({
         "automatic_tax[enabled]": "true",
         customer_email: "member@example.com",
+        "line_items[1][price]": meteredPriceId,
         "subscription_data[trial_period_days]": String(trialPeriodDays),
         "subscription_data[trial_settings][end_behavior][missing_payment_method]": "cancel",
         "tax_id_collection[enabled]": "true",
