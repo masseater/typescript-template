@@ -21,6 +21,7 @@ import type { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
 const stripeApi = "https://api.stripe.com/v1";
 const patience = "15 seconds";
+const millisecondsPerSecond = 1000;
 const checkoutIntegration = "member-subscription-qhzvtkdw";
 
 const StripeEvent = Schema.Struct({
@@ -93,7 +94,12 @@ interface StripeShape {
   readonly offer: Effect.Effect<Offer, StripeFailure>;
   readonly payByInvoice: (subscriptionId: string) => Effect.Effect<void, StripeFailure>;
   readonly reportUsage: (
-    usage: Readonly<{ customerId: string; identifier: string; quantity: number }>,
+    usage: Readonly<{
+      customerId: string;
+      identifier: string;
+      occurredAt: Date;
+      quantity: number;
+    }>,
   ) => Effect.Effect<void, StripeFailure>;
   readonly readEvent: (
     payload: string,
@@ -239,6 +245,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
           identifier: usage.identifier,
           "payload[stripe_customer_id]": usage.customerId,
           "payload[value]": String(usage.quantity),
+          timestamp: String(Math.floor(usage.occurredAt.getTime() / millisecondsPerSecond)),
         }),
         `usage:${usage.identifier}`,
       ).pipe(Effect.asVoid),
