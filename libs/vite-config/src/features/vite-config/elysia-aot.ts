@@ -1,5 +1,4 @@
 import { registerHooks } from "node:module";
-import { fileURLToPath } from "node:url";
 
 import { Effect, Ref, Result, Schema } from "effect";
 import { aot } from "elysia/plugin/aot/vite";
@@ -9,7 +8,7 @@ import { paths } from "./host.ts";
 
 import type { Plugin } from "vite-plus";
 
-const elysiaEntry = fileURLToPath(import.meta.resolve("elysia"));
+const elysiaEntry = Effect.runSync(paths.fromFileUrl(new URL(import.meta.resolve("elysia"))));
 
 registerHooks({ load, resolve });
 

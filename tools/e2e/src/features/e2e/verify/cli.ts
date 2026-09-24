@@ -1,36 +1,36 @@
 #!/usr/bin/env node
 
-import { parseArgs } from "node:util";
-
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli } from "@repo/cli";
 import { ROLE } from "@repo/config";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
 
 import { resolveVerifyEnvironment, VerifyEnvironment } from "./environments.ts";
 import { failure } from "./failure.ts";
 import { verifyMember } from "./member.ts";
 
-const { positionals, values } = parseArgs({
-  allowPositionals: true,
-  options: {
-    environment: { type: "string" },
+const verifyCommand = Command.make(
+  "verify",
+  {
+    environment: Flag.String("environment").pipe(Flag.optional),
+    role: Argument.String("role").pipe(Argument.withDefault("")),
   },
-});
+  Effect.fn(function* routeVerify({ environment, role }) {
+    if (role !== ROLE.member) {
+      return yield* failure("command_unsupported");
+    }
+    const decoded = yield* Schema.decodeUnknownEffect(VerifyEnvironment)(
+      Option.getOrUndefined(environment),
+    ).pipe(Effect.mapError(() => failure("command_unsupported")));
+    const resolved = yield* resolveVerifyEnvironment(decoded);
+    yield* verifyMember(resolved).pipe(
+      Effect.flatMap((report) => Console.log(JSON.stringify(report))),
+    );
+  }),
+).pipe(Command.run({ version: "0.0.0" }), Effect.provide(NodeServices.layer));
 
-const program = Effect.gen(function* routeVerify() {
-  const [role = ""] = positionals;
-  if (role !== ROLE.member) {
-    return yield* failure("command_unsupported");
-  }
-  const environment = yield* Schema.decodeUnknownEffect(VerifyEnvironment)(values.environment).pipe(
-    Effect.mapError(() => failure("command_unsupported")),
-  );
-  const resolved = yield* resolveVerifyEnvironment(environment);
-  return yield* verifyMember(resolved);
-}).pipe(Effect.provide(NodeServices.layer));
-
-runCli(program.pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
+runCli(verifyCommand, (cause) =>
   causeRecord("verify.failed", {
     cause,
     fields: {

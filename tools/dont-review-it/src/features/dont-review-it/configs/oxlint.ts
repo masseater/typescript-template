@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-
 import { recommended } from "@effect/tsgo/oxlint-presets";
 import { defineConfig, type OxlintConfig } from "oxlint";
 
@@ -7,6 +5,7 @@ import { LINT_SEVERITY, type WorkspaceLintRule } from "../lint-rule-authoring/in
 import { noUnregisteredRulePlugin } from "../lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts";
 import { noStandaloneTsconfig } from "../lint/oxlint/rules/toolchain/no-standalone-tsconfig--extend-shared-preset.ts";
 import { requireReExportOnlyFiles } from "../lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
+import { filePathOf } from "../platform/path.ts";
 import {
   LINT_BUNDLE,
   selectedLintBundles,
@@ -52,7 +51,7 @@ const effectRules: NonNullable<OxlintConfig["rules"]> = Object.fromEntries(
   ]),
 );
 
-const pluginSpecifier = fileURLToPath(new URL("../plugin.ts", import.meta.url));
+const pluginSpecifier = filePathOf(new URL("../plugin.ts", import.meta.url));
 
 const CONFIGURED_RULES: ReadonlyMap<string, RuleSetting> = new Map<string, RuleSetting>([
   [noStandaloneTsconfig.name, [LINT_SEVERITY.ERROR, [...SHARED_TSCONFIG_PRESETS]]],

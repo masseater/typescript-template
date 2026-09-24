@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { env as processEnvironment } from "node:process";
-
 import { causeRecord, runCli } from "@repo/cli";
 import { Console, Effect, Schema } from "effect";
 
@@ -9,7 +7,7 @@ import { measureBudget } from "./measure.ts";
 
 runCli(
   Effect.gen(function* program() {
-    const config = yield* parseBudgetConfig(processEnvironment);
+    const config = yield* parseBudgetConfig(process.env);
     const decision = yield* measureBudget(config);
     yield* Console.log(
       yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({

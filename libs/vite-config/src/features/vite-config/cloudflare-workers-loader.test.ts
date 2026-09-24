@@ -2,18 +2,16 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { load, resolve } from "./cloudflare-workers-loader.ts";
 
-import type { LoadHookContext, ResolveHookContext } from "node:module";
-
 const emptyResolveContext = {
   conditions: [],
   importAttributes: {},
   parentURL: undefined,
-} satisfies ResolveHookContext;
+} satisfies Parameters<typeof resolve>[1];
 const emptyLoadContext = {
   conditions: [],
   format: undefined,
   importAttributes: {},
-} satisfies LoadHookContext;
+} satisfies Parameters<typeof load>[1];
 
 describe("cloudflare workers resolve hook", () => {
   const it = test
