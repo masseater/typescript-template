@@ -1,5 +1,5 @@
 {
-  "name": "@repo/wiki-publisher",
+  "name": "@repo/infra-wiki-publisher",
   "private": true,
   "type": "module",
   "exports": {
