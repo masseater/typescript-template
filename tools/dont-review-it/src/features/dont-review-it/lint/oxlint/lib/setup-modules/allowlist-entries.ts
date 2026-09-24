@@ -1,6 +1,7 @@
 import { path } from "../../../../platform/path.ts";
+import { packageReferenceOf } from "../package-specifier.ts";
 import { declaresPublicSubpath } from "./package-entries.ts";
-import { packageDirectoryInWorkspace, packageReferenceOf } from "./specifier-resolution.ts";
+import { packageDirectoryInWorkspace } from "./specifier-resolution.ts";
 
 const MODULE_FILE_SPECIFIER = /\.[cm]?[jt]sx?$/u;
 

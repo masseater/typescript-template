@@ -7,6 +7,7 @@ import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
+import { packageNameOf } from "../lint/oxlint/lib/package-specifier.ts";
 import { denialReason } from "./client-bundle-denial.ts";
 
 const probeModules: Readonly<Record<BuildTarget, string>> = {
@@ -145,8 +146,12 @@ const expectedDenials = (application: BuildTarget) =>
     const { dependencies } = yield* Schema.decodeEffect(Schema.fromJsonString(Manifest))(
       manifestText,
     );
+    const declares = (specifier: string): boolean => {
+      const packageName = packageNameOf(specifier);
+      return packageName !== undefined && Object.hasOwn(dependencies, packageName);
+    };
     return serverOnly.map(([specifier, pattern]) =>
-      specifier.startsWith("#") || specifier.split("/").slice(0, 2).join("/") in dependencies
+      specifier.startsWith("#") || declares(specifier)
         ? ([specifier, pattern] as const)
         : ([specifier, undefined] as const),
     );
