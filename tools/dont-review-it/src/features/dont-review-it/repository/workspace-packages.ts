@@ -1,10 +1,10 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { uniq } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
 import { directoryEntries } from "../platform/directory-entries.ts";
 import { textOrNull } from "../platform/file-system.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { dependencyFields, workspaceRoots } from "./workspace-layout.ts";
 
 import type { WorkspacePackage } from "./pr-affected-scope.ts";

@@ -2,12 +2,12 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type BuildTarget, BuildTargetName } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
 import { denialReason } from "./client-bundle-denial.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const probeModules: Readonly<Record<BuildTarget, string>> = {
   "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",

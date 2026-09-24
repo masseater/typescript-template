@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -9,7 +10,6 @@ import {
   lintOptions,
   templateWorkspaces,
 } from "./lint.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { commands, reachable, taskNames } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 

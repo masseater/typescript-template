@@ -28,7 +28,13 @@ interface RunOptions {
 
 const ROOT_HASH_LENGTH = 12;
 
-const local = new URL("../../../../../.local/", import.meta.url);
+const rootUrl = Effect.runSync(
+  Path.Path.pipe(
+    Effect.flatMap((paths) => paths.toFileUrl(`${root}/`)),
+    Effect.provide(Path.layer),
+  ),
+);
+const local = new URL(".local/", rootUrl);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(root));
@@ -153,6 +159,7 @@ export {
   readCredentials,
   refreshBrowserConfig,
   root,
+  rootUrl,
   routeNames,
   routes,
   run,

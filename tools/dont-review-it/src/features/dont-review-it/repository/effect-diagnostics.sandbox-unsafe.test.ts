@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { recommended } from "@effect/tsgo/oxlint-presets";
+import { repositoryRoot } from "@repo/config/repository-root";
 import {
   appRun,
   awaitingEffectDiagnostics,
@@ -12,7 +13,6 @@ import { describe, expect, it } from "vite-plus/test";
 import { filePathOf, path } from "../platform/path.ts";
 import { posixPath } from "../platform/path.ts";
 import { field } from "./dependencies-test-fixture.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 

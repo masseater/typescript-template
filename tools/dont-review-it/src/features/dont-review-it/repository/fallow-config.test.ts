@@ -1,8 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
-
-import { repositoryRoot } from "./repository-root.ts";
 
 const configFiles = [".fallowrc.json", ".fallowrc.production.json"] as const;
 

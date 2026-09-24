@@ -589,6 +589,7 @@ const lintOptions = {
         "project/no-manual-memoization": LINT_SEVERITY.ERROR,
         "project/process-boundary": LINT_SEVERITY.ERROR,
         "project/react-legacy": LINT_SEVERITY.ERROR,
+        "project/repository-root": LINT_SEVERITY.ERROR,
         "project/retired-imports": LINT_SEVERITY.ERROR,
         "project/span-mutation": LINT_SEVERITY.ERROR,
         "project/temp-directory": LINT_SEVERITY.ERROR,

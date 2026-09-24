@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Option, Path, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { pathExists } from "../platform/file-system.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { hookFilters } from "./pr-affected-scope.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { workspacePackages } from "./workspace-packages.ts";
 
 import type { lifecycles } from "@repo/vite-config";

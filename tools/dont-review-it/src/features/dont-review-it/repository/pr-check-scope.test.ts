@@ -1,8 +1,8 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { repositoryRoot } from "./repository-root.ts";
 import { rootNodeTestIncludes } from "./tool-test-projects.ts";
 
 const repositoryText = (file: string) =>
