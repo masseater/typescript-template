@@ -1,10 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
+import { it } from "@effect/vitest";
 import { plugin } from "@shadcn/lint";
-import { Effect, FileSystem, Path } from "effect";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import {
   linkComponents,
@@ -51,44 +52,10 @@ const designSystemApps = Object.entries(appManifests)
 
 const paths = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
 
-const [
-  stylesheet,
-  designMd,
-  appsWithoutStylesheet,
-  missingSourceReport,
-  outsideSourceReport,
-  sourcelessReport,
-  unlinkedReport,
-  narrowedCoverageReport,
-  fullCoverageReport,
-  routerLinkParts,
-  designSystemAppsReport,
-] = await Effect.runPromise(
-  Effect.all([
-    stylesheetSource(),
-    designMdSource(),
-    appStylesheetViolations(["apps/missing"]),
-    sourceViolations(
-      "apps/internal-dashboard",
-      "apps/internal-dashboard/src/app/auth.css",
-      '@source "./nonexistent";',
-    ),
-    sourceViolations(
-      "apps/internal-dashboard",
-      "apps/internal-dashboard/src/app/auth.css",
-      '@source "../../../libs/ui";',
-    ),
-    sourceViolations(
-      "apps/internal-dashboard",
-      "apps/internal-dashboard/src/app/auth.css",
-      '@import "tailwindcss";',
-    ),
-    linkViolations("apps/internal-dashboard", "apps/internal-dashboard/src/app/unlinked.css"),
-    coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src/app"]),
-    coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src"]),
-    linkParts(),
-    appStylesheetViolations(designSystemApps),
-  ]).pipe(Effect.provide(NodeServices.layer)),
+const [stylesheet, designMd, routerLinkParts] = await Effect.runPromise(
+  Effect.all([stylesheetSource(), designMdSource(), linkParts()]).pipe(
+    Effect.provide(NodeServices.layer),
+  ),
 );
 
 const restyled = [
@@ -111,6 +78,8 @@ type RuleName = (typeof restyled)[number][0];
 
 const restyleProbe = "libs/ui/src/features/ui/shared/ui/button.tsx";
 
+const isAssertionFailure = Schema.is(Schema.Struct({ code: Schema.Literal("ERR_ASSERTION") }));
+
 const reports = (rule: RuleName, className: string): boolean => {
   try {
     tester.run(rule, plugin.rules[rule], {
@@ -124,7 +93,7 @@ const reports = (rule: RuleName, className: string): boolean => {
       ],
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AssertionError") {
+    if (isAssertionFailure(error)) {
       return true;
     }
     throw error;
@@ -231,49 +200,84 @@ describe("app stylesheet ownership", () => {
     );
   });
 
-  it("lets each app declare its own sources", () => {
-    expect.hasAssertions();
-    expect(designSystemAppsReport).toStrictEqual([]);
-  });
+  it.effect("lets each app declare its own sources", () =>
+    Effect.gen(function* designSystemAppSources() {
+      const report = yield* appStylesheetViolations(designSystemApps);
+      expect(report).toStrictEqual([]);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("reports an app without a stylesheet of its own", () => {
-    expect.hasAssertions();
-    expect(appsWithoutStylesheet).toHaveLength(1);
-  });
+  it.effect("reports an app without a stylesheet of its own", () =>
+    Effect.gen(function* appWithoutStylesheet() {
+      const report = yield* appStylesheetViolations(["apps/missing"]);
+      expect(report).toHaveLength(1);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("reports a @source that scans a directory which does not exist", () => {
-    expect.hasAssertions();
-    expect(missingSourceReport).toHaveLength(1);
-  });
+  it.effect("reports a @source that scans a directory which does not exist", () =>
+    Effect.gen(function* missingSource() {
+      const report = yield* sourceViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/auth.css",
+        '@source "./nonexistent";',
+      );
+      expect(report).toHaveLength(1);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("reports a @source that scans outside the app", () => {
-    expect.hasAssertions();
-    expect(outsideSourceReport).toHaveLength(1);
-  });
+  it.effect("reports a @source that scans outside the app", () =>
+    Effect.gen(function* outsideSource() {
+      const report = yield* sourceViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/auth.css",
+        '@source "../../../libs/ui";',
+      );
+      expect(report).toHaveLength(1);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("reports a stylesheet with no @source at all", () => {
-    expect.hasAssertions();
-    expect(sourcelessReport).toHaveLength(1);
-  });
+  it.effect("reports a stylesheet with no @source at all", () =>
+    Effect.gen(function* sourcelessStylesheet() {
+      const report = yield* sourceViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/auth.css",
+        '@import "tailwindcss";',
+      );
+      expect(report).toHaveLength(1);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("reports a stylesheet the app never links", () => {
-    expect.hasAssertions();
-    expect(unlinkedReport).toHaveLength(1);
-  });
+  it.effect("reports a stylesheet the app never links", () =>
+    Effect.gen(function* unlinkedStylesheet() {
+      const report = yield* linkViolations(
+        "apps/internal-dashboard",
+        "apps/internal-dashboard/src/app/unlinked.css",
+      );
+      expect(report).toHaveLength(1);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 });
 
 describe("app stylesheet coverage", () => {
-  it("reports a @source narrowed past the screens it has to cover", () => {
-    expect.hasAssertions();
-    expect(narrowedCoverageReport).toContainEqual(
-      expect.stringContaining("apps/internal-dashboard/src/pages/consent/ui/consent-actions.tsx"),
-    );
-  });
+  it.effect("reports a @source narrowed past the screens it has to cover", () =>
+    Effect.gen(function* narrowedCoverage() {
+      const report = yield* coverageViolations("apps/internal-dashboard", [
+        "apps/internal-dashboard/src/app",
+      ]);
+      expect(report).toContainEqual(
+        expect.stringContaining("apps/internal-dashboard/src/pages/consent/ui/consent-actions.tsx"),
+      );
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("accepts a @source that covers every styled file of the app", () => {
-    expect.hasAssertions();
-    expect(fullCoverageReport).toStrictEqual([]);
-  });
+  it.effect("accepts a @source that covers every styled file of the app", () =>
+    Effect.gen(function* fullCoverage() {
+      const report = yield* coverageViolations("apps/internal-dashboard", [
+        "apps/internal-dashboard/src",
+      ]);
+      expect(report).toStrictEqual([]);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 });
 
 describe("design system lint", () => {
