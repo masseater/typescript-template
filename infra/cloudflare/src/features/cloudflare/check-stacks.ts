@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-const { isDeepStrictEqual } = process.getBuiltinModule("util");
 
 import { markFailed, reportFailed, runCli } from "@repo/cli";
 import {
@@ -36,7 +35,7 @@ import {
 } from "@repo/monitor/workers";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { apiRoot } from "@repo/runtime/http";
-import { Cause, Console, Effect, Schema } from "effect";
+import { Cause, Console, Effect, Equal, Schema } from "effect";
 
 import { loadArtifacts } from "./artifacts.ts";
 import { hstsSetting, observabilitySampling } from "./config.ts";
@@ -552,8 +551,8 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
   const violations = applyOrderViolations(stackNames);
   const differs =
     violations.length > 0 ||
-    !isDeepStrictEqual(onboarding, [onboardingStack]) ||
-    !isDeepStrictEqual(senders.toSorted(), [...sendingStacks].toSorted());
+    !Equal.equals(onboarding, [onboardingStack]) ||
+    !Equal.equals(senders.toSorted(), [...sendingStacks].toSorted());
   if (differs) {
     yield* Console.error(
       yield* encodeJson({ event: "stacks.roles_differ", onboarding, senders, violations }),
@@ -579,7 +578,7 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
   const coreViolation = coreViolationOf(stack, inventory);
-  const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
+  const matches = coreViolation === undefined && Equal.equals(inventory, expected);
   yield* reportCoreViolation(stack, coreViolation);
   if (!matches) {
     yield* Console.error(
