@@ -1,4 +1,4 @@
-import { and, count, eq, gte, isNull, sum } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull, sum } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { aiUsageEvent } from "./billing-schema.ts";
@@ -28,6 +28,28 @@ const markAiUsageReported = Effect.fn("markAiUsageReported")(function* markAiUsa
       .update(aiUsageEvent)
       .set({ reportedAt })
       .where(and(eq(aiUsageEvent.identifier, identifier), isNull(aiUsageEvent.reportedAt))),
+  );
+});
+
+const unreportedAiUsage = Effect.fn("unreportedAiUsage")(function* unreportedAiUsage(
+  member: Readonly<{ memberId: string; since: Date }>,
+) {
+  return yield* query((database) =>
+    database
+      .select({
+        identifier: aiUsageEvent.identifier,
+        occurredAt: aiUsageEvent.occurredAt,
+        quantity: aiUsageEvent.quantity,
+      })
+      .from(aiUsageEvent)
+      .where(
+        and(
+          eq(aiUsageEvent.memberId, member.memberId),
+          gte(aiUsageEvent.occurredAt, member.since),
+          isNull(aiUsageEvent.reportedAt),
+        ),
+      )
+      .orderBy(asc(aiUsageEvent.occurredAt)),
   );
 });
 
@@ -61,4 +83,4 @@ const aiUsageSince = Effect.fn("aiUsageSince")(function* aiUsageSince(
   };
 });
 
-export { aiUsageSince, markAiUsageReported, recordAiUsage };
+export { aiUsageSince, markAiUsageReported, recordAiUsage, unreportedAiUsage };
