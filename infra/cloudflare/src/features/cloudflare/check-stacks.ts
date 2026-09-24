@@ -109,7 +109,7 @@ function tokenValue(name: string, resource: string): string {
 }
 
 function wikiBindings(app: Application): readonly string[] {
-  return app === APPLICATION.wiki
+  return app === APPLICATION.dashboard
     ? [
         tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
         `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
@@ -170,7 +170,7 @@ function grantedBindings(app: Application): readonly string[] {
 function applicationCrons(app: Application): { readonly crons?: readonly string[] } {
   return {
     ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-    ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+    ...(app === APPLICATION.dashboard ? { crons: ["*/30 * * * *"] } : {}),
   };
 }
 
@@ -496,7 +496,7 @@ const staticExpected: Readonly<
       variables: [
         plainText(healthOriginKey[APPLICATION.admin], origins[APPLICATION.admin]),
         plainText(healthOriginKey[APPLICATION.user], origins[APPLICATION.user]),
-        plainText(healthOriginKey[APPLICATION.wiki], origins[APPLICATION.wiki]),
+        plainText(healthOriginKey[APPLICATION.dashboard], origins[APPLICATION.dashboard]),
       ],
     }),
   }),

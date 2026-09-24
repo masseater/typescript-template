@@ -7,12 +7,11 @@ export const applications = ["service-member", "service-admin", "internal-dashbo
 export const APPLICATION = {
   user: applications[0],
   admin: applications[1],
-  wiki: applications[2],
+  dashboard: applications[2],
 } as const;
 
 export const ApplicationName = Schema.Literals(applications);
 export type Application = (typeof applications)[number];
-export type ServiceName = Application;
 
 const SERVICE_MEMBER_PORT = 3001;
 const SERVICE_ADMIN_PORT = 3002;
@@ -52,7 +51,7 @@ export const audienceRoles: Readonly<Record<Application, Role>> = {
 export const coreEntrypoints = {
   [APPLICATION.admin]: "AdminApi",
   [APPLICATION.user]: "MemberApi",
-  [APPLICATION.wiki]: "InternalApi",
+  [APPLICATION.dashboard]: "InternalApi",
 } as const satisfies Readonly<Record<Application, string>>;
 
 export const loopbackAddress = "127.0.0.1";

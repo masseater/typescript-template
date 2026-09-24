@@ -62,7 +62,7 @@ describe("observeRequest", () => {
         ).pipe(
           Effect.provide(
             Layer.merge(
-              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "user" }),
+              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
               fixedEntropy,
             ),
           ),
@@ -92,7 +92,7 @@ describe("observeRequest", () => {
         ).pipe(
           Effect.provide(
             Layer.merge(
-              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "user" }),
+              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
               fixedEntropy,
             ),
           ),
@@ -129,7 +129,7 @@ describe("observeRequest", () => {
         ).pipe(
           Effect.provide(
             Layer.merge(
-              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "user" }),
+              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
               fixedEntropy,
             ),
           ),
@@ -207,7 +207,7 @@ describe("ingestBrowser", () => {
               Telemetry.layer({
                 release: "test",
                 routes: { "/": "home", "/api/telemetry": "telemetry" },
-                serviceName: "user",
+                serviceName: "service-member",
               }),
               fixedEntropy,
             ),
@@ -252,7 +252,7 @@ describe("ingestBrowser", () => {
                   log: logs.sink,
                   release: "test",
                   routes: { "/": "home", "/api/telemetry": "telemetry" },
-                  serviceName: "user",
+                  serviceName: "service-member",
                 }),
                 fixedEntropy,
               ),
@@ -275,7 +275,7 @@ describe("ingestBrowser", () => {
           {
             event: "http.client.request",
             release: "test",
-            service: "user-browser",
+            service: "service-member-browser",
             duration_ms: 25,
             "http.route": "home",
             measurement_value: 0,
@@ -312,7 +312,7 @@ describe("ingestBrowser", () => {
                   log: logs.sink,
                   release: "test",
                   routes: { "/": "home", "/api/telemetry": "telemetry" },
-                  serviceName: "user",
+                  serviceName: "service-member",
                 }),
                 fixedEntropy,
               ),
@@ -331,7 +331,7 @@ describe("ingestBrowser", () => {
           {
             event: "http.client.request",
             release: "test",
-            service: "user-browser",
+            service: "service-member-browser",
             duration_ms: 25,
             "http.route": "home",
             measurement_value: 0,
@@ -393,7 +393,7 @@ describe("browser events followed by a failing request", () => {
                 log: logs.sink,
                 release: "abc123",
                 routes: { "/": "home" },
-                serviceName: "user",
+                serviceName: "service-member",
               }),
               fixedEntropy,
             ),
@@ -411,7 +411,7 @@ describe("browser events followed by a failing request", () => {
         {
           event: "browser.error",
           release: "abc123",
-          service: "user-browser",
+          service: "service-member-browser",
           duration_ms: 25,
           "http.route": "home",
           measurement_value: 1,
@@ -427,7 +427,7 @@ describe("browser events followed by a failing request", () => {
         {
           event: "application.error",
           release: "abc123",
-          service: "user-server",
+          service: "service-member-server",
           request_id: "22222222-2222-4222-8222-222222222222",
           span_id: "c".repeat(16),
           trace_id: "c".repeat(32),
@@ -438,7 +438,7 @@ describe("browser events followed by a failing request", () => {
         {
           event: "http.server.request",
           release: "abc123",
-          service: "user-server",
+          service: "service-member-server",
           request_id: "22222222-2222-4222-8222-222222222222",
           span_id: "c".repeat(16),
           trace_id: "c".repeat(32),
@@ -452,7 +452,7 @@ describe("browser events followed by a failing request", () => {
         {
           event: "http.client.request",
           release: "abc123",
-          service: "user-browser",
+          service: "service-member-browser",
           duration_ms: 25,
           "http.route": "home",
           measurement_value: 0,

@@ -3,14 +3,14 @@ import { Layer } from "effect";
 
 import { Assets } from "./assets.ts";
 
-import type { SiteConfig } from "@repo/config";
+import type { BuildTarget, SiteConfig } from "@repo/config";
 
 type SiteServices = Assets | Telemetry | TelemetryFlusher;
 
 const configuredSiteLayer = (
   asked: Readonly<{
     readonly siteConfig: SiteConfig;
-    readonly serviceName: string;
+    readonly serviceName: BuildTarget;
     readonly routes: Readonly<Record<string, string>>;
   }>,
 ): Layer.Layer<SiteServices, TelemetryInvalid> => {

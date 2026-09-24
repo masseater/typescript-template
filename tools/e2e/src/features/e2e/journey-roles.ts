@@ -7,7 +7,7 @@ type JourneyRole = (typeof journeyRoles)[number];
 
 const roleApplications = {
   [ADMIN_PERMISSION.operator]: APPLICATION.admin,
-  knowledge: APPLICATION.wiki,
+  knowledge: APPLICATION.dashboard,
   member: APPLICATION.user,
 } as const satisfies Readonly<Record<JourneyRole, Application>>;
 

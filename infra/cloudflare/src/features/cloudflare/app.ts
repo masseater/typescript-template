@@ -109,7 +109,7 @@ const targetEnv = Effect.fn("targetEnv")(function* targetEnv(
   shared: DeclaredEnv,
   flags: Effect.Success<ReturnType<typeof flagshipAppRef>>,
 ) {
-  if (target !== APPLICATION.wiki) {
+  if (target !== APPLICATION.dashboard) {
     return shared;
   }
   return {
@@ -135,7 +135,7 @@ function jobsEnv(jobsQueue: Queues.Queue | undefined) {
 function workerCrons(target: Application): { crons?: string[] } {
   return {
     ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+    ...(target === APPLICATION.dashboard ? { crons: ["*/30 * * * *"] } : {}),
   };
 }
 

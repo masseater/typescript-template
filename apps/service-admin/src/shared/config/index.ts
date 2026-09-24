@@ -1,1 +1,1 @@
-export { serviceName } from "./service.ts";
+export { productName } from "./product.ts";

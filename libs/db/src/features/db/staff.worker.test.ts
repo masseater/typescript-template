@@ -10,7 +10,7 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(
   permission: (typeof STAFF_PERMISSION)[keyof typeof STAFF_PERMISSION],
 ) {
   yield* addUser({ permission, role: ROLE.staff, userId: `actor-${permission}` });
-  return yield* addSession({ audience: APPLICATION.wiki, userId: `actor-${permission}` });
+  return yield* addSession({ audience: APPLICATION.dashboard, userId: `actor-${permission}` });
 });
 
 describe("staff permission levels", () => {
@@ -145,7 +145,7 @@ describe("staff permission levels", () => {
       Effect.runPromise(
         Effect.gen(function* adminActs() {
           yield* addUser({ role: ROLE.administrator, userId: "admin" });
-          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "admin" });
+          const sessionId = yield* addSession({ audience: APPLICATION.dashboard, userId: "admin" });
           return yield* listStaff(sessionId);
         }).pipe(
           Effect.flip,

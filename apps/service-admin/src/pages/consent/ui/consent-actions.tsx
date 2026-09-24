@@ -2,7 +2,7 @@ import { submitConsent } from "@repo/auth-ui";
 import { Button, FormColumn } from "@repo/ui";
 import { useState } from "react";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -28,7 +28,7 @@ function ConsentActions({
   return (
     <FormColumn>
       <p>
-        {client} に {serviceName} の管理操作を許可しますか？
+        {client} に {productName} の管理操作を許可しますか？
       </p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="primary" disabled={pending} onClick={allow}>

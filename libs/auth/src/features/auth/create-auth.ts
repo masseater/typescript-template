@@ -125,7 +125,7 @@ const createEmailVerification = (
 ): NonNullable<BetterAuthOptions["emailVerification"]> => {
   return {
     autoSignInAfterVerification: false,
-    sendOnSignIn: authOptions.audience !== APPLICATION.wiki,
+    sendOnSignIn: authOptions.audience !== APPLICATION.dashboard,
     sendOnSignUp: true,
     sendVerificationEmail: ({
       user,

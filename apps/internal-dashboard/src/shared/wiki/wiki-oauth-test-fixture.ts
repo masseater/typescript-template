@@ -5,7 +5,7 @@ import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 const mcpRequest = (token?: string) =>
   authorizeMcpAs(
-    { application: APPLICATION.wiki, ...(token === undefined ? {} : { token }) },
+    { application: APPLICATION.dashboard, ...(token === undefined ? {} : { token }) },
     authorizeMcpRequest,
   );
 

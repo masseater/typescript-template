@@ -15,7 +15,7 @@ export default prefixedStack(
       Effect.succeed({
         [healthOriginKey[APPLICATION.admin]]: config.origins[APPLICATION.admin],
         [healthOriginKey[APPLICATION.user]]: config.origins[APPLICATION.user],
-        [healthOriginKey[APPLICATION.wiki]]: config.origins[APPLICATION.wiki],
+        [healthOriginKey[APPLICATION.dashboard]]: config.origins[APPLICATION.dashboard],
       }),
   }),
 );

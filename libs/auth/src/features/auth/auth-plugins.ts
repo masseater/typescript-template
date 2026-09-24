@@ -125,7 +125,7 @@ const authPlugins = ({
     ...(audience === APPLICATION.user
       ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
       : []),
-    ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.dashboard ? wikiAuthorizationServer(origin) : []),
     ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
   ];
 };
