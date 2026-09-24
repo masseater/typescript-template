@@ -25,6 +25,7 @@ const monthLater = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00.000Z
 const aliceSubscription: SubscriptionRecord = {
   cancelAtPeriodEnd: false,
   currentPeriodEnd: monthLater,
+  currentPeriodStart: undefined,
   memberId: "alice",
   status: SUBSCRIPTION_STATUS.active,
   stripeCustomerId: "cus_alice",
@@ -275,6 +276,7 @@ describe("a completed checkout", () => {
       afterCheckout: {
         cancelAtPeriodEnd: false,
         currentPeriodEnd: undefined,
+        currentPeriodStart: undefined,
         memberId: "alice",
         status: "active",
         stripeCustomerId: "cus_alice",
@@ -283,6 +285,7 @@ describe("a completed checkout", () => {
       afterSubscriptionEvent: {
         cancelAtPeriodEnd: true,
         currentPeriodEnd: monthLater,
+        currentPeriodStart: undefined,
         memberId: "alice",
         status: "active",
         stripeCustomerId: "cus_alice",

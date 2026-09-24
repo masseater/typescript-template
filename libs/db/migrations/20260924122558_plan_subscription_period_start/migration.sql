@@ -1,0 +1,1 @@
+ALTER TABLE `plan_subscription` ADD `current_period_start` integer;
