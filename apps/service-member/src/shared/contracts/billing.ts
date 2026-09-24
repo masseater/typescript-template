@@ -1,4 +1,10 @@
-import { plans, priceIntervals, subscriptionStatuses, webhookOutcomes } from "@repo/config";
+import {
+  plans,
+  priceIntervals,
+  stripeCollectionMethods,
+  subscriptionStatuses,
+  webhookOutcomes,
+} from "@repo/config";
 import { Redirect } from "@repo/runtime/contracts";
 import { Option, Schema } from "effect";
 
@@ -35,7 +41,7 @@ const InvoiceList = Schema.Struct({ invoices: Schema.Array(InvoiceView) });
 
 const QuoteView = Schema.Struct({
   amountTotal: Schema.Finite,
-  collectionMethod: Schema.String,
+  collectionMethod: Schema.Literals(stripeCollectionMethods),
   currency: Schema.String,
   daysUntilDue: Schema.optional(Schema.Finite),
   expiresAt: Schema.DateFromString,

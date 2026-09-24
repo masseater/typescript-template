@@ -79,6 +79,8 @@ export {
   priceIntervals,
   recoverableStatuses,
   stripeApiVersion,
+  STRIPE_COLLECTION_METHOD,
+  stripeCollectionMethods,
   stripeTrialPeriodDays,
   stripeWebhookEvents,
   subscriptionStatuses,
@@ -87,6 +89,7 @@ export {
 export type {
   Plan,
   PriceInterval,
+  StripeCollectionMethod,
   StripeWebhookEvent,
   SubscriptionStatus,
   WebhookOutcome,
