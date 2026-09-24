@@ -12,6 +12,7 @@ import {
 import { Effect, Exit, Scope } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { devWorkerName } from "./dev-workers.ts";
 import { paths } from "./host.ts";
 
 import type { ConfigEnv, Plugin, UserConfig } from "vite-plus";
@@ -22,7 +23,7 @@ const attemptTimeoutMilliseconds = 5000;
 const readyAttempts = 240;
 const readyStatus = 200;
 
-const wikiDevWorkerName = `template-${wikiWorker}`;
+const wikiDevWorkerName = devWorkerName(wikiWorker);
 
 const wikiDevServices = [
   { binding: wikiPagesBinding, service: wikiDevWorkerName },

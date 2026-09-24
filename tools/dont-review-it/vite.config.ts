@@ -24,13 +24,15 @@ export default defineConfig({
       ...workspaceCheckImports,
       ...modularBoundaries,
       ...intentValidation,
-      test: {
+      "test:shared": {
         ...testRun.test,
-        command: [
-          `vp test run --isolate=false --exclude '${isolatedNodeTests}'`,
-          `vp test run ${isolatedNodeTestSuffix}`,
-        ],
+        command: `vp test run --isolate=false --exclude '${isolatedNodeTests}'`,
       },
+      "test:isolated": {
+        ...testRun.test,
+        command: `vp test run ${isolatedNodeTestSuffix}`,
+      },
+      test: { command: [], dependsOn: ["test:shared", "test:isolated"] },
       "check:staged": {
         cache: false,
         command: "dont-review-it-check-staged",

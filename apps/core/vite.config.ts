@@ -39,8 +39,6 @@ export default defineConfig({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],
         prepr: ["build"],
-        premerge: [],
-        prerelease: [],
       }),
     },
   },

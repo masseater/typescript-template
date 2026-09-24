@@ -86,7 +86,7 @@ describe("awaitingEffectDiagnostics", () => {
   }) => {
     expect(awaitingDiagnostics).toStrictEqual({
       "check:effect": {
-        command: "check-effect-typecheck",
+        command: "dont-review-it-effect-typecheck",
         env: [...telemetryEnv],
         input: [
           ...effectDiagnostics(paths.join(repositoryRoot, "apps/service-admin"))["check:effect"]

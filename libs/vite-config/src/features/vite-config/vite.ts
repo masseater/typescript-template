@@ -11,6 +11,7 @@ import {
   loopbackAddress,
   wikiBasePath,
   wikiHost,
+  wikiPort,
   wikiServerFnBase,
   wikiWorker,
   type Application,
@@ -33,6 +34,7 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { coreDevWorker, coreDevWorkerName, devWorkerName } from "./dev-workers.ts";
 import {
   awaitingEffectDiagnostics,
   effectDiagnostics,
@@ -116,17 +118,23 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
+const sliceBoundariesInput = [
+  ...taskInput,
+  ...withoutLocalState,
+  ...localizedApps.map((app) => ({
+    base: "workspace" as const,
+    pattern: `!apps/${app}/.paraglide/**`,
+  })),
+];
+
 const sliceBoundaries = measured({
-  check: {
-    command: "quality-check-feature-sliced && quality-check-thin-app-routes",
-    input: [
-      ...taskInput,
-      ...withoutLocalState,
-      ...localizedApps.map((app) => ({
-        base: "workspace" as const,
-        pattern: `!apps/${app}/.paraglide/**`,
-      })),
-    ],
+  "check:feature-sliced": {
+    command: "dont-review-it-feature-sliced",
+    input: sliceBoundariesInput,
+  },
+  "check:thin-app-routes": {
+    command: "dont-review-it-thin-app-routes",
+    input: sliceBoundariesInput,
   },
 } satisfies Tasks);
 
@@ -139,11 +147,11 @@ const checkCode = measured({
 } satisfies Tasks);
 
 const workspaceCheckImports = measured({
-  "check:imports": { command: "quality-check-imports", input: [...taskInput] },
+  "check:imports": { command: "dont-review-it-imports", input: [...taskInput] },
 } satisfies Tasks);
 
 const modularBoundaries = measured({
-  "check:modular": { command: "quality-check-modular", input: [...taskInput] },
+  "check:modular": { command: "dont-review-it-modular", input: [...taskInput] },
 } satisfies Tasks);
 
 const effectRunTasks = measured({
@@ -170,7 +178,7 @@ const awaitingEffectRun = (
 
 const appChecks = measured({
   "check:client": {
-    command: "quality-check-client",
+    command: "dont-review-it-client",
     input: [
       ...taskInput,
       "!node_modules",
@@ -182,17 +190,26 @@ const appChecks = measured({
     output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
   },
   "check:react": {
-    command: "quality-check-react",
+    command: "dont-review-it-react",
     input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...withoutInlangState],
     output: [{ auto: true }, "!**/node_modules/.cache/**"],
   },
 } satisfies Tasks);
 
+const appPrepush = [
+  "check:effect",
+  "check:feature-sliced",
+  "check:thin-app-routes",
+  "check:imports",
+  "check:client",
+  "check:react",
+];
+
 const appTasks = measured({
   ...checkCode,
   ...workspaceCheckImports,
   ...appChecks,
-  check: sliceBoundaries.check,
+  ...sliceBoundaries,
   build: {
     command: "vp build",
     dependsOn: ["@repo/dev#setup", "check:effect"],
@@ -215,7 +232,7 @@ const appTasks = measured({
   preview: { cache: false, command: "vp preview" },
   ...lifecycle({
     precommit: ["check:code"],
-    prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+    prepush: appPrepush,
     prepr: ["build"],
     premerge: ["build", "check:dev"],
   }),
@@ -258,21 +275,15 @@ const toolTest: NonNullable<UserConfig["test"]> = {
   unstubGlobals: true,
 };
 
-const noExtraPlugins: readonly PluginOption[] = [];
-
-const coreDevWorker = {
-  config: {
-    compatibility_date: workerCompatibility.date,
-    compatibility_flags: [...workerCompatibility.flags],
-    d1_databases: [localDatabase],
-    main: paths.join(repositoryRoot, "apps/core/src/features/core/worker.ts"),
-    name: "template-core",
-  },
-};
-
 const appConfig = (
   app: Application,
-  plugins: readonly PluginOption[] = noExtraPlugins,
+  {
+    plugins = [],
+    services = [],
+  }: Readonly<{
+    plugins?: readonly PluginOption[];
+    services?: readonly Readonly<{ binding: string; entrypoint?: string; service: string }>[];
+  }> = {},
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const appRoot = paths.join(repositoryRoot, "apps", app);
   const realtime = grants(app, "realtime");
@@ -285,14 +296,6 @@ const appConfig = (
         previewDevVars(appRoot),
         privateSourceMaps(app),
         devBoundary(app),
-        ...(app === wikiHost
-          ? [
-              wikiCompanion({
-                repositoryRoot,
-                wikiRoot: paths.join(repositoryRoot, "apps", wikiWorker),
-              }),
-            ]
-          : []),
         elysiaAot(appRoot),
         elysiaWorkerdJit(),
         cloudflare({
@@ -315,15 +318,15 @@ const appConfig = (
                 }
               : {}),
             main: "./src/app/server.ts",
-            name: `template-${app}`,
+            name: devWorkerName(app),
             services: [
               ...(config.services ?? []),
               {
                 binding: "CORE",
                 entrypoint: coreEntrypoints[app],
-                service: "template-core",
+                service: coreDevWorkerName,
               },
-              ...(app === wikiHost ? wikiDevServices : []),
+              ...services,
             ],
             ...(grants(app, "jobs")
               ? {
@@ -355,7 +358,6 @@ const appConfig = (
       ]),
     ],
     preview: appServer(app),
-    run: appRun(appRoot),
     server: appServer(app),
   });
 };
@@ -375,7 +377,7 @@ const wikiTasks = measured({
   ...checkCode,
   ...workspaceCheckImports,
   ...appChecks,
-  check: sliceBoundaries.check,
+  ...sliceBoundaries,
   build: {
     ...appTasks.build,
     input: [...appTasks.build.input, wikiContentInput],
@@ -384,7 +386,7 @@ const wikiTasks = measured({
   preview: appTasks.preview,
   ...lifecycle({
     precommit: ["check:code"],
-    prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+    prepush: appPrepush,
     prepr: ["build"],
     premerge: ["build"],
   }),
@@ -394,17 +396,15 @@ const wikiRun = (packageRoot: string): RunConfig => ({
   tasks: { ...effectDiagnostics(packageRoot), ...wikiTasks },
 });
 
-const WIKI_PORT = 3004;
-
 const wikiServer: ServerOptions = {
   host: loopbackAddress,
-  port: WIKI_PORT,
+  port: wikiPort,
   strictPort: true,
   ws: { path: wikiHmrPath },
 };
 
 const wikiConfig = (
-  plugins: readonly PluginOption[] = noExtraPlugins,
+  plugins: readonly PluginOption[] = [],
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const wikiRoot = paths.join(repositoryRoot, "apps", wikiWorker);
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
@@ -478,6 +478,8 @@ export {
   telemetryEnv,
   testRun,
   toolTest,
+  wikiCompanion,
+  wikiDevServices,
   withoutEnvFileLoader,
   workspaceCheckImports,
 };

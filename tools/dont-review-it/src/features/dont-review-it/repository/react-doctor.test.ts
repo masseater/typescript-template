@@ -190,10 +190,10 @@ describe("react-doctor integration", () => {
 
   it("leaves unused rules off only while fallow checks production code on the push gate", () => {
     expect.hasAssertions();
-    expect(commands(".", "fallow")).toContain(
+    expect(commands(".", "fallow:production")).toStrictEqual([
       "fallow dead-code --config .fallowrc.production.json",
-    );
-    expect(reachable(".", ["prepush"])).toContain("fallow");
+    ]);
+    expect(reachable(".", ["prepush"])).toContain("fallow:production");
     expect(fallowOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
   });
 

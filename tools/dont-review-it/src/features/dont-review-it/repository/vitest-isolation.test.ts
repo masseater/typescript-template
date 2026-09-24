@@ -120,8 +120,10 @@ describe("vitest isolation and sharding", () => {
 
   it("runs dont-review-it on a shared module graph and its isolated opt-outs apart", () => {
     expect.hasAssertions();
-    expect(commands("tools/dont-review-it", "test")).toStrictEqual([
+    expect(commands("tools/dont-review-it", "test:shared")).toStrictEqual([
       `vp test run --isolate=false --exclude '${isolatedNodeTests}'`,
+    ]);
+    expect(commands("tools/dont-review-it", "test:isolated")).toStrictEqual([
       `vp test run ${isolatedNodeTestSuffix}`,
     ]);
   });

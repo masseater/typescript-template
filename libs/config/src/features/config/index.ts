@@ -227,6 +227,7 @@ export {
   wikiDevOriginVariable,
   wikiHost,
   wikiPagesBinding,
+  wikiPort,
   wikiServerFnBase,
   wikiWorker,
 } from "./wiki.ts";
