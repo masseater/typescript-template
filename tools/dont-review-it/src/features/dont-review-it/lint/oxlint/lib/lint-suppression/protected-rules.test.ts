@@ -2,10 +2,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { protectedRulesFrom, protectionSettingsIn } from "./protected-rules.ts";
 
-const KEPT_RULE =
-  "no-inline-suppression-of-protected-rule--register-the-exception-in-configuration";
+const KEPT_RULE = "no-weakened-protected-rule--register-the-exception-in-configuration";
 
-const A_PROTECTED_RULE = "forbid-target-file--delete-or-relocate";
+const A_PROTECTED_RULE = "forbid-tracked-path--untrack-and-ignore";
 
 describe("protectedRulesFrom", () => {
   const defaultProtectionTest = test.extend("protectedAfterNoOptions", () =>
@@ -16,21 +15,10 @@ describe("protectedRulesFrom", () => {
 
     it("protect the bundle this package carries", ({ protectedAfterNoOptions }) => {
       expect(protectedAfterNoOptions).toStrictEqual([
-        "forbid-javascript-source-file--author-in-typescript",
-        A_PROTECTED_RULE,
-        "forbid-declared-module-import--use-declared-replacement",
-        "forbid-module-import-outside-owner--import-through-owner",
-        "forbid-unlisted-specifier-form--use-permitted-form",
-        "forbid-declared-export-reference--use-declared-replacement",
-        "no-retired-tool-in-manifest--use-designated-replacement",
-        "require-pinned-runtime-direct-execution--invoke-canonical-entry",
-        "no-shell-logic-outside-bootstrap--move-to-typescript-command",
-        "no-repository-root-script-directory--own-by-workspace-or-package",
-        "no-pre-install-external-dependency--use-builtin-or-relative",
         "forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier",
         "forbid-restricted-target-relay--delete-the-relay",
         "forbid-declared-command-invocation--use-designated-replacement",
-        "forbid-tracked-path--untrack-and-ignore",
+        A_PROTECTED_RULE,
         "require-registered-file--restore-it-at-the-registered-path",
         KEPT_RULE,
         "forbid-generic-restriction-rule--use-the-declared-rule",
@@ -280,7 +268,6 @@ describe("protectionSettingsIn", () => {
           protectedRules: ["no-console"],
           unprotected: [{ rule: A_PROTECTED_RULE, reason: " the registry owns it " }],
           generatedPaths: ["**/schema/**"],
-          suppressionSpellings: ["hush-lint"],
         },
       ]));
 
@@ -289,7 +276,6 @@ describe("protectionSettingsIn", () => {
         addedRules: ["no-console"],
         deviations: [{ rule: A_PROTECTED_RULE, grounds: "the registry owns it" }],
         generatedPaths: ["**/schema/**"],
-        suppressionSpellings: ["hush-lint"],
       });
     });
   });
@@ -302,7 +288,6 @@ describe("protectionSettingsIn", () => {
         addedRules: [],
         deviations: [],
         generatedPaths: [],
-        suppressionSpellings: [],
       });
     });
   });

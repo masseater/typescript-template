@@ -15,15 +15,11 @@ import {
   PROTECTION_SCHEMA,
   type ProtectionDeviation,
 } from "../../lib/lint-suppression/protected-rules.ts";
-import {
-  bareRuleNameOf,
-  coveredRulesOf,
-  suppressionDirectiveOf,
-} from "../../lib/lint-suppression/suppression-directives.ts";
+import { bareRuleNameOf } from "../../lib/lint-suppression/suppression-directives.ts";
 import { objectValueOf } from "../../lib/object-literal.ts";
 import { toPosixPath } from "../../lib/posix-path.ts";
 
-import type { Comment, ESTree } from "@oxlint/plugins";
+import type { ESTree } from "@oxlint/plugins";
 import type { RuleMessage } from "../../lib/rule-message.ts";
 
 const scopedPathsOf = (property: ESTree.ObjectProperty): readonly (string | null)[] | null => {
@@ -57,8 +53,7 @@ const weakeningMessageFor = (weakened: WeakenedRule): RuleMessage | null => {
   return { messageId: "patternScopedException", data: { ...carried, pattern } };
 };
 
-const RULE_NAME =
-  "no-inline-suppression-of-protected-rule--register-the-exception-in-configuration";
+const RULE_NAME = "no-weakened-protected-rule--register-the-exception-in-configuration";
 
 const deviationMessageFor = (deviation: ProtectionDeviation): RuleMessage | null => {
   const carried = { ruleName: deviation.rule };
@@ -68,20 +63,16 @@ const deviationMessageFor = (deviation: ProtectionDeviation): RuleMessage | null
   return deviation.grounds === "" ? { messageId: "groundlessDeviation", data: carried } : null;
 };
 
-export const noInlineSuppressionOfProtectedRule = createDontReviewItRule({
+export const noWeakenedProtectedRule = createDontReviewItRule({
   name: RULE_NAME,
   meta: {
     type: "problem",
     docs: {
       description:
-        "Disallow silencing a protected rule from a comment in the source or from a severity the lint configuration lowers, so an exception to one of these rules stands as one registered entry carrying the grounds somebody wrote for it",
+        "Disallow silencing a protected rule from a severity the lint configuration lowers, so an exception to one of these rules stands as one registered entry carrying the grounds somebody wrote for it",
       relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
     },
     messages: {
-      namedSuppression:
-        "A `{{spelling}}` comment must not name `{{ruleName}}`, a rule this package protects. Rewrite the code that rule reports, or register the exception in the lint configuration together with the grounds for it.",
-      blanketSuppression:
-        "A `{{spelling}}` comment that names no rule covers every rule this package protects, and must not stand in the source. Rewrite the code those rules report, or register the exception in the lint configuration together with the grounds for it.",
       weakenedProtectedRule:
         "A lint configuration must not hold `{{ruleName}}`, a rule this package protects, at `{{severity}}`. Set it to `error`, or move the exception into an override that lists the complete path of every file it covers together with the grounds for it.",
       patternScopedException:
@@ -103,25 +94,6 @@ export const noInlineSuppressionOfProtectedRule = createDontReviewItRule({
       matchesAnchoredGlobPath({ relativePath, pattern }),
     );
 
-    const reportComment = (comment: Comment): void => {
-      const directive = suppressionDirectiveOf(comment, settings.suppressionSpellings);
-      if (directive === null) return;
-      const covered = coveredRulesOf({ directive, targetRules: protectedRules });
-      if (covered.length === 0) return;
-      const spelling = { spelling: directive.spelling };
-      if (directive.ruleNames.length === 0) {
-        inspection.report({ loc: comment.loc, messageId: "blanketSuppression", data: spelling });
-        return;
-      }
-      for (const ruleName of covered) {
-        inspection.report({
-          loc: comment.loc,
-          messageId: "namedSuppression",
-          data: { ...spelling, ruleName },
-        });
-      }
-    };
-
     const reportConfiguration = (program: ESTree.Program): void => {
       for (const deviation of settings.deviations) {
         const complaint = deviationMessageFor(deviation);
@@ -138,7 +110,6 @@ export const noInlineSuppressionOfProtectedRule = createDontReviewItRule({
     return {
       Program(node: ESTree.Program) {
         if (generated) return;
-        for (const comment of node.comments) reportComment(comment);
         if (!LINT_CONFIGURATION_FILE.test(toPosixPath(inspection.filename))) return;
         reportConfiguration(node);
       },

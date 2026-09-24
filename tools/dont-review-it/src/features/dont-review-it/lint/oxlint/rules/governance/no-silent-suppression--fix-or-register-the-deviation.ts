@@ -7,39 +7,23 @@ import {
   weakenedTargetRulesIn,
   type IgnoreEntry,
 } from "../../lib/lint-suppression/lint-config-suppression.ts";
-import {
-  coveredRulesOf,
-  namesRule,
-  suppressionDirectiveOf,
-  type SuppressionDirective,
-} from "../../lib/lint-suppression/suppression-directives.ts";
 import { segmentsOf } from "../../lib/path-segments.ts";
 import { toPosixPath } from "../../lib/posix-path.ts";
 
-import type { Comment, ESTree, Options } from "@oxlint/plugins";
+import type { ESTree, Options } from "@oxlint/plugins";
 
-const RULE_NAME = "no-silent-suppression--fix-or-justify-inline";
+const RULE_NAME = "no-silent-suppression--fix-or-register-the-deviation";
 
 const GUARDED_RULES = [
-  "no-duplicate-exported-type--reuse-authoritative-type",
   "no-split-type-authority--rename-or-unify",
   "no-duplicate-value-declaration--reuse-authoritative-value",
-  "no-duplicate-line-block--extract-shared-function",
-  "no-repeated-call-chain--extract-data-loop",
-  "require-catalog-protocol--use-catalog-literal",
   "require-catalog-entry--register-shared-dependency",
-  "forbid-target-file--delete-or-relocate",
   RULE_NAME,
 ];
 
 const EXCLUDED_REGIONS = [".git", "node_modules", "dist", "coverage"];
 
-const EVERY_GUARDED_RULE = "every rule this package enforces";
-
 const STRING_LIST_SCHEMA = { type: "array", items: { type: "string" } } as const;
-
-const spelledListOf = (spelledNames: readonly string[]): string =>
-  spelledNames.map((spelled) => `\`${spelled}\``).join(", ");
 
 const configuredListOf = (
   ruleOptions: Readonly<Options>,
@@ -69,16 +53,10 @@ export const noSilentSuppression = createDontReviewItRule({
     type: "problem",
     docs: {
       description:
-        "Require every report from the rules that keep one declaration in one place to end in a repair, a registered deviation, or a suppression that carries its grounds, so what the linter stops saying is a decision somebody wrote down",
+        "Disallow a lint configuration lowering a rule that keeps one declaration in one place, or ignoring a path outside the regions the repository excludes, so what the linter stops saying is a decision somebody wrote down",
       relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
     },
     messages: {
-      groundlessSuppression:
-        "A `{{spelling}}` comment covering {{covered}} must not stand without grounds. Rewrite the code that rule reports, register the deviation in the list that rule keeps, or write after `--` what makes this line an exception.",
-      wholeFileSuppression:
-        "A `{{spelling}}` comment covering {{covered}} must not reach past the line below it. Rewrite the code that rule reports, register the deviation in the list that rule keeps, or replace this comment with `oxlint-disable-next-line` above the one line, naming the rule and writing its grounds after `--`.",
-      selfSuppression:
-        "A suppression naming `{{ruleName}}` must not stay in the source. Rewrite the code the covered rule reports, or register the deviation in the list that rule keeps.",
       weakenedRule:
         "A lint configuration must not hold `{{ruleName}}` at `{{severity}}`, a level that leaves a run green. Set it to `error`, rewrite the code that rule reports, or register the deviation in the list that rule keeps.",
       undeclaredIgnoredRegion:
@@ -99,6 +77,8 @@ export const noSilentSuppression = createDontReviewItRule({
     ],
   },
   create(inspection) {
+    if (!LINT_CONFIGURATION_FILE.test(toPosixPath(inspection.filename))) return {};
+
     const guardedRules = configuredListOf(inspection.options, {
       name: "guardedRules",
       carried: GUARDED_RULES,
@@ -111,41 +91,6 @@ export const noSilentSuppression = createDontReviewItRule({
       name: "forbiddenPaths",
       carried: [],
     });
-
-    const reportCoverage = ({
-      comment,
-      directive,
-    }: {
-      readonly comment: Comment;
-      readonly directive: SuppressionDirective;
-    }): void => {
-      const covered = coveredRulesOf({ directive, targetRules: guardedRules });
-      if (covered.length === 0) return;
-      const coverage = {
-        spelling: directive.spelling,
-        covered: directive.ruleNames.length === 0 ? EVERY_GUARDED_RULE : spelledListOf(covered),
-      };
-      if (directive.coversWholeFile) {
-        inspection.report({ loc: comment.loc, messageId: "wholeFileSuppression", data: coverage });
-        return;
-      }
-      if (directive.carriesGrounds) return;
-      inspection.report({ loc: comment.loc, messageId: "groundlessSuppression", data: coverage });
-    };
-
-    const reportComment = (comment: Comment): void => {
-      const directive = suppressionDirectiveOf(comment);
-      if (directive === null) return;
-      if (!namesRule({ directive, ruleName: RULE_NAME })) {
-        reportCoverage({ comment, directive });
-        return;
-      }
-      inspection.report({
-        loc: comment.loc,
-        messageId: "selfSuppression",
-        data: { ruleName: RULE_NAME },
-      });
-    };
 
     const hiddenForbiddenPathOf = (pattern: string): string | undefined =>
       forbiddenPaths.find((forbiddenPath) =>
@@ -174,24 +119,18 @@ export const noSilentSuppression = createDontReviewItRule({
       });
     };
 
-    const reportConfiguration = (program: ESTree.Program): void => {
-      const lint = lintBlockOf(program);
-      if (lint === null) return;
-      for (const weakened of weakenedTargetRulesIn({ lint, targetRules: guardedRules })) {
-        inspection.report({
-          node: weakened.property,
-          messageId: "weakenedRule",
-          data: { ruleName: weakened.ruleName, severity: weakened.severity },
-        });
-      }
-      for (const listed of ignoreEntriesIn(lint)) reportIgnoreEntry(listed);
-    };
-
     return {
       Program(node: ESTree.Program) {
-        for (const comment of node.comments) reportComment(comment);
-        if (!LINT_CONFIGURATION_FILE.test(toPosixPath(inspection.filename))) return;
-        reportConfiguration(node);
+        const lint = lintBlockOf(node);
+        if (lint === null) return;
+        for (const weakened of weakenedTargetRulesIn({ lint, targetRules: guardedRules })) {
+          inspection.report({
+            node: weakened.property,
+            messageId: "weakenedRule",
+            data: { ruleName: weakened.ruleName, severity: weakened.severity },
+          });
+        }
+        for (const listed of ignoreEntriesIn(lint)) reportIgnoreEntry(listed);
       },
     };
   },

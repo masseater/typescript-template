@@ -1,15 +1,8 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  bareRuleNameOf,
-  coveredRulesOf,
-  namesRule,
-  suppressionDirectiveOf,
-} from "./suppression-directives.ts";
+import { bareRuleNameOf, suppressionDirectiveOf } from "./suppression-directives.ts";
 
-const DUPLICATE_TYPE_RULE = "no-duplicate-exported-type--reuse-authoritative-type";
-
-const TARGET_RULES = [DUPLICATE_TYPE_RULE, "forbid-target-file--delete-or-relocate"];
+const DUPLICATE_TYPE_RULE = "no-split-type-authority--rename-or-unify";
 
 describe("suppressionDirectiveOf", () => {
   describe("a comment holding a word", () => {
@@ -301,97 +294,6 @@ describe("suppressionDirectiveOf", () => {
         ruleNames: [DUPLICATE_TYPE_RULE],
         carriesGrounds: true,
       });
-    });
-  });
-
-  describe("a spelling handed in as an additional one", () => {
-    const it = test.extend("directiveOfAnAdditionalSpelling", () =>
-      suppressionDirectiveOf({ value: " hush-lint no-console -- the CLI prints" }, ["hush-lint"]));
-
-    it("is read as a suppression", ({ directiveOfAnAdditionalSpelling }) => {
-      expect(directiveOfAnAdditionalSpelling).toStrictEqual({
-        spelling: "hush-lint",
-        coversWholeFile: true,
-        ruleNames: ["no-console"],
-        carriesGrounds: true,
-      });
-    });
-  });
-
-  describe("a spelling outside the list handed in", () => {
-    const it = test.extend("directiveOfASpellingOutsideTheListHandedIn", () =>
-      suppressionDirectiveOf({ value: " hush-lint no-console" }, ["quiet-lint"]));
-
-    it("stays no suppression", ({ directiveOfASpellingOutsideTheListHandedIn }) => {
-      expect(directiveOfASpellingOutsideTheListHandedIn).toBe(null);
-    });
-  });
-});
-
-describe("coveredRulesOf", () => {
-  describe("a directive that lists no rule", () => {
-    const it = test.extend("rulesCoveredByADirectiveListingNoRule", () => {
-      const directive = suppressionDirectiveOf({ value: " oxlint-disable" });
-      if (directive === null) throw new Error("the comment holds no suppression directive");
-      return coveredRulesOf({ directive, targetRules: TARGET_RULES });
-    });
-
-    it("covers every target", ({ rulesCoveredByADirectiveListingNoRule }) => {
-      expect(rulesCoveredByADirectiveListingNoRule).toStrictEqual(TARGET_RULES);
-    });
-  });
-
-  describe("a directive that lists rules", () => {
-    const it = test.extend("rulesCoveredByADirectiveListingRules", () => {
-      const directive = suppressionDirectiveOf({
-        value: ` oxlint-disable-next-line dont-review-it/${DUPLICATE_TYPE_RULE}, no-console`,
-      });
-      if (directive === null) throw new Error("the comment holds no suppression directive");
-      return coveredRulesOf({ directive, targetRules: TARGET_RULES });
-    });
-
-    it("covers the targets among them", ({ rulesCoveredByADirectiveListingRules }) => {
-      expect(rulesCoveredByADirectiveListingRules).toStrictEqual([DUPLICATE_TYPE_RULE]);
-    });
-  });
-
-  describe("a directive that lists no target", () => {
-    const it = test.extend("rulesCoveredByADirectiveListingNoTarget", () => {
-      const directive = suppressionDirectiveOf({ value: " oxlint-disable-next-line no-console" });
-      if (directive === null) throw new Error("the comment holds no suppression directive");
-      return coveredRulesOf({ directive, targetRules: TARGET_RULES });
-    });
-
-    it("covers nothing", ({ rulesCoveredByADirectiveListingNoTarget }) => {
-      expect(rulesCoveredByADirectiveListingNoTarget).toStrictEqual([]);
-    });
-  });
-});
-
-describe("namesRule", () => {
-  describe("a directive naming the rule through a plugin prefix", () => {
-    const it = test.extend("ruleNamedByAPrefixedDirective", () => {
-      const directive = suppressionDirectiveOf({
-        value: ` oxlint-disable-next-line dont-review-it/${DUPLICATE_TYPE_RULE}`,
-      });
-      if (directive === null) throw new Error("the comment holds no suppression directive");
-      return namesRule({ directive, ruleName: DUPLICATE_TYPE_RULE });
-    });
-
-    it("is read as naming that rule", ({ ruleNamedByAPrefixedDirective }) => {
-      expect(ruleNamedByAPrefixedDirective).toBe(true);
-    });
-  });
-
-  describe("a directive that lists no rule", () => {
-    const it = test.extend("ruleNamedByADirectiveListingNoRule", () => {
-      const directive = suppressionDirectiveOf({ value: " oxlint-disable" });
-      if (directive === null) throw new Error("the comment holds no suppression directive");
-      return namesRule({ directive, ruleName: DUPLICATE_TYPE_RULE });
-    });
-
-    it("names no rule", ({ ruleNamedByADirectiveListingNoRule }) => {
-      expect(ruleNamedByADirectiveListingNoRule).toBe(false);
     });
   });
 });

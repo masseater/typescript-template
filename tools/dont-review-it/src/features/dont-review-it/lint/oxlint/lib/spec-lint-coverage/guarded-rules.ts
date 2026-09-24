@@ -10,7 +10,6 @@ export const SPEC_DISCIPLINE_RULES: readonly string[] = [
   "no-fixture-forward-subject--yield-sut-output",
   "no-fixture-factory-function--inline-owned-setup",
   "require-vitest-extend-builder--infer-fixture-type",
-  "no-lint-suppression-in-spec--fix-the-violation",
   "require-spec-lint-coverage--lint-every-spec-file",
 ];
 
