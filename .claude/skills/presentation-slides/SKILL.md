@@ -4,9 +4,6 @@ description: 発表で映すプレゼンスライド（登壇、社内説明、�
 license: MIT
 metadata:
   upstream: https://github.com/vicky-tiq/skill-presentation-build
-  reference-decks-uhyo: https://speakerdeck.com/uhyo
-  reference-decks-twada: https://speakerdeck.com/twada
-  reference-decks-mizchi: https://speakerdeck.com/mizchi
 ---
 
 # プレゼンスライドの作り方
@@ -25,7 +22,7 @@ metadata:
 基準は `references/` にあり、この手順は順番を変えずに進める。構成が決まる前にスライドを作らない。
 
 1. `references/interview.md` の問いを 1 回にまとめて聞き、何をプレゼンしたいのかをユーザーにインタビューする。覚えて帰ってほしい 1 文が決まるまで次へ進まない。
-2. `references/flow.md` の骨組みに沿って、冒頭の問いか主張、目次の章、まとめの要点を決める。
+2. `references/reference-decks.md` の 10 本から題材と尺の近い資料を選び、`references/flow.md` の骨組みとその資料の作りに沿って、冒頭の問いか主張、目次の章、まとめの要点を決める。
 3. `references/section-map.md` の基準で章ごとの表を作り、ユーザーに見せて直してもらう。直しが返るまで台本とスライドに進まない。
 4. `references/script.md` の形で台本を書く。
 5. 冒頭の「スライド」に沿って、台本の各文を目で見る必要があるものと口頭で話すものに分ける。目で見るものだけを `references/slides.md` の基準でスライドにし、口頭で話すものは発表者ノートに置く。
