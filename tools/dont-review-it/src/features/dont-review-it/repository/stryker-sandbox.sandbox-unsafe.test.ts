@@ -3,12 +3,8 @@ import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { filePathOf } from "../platform/path.ts";
-import {
-  sandboxUnsafeReasons,
-  sandboxUnsafeTestPattern,
-  sandboxUnsafeTests,
-} from "./stryker-sandbox-test-fixture.ts";
-import configuration from "./stryker.config.ts";
+import { sandboxUnsafeReasons, sandboxUnsafeTests } from "./stryker-sandbox-test-fixture.ts";
+import configuration, { sandboxUnsafeTestPattern } from "./stryker.config.ts";
 
 const qualityDirectory = filePathOf(new URL(".", import.meta.url));
 
