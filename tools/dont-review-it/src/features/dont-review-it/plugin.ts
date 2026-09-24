@@ -115,7 +115,6 @@ import { noDetachedDeclaration } from "./lint/oxlint/rules/writing/no-detached-d
 import { noDetachedRationale } from "./lint/oxlint/rules/writing/no-detached-rationale--comment-at-explained-line.ts";
 import { noDoubleTypeAssertion } from "./lint/oxlint/rules/writing/no-double-type-assertion--declare-the-real-type.ts";
 import { noEnvironmentNameBranch } from "./lint/oxlint/rules/writing/no-environment-name-branch--list-the-values-per-stage.ts";
-import { noEnvironmentReadBelowEntry } from "./lint/oxlint/rules/writing/no-environment-read-below-entry--read-the-validated-configuration.ts";
 import { noExplanatoryComment } from "./lint/oxlint/rules/writing/no-explanatory-comment--delete-or-move-to-commit-message.ts";
 import { noHardcodedEndpoint } from "./lint/oxlint/rules/writing/no-hardcoded-endpoint--read-from-configuration.ts";
 import { noHardcodedProviderId } from "./lint/oxlint/rules/writing/no-hardcoded-provider-id--read-from-configuration.ts";
@@ -223,7 +222,6 @@ const plugin: Plugin = {
     [noHandRolledServerRead.name]: noHandRolledServerRead,
     [noBehaviorSwitchEnvironmentKey.name]: noBehaviorSwitchEnvironmentKey,
     [noEnvironmentNameBranch.name]: noEnvironmentNameBranch,
-    [noEnvironmentReadBelowEntry.name]: noEnvironmentReadBelowEntry,
     [noPlainSecretEnvironmentKey.name]: noPlainSecretEnvironmentKey,
     [noTestOnlyEnvironmentKey.name]: noTestOnlyEnvironmentKey,
     [noHardcodedEndpoint.name]: noHardcodedEndpoint,

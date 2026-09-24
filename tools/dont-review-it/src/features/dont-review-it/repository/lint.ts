@@ -508,22 +508,6 @@ const authUiServerReadsAwaitingQuery = [
   "libs/auth-ui/src/features/auth-ui/use-session.ts",
 ];
 
-const environmentReadsAwaitingEntry = [
-  "apps/internal-dashboard/src/shared/server-api/recordings-api.worker.test.ts",
-  "apps/internal-dashboard/src/shared/server-api/staff-api.worker.test.ts",
-  "apps/internal-dashboard/src/shared/transcription/transcribe-job.worker.test.ts",
-  "apps/service-admin/src/shared/server-api/admin-api.worker.test.ts",
-  "apps/service-member/src/shared/inbox/inbox.worker.test.ts",
-  "apps/service-member/src/shared/server-api/board-api.worker.test.ts",
-  "apps/service-member/src/shared/server-api/contact-api.worker.test.ts",
-  "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts",
-  "apps/service-member/src/shared/server-api/member-social.worker.test.ts",
-  "apps/service-member/src/shared/server-api/notifications.worker.test.ts",
-  "libs/db/src/features/db/testing.ts",
-  "libs/monitor/src/features/monitor/mail-recorder.worker.test.ts",
-  "libs/runtime/src/features/runtime/bindings.worker.test.ts",
-];
-
 const plainSecretsAwaitingRedacted = [
   "infra/budget-monitor/src/features/budget-monitor/config.ts",
   "infra/error-monitor/src/features/error-monitor/config.ts",
@@ -1076,13 +1060,6 @@ const lintOptions = {
       },
     },
     {
-      files: environmentReadsAwaitingEntry,
-      rules: {
-        "dont-review-it/no-environment-read-below-entry--read-the-validated-configuration":
-          LINT_SEVERITY.OFF,
-      },
-    },
-    {
       files: plainSecretsAwaitingRedacted,
       rules: {
         "dont-review-it/no-plain-secret-environment-key--wrap-it-in-redacted": LINT_SEVERITY.OFF,
@@ -1169,10 +1146,6 @@ const lintOptions = {
           ".dev-server.test.ts",
         ],
       },
-    ],
-    "dont-review-it/no-environment-read-below-entry--read-the-validated-configuration": [
-      LINT_SEVERITY.ERROR,
-      { entryFiles: ["libs/config/src/features/config/process-environment.ts"] },
     ],
     "dont-review-it/no-fixture-forward-subject--yield-sut-output": [
       LINT_SEVERITY.ERROR,
