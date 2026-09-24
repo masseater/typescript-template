@@ -1,7 +1,7 @@
 ---
 name: modern-react-guidance
 description: >
-  React 19.3 のコンポーネントを書く・直す・レビューするときに読む。Compiler、ref を props として渡す、Context の value、ViewTransition、Activity、useEffectEvent、browser()、Effect の置き場所を決める。フォームとクライアント状態とサーバー読み取りは Effect Atom、@repo/ui の useAction（キュー）、TanStack Form、TanStack Query に合わせ、useActionState・useFormStatus・useState・手書きの useEffect fetch・タイマーデバウンスには戻さない。瀑布は react-best-practices を読む。
+  React 19.3 のコンポーネントを書く・直す・レビューするときに読む。Compiler、ref を props として渡す、Context の value、ViewTransition、Activity、useEffectEvent、browser()、Effect の置き場所を決める。フォームとクライアント状態とサーバー読み取りは Effect Atom、@repo/ui の useAction（キュー）、TanStack Form、TanStack Query に合わせ、useActionState・useFormStatus・useState・手書きの useEffect fetch・タイマーデバウンスには戻さない。非同期の瀑布は react-best-practices に任せる。
 license: MIT
 metadata:
   version: "1.0.0"
@@ -34,7 +34,7 @@ metadata:
 | ブラウザだけで描く部分 | `use(browser())`（`react-dom`）を Suspense の内側で | `typeof window` で描画を分ける |
 | 隠しても状態を残す | `<Activity mode="hidden">` | 条件付きアンマウントだけで状態を捨てる |
 | 遷移のアニメーション | `<ViewTransition>` |  |
-| Effect から最新の props を読む | `useEffectEvent`。依存配列には入れない | その関数を依存配列に足して購読をやり直す |
+| Effect で最新の props を使う | `useEffectEvent`。依存配列には入れない | その関数を依存配列に足して購読をやり直す |
 
 `project/atom-state`、`project/no-manual-memoization`、`project/react-legacy`、`project/effect-event-deps` がこの表の機械的な部分をチェックする。抑制コメントで通さない。
 

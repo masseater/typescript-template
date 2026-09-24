@@ -2,7 +2,7 @@
 
 大本: https://speakerdeck.com/uhyo/react-no-sekkeiron
 
-宣言的 UI は `UI = f(state)` だけでは足りない。制約と保証を正確に宣言し、その範囲で React が UX を最適化する、というのがこのトークの設計論である。`useActionState` の話はトークでは記事送りなので `action-queue.md` を読む。
+宣言的 UI は `UI = f(state)` だけでは足りない。制約と保証を正確に宣言し、その範囲で React が UX を最適化する、というのがこのトークの設計論である。`useActionState` の代わりに `action-queue.md` の操作キューを使う。
 
 ## 保証
 
