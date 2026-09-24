@@ -1,5 +1,5 @@
 import { httpStatus } from "@repo/config";
-import { Encoding, Redacted, Result } from "effect";
+import { Effect, Encoding, Redacted, Result } from "effect";
 import { HttpResponse, http } from "msw";
 
 import type { WikiPublishConfig } from "@repo/config";
@@ -31,23 +31,25 @@ const pem = (label: string, der: ArrayBuffer): string =>
 const decodeSegment = (segment: string): Uint8Array =>
   Result.getOrElse(Encoding.decodeBase64Url(segment), () => new Uint8Array());
 
-const signedByApp = async (request: GitHubRequest, publicKey: CryptoKey): Promise<boolean> => {
+const signedByApp = (request: GitHubRequest, publicKey: CryptoKey): Promise<boolean> => {
   const [header = "", payload = "", signature = ""] = (request.headers.get("authorization") ?? "")
     .replace(/^Bearer /u, "")
     .split(".");
-  const verified = await crypto.subtle.verify(
-    "RSASSA-PKCS1-v1_5",
-    publicKey,
-    new Uint8Array(decodeSegment(signature)),
-    new TextEncoder().encode(`${header}.${payload}`),
-  );
   const claims: unknown = JSON.parse(new TextDecoder().decode(decodeSegment(payload)));
-  return (
-    verified &&
-    typeof claims === "object" &&
-    claims !== null &&
-    Reflect.get(claims, "iss") === appId
-  );
+  return crypto.subtle
+    .verify(
+      "RSASSA-PKCS1-v1_5",
+      publicKey,
+      new Uint8Array(decodeSegment(signature)),
+      new TextEncoder().encode(`${header}.${payload}`),
+    )
+    .then(
+      (verified) =>
+        verified &&
+        typeof claims === "object" &&
+        claims !== null &&
+        Reflect.get(claims, "iss") === appId,
+    );
 };
 
 const byInstallation = (request: GitHubRequest): boolean =>
@@ -57,18 +59,26 @@ const byInstallation = (request: GitHubRequest): boolean =>
 const refused = (): Response =>
   HttpResponse.json({ message: "Bad credentials" }, { status: httpStatus.unauthorized });
 
-async function fakeGitHub(publishedBlob: string | null, unavailableStep: string | null = null) {
-  const keys = await crypto.subtle.generateKey(
-    {
-      hash: "SHA-256",
-      modulusLength: rsaModulusLength,
-      name: "RSASSA-PKCS1-v1_5",
-      publicExponent: Uint8Array.of(1, 0, 1),
-    },
-    true,
-    ["sign", "verify"],
+const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
+  publishedBlob: string | null,
+  unavailableStep: string | null = null,
+) {
+  const keys = yield* Effect.promise(() =>
+    crypto.subtle.generateKey(
+      {
+        hash: "SHA-256",
+        modulusLength: rsaModulusLength,
+        name: "RSASSA-PKCS1-v1_5",
+        publicExponent: Uint8Array.of(1, 0, 1),
+      },
+      true,
+      ["sign", "verify"],
+    ),
   );
-  const privateKey = pem("PRIVATE KEY", await crypto.subtle.exportKey("pkcs8", keys.privateKey));
+  const privateKey = pem(
+    "PRIVATE KEY",
+    yield* Effect.promise(() => crypto.subtle.exportKey("pkcs8", keys.privateKey)),
+  );
   const calls: GitHubCall[] = [];
   const created =
     (path: string, response: JsonBodyType) =>
@@ -152,6 +162,6 @@ async function fakeGitHub(publishedBlob: string | null, unavailableStep: string 
     repository,
   };
   return { calls, config, handlers };
-}
+});
 
 export { baseCommit, baseTree, createdCommit, createdTree, fakeGitHub, pullRequestUrl };

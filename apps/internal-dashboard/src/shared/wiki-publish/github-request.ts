@@ -46,7 +46,7 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
     const response = yield* send(call).pipe(
       Effect.timeout(requestTimeout),
       Effect.provide(FetchHttpClient.layer),
-      Effect.provideService(FetchHttpClient.Fetch, (input, init) => globalThis.fetch(input, init)),
+      Effect.provideService(FetchHttpClient.Fetch, globalThis.fetch),
       Effect.mapError((cause) => new WikiPublishUnreachable({ cause, step: call.step })),
     );
     if (response.status >= httpStatus.internalServerError) {

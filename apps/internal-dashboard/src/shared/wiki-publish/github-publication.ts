@@ -63,7 +63,7 @@ const publishToGitHub = Effect.fn("publishWikiToGitHub")(function* publishToGitH
     `/contents/${documentPath}?ref=${head.object.sha}`,
   ).pipe(
     Effect.catchTag("WikiPublishFailed", (failure) =>
-      failure.status === httpStatus.notFound ? Effect.succeed(undefined) : Effect.fail(failure),
+      failure.status === httpStatus.notFound ? Effect.void : Effect.fail(failure),
     ),
   );
   if ((current?.sha ?? null) !== publication.baseRevision) {

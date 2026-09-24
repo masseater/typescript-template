@@ -257,7 +257,7 @@ describe("publishing a wiki draft", () => {
       runWith(auth, () =>
         Effect.gen(function* publish() {
           const revision = yield* publishedRevision();
-          const github = yield* Effect.promise(() => fakeGitHub(revision));
+          const github = yield* fakeGitHub(revision);
           (yield* MockNetwork).use(...github.handlers);
           const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
           const uploaded = yield* send(app, "/wiki-edit/images", {
@@ -338,7 +338,7 @@ describe("publishing a wiki draft", () => {
     ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* stale() {
-          const github = yield* Effect.promise(() => fakeGitHub("0".repeat(40)));
+          const github = yield* fakeGitHub("0".repeat(40));
           (yield* MockNetwork).use(...github.handlers);
           const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
           yield* saveDraftWith(app, cookie, draftMarkdown);
@@ -377,8 +377,7 @@ describe("publishing a wiki draft", () => {
   authTest("leaves the draft unpublished when GitHub cannot open the pull request", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* unreachable() {
-        const revision = yield* publishedRevision();
-        const github = yield* Effect.promise(() => fakeGitHub(revision, "/pulls"));
+        const github = yield* fakeGitHub(yield* publishedRevision(), "/pulls");
         (yield* MockNetwork).use(...github.handlers);
         const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
         yield* saveDraftWith(app, cookie, draftMarkdown);
@@ -400,8 +399,7 @@ describe("publishing a wiki draft", () => {
   authTest("lets only staff who can change things publish", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* viewer() {
-        const revision = yield* publishedRevision();
-        const github = yield* Effect.promise(() => fakeGitHub(revision));
+        const github = yield* fakeGitHub(yield* publishedRevision());
         (yield* MockNetwork).use(...github.handlers);
         const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
         yield* saveDraftWith(app, cookie, draftMarkdown);
