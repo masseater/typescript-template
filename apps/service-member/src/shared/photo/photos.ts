@@ -1,4 +1,10 @@
-import { photoKeysOf, setPhotoKey, visiblePhotoKey, withdrawMember } from "@repo/db";
+import {
+  photoKeysOf,
+  purgeExpiredWithdrawnMembers,
+  setPhotoKey,
+  visiblePhotoKey,
+  withdrawMember,
+} from "@repo/db";
 import { Effect } from "effect";
 
 import { sanitizeImage } from "./image.ts";
@@ -73,4 +79,11 @@ const withdrawWithPhotos = Effect.fn("withdrawWithPhotos")(function* withdrawWit
   return { ...withdrawn, removedPhotos: stored.length };
 });
 
-export { readPhoto, removePhoto, uploadPhoto, withdrawWithPhotos };
+const purgeWithdrawnWithPhotos = Effect.fn("purgeWithdrawnWithPhotos")(
+  function* purgeWithdrawnWithPhotos(checkedAt: Date) {
+    const store = yield* PhotoStore;
+    return yield* purgeExpiredWithdrawnMembers(checkedAt, store.remove);
+  },
+);
+
+export { purgeWithdrawnWithPhotos, readPhoto, removePhoto, uploadPhoto, withdrawWithPhotos };

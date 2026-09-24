@@ -1,29 +1,32 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { loginPath } from "./login-redirect.ts";
+import { sessionAllowed, sessionRedirect } from "./session-redirect.ts";
 import { useSession } from "./use-session.ts";
 
 import type { Role } from "@repo/config";
 import type { SessionView } from "./protocol.ts";
 
-const SECURITY_PATH = "/security";
-
 const useSessionGate = (
-  role: Role | undefined,
+  gate: Readonly<{ reloadDocument: boolean; role: Role | undefined; securityExempt: boolean }>,
 ): Readonly<{ error: string | undefined; loading: boolean; session: SessionView | undefined }> => {
-  const { error, loading, session } = useSession();
+  const { reloadDocument, role, securityExempt } = gate;
+  const reading = useSession();
   const { href, pathname } = useLocation();
   const navigate = useNavigate();
-  const permitted = session?.strong === true && (role === undefined || session.user.role === role);
-  const allowed = session !== undefined && (permitted || pathname === SECURITY_PATH);
+  const visit = { href, pathname, role, securityExempt };
+  const destination = sessionRedirect(reading, visit);
   useEffect(() => {
-    if (loading || error !== undefined || allowed) {
+    if (destination === undefined) {
       return;
     }
-    void navigate({ href: session === undefined ? loginPath(href) : SECURITY_PATH, replace: true });
-  }, [allowed, error, href, loading, navigate, session]);
-  return { error, loading, session: allowed ? session : undefined };
+    void navigate({ href: destination, reloadDocument, replace: true });
+  }, [destination, navigate, reloadDocument]);
+  return {
+    error: reading.error,
+    loading: reading.loading,
+    session: sessionAllowed(reading.session, visit) ? reading.session : undefined,
+  };
 };
 
 export { useSessionGate };

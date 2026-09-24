@@ -7,6 +7,7 @@ const withdrawnMember = sqliteTable("withdrawn_member", {
   image: text("image"),
   memberId: text("member_id").notNull().primaryKey(),
   name: text("name").notNull(),
+  photoKeys: text("photo_keys", { mode: "json" }).$type<readonly string[]>().notNull().default([]),
   profile: text("profile").notNull(),
   securityVersion: integer("security_version").notNull(),
   snapshot: text("snapshot", { mode: "json" }).notNull(),

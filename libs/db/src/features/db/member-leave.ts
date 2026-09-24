@@ -377,6 +377,11 @@ const withdrawableMember = Effect.fn("withdrawableMember")(function* withdrawabl
   return member;
 });
 
+const storedPhotoKeys = (member: typeof user.$inferSelect): readonly string[] =>
+  [member.facePhotoKey, member.companyPhotoKey].filter(
+    (photoKey): photoKey is string => photoKey !== null,
+  );
+
 const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithdrawn(
   member: typeof user.$inferSelect,
 ) {
@@ -395,6 +400,7 @@ const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithd
         image: member.image,
         memberId,
         name: member.name,
+        photoKeys: storedPhotoKeys(member),
         profile: member.profile,
         securityVersion: member.securityVersion,
         snapshot,
@@ -427,25 +433,56 @@ const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
   return { immediate: false as const, purgeAt };
 });
 
+type PhotoRemover<Failure, Requirements> = (
+  photoKeys: readonly string[],
+) => Effect.Effect<void, Failure, Requirements>;
+
+const releasePhotos = <Failure, Requirements>(
+  expired: readonly { readonly memberId: string; readonly photoKeys: readonly string[] }[],
+  removePhotos: PhotoRemover<Failure, Requirements>,
+): Effect.Effect<readonly string[], never, Requirements> =>
+  Effect.forEach(expired, ({ memberId, photoKeys }) =>
+    removePhotos(photoKeys).pipe(
+      Effect.match({ onFailure: () => undefined, onSuccess: () => memberId }),
+      Effect.tap((released) =>
+        released === undefined
+          ? logAt("Error", {
+              attributes: { memberId },
+              eventName: "member_leave.photo_purge_failed",
+            })
+          : Effect.void,
+      ),
+    ),
+  ).pipe(Effect.map((released) => released.filter((memberId) => memberId !== undefined)));
+
 const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
-  function* purgeExpiredWithdrawnMembers(checkedAt: Date) {
+  function* purgeExpiredWithdrawnMembers<Failure, Requirements>(
+    checkedAt: Date,
+    removePhotos: PhotoRemover<Failure, Requirements>,
+  ) {
     const expired = yield* query((database) =>
       database
-        .select({ memberId: leaveRequest.memberId })
+        .select({ memberId: withdrawnMember.memberId, photoKeys: withdrawnMember.photoKeys })
         .from(leaveRequest)
+        .innerJoin(withdrawnMember, eq(withdrawnMember.memberId, leaveRequest.memberId))
         .where(and(lte(leaveRequest.purgeAt, checkedAt), isNull(leaveRequest.restoredAt))),
     );
-    const memberIds = expired.map((expiredLeave) => expiredLeave.memberId);
-    if (memberIds.length === 0) {
-      return { count: 0, memberIds: [] as readonly string[] };
+    const memberIds = yield* releasePhotos(expired, removePhotos);
+    if (memberIds.length > 0) {
+      yield* query((database) =>
+        database.batch([
+          database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
+          database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
+        ]),
+      );
     }
-    yield* query((database) =>
-      database.batch([
-        database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
-        database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
-      ]),
-    );
-    return { count: memberIds.length, memberIds };
+    const released = new Set(memberIds);
+    return {
+      memberIds,
+      retainedMemberIds: expired
+        .map((member) => member.memberId)
+        .filter((memberId) => !released.has(memberId)),
+    };
   },
 );
 

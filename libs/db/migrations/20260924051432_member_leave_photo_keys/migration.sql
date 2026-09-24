@@ -1,0 +1,1 @@
+ALTER TABLE `withdrawn_member` ADD `photo_keys` text DEFAULT '[]' NOT NULL;

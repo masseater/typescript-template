@@ -13,7 +13,6 @@ export type { Invitation } from "./invite-preview";
 export { LoginForm } from "./login-form";
 export { LoginPage } from "./login-page";
 export { SecurityPage } from "./security-page";
-export { SessionGate } from "./session-gate";
 export { SignOutButton } from "./sign-out-button";
 export { VerifyEmailPage } from "./verify-email-page";
 export { useSession } from "./use-session";

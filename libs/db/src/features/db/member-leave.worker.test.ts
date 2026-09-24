@@ -1,6 +1,6 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION, PHOTO_SLOT, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
-import { DateTime, Effect } from "effect";
+import { DateTime, Effect, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
@@ -14,12 +14,14 @@ import {
   purgeExpiredWithdrawnMembers,
   withdrawMember,
 } from "./member-leave.ts";
+import { setPhotoKey } from "./member-profile.ts";
 import {
   addOAuthGrant,
   addSession,
   addUser,
   liveSessionCount,
   oauthGrantCounts,
+  expireLeave,
   profileFieldsOf,
   withdrawnSnapshotCount,
 } from "./records-test-fixture.ts";
@@ -204,6 +206,7 @@ describe("findRecoveryOffer", () => {
           );
           yield* purgeExpiredWithdrawnMembers(
             DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+            () => Effect.void,
           );
           yield* addUser({ email: "returning@example.com", userId: "newcomer" });
           return yield* findRecoveryOffer("newcomer");
@@ -315,32 +318,72 @@ describe("declineRecovery", () => {
 });
 
 describe("purgeExpiredWithdrawnMembers", () => {
+  const checkedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z"));
+
   describe("after the retention window", () => {
     const it = test.extend("purgedMember", () =>
       Effect.runPromise(
         Effect.gen(function* purgeMember() {
           yield* addUser({ userId: "expired" });
+          yield* setPhotoKey({
+            memberId: "expired",
+            photoKey: "photos/expired/face/1",
+            slot: PHOTO_SLOT.face,
+          });
           yield* withdrawMember("expired", { immediate: false });
-          yield* query((database) =>
-            database
-              .update(leaveRequestTable)
-              .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
-              .where(eq(leaveRequestTable.memberId, "expired")),
-          );
-          const purged = yield* purgeExpiredWithdrawnMembers(
-            DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+          yield* expireLeave("expired");
+          const released = yield* Ref.make<
+            readonly { readonly photoKeys: readonly string[]; readonly snapshots: number }[]
+          >([]);
+          const purged = yield* purgeExpiredWithdrawnMembers(checkedAt, (photoKeys) =>
+            withdrawnSnapshotCount("expired").pipe(
+              Effect.flatMap((snapshots) =>
+                Ref.update(released, (earlier) => [...earlier, { photoKeys, snapshots }]),
+              ),
+            ),
           );
           return {
             purged,
+            released: yield* Ref.get(released),
             withdrawn: yield* withdrawnSnapshotCount("expired"),
           };
         }).pipe(Effect.provide(TestDatabase)),
       ));
 
-    it("removes the withdrawn snapshot", ({ purgedMember }) => {
+    it("releases the kept photo keys before removing the withdrawn snapshot", ({
+      purgedMember,
+    }) => {
       expect(purgedMember).toStrictEqual({
-        purged: { count: 1, memberIds: ["expired"] },
+        purged: { memberIds: ["expired"], retainedMemberIds: [] },
+        released: [{ photoKeys: ["photos/expired/face/1"], snapshots: 1 }],
         withdrawn: 0,
+      });
+    });
+  });
+
+  describe("when the photos cannot be released", () => {
+    const it = test.extend("retainedMember", () =>
+      Effect.runPromise(
+        Effect.gen(function* retainMember() {
+          yield* addUser({ userId: "stuck" });
+          yield* setPhotoKey({
+            memberId: "stuck",
+            photoKey: "photos/stuck/company/1",
+            slot: PHOTO_SLOT.company,
+          });
+          yield* withdrawMember("stuck", { immediate: false });
+          yield* expireLeave("stuck");
+          const purged = yield* purgeExpiredWithdrawnMembers(checkedAt, () =>
+            Effect.fail("storage unavailable"),
+          );
+          return { purged, withdrawn: yield* withdrawnSnapshotCount("stuck") };
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("keeps the withdrawn snapshot for the next purge", ({ retainedMember }) => {
+      expect(retainedMember).toStrictEqual({
+        purged: { memberIds: [], retainedMemberIds: ["stuck"] },
+        withdrawn: 1,
       });
     });
   });

@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
-import { withdrawnMember } from "./member-leave-schema.ts";
+import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import {
   auditEvent,
   oauthAccessToken,
@@ -193,6 +193,15 @@ export const withdrawnSnapshotCount = Effect.fn("withdrawnSnapshotCount")(
     return snapshots.length;
   },
 );
+
+export const expireLeave = (memberId: string): Effect.Effect<void, DatabaseFailure, Database> =>
+  query((database) =>
+    database
+      .update(leaveRequest)
+      .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
+      .where(eq(leaveRequest.memberId, memberId))
+      .then(() => undefined),
+  );
 
 export const liveSessionCount = Effect.fn("liveSessionCount")(function* liveSessionCount(
   userId: string,
