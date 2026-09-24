@@ -1,10 +1,9 @@
 import { MEMBER_MCP_SCOPE } from "@repo/config";
-import { Button, FormColumn, localState, useAction } from "@repo/ui";
+import { Button, FailureStatus, FormColumn, localState, useAction } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
 
 import { submitDecision } from "#pages/account/consent/api/consent.ts";
 import { serviceName } from "#shared/config/index.ts";
-import { ActionFailure } from "#shared/ui/index.ts";
 import { McpScopeFields, requestedToolScopes, useChosenScopes } from "./mcp-scope-fields.tsx";
 
 import type { ReactElement } from "react";
@@ -73,7 +72,7 @@ function ConsentActions({
         denyDisabled={disabled}
         onDecide={decide}
       />
-      <ActionFailure error={action.error} />
+      <FailureStatus error={action.error} />
     </FormColumn>
   );
 }

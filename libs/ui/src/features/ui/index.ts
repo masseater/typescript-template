@@ -46,6 +46,7 @@ export { useAction } from "./action";
 export { searchValidator } from "./search-validator";
 export type { ActionState } from "./action";
 export { ActionStatus } from "./action-status";
+export { FailureStatus } from "./failure-status.tsx";
 export { localState, optionalState, useOptionalString } from "./local-state";
 export { request, requestAtom, resultError } from "./request";
 export type { RequestResult } from "./request";
