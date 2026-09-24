@@ -52,9 +52,12 @@ const { packedPackages, unpackedEntries, unshippedImports } = await Effect.runPr
             const absent = yield* Effect.filter(specifiers, (specifier) =>
               Effect.map(pathExists(paths.join(packed, specifier)), (present) => !present),
             );
-            const packedFiles = yield* filesystem.readDirectory(paths.join(packed, packedDirectory), {
-              recursive: true,
-            });
+            const packedFiles = yield* filesystem.readDirectory(
+              paths.join(packed, packedDirectory),
+              {
+                recursive: true,
+              },
+            );
             const imported = yield* Effect.forEach(
               packedFiles.filter((file) => file.endsWith(".mjs") || file.endsWith(".js")),
               (file) =>
@@ -63,7 +66,9 @@ const { packedPackages, unpackedEntries, unshippedImports } = await Effect.runPr
                   (source) =>
                     [...source.matchAll(workspaceSpecifier)]
                       .map(([, packageName]) => packageName)
-                      .filter((packageName) => packageName !== undefined && !shipped.has(packageName))
+                      .filter(
+                        (packageName) => packageName !== undefined && !shipped.has(packageName),
+                      )
                       .map((packageName) => `${workspace.packageName}: ${file} -> ${packageName}`),
                 ),
             );
