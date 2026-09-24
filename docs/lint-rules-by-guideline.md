@@ -39,13 +39,18 @@ No rule of this repository declares this document as its grounds. What the off-t
 | Rule | Description |
 | --- | --- |
 | [no-double-type-assertion--declare-the-real-type](../tools/dont-review-it/docs/lint/no-double-type-assertion--declare-the-real-type.md) | Disallow asserting the type of an expression that is already the result of a type assertion, so no value arrives at its declared type through a route the type checker was told to stop checking |
+| [no-environment-read-below-entry--read-the-validated-configuration](../tools/dont-review-it/docs/lint/no-environment-read-below-entry--read-the-validated-configuration.md) | Disallow reading a key of `process.env`, `import.meta.env` or a Worker's `env` outside the entry files that validate the environment with a schema, so every setting reaches the code below them already checked and typed |
 | [no-interface-declaration--write-a-type-alias](../tools/dont-review-it/docs/lint/no-interface-declaration--write-a-type-alias.md) | Disallow declaring an object type with an interface outside an ambient module, so every object type is written one way and only the declarations that must merge into a module or the global scope keep the form that merges |
 | [no-single-use-local-type--inline-at-the-use-site](../tools/dont-review-it/docs/lint/no-single-use-local-type--inline-at-the-use-site.md) | Disallow a type declared at the top level of a file without being exported when the file references it at most once, so a name is given to a shape only where more than one place has to agree on it |
 | [no-unchecked-cast--parse-at-boundary](../tools/dont-review-it/docs/lint/no-unchecked-cast--parse-at-boundary.md) | Disallow handing a concrete type to a value the source declares as `any` or `unknown`, so every concrete type a value carries reached it through a step that read the value |
 
 ## [.claude/skills/reviews/references/minimal-environment-variables.md](../.claude/skills/reviews/references/minimal-environment-variables.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag](../tools/dont-review-it/docs/lint/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag.md) | Disallow environment keys named as switches (`*_ENABLED`, `*_DISABLED`, `*_MODE`, `DEBUG`), so behaviour follows from whether the real value is present or from a feature flag instead of from a second key that can disagree with it |
+| [no-environment-name-branch--list-the-values-per-stage](../tools/dont-review-it/docs/lint/no-environment-name-branch--list-the-values-per-stage.md) | Disallow reading or declaring an environment key that names the environment itself (`NODE_ENV`, `APP_ENV`, `STAGE`, `import.meta.env.MODE`), so the differences between environments live in one table of values per stage instead of in comparisons spread through the code |
+| [no-test-only-environment-key--use-real-dependencies-and-http-doubles](../tools/dont-review-it/docs/lint/no-test-only-environment-key--use-real-dependencies-and-http-doubles.md) | Disallow environment keys that exist only to change behaviour under test (`MOCK_*`, `SKIP_*`, `FAKE_*`, `STUB_*`, `DUMMY_*`, `TEST_*`), so the code under test runs the same path it runs in production |
 
 ## [.claude/skills/reviews/references/monitoring-logging-and-status-codes.md](../.claude/skills/reviews/references/monitoring-logging-and-status-codes.md)
 
@@ -98,6 +103,7 @@ No rule of this repository declares this document as its grounds. What the off-t
 | --- | --- |
 | [forbid-tracked-path--untrack-and-ignore](../tools/dont-review-it/docs/lint/forbid-tracked-path--untrack-and-ignore.md) | Require every path registered as untrackable to stay out of the tracked file list and to stand in the ignore settings, so values that belong to one machine and output that a build produces never ride a commit into another clone |
 | [no-hardcoded-provider-id--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-provider-id--read-from-configuration.md) | Disallow text written out in the source at an identity argument of a client built from a provider package, so which account a deployment acts as is decided by its configuration rather than by the file that builds the client |
+| [no-plain-secret-environment-key--wrap-it-in-redacted](../tools/dont-review-it/docs/lint/no-plain-secret-environment-key--wrap-it-in-redacted.md) | Disallow declaring an environment key whose name marks it as a secret without wrapping its value in `Redacted`, so the value cannot reach a log, an error message or a trace as plain text |
 
 ## [.claude/skills/reviews/references/test-design.md](../.claude/skills/reviews/references/test-design.md)
 

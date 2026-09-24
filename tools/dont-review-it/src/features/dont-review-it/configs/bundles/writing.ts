@@ -2,18 +2,23 @@ import { forbidNumberedSiblingFile } from "../../lint/oxlint/rules/writing/forbi
 import { forbidOversizedFile } from "../../lint/oxlint/rules/writing/forbid-oversized-file--split-by-responsibility.ts";
 import { forbidUnresolvableModuleSpecifier } from "../../lint/oxlint/rules/writing/forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.ts";
 import { noAmbiguousVariableName } from "../../lint/oxlint/rules/writing/no-ambiguous-variable-name--rename-to-concrete-noun.ts";
+import { noBehaviorSwitchEnvironmentKey } from "../../lint/oxlint/rules/writing/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag.ts";
 import { noCittyParentRun } from "../../lint/oxlint/rules/writing/no-citty-parent-run--move-run-into-a-subcommand.ts";
 import { noDefaultExport } from "../../lint/oxlint/rules/writing/no-default-export--use-named-export.ts";
 import { noDetachedDeclaration } from "../../lint/oxlint/rules/writing/no-detached-declaration--declare-it-next-to-its-use.ts";
 import { noDetachedRationale } from "../../lint/oxlint/rules/writing/no-detached-rationale--comment-at-explained-line.ts";
 import { noDoubleTypeAssertion } from "../../lint/oxlint/rules/writing/no-double-type-assertion--declare-the-real-type.ts";
+import { noEnvironmentNameBranch } from "../../lint/oxlint/rules/writing/no-environment-name-branch--list-the-values-per-stage.ts";
+import { noEnvironmentReadBelowEntry } from "../../lint/oxlint/rules/writing/no-environment-read-below-entry--read-the-validated-configuration.ts";
 import { noExplanatoryComment } from "../../lint/oxlint/rules/writing/no-explanatory-comment--delete-or-move-to-commit-message.ts";
 import { noHardcodedEndpoint } from "../../lint/oxlint/rules/writing/no-hardcoded-endpoint--read-from-configuration.ts";
 import { noHardcodedProviderId } from "../../lint/oxlint/rules/writing/no-hardcoded-provider-id--read-from-configuration.ts";
 import { noIdentityWrapper } from "../../lint/oxlint/rules/writing/no-identity-wrapper--call-the-target-directly.ts";
 import { noInterfaceDeclaration } from "../../lint/oxlint/rules/writing/no-interface-declaration--write-a-type-alias.ts";
 import { noMultiBindingDeclaration } from "../../lint/oxlint/rules/writing/no-multi-binding-declaration--declare-one-binding-per-statement.ts";
+import { noPlainSecretEnvironmentKey } from "../../lint/oxlint/rules/writing/no-plain-secret-environment-key--wrap-it-in-redacted.ts";
 import { noSingleUseLocalType } from "../../lint/oxlint/rules/writing/no-single-use-local-type--inline-at-the-use-site.ts";
+import { noTestOnlyEnvironmentKey } from "../../lint/oxlint/rules/writing/no-test-only-environment-key--use-real-dependencies-and-http-doubles.ts";
 import { noUncheckedCast } from "../../lint/oxlint/rules/writing/no-unchecked-cast--parse-at-boundary.ts";
 import { noUnorderedImport } from "../../lint/oxlint/rules/writing/no-unordered-import--group-by-origin-then-sort-by-specifier.ts";
 import { requireReExportOnlyFiles } from "../../lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
@@ -32,6 +37,11 @@ export const writingBundle: readonly WorkspaceLintRule[] = [
   noDetachedRationale,
   noDoubleTypeAssertion,
   noExplanatoryComment,
+  noBehaviorSwitchEnvironmentKey,
+  noEnvironmentNameBranch,
+  noEnvironmentReadBelowEntry,
+  noPlainSecretEnvironmentKey,
+  noTestOnlyEnvironmentKey,
   noHardcodedEndpoint,
   noHardcodedProviderId,
   noIdentityWrapper,
