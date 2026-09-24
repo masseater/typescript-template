@@ -7,7 +7,7 @@ import { FieldValidationMessageProvider } from "./field-validation-message-provi
 import type { ReactElement } from "react";
 
 const SuppliedField = (): ReactElement => {
-  return <Field label="ユーザー名" name="name" required value="" onValueChange={noop} />;
+  return <Field label="ユーザー名" name="name" value="" onValueChange={noop} />;
 };
 
 const meta = preview.meta({

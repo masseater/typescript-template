@@ -3,7 +3,7 @@ title: Base UI と shadcn
 description: 挙動は Base UI が持ち、見た目のコンポーネントはリポジトリ内に保持する
 ---
 
-ボタンの無効化、メニューのキーボード操作、ダイアログのフォーカス移動は Base UI（`@base-ui/react`）が持つ。見た目は持たない。色、角丸、文字は、shadcn がリポジトリへコピーしたコンポーネントの Tailwind のクラスが持つ。画面が指定するのは余白のようなレイアウトだけである。
+ボタンの無効化、メニューのキーボード操作、ダイアログのフォーカス移動は Base UI（`@base-ui/react`）が実装する。見た目は持たない。色、角丸、文字は、shadcn がリポジトリへコピーしたコンポーネントの Tailwind のクラスで決まる。画面が指定するのは余白のようなレイアウトだけである。
 
 ```tsx
 <Button type="button" variant="primary" disabled>
@@ -13,7 +13,7 @@ description: 挙動は Base UI が持ち、見た目のコンポーネントは�
 
 `disabled` は Base UI の Button に渡る。`variant="primary"` がどのクラスになるかは、コピーしたコンポーネントのファイルに書いてある。shadcn のコンポーネントはパッケージの公開 API として依存せず、そのファイルを編集して見た目を変える。
 
-コンポーネントを足すときの判断は `.claude/skills/reviews/references/frontend.md` にある。
+コンポーネントを足すときの判断は `.claude/skills/reviews/references/frontend-components-and-state.md` にある。
 
 ## 採ると
 

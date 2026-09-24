@@ -2,6 +2,7 @@ import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { discardWikiDraft, findWikiDraft, saveWikiDraft } from "@repo/db";
 import { FileStore } from "@repo/runtime";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams, type ApiRoutes } from "@repo/runtime/http";
 import { Effect, Encoding } from "effect";
 
@@ -136,11 +137,16 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
   return createApi("/wiki-edit")
     .get(
       "/source",
-      api.route(WikiSource, getSource, { DatabaseFailure: "unexpected", WikiPageMissing: missing }),
+      ...api.route({ response: WikiSource }, getSource, {
+        ...sessionFailures,
+        DatabaseFailure: "unexpected",
+        WikiPageMissing: missing,
+      }),
     )
     .put(
       "/draft",
-      api.route(WikiDraftSaved, putDraft, {
+      ...api.route({ response: WikiDraftSaved }, putDraft, {
+        ...sessionFailures,
         DatabaseFailure: "unexpected",
         WikiDraftConflict: conflict,
         WikiPageInvalid: {
@@ -152,7 +158,8 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
     )
     .delete(
       "/draft",
-      api.route(WikiSource, deleteDraft, {
+      ...api.route({ response: WikiSource }, deleteDraft, {
+        ...sessionFailures,
         DatabaseFailure: "unexpected",
         WikiDraftConflict: conflict,
         WikiPageMissing: missing,
@@ -160,7 +167,8 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
     )
     .post(
       "/images",
-      api.route(WikiImageUploaded, postImage, {
+      ...api.route({ response: WikiImageUploaded }, postImage, {
+        ...sessionFailures,
         DatabaseFailure: "unexpected",
         StorageFailed: "unexpected",
         WikiImageTooLarge: {
@@ -171,7 +179,8 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
     )
     .get(
       "/images/:name",
-      api.raw(getImage, {
+      ...api.raw(getImage, {
+        ...sessionFailures,
         DatabaseFailure: "unexpected",
         StorageFailed: "unexpected",
         WikiPageMissing: { message: "画像が見つかりません。", status: httpStatus.notFound },

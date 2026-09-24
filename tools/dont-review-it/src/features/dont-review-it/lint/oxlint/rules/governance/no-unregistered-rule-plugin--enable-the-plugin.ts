@@ -95,7 +95,7 @@ export const noUnregisteredRulePlugin = createDontReviewItRule({
     docs: {
       description:
         "Disallow a lint configuration naming a rule of a plugin that no plugin list it can reach enables, so a rule left standing on a dropped plugin is reported instead of resolving to nothing",
-      relatedGuidelines: [".claude/skills/reviews/references/enforcement.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
     },
     messages: {
       unregisteredRulePlugin:

@@ -11,7 +11,7 @@ function SearchForm(): ReactElement {
     onNone: () => "",
     onSome: (search) => search.keyword ?? "",
   });
-  return <SearchFields key={keyword} keyword={keyword} />;
+  return <SearchFields keyword={keyword} />;
 }
 
 export { SearchForm };

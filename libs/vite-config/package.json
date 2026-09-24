@@ -13,6 +13,7 @@
     "@effect/tsgo": "catalog:",
     "@inlang/paraglide-js": "catalog:",
     "@repo/config": "workspace:*",
+    "@scalar/api-reference": "1.69.0",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "6.1.1",

@@ -42,8 +42,8 @@ export const noLintSuppressionInSpec = createDontReviewItRule({
       description:
         "Disallow a lint suppression comment in the files these rules run on, so a report ends in a repair to the code or a repair to the rule and never in a comment that takes the report away",
       relatedGuidelines: [
-        ".claude/skills/reviews/references/enforcement.md",
-        ".claude/skills/reviews/references/tests.md",
+        ".claude/skills/reviews/references/verification-and-automation.md",
+        ".claude/skills/reviews/references/test-design.md",
       ],
     },
     messages: {

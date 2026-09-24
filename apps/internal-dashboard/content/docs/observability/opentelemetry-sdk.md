@@ -26,7 +26,7 @@ parent.addEvent("cache.miss");
 
 Head sampling は、span を開くときに trace id で残すかどうかを決める。その時点では、要求が遅くなるかはまだ分からない。終わった trace から遅いものとエラーだけを残すのは、[OpenTelemetry Collector](/observability/collector) の tail sampling である。
 
-Context は非同期の続きにも残る。コールバックの中で開いた span も、その Context が親なら同じ trace になる。SDK は span を切るだけで、線路上のバイト列にはまだしない。送り出す形式は [OTLP](/observability/otlp) である。このテンプレートのアプリが span を切るときは Effect の `withSpan` で、この `startSpan` を画面から直接は呼ばない。その手順は [OpenTelemetry](/tech-stack/opentelemetry) が持つ。
+Context は非同期の続きにも残る。コールバックの中で開いた span も、その Context が親なら同じ trace になる。SDK は span を切るだけで、線路上のバイト列にはまだしない。送り出す形式は [OTLP](/observability/otlp) である。このテンプレートのアプリが span を切るときは Effect の `withSpan` で、この `startSpan` を画面から直接は呼ばない。
 
 ## 参考文献
 

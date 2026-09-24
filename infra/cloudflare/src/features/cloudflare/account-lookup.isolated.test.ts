@@ -10,7 +10,6 @@ import {
   grantedPermissions,
   secretsStoreCount,
   workerNames,
-  workersSubdomain,
 } from "./account-lookup.ts";
 import {
   STATE_STORE_SCRIPT_NAME,
@@ -59,9 +58,6 @@ it.effect("reads an untouched account as free of the names this deployment claim
         assert.strictEqual(new URL(request.url).searchParams.get("name.exact"), hostname);
         return HttpResponse.json({ result: [], result_info: { per_page: 100, total_count: 0 } });
       }),
-      http.get(`${account}/workers/subdomain`, () =>
-        HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
-      ),
     );
     assert.strictEqual(yield* secretsStoreCount(access), 0);
     assert.deepStrictEqual(yield* workerNames(access), []);
@@ -70,7 +66,6 @@ it.effect("reads an untouched account as free of the names this deployment claim
       yield* dnsRecordNames(access, verificationSettings.zoneId, hostname),
       [],
     );
-    assert.strictEqual(yield* workersSubdomain(access), "example-subdomain");
   }).pipe(Effect.scoped),
 );
 
@@ -214,7 +209,7 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / Billing / Read",
       "Account / Workers Observability / Write",
       "Account / Email Sending / Write",
-      "Account / Email Routing Addresses / Read",
+      "Account / Email Routing Addresses / Edit",
       "Zone / Workers Routes / Edit",
       "Zone / DNS / Read",
       "Zone / Zone Settings / Edit",
@@ -224,7 +219,7 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / API Tokens / Read",
       "Account / Billing / Read",
       "Account / D1 / Edit",
-      "Account / Email Routing Addresses / Read",
+      "Account / Email Routing Addresses / Edit",
       "Account / Email Sending / Write",
       "Account / Secrets Store / Edit",
       "Account / Workers / Admin",
@@ -271,7 +266,7 @@ it.effect("names the deploy token permissions the account token does not carry",
     );
     assert.deepStrictEqual(
       missingPermissions([
-        { name: "Workers Scripts Write" },
+        { name: "Workers Admin" },
         { name: "D1 Write" },
         { name: "Secrets Store Write" },
         { name: "Account API Tokens Write" },

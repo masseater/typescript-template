@@ -1,30 +1,23 @@
-import { useAtomValue } from "@effect/atom-react";
-import { STATUS_VARIANT, StatusMessage, requestAtom, resultError } from "@repo/ui";
-import { Effect } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
+import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, type ReactElement } from "react";
 
-import { authTask } from "./browser-http.ts";
-import { verifyEmailToken } from "./verify-email-token.ts";
-
-import type { ReactElement } from "react";
-
-const confirmEmail = Effect.gen(function* confirmAddress() {
-  const accepted = yield* authTask(() => verifyEmailToken());
-  if (accepted) {
-    globalThis.location.replace("/login");
-  }
-  return accepted;
-});
-
-const verificationAtom = requestAtom(() => Effect.runPromise(confirmEmail));
+import { emailVerificationOptions } from "./api/verify-email.ts";
 
 const EmailVerification = (): ReactElement => {
-  const verification = useAtomValue(verificationAtom);
-  const failure = resultError(verification);
-  if (failure !== undefined) {
-    return <StatusMessage variant={STATUS_VARIANT.failure}>{failure}</StatusMessage>;
-  }
-  return AsyncResult.isSuccess(verification) && !verification.value ? (
+  const verification = useQuery(emailVerificationOptions);
+  const verified = verification.data;
+  useEffect(() => {
+    if (verified === undefined) {
+      return;
+    }
+    if (verified) {
+      globalThis.location.replace("/login");
+      return;
+    }
+    globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
+  }, [verified]);
+  return verified === false ? (
     <StatusMessage variant={STATUS_VARIANT.failure}>
       {"確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。"}
     </StatusMessage>

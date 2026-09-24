@@ -147,7 +147,7 @@ export const noViMockFactoryBehavior = createDontReviewItRule({
     docs: {
       description:
         "Disallow a module replacement declaration from carrying a factory, so what a replaced module hands back is declared by the fixture of the test that reads it instead of being fixed once for every test in the file",
-      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
     },
     messages: {
       factoryShape:

@@ -3,7 +3,7 @@ title: 実装のスキーマ
 description: libs/db の Drizzle スキーマから生成した、D1 の表と外部キーの ER 図
 ---
 
-`libs/db` の Drizzle スキーマから生成した、D1 に実在する表と外部キーの ER 図である。概念の関係は [データモデルの全体](/data-model/overview) が持つ。この文書は手で直さず、`vp run --filter @repo/db db:generate` で作り直す。
+`libs/db` の Drizzle スキーマから生成した、D1 に実在する表と外部キーの ER 図である。この文書は手で直さず、`vp run --filter @repo/db db:generate` で作り直す。
 
 ```mermaid
 erDiagram

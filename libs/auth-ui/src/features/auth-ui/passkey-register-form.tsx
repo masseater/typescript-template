@@ -66,7 +66,6 @@ const PasskeyRegisterForm = ({
           label="パスキーの名前"
           name="passkey-name"
           maxLength={100}
-          required
           value={passkeyName.value}
           onValueChange={passkeyName.handleChange}
         />
