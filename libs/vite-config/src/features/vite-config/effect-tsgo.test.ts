@@ -5,6 +5,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { baselinePath } from "./effect-typecheck.ts";
 import { filesystem, paths } from "./host.ts";
+import { telemetryEnv } from "./run-config.ts";
 import { taskInput } from "./task-input.ts";
 import { workspaceDependencyRanges } from "./workspace-packages.ts";
 
@@ -29,6 +30,7 @@ describe("effectDiagnostics", () => {
     expect(libraryDiagnostics).toStrictEqual({
       "check:effect": {
         command: effectTsgoNoEmit("tsconfig.json"),
+        env: [...telemetryEnv],
         input: [
           ...taskInput,
           ...(repositoryRanges.get("libs/db-local") ?? []).flatMap((directory) => [
@@ -50,6 +52,7 @@ describe("effectDiagnostics", () => {
     expect(rootDiagnostics).toStrictEqual({
       "check:effect": {
         command: effectTsgoNoEmit("tsconfig.json"),
+        env: [...telemetryEnv],
         input: [
           ...taskInput,
           { base: "workspace", pattern: "**/*.{ts,tsx}" },
@@ -84,6 +87,7 @@ describe("awaitingEffectDiagnostics", () => {
     expect(awaitingDiagnostics).toStrictEqual({
       "check:effect": {
         command: "check-effect-typecheck",
+        env: [...telemetryEnv],
         input: [
           ...effectDiagnostics(paths.join(repositoryRoot, "apps/service-admin"))["check:effect"]
             .input,

@@ -6,6 +6,7 @@ import {
   checkCode,
   modularBoundaries,
   workspaceCheckImports,
+  telemetryEnv,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -48,6 +49,7 @@ export default defineConfig({
       "probe:origins": { cache: false, command: "./src/features/cloudflare/verify-origins.ts" },
       "verify:stacks": {
         command: "./src/features/cloudflare/check-stacks.ts",
+        env: [...telemetryEnv],
         dependsOn: stackBuilds,
         input: [...taskInput],
       },

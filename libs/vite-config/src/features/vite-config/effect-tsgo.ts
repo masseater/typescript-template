@@ -4,6 +4,7 @@ import { Effect } from "effect";
 
 import { baselinePath } from "./effect-typecheck.ts";
 import { paths } from "./host.ts";
+import { telemetryEnv } from "./run-config.ts";
 import { taskInput } from "./task-input.ts";
 import { workspaceDependencyRanges } from "./workspace-packages.ts";
 
@@ -45,12 +46,15 @@ const effectTypecheckInputs = (packageRoot: string): TaskInputEntry[] => {
   ];
 };
 
-type EffectDiagnosticsTask = { "check:effect": { command: string; input: TaskInputEntry[] } };
+type EffectDiagnosticsTask = {
+  "check:effect": { command: string; input: TaskInputEntry[]; env: string[] };
+};
 
 const effectDiagnostics = (packageRoot: string): EffectDiagnosticsTask => ({
   "check:effect": {
     command: effectTsgoNoEmit("tsconfig.json"),
     input: effectTypecheckInputs(packageRoot),
+    env: [...telemetryEnv],
   },
 });
 
@@ -61,6 +65,7 @@ const awaitingEffectDiagnostics = (packageRoot: string): EffectDiagnosticsTask =
       ...effectTypecheckInputs(packageRoot),
       { base: "workspace" as const, pattern: workspacePath(baselinePath) },
     ],
+    env: [...telemetryEnv],
   },
 });
 

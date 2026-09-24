@@ -1,10 +1,15 @@
-import { SUBSCRIPTION_STATUS, WEBHOOK_DISPOSITION, subscriptionStatuses } from "@repo/config";
+import {
+  SUBSCRIPTION_STATUS,
+  WEBHOOK_DISPOSITION,
+  stripeWebhookEvents,
+  subscriptionStatuses,
+} from "@repo/config";
 import { attachCheckout, markPaymentFailed, memberOfCustomer, recordSubscription } from "@repo/db";
 import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 
-import type { WebhookOutcome } from "@repo/config";
+import type { StripeWebhookEvent, WebhookOutcome } from "@repo/config";
 import type { StripeEventRecord, SubscriptionRecord } from "@repo/db";
 import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeEvent } from "./stripe.ts";
@@ -134,25 +139,24 @@ const failPayment = Effect.fn("failPayment")(function* failPayment(event: Stripe
   return yield* markPaymentFailed(eventRecord(event), subscriptionId);
 });
 
+const eventHandlers = {
+  "checkout.session.completed": completeCheckout,
+  "customer.subscription.created": syncSubscription,
+  "customer.subscription.deleted": syncSubscription,
+  "customer.subscription.updated": syncSubscription,
+  "invoice.payment_failed": failPayment,
+} as const satisfies Record<StripeWebhookEvent, (event: StripeEvent) => unknown>;
+
+const isHandledEvent = (type: string): type is StripeWebhookEvent =>
+  stripeWebhookEvents.some((handled) => handled === type);
+
 const handleStripeEvent = Effect.fn("handleStripeEvent")(function* handleStripeEvent(
   event: StripeEvent,
 ) {
-  switch (event.type) {
-    case "checkout.session.completed": {
-      return yield* completeCheckout(event);
-    }
-    case "customer.subscription.created":
-    case "customer.subscription.deleted":
-    case "customer.subscription.updated": {
-      return yield* syncSubscription(event);
-    }
-    case "invoice.payment_failed": {
-      return yield* failPayment(event);
-    }
-    default: {
-      return WEBHOOK_DISPOSITION.ignored satisfies WebhookOutcome;
-    }
+  if (!isHandledEvent(event.type)) {
+    return WEBHOOK_DISPOSITION.ignored satisfies WebhookOutcome;
   }
+  return yield* eventHandlers[event.type](event);
 });
 
 export { handleStripeEvent };
