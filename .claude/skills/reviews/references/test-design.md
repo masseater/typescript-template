@@ -66,44 +66,7 @@ expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effe
 
 ## 書き方の例
 
-指示なしで頼むと、次の形が出てくる。このリポジトリの lint はこの形を通さない。
-
-```ts
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-
-import { openPullRequestOf, type CommandRunner } from "./read-open-pr.ts";
-
-describe("openPullRequestOf", () => {
-  let run: ReturnType<typeof vi.fn<CommandRunner>>;
-
-  beforeEach(() => {
-    run = vi.fn<CommandRunner>();
-  });
-
-  it("parses an open pull request", () => {
-    run.mockReturnValue({
-      status: 0,
-      stdout:
-        '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":3,"url":"https://example.com/3"}',
-    });
-    const result = openPullRequestOf("/work", run);
-    expect(result).toBeDefined();
-    expect(result?.number).toBe(3);
-    expect(run).toHaveBeenCalledWith({
-      cwd: "/work",
-      executable: "gh",
-      handed: ["pr", "view", "--json", "number,url,baseRefName,mergeStateStatus"],
-    });
-  });
-
-  it("returns undefined when gh fails", () => {
-    run.mockReturnValue({ status: 1, stdout: "no pull requests found" });
-    expect(openPullRequestOf("/work", run)).toBeUndefined();
-  });
-});
-```
-
-同じ対象を、このリポジトリでは次のように書く（`tools/ai-native/src/features/ai-native/sync-base/read-open-pr.test.ts`）。
+テストは次のように書く（`tools/ai-native/src/features/ai-native/sync-base/read-open-pr.test.ts`）。
 
 ```ts
 import { describe, expect, test } from "vite-plus/test";
