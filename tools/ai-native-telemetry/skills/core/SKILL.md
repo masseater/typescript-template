@@ -34,15 +34,15 @@ Nothing is measured unless `MST_TELEMETRY` is defined. When it is, spans, metric
 
 ```ts
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { vitestSdkPath } from "@repo/ai-native-telemetry/vitest-sdk-path";
+import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
 
 const openTelemetry = {
   enabled: telemetryAsked,
-  sdkPath: vitestSdkPath,
+  sdkPath: sdkFilePath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
 };
 ```
 
-Hand this object to `test.experimental.openTelemetry`. `vitestSdkPath` is the absolute file path of the `./vitest-sdk` entry, which Vitest needs because it resolves `sdkPath` against its `root`, the package directory, not the repository root.
+Hand this object to `test.experimental.openTelemetry`. `sdkPath` has to be an absolute file path: Vitest resolves it against its `root`, which is the package directory, not the repository root. `sdkFilePath` turns the resolved URL into that path without `node:url`.
 
 ### Continue the parent's trace in a child process
 
