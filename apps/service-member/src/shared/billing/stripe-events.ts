@@ -5,7 +5,9 @@ import {
   subscriptionStatuses,
 } from "@repo/config";
 import {
+  acceptQuote,
   applyInvoiceState,
+  applyQuoteState,
   attachCheckout,
   creditInvoice,
   markPaymentFailed,
@@ -17,9 +19,10 @@ import {
 import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
+import { Stripe } from "./stripe.ts";
 
 import type { StripeWebhookEvent, WebhookOutcome } from "@repo/config";
-import type { InvoiceState, StripeEventRecord, SubscriptionRecord } from "@repo/db";
+import type { InvoiceState, QuoteState, StripeEventRecord, SubscriptionRecord } from "@repo/db";
 import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeEvent } from "./stripe.ts";
 
@@ -87,6 +90,23 @@ const RefundedCharge = Schema.Struct({
   invoice: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
 
+const Quote = Schema.Struct({
+  amount_total: Schema.Finite,
+  collection_method: Schema.String,
+  currency: Schema.String,
+  customer: Schema.NullOr(Schema.String),
+  expires_at: Schema.Finite,
+  id: Schema.String,
+  invoice_settings: Schema.optionalKey(
+    Schema.NullOr(
+      Schema.Struct({ days_until_due: Schema.optionalKey(Schema.NullOr(Schema.Finite)) }),
+    ),
+  ),
+  metadata: Metadata,
+  status: Schema.String,
+  subscription: Schema.optionalKey(Schema.NullOr(Schema.String)),
+});
+
 function readObject<Contract extends Decodable>(
   schema: Contract,
   object: unknown,
@@ -138,16 +158,11 @@ const completeCheckout = Effect.fn("completeCheckout")(function* completeCheckou
   return yield* attachCheckout(eventRecord(event), record);
 });
 
-const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscription(
-  event: StripeEvent,
-) {
-  const subscription = yield* readObject(Subscription, event.data.object);
-  const memberId =
-    (yield* memberOfCustomer(subscription.customer)) ?? subscription.metadata?.["member_id"];
-  if (memberId === undefined) {
-    return WEBHOOK_DISPOSITION.ignored;
-  }
-  const record: SubscriptionRecord = {
+function subscriptionRecord(
+  memberId: string,
+  subscription: typeof Subscription.Type,
+): SubscriptionRecord {
+  return {
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
     currentPeriodEnd: secondsToDate(
       subscription.current_period_end ?? subscription.items?.data[0]?.current_period_end,
@@ -157,7 +172,18 @@ const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscriptio
     stripeCustomerId: subscription.customer,
     stripeSubscriptionId: subscription.id,
   };
-  return yield* recordSubscription(eventRecord(event), record);
+}
+
+const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscription(
+  event: StripeEvent,
+) {
+  const subscription = yield* readObject(Subscription, event.data.object);
+  const memberId =
+    (yield* memberOfCustomer(subscription.customer)) ?? subscription.metadata?.["member_id"];
+  if (memberId === undefined) {
+    return WEBHOOK_DISPOSITION.ignored;
+  }
+  return yield* recordSubscription(eventRecord(event), subscriptionRecord(memberId, subscription));
 });
 
 const invoiceSubscription = Effect.fn("invoiceSubscription")(function* invoiceSubscription(
@@ -235,6 +261,53 @@ const chargeRefunded = Effect.fn("chargeRefunded")(function* chargeRefunded(even
   });
 });
 
+const quoteLedgerState = Effect.fn("quoteLedgerState")(function* quoteLedgerState(
+  event: StripeEvent,
+) {
+  const quote = yield* readObject(Quote, event.data.object);
+  const memberId =
+    (quote.customer === null ? undefined : yield* memberOfCustomer(quote.customer)) ??
+    quote.metadata?.["member_id"];
+  return memberId === undefined
+    ? undefined
+    : ({
+        amountTotal: quote.amount_total,
+        collectionMethod: quote.collection_method,
+        currency: quote.currency,
+        daysUntilDue: quote.invoice_settings?.days_until_due ?? undefined,
+        expiresAt: DateTime.toDate(DateTime.makeUnsafe(quote.expires_at * millisecondsPerSecond)),
+        memberId,
+        status: quote.status,
+        stripeQuoteId: quote.id,
+        stripeSubscriptionId: quote.subscription ?? undefined,
+      } satisfies QuoteState);
+});
+
+const recordQuote = Effect.fn("recordQuote")(function* recordQuote(event: StripeEvent) {
+  const ledgerState = yield* quoteLedgerState(event);
+  return ledgerState === undefined
+    ? WEBHOOK_DISPOSITION.ignored
+    : yield* applyQuoteState(eventRecord(event), ledgerState);
+});
+
+const quoteAccepted = Effect.fn("quoteAccepted")(function* quoteAccepted(event: StripeEvent) {
+  const ledgerState = yield* quoteLedgerState(event);
+  if (ledgerState === undefined) {
+    return WEBHOOK_DISPOSITION.ignored;
+  }
+  if (ledgerState.stripeSubscriptionId === undefined) {
+    return yield* applyQuoteState(eventRecord(event), ledgerState);
+  }
+  const subscription = yield* readObject(
+    Subscription,
+    yield* (yield* Stripe).subscription(ledgerState.stripeSubscriptionId),
+  );
+  return yield* acceptQuote(eventRecord(event), {
+    quote: ledgerState,
+    subscription: subscriptionRecord(ledgerState.memberId, subscription),
+  });
+});
+
 const eventHandlers = {
   "charge.refunded": chargeRefunded,
   "checkout.session.completed": completeCheckout,
@@ -246,6 +319,9 @@ const eventHandlers = {
   "invoice.paid": settlePayment,
   "invoice.payment_failed": failPayment,
   "invoice.updated": recordInvoice,
+  "quote.accepted": quoteAccepted,
+  "quote.canceled": recordQuote,
+  "quote.finalized": recordQuote,
 } as const satisfies Record<StripeWebhookEvent, (event: StripeEvent) => unknown>;
 
 const isHandledEvent = (type: string): type is StripeWebhookEvent =>

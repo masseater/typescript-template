@@ -6,6 +6,7 @@ import {
   findInvoiceOfOrigin,
   findSubscription,
   listMemberInvoices,
+  listMemberQuotes,
   planOf,
   recordIssuedInvoice,
 } from "@repo/db";
@@ -20,6 +21,7 @@ import {
   InvoiceList,
   OfferView,
   PlanView,
+  QuoteList,
   UsageView,
   WebhookReceipt,
 } from "#shared/contracts/index.ts";
@@ -151,6 +153,22 @@ const payByInvoice = Effect.fn("billing.api.payByInvoice")(function* payByInvoic
   return { outcome: WEBHOOK_DISPOSITION.applied };
 });
 
+const quotes = Effect.fn("billing.api.quotes")(function* quotes(request: Request) {
+  const { user } = yield* verifySession(request.headers);
+  const offered = yield* listMemberQuotes(user.id);
+  return {
+    quotes: offered.map((quote) => ({
+      amountTotal: quote.amountTotal,
+      collectionMethod: quote.collectionMethod,
+      currency: quote.currency,
+      expiresAt: quote.expiresAt,
+      status: quote.status,
+      stripeQuoteId: quote.stripeQuoteId,
+      ...(quote.daysUntilDue === undefined ? {} : { daysUntilDue: quote.daysUntilDue }),
+    })),
+  };
+});
+
 const usage = Effect.fn("billing.api.usage")(function* usage(request: Request) {
   const { user } = yield* verifySession(request.headers);
   const subscription = yield* findSubscription(user.id);
@@ -180,6 +198,7 @@ function billingApi(api: ApiRoutes<AppServices | Stripe>) {
     .post("/billing/checkout", ...api.route({ response: HostedPage }, checkout, failures))
     .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
     .get("/billing/invoices", ...api.route({ response: InvoiceList }, invoices, failures))
+    .get("/billing/quotes", ...api.route({ response: QuoteList }, quotes, failures))
     .get("/billing/usage", ...api.route({ response: UsageView }, usage, failures))
     .post(
       "/billing/invoice-payment",
