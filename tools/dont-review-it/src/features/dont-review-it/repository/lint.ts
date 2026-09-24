@@ -64,7 +64,6 @@ const softPresetRules = Object.fromEntries(
     "dont-review-it/no-duplicate-value-declaration--reuse-authoritative-value",
     "dont-review-it/no-duplicated-body--import-the-existing-declaration",
     "dont-review-it/no-duplicated-test--delete-the-copy",
-    "dont-review-it/no-empty-catch--throw-or-handle",
     "dont-review-it/no-expect-call-expression--yield-from-fixture",
     "dont-review-it/no-expect-forbidden-subject-name--rename-to-concrete-subject",
     "dont-review-it/no-expect-member-subject--yield-subject-from-fixture",

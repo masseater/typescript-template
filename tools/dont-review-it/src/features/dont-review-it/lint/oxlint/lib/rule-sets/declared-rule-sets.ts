@@ -61,11 +61,6 @@ const SINGLE_ASSIGNMENT_MEMBERS: readonly RuleSetMember[] = [
 const FAILURE_ROUTING_MEMBERS: readonly RuleSetMember[] = [
   NO_PROMISE_CHAIN,
   {
-    rule: "no-empty-catch--throw-or-handle",
-    readsTypeInformation: false,
-    hole: "a catch clause carrying no statement passes",
-  },
-  {
     rule: "no-silent-catch--rethrow-or-handle",
     readsTypeInformation: false,
     hole: "a catch clause that records the failure nowhere passes",
