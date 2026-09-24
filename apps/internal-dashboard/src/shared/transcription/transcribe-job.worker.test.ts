@@ -16,13 +16,13 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly CORE: Fetcher;
-      readonly TEST_MIGRATIONS: D1Migration[];
+      readonly D1_MIGRATIONS: D1Migration[];
     }
   }
 }
 
 const migrated = Effect.promise(() => reset()).pipe(
-  Effect.andThen(Effect.promise(() => applyD1Migrations(env.DB, env.TEST_MIGRATIONS))),
+  Effect.andThen(Effect.promise(() => applyD1Migrations(env.DB, env.D1_MIGRATIONS))),
 );
 
 const heard: Transcript = {

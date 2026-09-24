@@ -23,7 +23,7 @@ declare global {
       };
       readonly CORE: Fetcher;
       readonly FILES: R2Bucket;
-      readonly TEST_MIGRATIONS: D1Migration[];
+      readonly D1_MIGRATIONS: D1Migration[];
     }
   }
 }
@@ -31,7 +31,7 @@ declare global {
 const routes = { "/api/recordings": "recordings" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
 const migrated = Effect.promise(() => reset()).pipe(
-  Effect.andThen(Effect.promise(() => applyD1Migrations(env.DB, env.TEST_MIGRATIONS))),
+  Effect.andThen(Effect.promise(() => applyD1Migrations(env.DB, env.D1_MIGRATIONS))),
 );
 const core = CoreRecords.layer(env.CORE);
 const password = "test-password-safe-123";

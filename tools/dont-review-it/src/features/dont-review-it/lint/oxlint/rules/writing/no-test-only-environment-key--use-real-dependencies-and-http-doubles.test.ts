@@ -33,8 +33,8 @@ describe("dont-review-it/no-test-only-environment-key--use-real-dependencies-and
         errors: [{ messageId: "testOnlyKey" }],
       },
       {
-        name: "a test-only binding read from the Worker env is reported",
-        code: 'import { env } from "cloudflare:workers";\nexport const migrations = env.TEST_MIGRATIONS;',
+        name: "a test-only switch read from the Worker env is reported",
+        code: 'import { env } from "cloudflare:workers";\nexport const payments = env.MOCK_PAYMENTS;',
         errors: [{ messageId: "testOnlyKey" }],
       },
       {
