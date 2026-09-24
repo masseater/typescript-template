@@ -122,6 +122,18 @@ erDiagram
     text stripe_invoice_id PK
     integer updated_at
   }
+  customer_quote {
+    integer amount_total
+    text collection_method
+    text currency
+    integer days_until_due "nullable"
+    integer expires_at
+    text member_id FK
+    text status
+    text stripe_quote_id PK
+    text stripe_subscription_id "nullable"
+    integer updated_at
+  }
   direct_message {
     text id PK
     text body
@@ -532,6 +544,7 @@ erDiagram
   conversation ||--o{ conversation_participant : "conversation_id"
   user |o--o{ conversation_participant : "member_id"
   user ||--o{ customer_invoice : "member_id"
+  user ||--o{ customer_quote : "member_id"
   conversation ||--o{ direct_message : "conversation_id"
   user |o--o{ direct_message : "sender_id"
   user ||--o{ follow : "followee_id"

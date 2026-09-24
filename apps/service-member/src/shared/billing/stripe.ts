@@ -97,6 +97,7 @@ interface StripeShape {
     payload: string,
     signature: string | null,
   ) => Effect.Effect<StripeEvent, StripeSignatureInvalid | StripeEventUnreadable>;
+  readonly subscription: (subscriptionId: string) => Effect.Effect<unknown, StripeFailure>;
 }
 
 function decodeStripe<Contract extends Decodable>(
@@ -243,6 +244,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
         Effect.flatMap((body) => decodeStripe(IssuedInvoiceBody, body)),
         Effect.map(asIssuedInvoice),
       ),
+    subscription: (subscriptionId) => send(`/subscriptions/${subscriptionId}`),
     reportUsage: (usage) =>
       send(
         "/billing/meter_events",
