@@ -5,11 +5,10 @@ import { imageDirectory } from "#shared/wiki-document/wiki-image-paths.ts";
 import { installationToken } from "./github-app-token.ts";
 import { gitHubRequest } from "./github-request.ts";
 import { WikiPublishStale } from "./wiki-publish-stale.ts";
+import { mergeQueueLabel, wikiDocsDirectory } from "./wiki-repository.ts";
 
 import type { WikiPublishConfig } from "@repo/config";
 
-const mergeQueueLabel = "ready-to-merge";
-const wikiDocsDirectory = "apps/internal-dashboard/content/docs";
 const fileMode = "100644";
 const shortShaLength = 7;
 const blobUploads = 4;
@@ -137,11 +136,5 @@ const withdrawPullRequest = Effect.fn("withdrawWikiPullRequest")(function* withd
   });
 });
 
-export {
-  enqueuePullRequest,
-  mergeQueueLabel,
-  publishToGitHub,
-  wikiDocsDirectory,
-  withdrawPullRequest,
-};
+export { enqueuePullRequest, publishToGitHub, withdrawPullRequest };
 export type { WikiPublication };

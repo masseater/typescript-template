@@ -59,9 +59,16 @@ const byInstallation = (request: GitHubRequest): boolean =>
 const refused = (): Response =>
   HttpResponse.json({ message: "Bad credentials" }, { status: httpStatus.unauthorized });
 
+type FakeGitHubOptions = Readonly<{
+  keyFormat?: "pkcs1" | "pkcs8";
+  unavailableStep?: string;
+}>;
+
+const pkcs1Offset = 26;
+
 const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
   publishedBlob: string | null,
-  unavailableStep: string | null = null,
+  { keyFormat = "pkcs8", unavailableStep }: FakeGitHubOptions = {},
 ) {
   const keys = yield* Effect.promise(() =>
     crypto.subtle.generateKey(
@@ -75,10 +82,11 @@ const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
       ["sign", "verify"],
     ),
   );
-  const privateKey = pem(
-    "PRIVATE KEY",
-    yield* Effect.promise(() => crypto.subtle.exportKey("pkcs8", keys.privateKey)),
-  );
+  const pkcs8 = yield* Effect.promise(() => crypto.subtle.exportKey("pkcs8", keys.privateKey));
+  const privateKey =
+    keyFormat === "pkcs8"
+      ? pem("PRIVATE KEY", pkcs8)
+      : pem("RSA PRIVATE KEY", pkcs8.slice(pkcs1Offset));
   const calls: GitHubCall[] = [];
   const created =
     (path: string, response: JsonBodyType) =>

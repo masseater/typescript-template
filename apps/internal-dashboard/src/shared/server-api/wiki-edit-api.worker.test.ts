@@ -25,8 +25,8 @@ import {
   fakeGitHub,
   pullRequestUrl,
 } from "#shared/wiki-publish/github-fixture.ts";
-import { mergeQueueLabel, wikiDocsDirectory } from "#shared/wiki-publish/github-publication.ts";
 import { WikiPublisher } from "#shared/wiki-publish/index.ts";
+import { mergeQueueLabel, wikiDocsDirectory } from "#shared/wiki-publish/wiki-repository.ts";
 import { wikiLayer } from "#shared/wiki/index.ts";
 import { wikiEditApi } from "./wiki-edit-api.ts";
 
@@ -377,7 +377,7 @@ describe("publishing a wiki draft", () => {
   authTest("leaves the draft unpublished when GitHub cannot open the pull request", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* unreachable() {
-        const github = yield* fakeGitHub(yield* publishedRevision(), "/pulls");
+        const github = yield* fakeGitHub(yield* publishedRevision(), { unavailableStep: "/pulls" });
         (yield* MockNetwork).use(...github.handlers);
         const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
         yield* saveDraftWith(app, cookie, draftMarkdown);
@@ -391,6 +391,21 @@ describe("publishing a wiki draft", () => {
           labelled: false,
           remembered: null,
           status: httpStatus.serviceUnavailable,
+        });
+      }),
+    ),
+  );
+
+  authTest("signs with the PKCS#1 key GitHub hands out for an app", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* pkcs1() {
+        const github = yield* fakeGitHub(yield* publishedRevision(), { keyFormat: "pkcs1" });
+        (yield* MockNetwork).use(...github.handlers);
+        const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
+        yield* saveDraftWith(app, cookie, draftMarkdown);
+        const response = yield* publishDraft(app, cookie);
+        expect(yield* decodePublished(yield* jsonOf(response))).toStrictEqual({
+          url: pullRequestUrl,
         });
       }),
     ),

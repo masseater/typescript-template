@@ -119,4 +119,4 @@ const installationToken = Effect.fn("gitHubInstallationToken")(function* install
   return Redacted.make(issued.token);
 });
 
-export { installationToken, pkcs8Key };
+export { installationToken };
