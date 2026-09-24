@@ -1,8 +1,6 @@
-import { AssertionError } from "node:assert";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { plugin } from "@shadcn/lint";
+import { Effect, FileSystem, Path } from "effect";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
@@ -41,6 +39,59 @@ const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: true, import: "default" },
 );
 
+const designSystemApps = Object.entries(appManifests)
+  .filter(([, manifest]) => {
+    const dependencies = field(manifest, "dependencies");
+    return (
+      typeof dependencies === "object" &&
+      dependencies !== null &&
+      Object.hasOwn(dependencies, "@repo/ui")
+    );
+  })
+  .map(([key]) => key.replace(/^(?:\.\.\/)+/u, "").replace(/\/package\.json$/u, ""));
+
+const paths = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+
+const [
+  stylesheet,
+  designMd,
+  appsWithoutStylesheet,
+  missingSourceReport,
+  outsideSourceReport,
+  sourcelessReport,
+  unlinkedReport,
+  narrowedCoverageReport,
+  fullCoverageReport,
+  routerLinkParts,
+  designSystemAppsReport,
+] = await Effect.runPromise(
+  Effect.all([
+    stylesheetSource(),
+    designMdSource(),
+    appStylesheetViolations(["apps/missing"]),
+    sourceViolations(
+      "apps/internal-dashboard",
+      "apps/internal-dashboard/src/app/auth.css",
+      '@source "./nonexistent";',
+    ),
+    sourceViolations(
+      "apps/internal-dashboard",
+      "apps/internal-dashboard/src/app/auth.css",
+      '@source "../../../libs/ui";',
+    ),
+    sourceViolations(
+      "apps/internal-dashboard",
+      "apps/internal-dashboard/src/app/auth.css",
+      '@import "tailwindcss";',
+    ),
+    linkViolations("apps/internal-dashboard", "apps/internal-dashboard/src/app/unlinked.css"),
+    coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src/app"]),
+    coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src"]),
+    linkParts(),
+    appStylesheetViolations(designSystemApps),
+  ]).pipe(Effect.provide(NodeServices.layer)),
+);
+
 const restyled = [
   ["no-restyle", "bg-destructive"],
   ["no-raw-colors", "text-red-500"],
@@ -74,7 +125,7 @@ const reports = (rule: RuleName, className: string): boolean => {
       ],
     });
   } catch (error) {
-    if (error instanceof AssertionError) {
+    if (error instanceof Error && error.name === "AssertionError") {
       return true;
     }
     throw error;
@@ -90,19 +141,19 @@ describe("design token table", () => {
 
   it("keeps every ported token at the design token table value", () => {
     expect.hasAssertions();
-    expect(tokenViolations(stylesheetSource())).toStrictEqual([]);
+    expect(tokenViolations(stylesheet)).toStrictEqual([]);
   });
 
   it("keeps DESIGN.md front matter aligned with the stylesheet tokens", () => {
     expect.hasAssertions();
     expect(designMdPath()).toMatch(/DESIGN\.md$/u);
-    expect(designMdViolations(designMdSource(), stylesheetSource())).toStrictEqual([]);
+    expect(designMdViolations(designMd, stylesheet)).toStrictEqual([]);
   });
 
   it("reports a DESIGN.md colour that drifts from the stylesheet", () => {
     expect.hasAssertions();
-    const drifted = designMdSource().replace('primary: "#9a3412"', 'primary: "#000000"');
-    expect(designMdViolations(drifted, stylesheetSource())).toContainEqual(
+    const drifted = designMd.replace('primary: "#9a3412"', 'primary: "#000000"');
+    expect(designMdViolations(drifted, stylesheet)).toContainEqual(
       expect.stringContaining("colors.primary"),
     );
   });
@@ -119,7 +170,7 @@ describe("design token table", () => {
 
   it("keeps every hover colour darker than the colour it replaces", () => {
     expect.hasAssertions();
-    expect(hoverViolations(stylesheetSource())).toStrictEqual([]);
+    expect(hoverViolations(stylesheet)).toStrictEqual([]);
   });
 
   it("reports a hover colour that is lighter than the colour it replaces", () => {
@@ -153,7 +204,7 @@ const tone = (color: string): number => {
 describe("dark color scheme", () => {
   it("applies dark background, card, and text under prefers-color-scheme: dark", () => {
     expect.hasAssertions();
-    const css = stylesheetSource();
+    const css = stylesheet;
     const light = colorSchemeProbe(css, "light");
     const dark = colorSchemeProbe(css, "dark");
     expect(light.colorScheme).toBe("light");
@@ -169,17 +220,6 @@ describe("dark color scheme", () => {
   });
 });
 
-const designSystemApps = Object.entries(appManifests)
-  .filter(([, manifest]) => {
-    const dependencies = field(manifest, "dependencies");
-    return (
-      typeof dependencies === "object" &&
-      dependencies !== null &&
-      Object.hasOwn(dependencies, "@repo/ui")
-    );
-  })
-  .map(([key]) => key.replace(/^(?:\.\.\/)+/u, "").replace(/\/package\.json$/u, ""));
-
 describe("app stylesheet ownership", () => {
   it("covers every app that depends on the parts", () => {
     expect.hasAssertions();
@@ -194,70 +234,46 @@ describe("app stylesheet ownership", () => {
 
   it("lets each app declare its own sources", () => {
     expect.hasAssertions();
-    expect(appStylesheetViolations(designSystemApps)).toStrictEqual([]);
+    expect(designSystemAppsReport).toStrictEqual([]);
   });
 
   it("reports an app without a stylesheet of its own", () => {
     expect.hasAssertions();
-    expect(appStylesheetViolations(["apps/missing"])).toHaveLength(1);
+    expect(appsWithoutStylesheet).toHaveLength(1);
   });
 
   it("reports a @source that scans a directory which does not exist", () => {
     expect.hasAssertions();
-    expect(
-      sourceViolations(
-        "apps/internal-dashboard",
-        "apps/internal-dashboard/src/app/auth.css",
-        '@source "./nonexistent";',
-      ),
-    ).toHaveLength(1);
+    expect(missingSourceReport).toHaveLength(1);
   });
 
   it("reports a @source that scans outside the app", () => {
     expect.hasAssertions();
-    expect(
-      sourceViolations(
-        "apps/internal-dashboard",
-        "apps/internal-dashboard/src/app/auth.css",
-        '@source "../../../libs/ui";',
-      ),
-    ).toHaveLength(1);
+    expect(outsideSourceReport).toHaveLength(1);
   });
 
   it("reports a stylesheet with no @source at all", () => {
     expect.hasAssertions();
-    expect(
-      sourceViolations(
-        "apps/internal-dashboard",
-        "apps/internal-dashboard/src/app/auth.css",
-        '@import "tailwindcss";',
-      ),
-    ).toHaveLength(1);
+    expect(sourcelessReport).toHaveLength(1);
   });
 
   it("reports a stylesheet the app never links", () => {
     expect.hasAssertions();
-    expect(
-      linkViolations("apps/internal-dashboard", "apps/internal-dashboard/src/app/unlinked.css"),
-    ).toHaveLength(1);
+    expect(unlinkedReport).toHaveLength(1);
   });
 });
 
 describe("app stylesheet coverage", () => {
   it("reports a @source narrowed past the screens it has to cover", () => {
     expect.hasAssertions();
-    expect(
-      coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src/app"]),
-    ).toContainEqual(
+    expect(narrowedCoverageReport).toContainEqual(
       expect.stringContaining("apps/internal-dashboard/src/pages/consent/ui/consent-actions.tsx"),
     );
   });
 
   it("accepts a @source that covers every styled file of the app", () => {
     expect.hasAssertions();
-    expect(
-      coverageViolations("apps/internal-dashboard", ["apps/internal-dashboard/src"]),
-    ).toStrictEqual([]);
+    expect(fullCoverageReport).toStrictEqual([]);
   });
 });
 
@@ -314,12 +330,24 @@ const loadedFaces = (css: string): LoadedFace[] => {
     }
     faces.push({
       family,
-      file: path.join(path.dirname(stylesheetPath()), src),
+      file: paths.join(paths.dirname(stylesheetPath()), src),
       weight,
     });
   }
   return faces;
 };
+
+const fontSignatures = await Effect.runPromise(
+  Effect.gen(function* readFontSignatures() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const signatures = new Map<string, string>();
+    for (const face of loadedFaces(stylesheet)) {
+      const bytes = yield* filesystem.readFile(face.file);
+      signatures.set(face.file, new TextDecoder("ascii").decode(bytes.subarray(0, 4)));
+    }
+    return signatures;
+  }).pipe(Effect.provide(NodeServices.layer)),
+);
 
 const weightCovers = (declared: string, weight: number): boolean => {
   const parts = declared.split(/\s+/u).map(Number);
@@ -397,7 +425,7 @@ const classWeight = (className: string): number => {
 describe("one type system", () => {
   it("applies a loaded text face and a different loaded display face", () => {
     expect.hasAssertions();
-    const css = stylesheetSource();
+    const css = stylesheet;
     const declared = declarations(css);
     const faces = loadedFaces(css);
     expect(faces).toHaveLength(css.match(/@font-face/gu)?.length ?? 0);
@@ -416,7 +444,7 @@ describe("one type system", () => {
       const familyFaces = faces.filter((face) => face.family === family);
       expect(familyFaces.length).toBeGreaterThan(0);
       for (const face of familyFaces) {
-        expect(readFileSync(face.file).subarray(0, 4).toString("ascii")).toBe("wOF2");
+        expect(fontSignatures.get(face.file)).toBe("wOF2");
       }
     }
     expect(faces.some((face) => face.family === textFace && weightCovers(face.weight, 400))).toBe(
@@ -437,7 +465,7 @@ describe("one type system", () => {
 
   it("keeps the accent on primary actions", () => {
     expect.hasAssertions();
-    const declared = declarations(stylesheetSource());
+    const declared = declarations(stylesheet);
     const accent = resolvedValue(declared, "--main");
     const holders = [...declared.keys()].filter((name) => resolvedValue(declared, name) === accent);
     expect(accent).toMatch(/^#[\da-f]{6}$/u);
@@ -447,7 +475,7 @@ describe("one type system", () => {
 
   it("carries a dense step, a page heading above 24px, and a landing headline", () => {
     expect.hasAssertions();
-    const sizes = textSizeEntries(declarations(stylesheetSource()));
+    const sizes = textSizeEntries(declarations(stylesheet));
     const pageClass = headingClassName("page");
     const pageStep = [...sizes.keys()].find((step) =>
       pageClass.split(/\s+/u).includes(`text-${step}`),
@@ -464,7 +492,9 @@ describe("one type system", () => {
 describe("router link parts owned by ui", () => {
   it("finds the router link parts", () => {
     expect.hasAssertions();
-    expect(linkParts()).toStrictEqual(expect.arrayContaining(["DropdownMenuLinkItem", "TextLink"]));
+    expect(routerLinkParts).toStrictEqual(
+      expect.arrayContaining(["DropdownMenuLinkItem", "TextLink"]),
+    );
   });
 
   it.for([...linkComponents])("declares %s in ui lint settings", (name) => {
@@ -472,8 +502,8 @@ describe("router link parts owned by ui", () => {
     expect(uiA11yComponents).toHaveProperty(name, "a");
   });
 
-  it.for(linkParts())("lists %s among the discovered createLink parts", (name) => {
+  it.for(routerLinkParts)("lists %s among the discovered createLink parts", (name) => {
     expect.hasAssertions();
-    expect(linkParts()).toContain(name);
+    expect(routerLinkParts).toContain(name);
   });
 });

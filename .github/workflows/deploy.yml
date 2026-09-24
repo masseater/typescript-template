@@ -92,6 +92,9 @@ jobs:
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          TEMPLATE_WIKI_PUBLISH_APP_ID: ${{ secrets.TEMPLATE_WIKI_PUBLISH_APP_ID }}
+          TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY }}
+          TEMPLATE_WIKI_PUBLISH_REPOSITORY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_REPOSITORY }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'

@@ -164,4 +164,10 @@ export {
   retryRecording,
   storeTranscript,
 } from "./recordings.ts";
-export { WikiDraftConflict, discardWikiDraft, findWikiDraft, saveWikiDraft } from "./wiki-draft.ts";
+export {
+  WikiDraftConflict,
+  discardWikiDraft,
+  findWikiDraft,
+  markWikiDraftPublished,
+  saveWikiDraft,
+} from "./wiki-draft.ts";

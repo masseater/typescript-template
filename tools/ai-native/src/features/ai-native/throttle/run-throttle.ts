@@ -1,8 +1,6 @@
-import { tmpdir } from "node:os";
-
 import { Effect } from "effect";
 
-import { joinPath, optionalSetting } from "../host.ts";
+import { joinPath, optionalSetting, temporaryDirectory } from "../host.ts";
 import { runWithSlot } from "./run-command.ts";
 import { ensureSlots, tryAcquireAny, type SlotHold } from "./slots.ts";
 import { parseInvocation } from "./usage.ts";
@@ -28,7 +26,7 @@ const limitFromEnvironment = (): number => {
 };
 
 const resolveConfiguration = (seams: ThrottleSeams): WaitConfiguration => ({
-  slotDir: seams.slotDir ?? joinPath(tmpdir(), "mst-throttle", "mst"),
+  slotDir: seams.slotDir ?? joinPath(temporaryDirectory(), "mst-throttle", "mst"),
   limit: seams.limit ?? limitFromEnvironment(),
   waitBudgetMs: seams.waitBudgetMs ?? DEFAULT_WAIT_BUDGET_MS,
   pollMs: seams.pollMs ?? DEFAULT_POLL_MS,

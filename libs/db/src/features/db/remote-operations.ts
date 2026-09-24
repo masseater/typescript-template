@@ -1,11 +1,9 @@
-import { URL, fileURLToPath } from "node:url";
-
 import { withSpan } from "@repo/observability";
 import { sql } from "drizzle-orm";
 import { drizzle as connectD1 } from "drizzle-orm/d1";
 import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
 import { readMigrationFiles, type MigrationConfig } from "drizzle-orm/migrator";
-import { Clock, Effect, Schema } from "effect";
+import { Clock, Effect, Path, Schema } from "effect";
 
 import {
   BOOTSTRAP_KIND,
@@ -38,7 +36,11 @@ const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteF
   return Effect.fail(new RemoteFailure({ code }));
 };
 
-const migrationsFolder = fileURLToPath(new URL("../../../migrations/", import.meta.url));
+const migrationsFolder = Effect.runSync(
+  Effect.flatMap(Path.Path, (paths) =>
+    paths.fromFileUrl(new URL("../../../migrations/", import.meta.url)),
+  ).pipe(Effect.provide(Path.layer)),
+);
 
 const Statement = Schema.Trim.check(Schema.isMinLength(1));
 const MigrationFile = Schema.Struct({

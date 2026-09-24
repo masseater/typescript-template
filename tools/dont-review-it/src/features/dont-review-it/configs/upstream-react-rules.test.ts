@@ -1,16 +1,13 @@
-import { createRequire } from "node:module";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Schema } from "effect";
 import { expect } from "vite-plus/test";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/index.ts";
-import { path } from "../platform/path.ts";
+import { filePathOf, path } from "../platform/path.ts";
 import { UPSTREAM_PLUGINS, UPSTREAM_RULES } from "./upstream-rules.ts";
 
-const require = createRequire(import.meta.url);
-const oxlintRoot = path.dirname(require.resolve("oxlint/package.json"));
+const oxlintRoot = path.dirname(filePathOf(new URL(import.meta.resolve("oxlint/package.json"))));
 
 const ConfigurationSchema = Schema.Struct({
   definitions: Schema.Struct({

@@ -1,7 +1,6 @@
-import { constants } from "node:os";
-
 import { Effect } from "effect";
 
+import { signalNumber } from "../host.ts";
 import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
 
 import type { SpawnedChild } from "../node-spawn.ts";
@@ -12,7 +11,7 @@ export const exitCodeOf = (end: ChildEnd): number => {
   if (end.code !== null) {
     return end.code;
   }
-  return 128 + constants.signals[end.signal as NodeJS.Signals];
+  return 128 + signalNumber(end.signal as NodeJS.Signals);
 };
 
 export const waitSpawn = (child: SpawnedChild): Promise<Error | null> =>

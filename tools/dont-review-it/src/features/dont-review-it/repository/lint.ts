@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-
 import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
 import {
   cloudflareNewCapExceptions,
@@ -8,6 +6,7 @@ import {
 
 import { dontReviewItPreset } from "../configs/preset.ts";
 import { LINT_SEVERITY } from "../lint-rule-authoring/index.ts";
+import { filePathOf } from "../platform/path.ts";
 import {
   linkComponents,
   linkWrapperFiles,
@@ -258,7 +257,6 @@ const softPresetRules = Object.fromEntries(
     "import/no-cycle",
     "import/no-default-export",
     "import/no-named-as-default",
-    "import/no-nodejs-modules",
     "jsx-a11y/alt-text",
     "jsx-a11y/anchor-has-content",
     "jsx-a11y/anchor-is-valid",
@@ -443,6 +441,44 @@ const softPresetRules = Object.fromEntries(
   ].map((ruleName) => [ruleName, LINT_SEVERITY.OFF]),
 );
 
+const nodeBuiltinBoundaryFiles = [
+  "**/vite.config.ts",
+  "infra/cloudflare/src/features/cloudflare/deployment.ts",
+  "libs/config/src/features/config/local-database-path.test.ts",
+  "libs/config/src/features/config/process-environment.test.ts",
+  "libs/telemetry/src/features/telemetry/telemetry.test.ts",
+  "libs/vite-config/src/features/vite-config/cloudflare-workers-loader.ts",
+  "libs/vite-config/src/features/vite-config/elysia-aot.ts",
+  "tools/dev/src/features/dev/dev-start.ts",
+  "tools/dev/src/features/dev/local-environment.ts",
+  "tools/dont-review-it/src/features/dont-review-it/configs/git-excludes/git-exclude-patterns.test.ts",
+  "tools/dont-review-it/src/features/dont-review-it/configs/git-excludes/git-exclude-patterns.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/catalog-build-lock.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/catalog-cache-fingerprint.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/catalog-cache-validation.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/catalog-cache.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/export-specifier-index.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/fingerprint.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/import-route-resolution.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/import-route-source-identity.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/import-route.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/source-files.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/git-ignored-source.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/git-output.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/out-of-scope-source.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/repository-scan/worktree-files.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/setup-modules/specifier-resolution.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/spec-syntax/module-declarations.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/rules/testing/no-detached-test-file--move-beside-source.test.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/rules/testing/no-detached-test-file--move-beside-source.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/rules/toolchain/no-standalone-tsconfig--extend-shared-preset.test.ts",
+  "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.ts",
+  "tools/dont-review-it/src/features/dont-review-it/repository-checks/git-executable.test.ts",
+  "tools/dont-review-it/src/features/dont-review-it/repository-checks/git-executable.ts",
+  "tools/dont-review-it/src/features/dont-review-it/repository/tool-test-projects.ts",
+  "tools/load/src/features/load/environment.ts",
+];
+
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages: readonly string[] = [];
@@ -476,7 +512,7 @@ const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages, ...uiQualityInspectionFiles],
   jsPlugins: [
-    { name: "project", specifier: fileURLToPath(new URL("./plugin.ts", import.meta.url)) },
+    { name: "project", specifier: filePathOf(new URL("./plugin.ts", import.meta.url)) },
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
     "@shadcn/lint",
   ],
@@ -1010,9 +1046,16 @@ const lintOptions = {
       files: softPresetPackages,
       rules: softPresetRules,
     },
+    {
+      files: nodeBuiltinBoundaryFiles,
+      rules: {
+        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
+      },
+    },
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
+    "import/no-nodejs-modules": LINT_SEVERITY.ERROR,
     "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
       LINT_SEVERITY.ERROR,
       { branches: 50, functions: 50, lines: 50, statements: 50 },

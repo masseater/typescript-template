@@ -1,5 +1,3 @@
-import { env as processEnvironment } from "node:process";
-
 import { spawnChildSync } from "../node-spawn.ts";
 import { parseOpenPullRequest, type OpenPullRequest } from "./parse-open-pr.ts";
 
@@ -19,7 +17,7 @@ const defaultCommandRunner: CommandRunner = (commandLaunch) =>
     spawnOptions: {
       cwd: commandLaunch.cwd,
       encoding: "utf8",
-      env: processEnvironment,
+      env: process.env,
     },
   });
 
