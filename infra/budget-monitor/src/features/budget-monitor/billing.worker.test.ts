@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { Clock, DateTime, Effect, Schema } from "effect";
+import { Clock, DateTime, Effect, Redacted, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { fetchUsage } from "./billing.ts";
@@ -61,7 +61,7 @@ it.effect("fetches the official V1 endpoint using bearer authentication", () =>
     const usage = yield* fetchUsage({
       accountId: account,
       observedAt: measuredAt,
-      token: "test-token",
+      token: Redacted.make("test-token"),
     });
     assert.strictEqual(usage.usageUsd, BILLED_COST_USD);
   }).pipe(Effect.scoped),
@@ -77,7 +77,7 @@ it.effect("does not return zero usage or expose response bodies on authorization
     const failure = yield* fetchUsage({
       accountId: account,
       observedAt: yield* Clock.currentTimeMillis,
-      token: "test-token",
+      token: Redacted.make("test-token"),
     }).pipe(Effect.flip);
     assert.strictEqual(failure.code, "billing_http_failed");
     assert.notInclude(

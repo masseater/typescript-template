@@ -256,7 +256,6 @@ function applicationResource(app: Application, release: string): ResourceInvento
       ...analyticsBindings(app),
       plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
-      plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...grantedBindings(app),
     ].toSorted(),
@@ -396,7 +395,6 @@ const wikiStack = Effect.fn("wikiStack")(function* wikiStack() {
         "AI:ai",
         plainText(appEnvKey.appRelease, artifacts.release),
         `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
-        plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
         plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ].toSorted(),
       declared: {
@@ -511,7 +509,7 @@ const staticExpected: Readonly<
       adopt: false,
       bindings: [],
       declared: {
-        enabled: otlp.enabled,
+        enabled: true,
         headers: { authorization: otlpAuthorization },
         logpushDataset: "opentelemetry-traces",
         name: traceDestination,

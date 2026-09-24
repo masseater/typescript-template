@@ -9,7 +9,6 @@ const deploymentKey = {
   cloudflareZoneId: "CLOUDFLARE_ZONE_ID",
   mailFrom: "TEMPLATE_MAIL_FROM",
   otlpAuthorization: "TEMPLATE_OTLP_AUTHORIZATION",
-  otlpEnabled: "TEMPLATE_OTLP_ENABLED",
   otlpEndpoint: "TEMPLATE_OTLP_ENDPOINT",
   googleAnalyticsMeasurementId: "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
   prefix: "TEMPLATE_PREFIX",
@@ -34,7 +33,6 @@ const deploymentKeys = [
 const optionalDeploymentKeys = [
   deploymentKey.googleAnalyticsMeasurementId,
   deploymentKey.otlpAuthorization,
-  deploymentKey.otlpEnabled,
   deploymentKey.otlpEndpoint,
   deploymentKey.wikiPublishAppId,
   deploymentKey.wikiPublishPrivateKey,

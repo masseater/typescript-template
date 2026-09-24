@@ -1,4 +1,4 @@
-import { Effect, Predicate, Schema } from "effect";
+import { Effect, Predicate, Redacted, Schema } from "effect";
 
 import { loopbackHosts, mailpitSendPath } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
@@ -35,6 +35,7 @@ const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u))
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
+const NonEmptySecret = Schema.RedactedFromValue(NonEmpty);
 
 const distinctOrigins = (origins: readonly string[]): boolean =>
   new Set(origins).size === origins.length;
@@ -51,23 +52,21 @@ const appEnvKey = {
   mailpitUrl: "MAILPIT_URL",
   opsEmail: "OPS_EMAIL",
   otlpAuthorization: "OTLP_AUTHORIZATION",
-  otlpEnabled: "OTLP_ENABLED",
   otlpEndpoint: "OTLP_ENDPOINT",
 } as const;
 
 const Scalars = Schema.Struct({
   [appEnvKey.appOrigin]: Origin,
   [appEnvKey.appRelease]: Schema.optionalKey(Release),
-  [appEnvKey.authSecret]: AuthSecret,
+  [appEnvKey.authSecret]: Schema.RedactedFromValue(AuthSecret),
   [appEnvKey.emailFrom]: Email,
   [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
-  [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
   [appEnvKey.googleAnalyticsMeasurementId]: Schema.optionalKey(GoogleAnalyticsMeasurementId),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
-  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
-  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });
 
@@ -103,10 +102,12 @@ const AiBindings = Schema.Struct({
 
 const stripeKeyModes = ["live", "test"] as const;
 type StripeKeyMode = (typeof stripeKeyModes)[number];
-const StripeSecretKey = Schema.String.check(
-  Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u),
+const StripeSecretKey = Schema.RedactedFromValue(
+  Schema.String.check(Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u)),
 );
-const StripeWebhookSecret = Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u));
+const StripeWebhookSecret = Schema.RedactedFromValue(
+  Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u)),
+);
 const StripePriceId = Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u));
 const StripeTrialPeriodDays = Schema.String.check(
   Schema.makeFilter(
@@ -125,8 +126,8 @@ const StripeScalars = Schema.Struct({
   STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
 });
 
-const stripeKeyMode = (secretKey: string): StripeKeyMode =>
-  secretKey.split("_")[1] === "live" ? "live" : "test";
+const stripeKeyMode = (secretKey: Redacted.Redacted): StripeKeyMode =>
+  Redacted.value(secretKey).split("_")[1] === "live" ? "live" : "test";
 
 const isLocalLanHostname = (hostname: string): boolean =>
   /^[a-z0-9-]+\.local$/u.test(hostname) || /^[a-z0-9-]+\.local\.example\.test$/u.test(hostname);
@@ -177,15 +178,9 @@ const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationI
 };
 
 const enforceOtlpOrigin = (
-  scalars: EnvironmentScalars,
-): Effect.Effect<void, ConfigurationInvalid> => {
-  if (scalars.OTLP_ENDPOINT === undefined) {
-    return scalars.OTLP_ENABLED === undefined
-      ? Effect.void
-      : Effect.fail(invalid("OTLP_ENABLED needs OTLP_ENDPOINT"));
-  }
-  return requireSecureOrigin(scalars.OTLP_ENDPOINT);
-};
+  endpoint: string | undefined,
+): Effect.Effect<void, ConfigurationInvalid> =>
+  endpoint === undefined ? Effect.void : requireSecureOrigin(endpoint);
 
 const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
   const scalars = yield* decode(Scalars, input);
@@ -193,7 +188,7 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   yield* refuseMissingRelease(scalars, local);
   yield* refuseInvalidMailpit(scalars, local);
-  yield* enforceOtlpOrigin(scalars);
+  yield* enforceOtlpOrigin(scalars.OTLP_ENDPOINT);
   return {
     ...scalars,
     APP_RELEASE: scalars.APP_RELEASE ?? "local",
@@ -217,8 +212,7 @@ type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
 const SiteEnvironment = Schema.Struct({
   [appEnvKey.appRelease]: Release,
-  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
-  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
   ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
@@ -228,13 +222,7 @@ const readSiteEnvironment = Effect.fn("readSiteEnvironment")(function* readSiteE
   input: unknown,
 ) {
   const environment = yield* decode(SiteEnvironment, input);
-  if (environment.OTLP_ENDPOINT === undefined) {
-    if (environment.OTLP_ENABLED !== undefined) {
-      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
-    }
-  } else {
-    yield* requireSecureOrigin(environment.OTLP_ENDPOINT);
-  }
+  yield* enforceOtlpOrigin(environment.OTLP_ENDPOINT);
   return environment;
 });
 

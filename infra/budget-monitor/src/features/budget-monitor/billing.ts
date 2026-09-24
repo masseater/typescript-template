@@ -1,5 +1,5 @@
 import { CloudflareId } from "@repo/config";
-import { DateTime, Effect, Schema } from "effect";
+import { DateTime, Effect, Redacted, Schema } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import { BudgetFailure, fail } from "./config.ts";
@@ -148,13 +148,13 @@ const httpFailed = (): BudgetFailure => new BudgetFailure({ code: "billing_http_
 const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
   readonly accountId: string;
   readonly observedAt: number;
-  readonly token: string;
+  readonly token: Redacted.Redacted;
 }) {
   if (!isCloudflareId(asked.accountId)) {
     return yield* fail("billing_account_invalid");
   }
   const billingResponse = yield* HttpClient.get(billableUsageEndpoint(asked.accountId), {
-    headers: { Accept: "application/json", Authorization: `Bearer ${asked.token}` },
+    headers: { Accept: "application/json", Authorization: `Bearer ${Redacted.value(asked.token)}` },
   }).pipe(Effect.provide(FetchHttpClient.layer), Effect.mapError(httpFailed));
   if (billingResponse.status < 200 || billingResponse.status >= 300) {
     return yield* fail("billing_http_failed");

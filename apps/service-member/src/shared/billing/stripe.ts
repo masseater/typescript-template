@@ -7,7 +7,7 @@ import {
 } from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Redirect } from "@repo/runtime/contracts";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Redacted, Schema } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 import { StripeFailure } from "./stripe-failure.ts";
@@ -111,7 +111,7 @@ function decodeStripe<Contract extends Decodable>(
 
 function request(
   fetchImpl: typeof fetch,
-  secretKey: string,
+  secretKey: Redacted.Redacted,
   path: string,
   form: URLSearchParams | undefined,
   idempotencyKey: string | undefined,
@@ -122,7 +122,7 @@ function request(
       fetchImpl(`${stripeApi}${path}`, {
         ...(form === undefined ? {} : { body: form }),
         headers: {
-          authorization: `Bearer ${secretKey}`,
+          authorization: `Bearer ${Redacted.value(secretKey)}`,
           "stripe-version": stripeApiVersion,
           ...(form === undefined ? {} : { "content-type": "application/x-www-form-urlencoded" }),
           ...(idempotencyKey === undefined ? {} : { "idempotency-key": idempotencyKey }),

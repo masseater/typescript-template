@@ -1,4 +1,4 @@
-import { Effect, Ref } from "effect";
+import { Effect, Redacted, Ref } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
@@ -17,7 +17,7 @@ const queryWindow = {
   from: 1,
   queryEndpoint,
   to: 2,
-  token,
+  token: Redacted.make(token),
 };
 
 const fingerprintedAggregate = {

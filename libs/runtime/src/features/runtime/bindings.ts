@@ -66,11 +66,10 @@ const bindingReason = (cause: unknown): string => {
 const loadedBinding = Effect.gen(function* loadedBinding() {
   const database = yield* WorkerDatabase;
   const assets = yield* WorkerAssets;
-  const secret = Redacted.value(yield* Config.Redacted("AUTH_SECRET"));
-  const authorization = Option.match(yield* Config.option(Config.Redacted("OTLP_AUTHORIZATION")), {
-    onNone: (): string | undefined => undefined,
-    onSome: (decoded) => Redacted.value(decoded),
-  });
+  const secret = yield* Config.Redacted("AUTH_SECRET");
+  const authorization = Option.getOrUndefined(
+    yield* Config.option(Config.Redacted("OTLP_AUTHORIZATION")),
+  );
   const email = yield* Effect.serviceOption(OutboundEmail);
   const model = yield* Effect.serviceOption(WorkersModel);
   return {
@@ -83,20 +82,25 @@ const loadedBinding = Effect.gen(function* loadedBinding() {
   };
 });
 type WorkerModel = WorkersAi.WorkersAiBinding;
+const revealedOrUndefined = (secret: Redacted.Redacted | undefined): string | undefined =>
+  secret === undefined ? undefined : Redacted.value(secret);
 type EnvironmentScalars = Effect.Success<ReturnType<typeof readEnvironment>>;
 const loadedScalarsMatch = (
   scalars: EnvironmentScalars,
   loaded: Readonly<{
-    readonly AUTH_SECRET: string;
-    readonly OTLP_AUTHORIZATION: string | undefined;
+    readonly AUTH_SECRET: Redacted.Redacted;
+    readonly OTLP_AUTHORIZATION: Redacted.Redacted | undefined;
     readonly EMAIL: SendEmail | undefined;
     readonly FLAGS: unknown;
   }>,
 ): ConfigurationInvalid | undefined => {
-  if (loaded.AUTH_SECRET !== scalars.AUTH_SECRET) {
+  if (Redacted.value(loaded.AUTH_SECRET) !== Redacted.value(scalars.AUTH_SECRET)) {
     return new ConfigurationInvalid({ reason: "AUTH_SECRET" });
   }
-  if (loaded.OTLP_AUTHORIZATION !== scalars.OTLP_AUTHORIZATION) {
+  if (
+    revealedOrUndefined(loaded.OTLP_AUTHORIZATION) !==
+    revealedOrUndefined(scalars.OTLP_AUTHORIZATION)
+  ) {
     return new ConfigurationInvalid({ reason: "OTLP_AUTHORIZATION" });
   }
   if (scalars.MAILPIT_URL === undefined && loaded.EMAIL === undefined) {
@@ -139,10 +143,10 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
   const loaded: {
     readonly AI: WorkersAi.WorkersAiBinding | undefined;
     readonly ASSETS: AssetFetcher;
-    readonly AUTH_SECRET: string;
+    readonly AUTH_SECRET: Redacted.Redacted;
     readonly DB: D1Database;
     readonly EMAIL: SendEmail | undefined;
-    readonly OTLP_AUTHORIZATION: string | undefined;
+    readonly OTLP_AUTHORIZATION: Redacted.Redacted | undefined;
   } = yield* loadedBinding.pipe(
     Effect.provide(bindingsFor(env)),
     Effect.mapError((cause) => new ConfigurationInvalid({ reason: bindingReason(cause) })),

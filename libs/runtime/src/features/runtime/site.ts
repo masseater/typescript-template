@@ -15,7 +15,7 @@ const configuredSiteLayer = (
   }>,
 ): Layer.Layer<SiteServices, TelemetryInvalid> => {
   const otlp =
-    asked.siteConfig.OTLP_ENDPOINT === undefined || asked.siteConfig.OTLP_ENABLED === "false"
+    asked.siteConfig.OTLP_ENDPOINT === undefined
       ? undefined
       : {
           authorization: asked.siteConfig.OTLP_AUTHORIZATION,
