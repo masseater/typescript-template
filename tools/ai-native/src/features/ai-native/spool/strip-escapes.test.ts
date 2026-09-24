@@ -1,22 +1,17 @@
-import { Effect } from "effect";
+import { Effect, Stream } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { createEscapeStripper } from "./strip-escapes.ts";
+import { stripEscapes } from "./strip-escapes.ts";
 
-const streamConsumers = process.getBuiltinModule("stream/consumers") as {
-  readonly text: (readable: unknown) => Promise<string>;
-};
-
-describe("createEscapeStripper", () => {
+describe("stripEscapes", () => {
   describe("エスケープ列を含まない入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("plain text\nsecond line\n"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("plain text\nsecond line\n")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("そのまま通る", ({ strippedText }) => {
@@ -27,12 +22,11 @@ describe("createEscapeStripper", () => {
   describe("SGR の色指定を挟んだ入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("\x1b[31mred\x1b[0m end"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("\x1b[31mred\x1b[0m end")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("色指定が除去され可視文字は残る", ({ strippedText }) => {
@@ -43,12 +37,11 @@ describe("createEscapeStripper", () => {
   describe("カーソル移動と消去の CSI 列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b[2K\x1b[1;5Hb\x1b[?25lc"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b[2K\x1b[1;5Hb\x1b[?25lc")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("除去される", ({ strippedText }) => {
@@ -59,14 +52,11 @@ describe("createEscapeStripper", () => {
   describe("チャンク境界で分割された CSI 列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("one\x1b"));
-          stripper.write(Buffer.from("[3"));
-          stripper.write(Buffer.from("2mtwo"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("one\x1b"), Buffer.from("[3"), Buffer.from("2mtwo")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("除去される", ({ strippedText }) => {
@@ -77,13 +67,11 @@ describe("createEscapeStripper", () => {
   describe("ESC 単体でチャンクが終わり次のチャンクが平文で始まる入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b"));
-          stripper.write(Buffer.from("Mb"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b"), Buffer.from("Mb")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("2 文字エスケープとして消える", ({ strippedText }) => {
@@ -94,12 +82,11 @@ describe("createEscapeStripper", () => {
   describe("BEL で終わる OSC 列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("x\x1b]0;window title\x07y"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("x\x1b]0;window title\x07y")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("終端まで除去される", ({ strippedText }) => {
@@ -110,12 +97,11 @@ describe("createEscapeStripper", () => {
   describe("ST で終わる OSC 列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("x\x1b]8;;https://example.com\x1b\\y"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("x\x1b]8;;https://example.com\x1b\\y")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("終端まで除去される", ({ strippedText }) => {
@@ -126,12 +112,11 @@ describe("createEscapeStripper", () => {
   describe("DCS と APC の列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1bPq#0\x1b\\b\x1b_note\x1b\\c"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1bPq#0\x1b\\b\x1b_note\x1b\\c")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("ST 終端まで除去される", ({ strippedText }) => {
@@ -142,12 +127,11 @@ describe("createEscapeStripper", () => {
   describe("制御文字列の中の ESC に ST 以外が続く入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b]0;title\x1b[31mred"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b]0;title\x1b[31mred")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("新たなエスケープとして解釈される", ({ strippedText }) => {
@@ -158,12 +142,11 @@ describe("createEscapeStripper", () => {
   describe("制御文字列の中の ESC に BEL が続く入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b]0;t\x1b\x07b"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b]0;t\x1b\x07b")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("そこが終端になる", ({ strippedText }) => {
@@ -174,12 +157,11 @@ describe("createEscapeStripper", () => {
   describe("文字集合指定の中間バイトを持つエスケープ", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b(Bb\x1b#8c"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b(Bb\x1b#8c")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("除去される", ({ strippedText }) => {
@@ -190,12 +172,11 @@ describe("createEscapeStripper", () => {
   describe("中間バイトが複数続くエスケープ", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b$(0b"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b$(0b")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("除去される", ({ strippedText }) => {
@@ -206,12 +187,11 @@ describe("createEscapeStripper", () => {
   describe("中間バイトの後に制御文字が来る壊れた列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b(\x01b"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b(\x01b")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("打ち切られる", ({ strippedText }) => {
@@ -222,12 +202,11 @@ describe("createEscapeStripper", () => {
   describe("連続する ESC", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b\x1b[1mb"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b\x1b[1mb")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("最後の 1 列だけとして解釈される", ({ strippedText }) => {
@@ -238,12 +217,11 @@ describe("createEscapeStripper", () => {
   describe("CSI の途中に改行が来た入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("a\x1b[3\nb"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("a\x1b[3\nb")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("列を打ち切り改行を残す", ({ strippedText }) => {
@@ -254,12 +232,11 @@ describe("createEscapeStripper", () => {
   describe("入力の末尾で未完のまま終わる CSI 列", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("done\x1b[3"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("done\x1b[3")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("捨てられる", ({ strippedText }) => {
@@ -270,12 +247,7 @@ describe("createEscapeStripper", () => {
   describe("入力の末尾の ESC 単体", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("done\x1b"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("done\x1b")).pipe(stripEscapes, Stream.decodeText, Stream.mkString),
       ));
 
     it("捨てられる", ({ strippedText }) => {
@@ -288,11 +260,11 @@ describe("createEscapeStripper", () => {
       Effect.runPromise(
         Effect.gen(function* () {
           const bytes = Buffer.from("日本語\x1b[1m強調\x1b[0m");
-          const stripper = createEscapeStripper();
-          stripper.write(bytes.subarray(0, 4));
-          stripper.write(bytes.subarray(4));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
+          return yield* Stream.make(bytes.subarray(0, 4), bytes.subarray(4)).pipe(
+            stripEscapes,
+            Stream.decodeText,
+            Stream.mkString,
+          );
         }),
       ));
 
@@ -304,12 +276,11 @@ describe("createEscapeStripper", () => {
   describe("エスケープ列だけの入力", () => {
     const it = test.extend("strippedText", () =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const stripper = createEscapeStripper();
-          stripper.write(Buffer.from("\x1b[1m\x1b[0m"));
-          stripper.end();
-          return yield* Effect.promise(() => streamConsumers.text(stripper));
-        }),
+        Stream.make(Buffer.from("\x1b[1m\x1b[0m")).pipe(
+          stripEscapes,
+          Stream.decodeText,
+          Stream.mkString,
+        ),
       ));
 
     it("空になる", ({ strippedText }) => {

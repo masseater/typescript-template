@@ -5,6 +5,7 @@ import { describe, expect, vi } from "vite-plus/test";
 import {
   epochMillis,
   fileExists,
+  filesystem,
   joinPath,
   readDirectory,
   readFileString,
@@ -13,15 +14,6 @@ import {
 } from "../host.ts";
 import { runThrottle } from "./run-throttle.ts";
 
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-  readonly realpathSync: (location: string) => string;
-};
-
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
-
 const TRIVIAL_COMMAND = ["--", process.execPath, "-e", ""];
 
 const SLOT_MARKER_PATTERN = /^slot-\d+$/u;
@@ -29,17 +21,19 @@ const SLOT_MARKER_PATTERN = /^slot-\d+$/u;
 describe("runThrottle", () => {
   const throttleTest = standardIoTest
     .extend("slotDirectory", ({}, { onCleanup }) => {
-      const slotArea = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-run-"));
-      onCleanup(() => {
-        removePath(slotArea);
-      });
+      const slotArea = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "throttle-run-" }));
+      onCleanup(() =>
+        Effect.runPromise(Effect.promise(() => slotArea).pipe(Effect.flatMap(removePath))),
+      );
       return slotArea;
     })
     .extend("stampsDirectory", ({}, { onCleanup }) => {
-      const stampsArea = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-stamps-"));
-      onCleanup(() => {
-        removePath(stampsArea);
-      });
+      const stampsArea = Effect.runPromise(
+        filesystem.makeTempDirectory({ prefix: "throttle-stamps-" }),
+      );
+      onCleanup(() =>
+        Effect.runPromise(Effect.promise(() => stampsArea).pipe(Effect.flatMap(removePath))),
+      );
       return stampsArea;
     });
 
@@ -212,7 +206,7 @@ describe("runThrottle", () => {
                 isInteractive: false,
               }),
             );
-            return fileExists(joinPath(slotDirectory, "slots"));
+            return yield* fileExists(joinPath(slotDirectory, "slots"));
           }),
         ),
       );
@@ -351,10 +345,10 @@ describe("runThrottle", () => {
                 ),
               ]),
             );
-            const aStart = Number(readFileString(joinPath(stampsDirectory, "a-start"), "utf8"));
-            const aEnd = Number(readFileString(joinPath(stampsDirectory, "a-end"), "utf8"));
-            const bStart = Number(readFileString(joinPath(stampsDirectory, "b-start"), "utf8"));
-            const bEnd = Number(readFileString(joinPath(stampsDirectory, "b-end"), "utf8"));
+            const aStart = Number(yield* readFileString(joinPath(stampsDirectory, "a-start")));
+            const aEnd = Number(yield* readFileString(joinPath(stampsDirectory, "a-end")));
+            const bStart = Number(yield* readFileString(joinPath(stampsDirectory, "b-start")));
+            const bEnd = Number(yield* readFileString(joinPath(stampsDirectory, "b-end")));
             return aStart <= bStart ? bStart >= aEnd : aStart >= bEnd;
           }),
         ),
@@ -558,10 +552,10 @@ describe("runThrottle", () => {
                 ),
               ]),
             );
-            const aStart = Number(readFileString(joinPath(stampsDirectory, "a-start"), "utf8"));
-            const aEnd = Number(readFileString(joinPath(stampsDirectory, "a-end"), "utf8"));
-            const bStart = Number(readFileString(joinPath(stampsDirectory, "b-start"), "utf8"));
-            const bEnd = Number(readFileString(joinPath(stampsDirectory, "b-end"), "utf8"));
+            const aStart = Number(yield* readFileString(joinPath(stampsDirectory, "a-start")));
+            const aEnd = Number(yield* readFileString(joinPath(stampsDirectory, "a-end")));
+            const bStart = Number(yield* readFileString(joinPath(stampsDirectory, "b-start")));
+            const bEnd = Number(yield* readFileString(joinPath(stampsDirectory, "b-end")));
             return aStart < bEnd && bStart < aEnd;
           }),
         ),
@@ -625,12 +619,12 @@ describe("runThrottle", () => {
                 ),
               ),
             );
-            const spans = ["a", "b", "c"].map((stampPrefix) => ({
-              start: Number(
-                readFileString(joinPath(stampsDirectory, `${stampPrefix}-start`), "utf8"),
-              ),
-              end: Number(readFileString(joinPath(stampsDirectory, `${stampPrefix}-end`), "utf8")),
-            }));
+            const spans = yield* Effect.forEach(["a", "b", "c"], (stampPrefix) =>
+              Effect.all({
+                start: readFileString(joinPath(stampsDirectory, `${stampPrefix}-start`)),
+                end: readFileString(joinPath(stampsDirectory, `${stampPrefix}-end`)),
+              }).pipe(Effect.map(({ start, end }) => ({ start: Number(start), end: Number(end) }))),
+            );
             return Math.max(
               ...spans.map(
                 ({ start }) =>
@@ -675,7 +669,7 @@ describe("runThrottle", () => {
                 },
               ),
             );
-            return fileExists(joinPath(slotDirectory, "slot-1"));
+            return yield* fileExists(joinPath(slotDirectory, "slot-1"));
           }),
         ),
     );
@@ -712,7 +706,7 @@ describe("runThrottle", () => {
                 isInteractive: false,
               }),
             );
-            return readDirectory(slotDirectory).filter((slotFileName) =>
+            return (yield* readDirectory(slotDirectory)).filter((slotFileName) =>
               SLOT_MARKER_PATTERN.test(slotFileName),
             );
           }),
@@ -741,7 +735,7 @@ describe("runThrottle", () => {
               isInteractive: false,
             }),
           );
-          return readDirectory(slotDirectory).filter((slotFileName) =>
+          return (yield* readDirectory(slotDirectory)).filter((slotFileName) =>
             SLOT_MARKER_PATTERN.test(slotFileName),
           );
         }),
@@ -766,7 +760,7 @@ describe("runThrottle", () => {
               isInteractive: false,
             }),
           );
-          return readDirectory(slotDirectory).filter((slotFileName) =>
+          return (yield* readDirectory(slotDirectory)).filter((slotFileName) =>
             SLOT_MARKER_PATTERN.test(slotFileName),
           );
         }),
@@ -780,22 +774,28 @@ describe("runThrottle", () => {
 
   describe("an unusable slot area", () => {
     const it = throttleTest
-      .extend("theCodeOfAnUnusableSlotArea", ({ slotDirectory }) => {
-        const plainFile = joinPath(slotDirectory, "plain-file");
-        writeFileString({ location: plainFile, written: "" });
-        return runThrottle(TRIVIAL_COMMAND, {
-          slotDir: joinPath(plainFile, "nested"),
-          limit: 1,
-          waitBudgetMs: 15_000,
-          pollMs: 50,
-          isInteractive: false,
-        });
-      })
+      .extend("theCodeOfAnUnusableSlotArea", ({ slotDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const plainFile = joinPath(slotDirectory, "plain-file");
+            yield* writeFileString({ location: plainFile, written: "" });
+            return yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: joinPath(plainFile, "nested"),
+                limit: 1,
+                waitBudgetMs: 15_000,
+                pollMs: 50,
+                isInteractive: false,
+              }),
+            );
+          }),
+        ),
+      )
       .extend("theFailureNamedForAnUnusableSlotArea", ({ slotDirectory, stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
             const plainFile = joinPath(slotDirectory, "plain-file");
-            writeFileString({ location: plainFile, written: "" });
+            yield* writeFileString({ location: plainFile, written: "" });
             yield* Effect.promise(() =>
               runThrottle(TRIVIAL_COMMAND, {
                 slotDir: joinPath(plainFile, "nested"),
@@ -813,7 +813,7 @@ describe("runThrottle", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             const plainFile = joinPath(slotDirectory, "plain-file");
-            writeFileString({ location: plainFile, written: "" });
+            yield* writeFileString({ location: plainFile, written: "" });
             yield* Effect.promise(() =>
               runThrottle(TRIVIAL_COMMAND, {
                 slotDir: joinPath(plainFile, "nested"),

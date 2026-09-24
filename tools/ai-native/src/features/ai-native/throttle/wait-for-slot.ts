@@ -29,18 +29,23 @@ type PollState = {
   lastPrinted: string;
 };
 
-const reportProgress = (configuration: WaitConfiguration, held: PollState): string => {
-  const waiting = sweepWaiters(configuration.slotDir);
-  const line = `throttle: waiting ${waiting.indexOf(held.entryName) + 1}/${waiting.length}`;
-  if (configuration.interactive) {
-    const elapsedSec = Math.floor((epochMillis() - held.startedAt) / 1000);
-    process.stderr.write(`\r\u001B[K${line} ${elapsedSec}s`);
-    return held.lastPrinted;
-  }
-  const printKey = `${line}|${slotStateFingerprint(configuration.slotDir, configuration.limit)}`;
-  if (printKey !== held.lastPrinted) process.stderr.write(`${line}\n`);
-  return printKey;
-};
+const reportProgress = (
+  configuration: WaitConfiguration,
+  held: PollState,
+): Effect.Effect<string, Error> =>
+  Effect.gen(function* printPosition() {
+    const waiting = yield* sweepWaiters(configuration.slotDir);
+    const line = `throttle: waiting ${waiting.indexOf(held.entryName) + 1}/${waiting.length}`;
+    if (configuration.interactive) {
+      const elapsedSec = Math.floor((epochMillis() - held.startedAt) / 1000);
+      process.stderr.write(`\r\u001B[K${line} ${elapsedSec}s`);
+      return held.lastPrinted;
+    }
+    const fingerprint = yield* slotStateFingerprint(configuration.slotDir, configuration.limit);
+    const printKey = `${line}|${fingerprint}`;
+    if (printKey !== held.lastPrinted) process.stderr.write(`${line}\n`);
+    return printKey;
+  });
 
 const closeProgressLine = (configuration: WaitConfiguration): void => {
   if (configuration.interactive) process.stderr.write("\n");
@@ -60,7 +65,7 @@ const pollForSlot = (
 ): Promise<SlotHold | "budget-exhausted"> =>
   Effect.runPromise(
     Effect.gen(function* pollHeldSlot() {
-      const lastPrinted = reportProgress(configuration, held);
+      const lastPrinted = yield* reportProgress(configuration, held);
       const hold = yield* Effect.promise(() => tryAcquireAny(configuration));
       if (hold !== null) {
         closeProgressLine(configuration);
@@ -85,7 +90,7 @@ export const waitForSlot = (
         removeEntry: removeWaiter,
       });
       installInterruptHandler(interruptHandler);
-      writeWaiterEntry(waiterPath);
+      yield* writeWaiterEntry(waiterPath);
       return yield* Effect.promise(() =>
         pollForSlot(configuration, {
           entryName: baseName(waiterPath),
@@ -94,10 +99,14 @@ export const waitForSlot = (
         }),
       ).pipe(
         Effect.ensuring(
-          Effect.sync(() => {
-            removeWaiter(waiterPath);
-            dropInterruptHandler(interruptHandler);
-          }),
+          removeWaiter(waiterPath).pipe(
+            Effect.orDie,
+            Effect.andThen(
+              Effect.sync(() => {
+                dropInterruptHandler(interruptHandler);
+              }),
+            ),
+          ),
         ),
       );
     }),

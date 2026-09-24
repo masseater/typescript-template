@@ -1,76 +1,65 @@
+import { NodeServices } from "@effect/platform-node";
 import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
-import { DateTime } from "effect";
+import { Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
+import { ChildProcessSpawner } from "effect/unstable/process";
 
-const nodePath = process.getBuiltinModule("path") as {
-  readonly basename: (location: string) => string;
-  readonly dirname: (location: string) => string;
-  readonly join: (...parts: readonly string[]) => string;
-  readonly resolve: (...parts: readonly string[]) => string;
-};
+import { homeDirectory, signalNumber, temporaryDirectory } from "./host-facts.ts";
 
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly constants: { readonly signals: Readonly<Record<NodeJS.Signals, number>> };
-  readonly homedir: () => string;
-  readonly tmpdir: () => string;
-};
+const [paths, filesystem, randomness, spawner] = Effect.runSync(
+  Effect.all([
+    Path.Path,
+    FileSystem.FileSystem,
+    Crypto.Crypto,
+    ChildProcessSpawner.ChildProcessSpawner,
+  ]).pipe(Effect.provide(NodeServices.layer)),
+);
 
-const nodeCrypto = process.getBuiltinModule("crypto") as {
-  readonly randomBytes: (byteCount: number) => Uint8Array;
-};
+const nativeFailure = (failure: PlatformError.PlatformError): Error =>
+  failure.reason.cause instanceof Error ? failure.reason.cause : failure;
 
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly existsSync: (location: string) => boolean;
-  readonly mkdirSync: (location: string, options: { recursive: boolean }) => void;
-  readonly readFileSync: (location: string, encoding: string) => string;
-  readonly readdirSync: (location: string) => string[];
-  readonly rmSync: (location: string, options: { force: boolean; recursive: boolean }) => void;
-  readonly appendFileSync: (location: string, written: string) => void;
-  readonly writeFileSync: (location: string, written: string) => void;
-};
 
-const joinPath = (...parts: readonly string[]): string => nodePath.join(...parts);
+const joinPath = (...parts: readonly string[]): string => paths.join(...parts);
 
-const parentPath = (location: string): string => nodePath.dirname(location);
+const parentPath = (location: string): string => paths.dirname(location);
 
-const baseName = (location: string): string => nodePath.basename(location);
+const baseName = (location: string): string => paths.basename(location);
 
-const resolvePath = (...parts: readonly string[]): string => nodePath.resolve(...parts);
+const resolvePath = (...parts: readonly string[]): string => paths.resolve(...parts);
 
-const homeDirectory = (): string => nodeOs.homedir();
+const fileExists = (location: string): Effect.Effect<boolean> =>
+  filesystem.exists(location).pipe(Effect.orElseSucceed(() => false));
 
-const temporaryDirectory = (): string => nodeOs.tmpdir();
+const onDisk = <A, R>(
+  operation: Effect.Effect<A, PlatformError.PlatformError, R>,
+): Effect.Effect<A, Error, R> => Effect.mapError(operation, nativeFailure);
 
-const signalNumber = (signal: NodeJS.Signals): number => nodeOs.constants.signals[signal];
-
-const fileExists = (location: string): boolean => nodeFs.existsSync(location);
-
-const makeDirectory = (location: string): void => {
-  nodeFs.mkdirSync(location, { recursive: true });
-};
+const makeDirectory = (location: string): Effect.Effect<void, Error> =>
+  onDisk(filesystem.makeDirectory(location, { recursive: true }));
 
 const writeFileString = (fileWrite: {
   location: string;
   written: string;
   append?: boolean;
-}): void => {
-  if (fileWrite.append === true) {
-    nodeFs.appendFileSync(fileWrite.location, fileWrite.written);
-    return;
-  }
-  nodeFs.writeFileSync(fileWrite.location, fileWrite.written);
-};
+}): Effect.Effect<void, Error> =>
+  onDisk(
+    filesystem.writeFileString(
+      fileWrite.location,
+      fileWrite.written,
+      fileWrite.append === true ? { flag: "a" } : undefined,
+    ),
+  );
 
-const readFileString = (location: string, _encoding?: string): string =>
-  nodeFs.readFileSync(location, "utf8");
+const readFileString = (location: string): Effect.Effect<string, Error> =>
+  onDisk(filesystem.readFileString(location));
 
-const readDirectory = (location: string): readonly string[] => nodeFs.readdirSync(location);
+const readDirectory = (location: string): Effect.Effect<readonly string[], Error> =>
+  onDisk(filesystem.readDirectory(location));
 
-const removePath = (location: string): void => {
-  nodeFs.rmSync(location, { force: true, recursive: true });
-};
+const removePath = (location: string): Effect.Effect<void, Error> =>
+  onDisk(filesystem.remove(location, { force: true, recursive: true }));
 
 const randomHex = (byteCount: number): string =>
-  Buffer.from(nodeCrypto.randomBytes(byteCount)).toString("hex");
+  Buffer.from(Effect.runSync(randomness.randomBytes(byteCount))).toString("hex");
 
 const epochMillis = (): number => DateTime.toEpochMillis(DateTime.nowUnsafe());
 
@@ -80,9 +69,12 @@ export {
   baseName,
   epochMillis,
   fileExists,
+  filesystem,
   homeDirectory,
   joinPath,
   makeDirectory,
+  nativeFailure,
+  onDisk,
   optionalSetting,
   parentPath,
   randomHex,
@@ -91,6 +83,7 @@ export {
   removePath,
   resolvePath,
   signalNumber,
+  spawner,
   temporaryDirectory,
   wallClockDate,
   writeFileString,

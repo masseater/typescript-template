@@ -21,18 +21,27 @@ const waitersDir = (slotDir: string): string => joinPath(slotDir, "waiters");
 
 const slotIndexes = (limit: number): number[] => [...Array(limit).keys()];
 
-export const ensureSlots = (slotDir: string, limit: number): void => {
-  makeDirectory(waitersDir(slotDir));
-  for (const index of slotIndexes(limit)) {
-    const marker = markerPath(slotDir, index);
-    writeFileString({ location: marker, written: "", append: true });
-    writeFileString({ location: lockPath(marker), written: "", append: true });
-  }
-};
+export const ensureSlots = (slotDir: string, limit: number): Effect.Effect<void, Error> =>
+  makeDirectory(waitersDir(slotDir)).pipe(
+    Effect.andThen(
+      Effect.forEach(
+        slotIndexes(limit),
+        (index) => {
+          const marker = markerPath(slotDir, index);
+          return writeFileString({ location: marker, written: "", append: true }).pipe(
+            Effect.andThen(
+              writeFileString({ location: lockPath(marker), written: "", append: true }),
+            ),
+          );
+        },
+        { discard: true },
+      ),
+    ),
+  );
 
 export type SlotHold = { release: () => Promise<void> };
 
-const lockUnlessHeld = (marker: string): SlotHold | null =>
+const lockUnlessHeld = (marker: string): Effect.Effect<SlotHold | null, Error> =>
   tryAcquireFileLock({ lockPath: lockPath(marker), markerPath: marker });
 
 export type AcquireConfiguration = {
@@ -40,29 +49,32 @@ export type AcquireConfiguration = {
   limit: number;
 };
 
-const firstFreeSlot = (configuration: AcquireConfiguration): SlotHold | null => {
-  for (const index of slotIndexes(configuration.limit)) {
-    const acquired = lockUnlessHeld(markerPath(configuration.slotDir, index));
-    if (acquired !== null) return acquired;
-  }
-  return null;
-};
+const firstFreeSlot = (
+  configuration: AcquireConfiguration,
+): Effect.Effect<SlotHold | null, Error> =>
+  Effect.gen(function* lockFirstFreeSlot() {
+    for (const index of slotIndexes(configuration.limit)) {
+      const acquired = yield* lockUnlessHeld(markerPath(configuration.slotDir, index));
+      if (acquired !== null) return acquired;
+    }
+    return null;
+  });
 
 export const tryAcquireAny = (configuration: AcquireConfiguration): Promise<SlotHold | null> =>
-  Effect.runPromise(Effect.try(() => firstFreeSlot(configuration)));
+  Effect.runPromise(firstFreeSlot(configuration));
 
-const generationIdentity = (marker: string): string => {
-  try {
-    return readFileString(marker) || "unused";
-  } catch (unreadableGeneration) {
-    return `unreadable:${failureSpelling(unreadableGeneration)}`;
-  }
-};
+const generationIdentity = (marker: string): Effect.Effect<string> =>
+  readFileString(marker).pipe(
+    Effect.match({
+      onFailure: (unreadableGeneration) => `unreadable:${failureSpelling(unreadableGeneration)}`,
+      onSuccess: (generation) => generation || "unused",
+    }),
+  );
 
-export const slotStateFingerprint = (slotDir: string, limit: number): string =>
-  slotIndexes(limit)
-    .map((index) => generationIdentity(markerPath(slotDir, index)))
-    .join(",");
+export const slotStateFingerprint = (slotDir: string, limit: number): Effect.Effect<string> =>
+  Effect.forEach(slotIndexes(limit), (index) =>
+    generationIdentity(markerPath(slotDir, index)),
+  ).pipe(Effect.map((generations) => generations.join(",")));
 
 export const reserveWaiterPath = (slotDir: string): string => {
   const spelled = [String(epochMillis()).padStart(13, "0"), String(process.pid), randomHex(4)].join(
@@ -71,13 +83,11 @@ export const reserveWaiterPath = (slotDir: string): string => {
   return joinPath(waitersDir(slotDir), spelled);
 };
 
-export const writeWaiterEntry = (waiterPath: string): void => {
+export const writeWaiterEntry = (waiterPath: string): Effect.Effect<void, Error> =>
   writeFileString({ location: waiterPath, written: `${process.pid}\n` });
-};
 
-export const removeWaiter = (waiterPath: string): void => {
+export const removeWaiter = (waiterPath: string): Effect.Effect<void, Error> =>
   removePath(waiterPath);
-};
 
 const OWNED_BY_ANOTHER_USER_CODES: ReadonlySet<string> = new Set(["EPERM"]);
 
@@ -92,24 +102,29 @@ const isAlive = (pid: number): boolean => {
 
 const UNREADABLE_ENTRY_CODES: ReadonlySet<string> = new Set(["ENOENT", "ENOTDIR", "EISDIR"]);
 
-const recordedPid = (waiterPath: string): number | null => {
-  try {
-    const written = readFileString(waiterPath).trim();
-    return /^[0-9]+$/.test(written) ? Number(written) : null;
-  } catch (unreadableWaiter) {
-    if (failedWithCode(unreadableWaiter, UNREADABLE_ENTRY_CODES)) return null;
-    throw unreadableWaiter;
-  }
-};
+const recordedPid = (waiterPath: string): Effect.Effect<number | null, Error> =>
+  readFileString(waiterPath).pipe(
+    Effect.map((written) => (/^[0-9]+$/.test(written.trim()) ? Number(written.trim()) : null)),
+    Effect.catchIf(
+      (unreadableWaiter) => failedWithCode(unreadableWaiter, UNREADABLE_ENTRY_CODES),
+      () => Effect.succeed(null),
+    ),
+  );
 
-const survives = (waiterPath: string): boolean => {
-  const pid = recordedPid(waiterPath);
-  if (pid !== null && isAlive(pid)) return true;
-  removeWaiter(waiterPath);
-  return false;
-};
+const survives = (waiterPath: string): Effect.Effect<boolean, Error> =>
+  recordedPid(waiterPath).pipe(
+    Effect.flatMap((pid) =>
+      pid !== null && isAlive(pid)
+        ? Effect.succeed(true)
+        : removeWaiter(waiterPath).pipe(Effect.as(false)),
+    ),
+  );
 
-export const sweepWaiters = (slotDir: string): string[] =>
-  [...readDirectory(waitersDir(slotDir))]
-    .toSorted()
-    .filter((spelled) => survives(joinPath(waitersDir(slotDir), spelled)));
+export const sweepWaiters = (slotDir: string): Effect.Effect<string[], Error> =>
+  readDirectory(waitersDir(slotDir)).pipe(
+    Effect.flatMap((spelledEntries) =>
+      Effect.filter([...spelledEntries].toSorted(), (spelled) =>
+        survives(joinPath(waitersDir(slotDir), spelled)),
+      ),
+    ),
+  );

@@ -1,45 +1,13 @@
 import { standardIoTest } from "@repo/dont-review-it";
-import { Effect } from "effect";
+import { Deferred, Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
-import { epochMillis, joinPath, readFileString, removePath } from "../host.ts";
-import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
+import { epochMillis, filesystem, joinPath, readFileString, removePath } from "../host.ts";
 import { TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { runWithSlot } from "./run-command.ts";
 import { runThrottle } from "./run-throttle.ts";
 
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-  readonly realpathSync: (location: string) => string;
-};
-
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
-
-class FakeChildProcess {
-  readonly pid: number | undefined;
-  readonly listeners = new EventTarget();
-
-  constructor(pid?: number) {
-    this.pid = pid;
-  }
-
-  once(eventName: string, listener: (...emitted: never[]) => void): this {
-    this.listeners.addEventListener(
-      eventName,
-      (dispatched) => {
-        listener(...(dispatched as CustomEvent<never[]>).detail);
-      },
-      { once: true },
-    );
-    return this;
-  }
-
-  emit(eventName: string, ...emitted: readonly unknown[]): boolean {
-    return this.listeners.dispatchEvent(new CustomEvent(eventName, { detail: emitted }));
-  }
-}
+const KNOWN_CHILD_PID = 314_159;
 
 const TRIVIAL_COMMAND = ["--", process.execPath, "-e", ""];
 
@@ -67,16 +35,16 @@ const WAIT_BUDGET_MS = 30_000;
 
 const POLL_MS = 10_000;
 
-const KNOWN_CHILD_PID = 314_159;
-
 const LINGERING_ARGUMENTS = ["-e", "setInterval(() => {}, 1000);"];
 
 describe("runWithSlot", () => {
   const test = standardIoTest.extend("slotDirectory", ({}, { onCleanup }) => {
-    const madeSlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-command-"));
-    onCleanup(() => {
-      removePath(madeSlotDirectory);
-    });
+    const madeSlotDirectory = Effect.runPromise(
+      filesystem.makeTempDirectory({ prefix: "throttle-command-" }),
+    );
+    onCleanup(() =>
+      Effect.runPromise(Effect.promise(() => madeSlotDirectory).pipe(Effect.flatMap(removePath))),
+    );
     return madeSlotDirectory;
   });
 
@@ -311,7 +279,6 @@ describe("runWithSlot", () => {
   describe("a fast command under a long timeout", () => {
     const it = test
       .extend("theCodeOfAFastCommandUnderALongTimeout", () => {
-        const settledChild = new FakeChildProcess(KNOWN_CHILD_PID);
         return runWithSlot({
           invocation: {
             timeoutSec: 30,
@@ -321,24 +288,29 @@ describe("runWithSlot", () => {
           },
           hold: { release: () => Promise.resolve() },
           dependencies: {
-            spawnChild: () => {
-              queueMicrotask(() => settledChild.emit(CHILD_PROCESS_EVENT.exit, 0, null));
-              return settledChild;
-            },
-            signalTree: () => null,
+            spawnChild: () =>
+              Effect.succeed({
+                pid: KNOWN_CHILD_PID,
+                exited: Effect.succeed({ kind: "exit" as const, exitCode: 0, bySignal: null }),
+              }),
+            signalTree: () => Effect.succeed(null),
           },
         });
       })
       .extend("theSpawnOfAFastCommandUnderALongTimeout", () =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const settledChild = new FakeChildProcess(KNOWN_CHILD_PID);
             const spawnChild = vi.fn<
-              (spawned: { executable: string; args: readonly string[] }) => FakeChildProcess
-            >(() => {
-              queueMicrotask(() => settledChild.emit(CHILD_PROCESS_EVENT.exit, 0, null));
-              return settledChild;
-            });
+              (spawned: { executable: string; args: readonly string[] }) => Effect.Effect<{
+                pid: number;
+                exited: Effect.Effect<{ kind: "exit"; exitCode: number; bySignal: null }>;
+              }>
+            >(() =>
+              Effect.succeed({
+                pid: KNOWN_CHILD_PID,
+                exited: Effect.succeed({ kind: "exit" as const, exitCode: 0, bySignal: null }),
+              }),
+            );
             yield* Effect.promise(() =>
               runWithSlot({
                 invocation: {
@@ -348,7 +320,7 @@ describe("runWithSlot", () => {
                   commandLine: `${process.execPath} -e `,
                 },
                 hold: { release: () => Promise.resolve() },
-                dependencies: { spawnChild, signalTree: () => null },
+                dependencies: { spawnChild, signalTree: () => Effect.succeed(null) },
               }),
             );
             return spawnChild;
@@ -358,7 +330,6 @@ describe("runWithSlot", () => {
       .extend("theSlotReleaseOfAFastCommandUnderALongTimeout", () =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const settledChild = new FakeChildProcess(KNOWN_CHILD_PID);
             const release = vi.fn<() => Promise<void>>(() => Promise.resolve());
             yield* Effect.promise(() =>
               runWithSlot({
@@ -370,11 +341,16 @@ describe("runWithSlot", () => {
                 },
                 hold: { release },
                 dependencies: {
-                  spawnChild: () => {
-                    queueMicrotask(() => settledChild.emit(CHILD_PROCESS_EVENT.exit, 0, null));
-                    return settledChild;
-                  },
-                  signalTree: () => null,
+                  spawnChild: () =>
+                    Effect.succeed({
+                      pid: KNOWN_CHILD_PID,
+                      exited: Effect.succeed({
+                        kind: "exit" as const,
+                        exitCode: 0,
+                        bySignal: null,
+                      }),
+                    }),
+                  signalTree: () => Effect.succeed(null),
                 },
               }),
             );
@@ -385,10 +361,9 @@ describe("runWithSlot", () => {
       .extend("theTreeSignalOfAFastCommandUnderALongTimeout", () =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const settledChild = new FakeChildProcess(KNOWN_CHILD_PID);
             const signalTree = vi.fn<
-              (signalled: { pid: number; signal: NodeJS.Signals }) => Error | null
-            >(() => null);
+              (signalled: { pid: number; signal: NodeJS.Signals }) => Effect.Effect<Error | null>
+            >(() => Effect.succeed(null));
             yield* Effect.promise(() =>
               runWithSlot({
                 invocation: {
@@ -399,10 +374,15 @@ describe("runWithSlot", () => {
                 },
                 hold: { release: () => Promise.resolve() },
                 dependencies: {
-                  spawnChild: () => {
-                    queueMicrotask(() => settledChild.emit(CHILD_PROCESS_EVENT.exit, 0, null));
-                    return settledChild;
-                  },
+                  spawnChild: () =>
+                    Effect.succeed({
+                      pid: KNOWN_CHILD_PID,
+                      exited: Effect.succeed({
+                        kind: "exit" as const,
+                        exitCode: 0,
+                        bySignal: null,
+                      }),
+                    }),
                   signalTree,
                 },
               }),
@@ -435,12 +415,14 @@ describe("runWithSlot", () => {
     const GRANDCHILD_KILL_GRACE_MS = 100;
     const it = test
       .extend("stampsDirectory", ({}, { onCleanup }) => {
-        const madeStampsDirectory = nodeFs.mkdtempSync(
-          joinPath(nodeOs.tmpdir(), "throttle-tree-stamps-"),
+        const madeStampsDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "throttle-tree-stamps-" }),
         );
-        onCleanup(() => {
-          removePath(madeStampsDirectory);
-        });
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.promise(() => madeStampsDirectory).pipe(Effect.flatMap(removePath)),
+          ),
+        );
         return madeStampsDirectory;
       })
       .extend("theCodeOfARunWithASurvivingGrandchild", ({ slotDirectory, stampsDirectory }) => {
@@ -548,9 +530,10 @@ describe("runWithSlot", () => {
               ),
             );
             yield* Effect.sleep("200 millis");
+            const grandchildPid = Number((yield* readFileString(pidFile)).trim());
             return yield* Effect.sync(() => {
               try {
-                process.kill(Number(readFileString(pidFile).trim()), 0);
+                process.kill(grandchildPid, 0);
                 throw new Error("the grandchild was still alive after the timeout");
               } catch (probedGrandchild) {
                 return probedGrandchild instanceof Error
@@ -594,7 +577,11 @@ describe("runWithSlot", () => {
   describe("a timeout on a platform whose tree dies without a grace period", () => {
     const it = test
       .extend("theCodeOfARunTimedOutWithoutAGracePeriod", () => {
-        const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+        const lingeringEnd = Deferred.makeUnsafe<{
+          kind: "exit";
+          exitCode: number | null;
+          bySignal: NodeJS.Signals | null;
+        }>();
         return runWithSlot({
           invocation: {
             timeoutSec: 1,
@@ -605,24 +592,34 @@ describe("runWithSlot", () => {
           hold: { release: () => Promise.resolve() },
           dependencies: {
             platform: "win32",
-            spawnChild: () => lingeringChild,
-            signalTree: () => {
-              lingeringChild.emit(CHILD_PROCESS_EVENT.exit, null, TREE_TERMINATION_SIGNAL.forced);
-              return null;
-            },
+            spawnChild: () =>
+              Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
+            signalTree: () =>
+              Deferred.succeed(lingeringEnd, {
+                kind: "exit",
+                exitCode: null,
+                bySignal: TREE_TERMINATION_SIGNAL.forced,
+              }).pipe(Effect.as(null)),
           },
         });
       })
       .extend("theTreeSignalOfARunTimedOutWithoutAGracePeriod", () =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+            const lingeringEnd = Deferred.makeUnsafe<{
+              kind: "exit";
+              exitCode: number | null;
+              bySignal: NodeJS.Signals | null;
+            }>();
             const signalTree = vi.fn<
-              (signalled: { pid: number; signal: NodeJS.Signals }) => Error | null
-            >(() => {
-              lingeringChild.emit(CHILD_PROCESS_EVENT.exit, null, TREE_TERMINATION_SIGNAL.forced);
-              return null;
-            });
+              (signalled: { pid: number; signal: NodeJS.Signals }) => Effect.Effect<Error | null>
+            >(() =>
+              Deferred.succeed(lingeringEnd, {
+                kind: "exit",
+                exitCode: null,
+                bySignal: TREE_TERMINATION_SIGNAL.forced,
+              }).pipe(Effect.as(null)),
+            );
             yield* Effect.promise(() =>
               runWithSlot({
                 invocation: {
@@ -634,7 +631,8 @@ describe("runWithSlot", () => {
                 hold: { release: () => Promise.resolve() },
                 dependencies: {
                   platform: "win32",
-                  spawnChild: () => lingeringChild,
+                  spawnChild: () =>
+                    Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
                   signalTree,
                 },
               }),
@@ -646,7 +644,11 @@ describe("runWithSlot", () => {
       .extend("theRunTimedOutWithoutAGracePeriodEndedPromptly", () =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+            const lingeringEnd = Deferred.makeUnsafe<{
+              kind: "exit";
+              exitCode: number | null;
+              bySignal: NodeJS.Signals | null;
+            }>();
             const before = epochMillis();
             yield* Effect.promise(() =>
               runWithSlot({
@@ -659,15 +661,14 @@ describe("runWithSlot", () => {
                 hold: { release: () => Promise.resolve() },
                 dependencies: {
                   platform: "win32",
-                  spawnChild: () => lingeringChild,
-                  signalTree: () => {
-                    lingeringChild.emit(
-                      CHILD_PROCESS_EVENT.exit,
-                      null,
-                      TREE_TERMINATION_SIGNAL.forced,
-                    );
-                    return null;
-                  },
+                  spawnChild: () =>
+                    Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
+                  signalTree: () =>
+                    Deferred.succeed(lingeringEnd, {
+                      kind: "exit",
+                      exitCode: null,
+                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                    }).pipe(Effect.as(null)),
                 },
               }),
             );
@@ -678,7 +679,11 @@ describe("runWithSlot", () => {
       .extend("theTimeoutWithoutAGracePeriodIsNamedOnStderr", ({ stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+            const lingeringEnd = Deferred.makeUnsafe<{
+              kind: "exit";
+              exitCode: number | null;
+              bySignal: NodeJS.Signals | null;
+            }>();
             yield* Effect.promise(() =>
               runWithSlot({
                 invocation: {
@@ -690,15 +695,14 @@ describe("runWithSlot", () => {
                 hold: { release: () => Promise.resolve() },
                 dependencies: {
                   platform: "win32",
-                  spawnChild: () => lingeringChild,
-                  signalTree: () => {
-                    lingeringChild.emit(
-                      CHILD_PROCESS_EVENT.exit,
-                      null,
-                      TREE_TERMINATION_SIGNAL.forced,
-                    );
-                    return null;
-                  },
+                  spawnChild: () =>
+                    Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
+                  signalTree: () =>
+                    Deferred.succeed(lingeringEnd, {
+                      kind: "exit",
+                      exitCode: null,
+                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                    }).pipe(Effect.as(null)),
                 },
               }),
             );
@@ -734,7 +738,11 @@ describe("runWithSlot", () => {
   describe("a process tree that could not be terminated while its root stopped", () => {
     const it = test
       .extend("theCodeOfARunWhoseTreeSurvived", () => {
-        const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+        const lingeringEnd = Deferred.makeUnsafe<{
+          kind: "exit";
+          exitCode: number | null;
+          bySignal: NodeJS.Signals | null;
+        }>();
         return runWithSlot({
           invocation: {
             timeoutSec: 1,
@@ -745,18 +753,25 @@ describe("runWithSlot", () => {
           hold: { release: () => Promise.resolve() },
           dependencies: {
             platform: "win32",
-            spawnChild: () => lingeringChild,
-            signalTree: () => {
-              lingeringChild.emit(CHILD_PROCESS_EVENT.exit, null, TREE_TERMINATION_SIGNAL.forced);
-              return new Error("taskkill denied");
-            },
+            spawnChild: () =>
+              Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
+            signalTree: () =>
+              Deferred.succeed(lingeringEnd, {
+                kind: "exit",
+                exitCode: null,
+                bySignal: TREE_TERMINATION_SIGNAL.forced,
+              }).pipe(Effect.as(new Error("taskkill denied"))),
           },
         });
       })
       .extend("theSurvivingTreeIsNamedOnStderr", ({ stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+            const lingeringEnd = Deferred.makeUnsafe<{
+              kind: "exit";
+              exitCode: number | null;
+              bySignal: NodeJS.Signals | null;
+            }>();
             yield* Effect.promise(() =>
               runWithSlot({
                 invocation: {
@@ -768,15 +783,14 @@ describe("runWithSlot", () => {
                 hold: { release: () => Promise.resolve() },
                 dependencies: {
                   platform: "win32",
-                  spawnChild: () => lingeringChild,
-                  signalTree: () => {
-                    lingeringChild.emit(
-                      CHILD_PROCESS_EVENT.exit,
-                      null,
-                      TREE_TERMINATION_SIGNAL.forced,
-                    );
-                    return new Error("taskkill denied");
-                  },
+                  spawnChild: () =>
+                    Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
+                  signalTree: () =>
+                    Deferred.succeed(lingeringEnd, {
+                      kind: "exit",
+                      exitCode: null,
+                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                    }).pipe(Effect.as(new Error("taskkill denied"))),
                 },
               }),
             );
@@ -789,7 +803,11 @@ describe("runWithSlot", () => {
       .extend("theTimeoutBehindTheSurvivingTreeIsNamedOnStderr", ({ stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const lingeringChild = new FakeChildProcess(KNOWN_CHILD_PID);
+            const lingeringEnd = Deferred.makeUnsafe<{
+              kind: "exit";
+              exitCode: number | null;
+              bySignal: NodeJS.Signals | null;
+            }>();
             yield* Effect.promise(() =>
               runWithSlot({
                 invocation: {
@@ -801,15 +819,14 @@ describe("runWithSlot", () => {
                 hold: { release: () => Promise.resolve() },
                 dependencies: {
                   platform: "win32",
-                  spawnChild: () => lingeringChild,
-                  signalTree: () => {
-                    lingeringChild.emit(
-                      CHILD_PROCESS_EVENT.exit,
-                      null,
-                      TREE_TERMINATION_SIGNAL.forced,
-                    );
-                    return new Error("taskkill denied");
-                  },
+                  spawnChild: () =>
+                    Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(lingeringEnd) }),
+                  signalTree: () =>
+                    Deferred.succeed(lingeringEnd, {
+                      kind: "exit",
+                      exitCode: null,
+                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                    }).pipe(Effect.as(new Error("taskkill denied"))),
                 },
               }),
             );

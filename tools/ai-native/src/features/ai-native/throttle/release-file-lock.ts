@@ -1,40 +1,50 @@
+import { Cause, Effect, Exit, Scope } from "effect";
 import { attempt } from "es-toolkit";
 import { unlock } from "fs-native-extensions";
 
-import { closeDescriptor } from "../host-descriptors.ts";
+export type LockedFile = { readonly descriptor: number; readonly scope: Scope.Closeable };
+
+const asError = (squashed: unknown): Error =>
+  squashed instanceof Error ? squashed : new Error(String(squashed), { cause: squashed });
+
+export const closeFailureOf = (locked: LockedFile): Effect.Effect<Error | null> =>
+  Scope.close(locked.scope, Exit.void).pipe(
+    Effect.exit,
+    Effect.map((closed) => (Exit.isSuccess(closed) ? null : asError(Cause.squash(closed.cause)))),
+  );
 
 export const closeFileDescriptorAfterFailure = (input: {
-  descriptor: number;
-  precedingFailure: unknown;
-}): never => {
-  const [closeFailure] = attempt<true, Error>(() => {
-    closeDescriptor(input.descriptor);
-    return true;
-  });
-  if (closeFailure !== null) {
-    throw new AggregateError(
-      [input.precedingFailure, closeFailure],
-      `Operation and close both failed for file descriptor ${input.descriptor}`,
-    );
-  }
-  throw input.precedingFailure;
-};
+  locked: LockedFile;
+  precedingFailure: Error;
+}): Effect.Effect<never, Error> =>
+  closeFailureOf(input.locked).pipe(
+    Effect.flatMap((closeFailure) =>
+      Effect.fail(
+        closeFailure === null
+          ? input.precedingFailure
+          : new AggregateError(
+              [input.precedingFailure, closeFailure],
+              `Operation and close both failed for file descriptor ${input.locked.descriptor}`,
+            ),
+      ),
+    ),
+  );
 
-export const releaseFileLock = (descriptor: number): void => {
-  const [unlockFailure] = attempt<true, Error>(() => {
-    unlock(descriptor);
-    return true;
+export const releaseFileLock = (locked: LockedFile): Effect.Effect<void, Error> =>
+  Effect.gen(function* unlockAndClose() {
+    const [unlockFailure] = attempt<true, Error>(() => {
+      unlock(locked.descriptor);
+      return true;
+    });
+    const closeFailure = yield* closeFailureOf(locked);
+    if (unlockFailure !== null && closeFailure !== null) {
+      return yield* Effect.fail(
+        new AggregateError(
+          [unlockFailure, closeFailure],
+          `Could not unlock and close file descriptor ${locked.descriptor}`,
+        ),
+      );
+    }
+    if (unlockFailure !== null) return yield* Effect.fail(unlockFailure);
+    if (closeFailure !== null) return yield* Effect.fail(closeFailure);
   });
-  const [closeFailure] = attempt<true, Error>(() => {
-    closeDescriptor(descriptor);
-    return true;
-  });
-  if (unlockFailure !== null && closeFailure !== null) {
-    throw new AggregateError(
-      [unlockFailure, closeFailure],
-      `Could not unlock and close file descriptor ${descriptor}`,
-    );
-  }
-  if (unlockFailure !== null) throw unlockFailure;
-  if (closeFailure !== null) throw closeFailure;
-};

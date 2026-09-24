@@ -1,26 +1,10 @@
-import { Effect } from "effect";
+import { Effect, Stream } from "effect";
+import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, test } from "vite-plus/test";
 
-import { waitEmitterEvent } from "../emitter-wait.ts";
-import { joinPath, readDirectory, removePath } from "../host.ts";
-import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
-import { spawnChild } from "../node-spawn.ts";
+import { childEndOf } from "../child-process.ts";
+import { filesystem, joinPath, readDirectory, spawner } from "../host.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
-
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-  readonly realpathSync: (location: string) => string;
-};
-
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
-
-type ChildExit = readonly [number | null, NodeJS.Signals | null];
-
-const streamConsumers = process.getBuiltinModule("stream/consumers") as {
-  readonly text: (readable: unknown) => Promise<string>;
-};
 
 const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
 
@@ -29,25 +13,31 @@ const TWO_STREAM_SCRIPT =
 
 describe("cli", () => {
   describe("a call that names no command", () => {
-    const it = test.extend("theWayThrottleAnswersACallWithoutACommand", ({}, { onCleanup }) => {
-      const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
-      onCleanup(() => {
-        removePath(tmpRoot);
-      });
-      const child = spawnChild({
-        executable: process.execPath,
-        handed: [CLI_PATH],
-        spawnOptions: {
-          stdio: ["ignore", "pipe", "pipe"],
-          env: { ...process.env, TMPDIR: tmpRoot },
-        },
-      });
-      return Promise.all([
-        waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
-        streamConsumers.text(child.stdout),
-        streamConsumers.text(child.stderr),
-      ]);
-    });
+    const it = test.extend("theWayThrottleAnswersACallWithoutACommand", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const tmpRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "throttle-cli-tmp-",
+          });
+          const child = yield* spawner.spawn(
+            ChildProcess.make(process.execPath, [CLI_PATH], {
+              env: { TMPDIR: tmpRoot },
+              extendEnv: true,
+              detached: false,
+              stdin: "ignore",
+            }),
+          );
+          const [stdout, stderr] = yield* Effect.all(
+            [
+              Stream.mkString(Stream.decodeText(child.stdout)),
+              Stream.mkString(Stream.decodeText(child.stderr)),
+            ],
+            { concurrency: "unbounded" },
+          );
+          const end = yield* childEndOf(child);
+          return [[end.code, end.signal], stdout, stderr];
+        }).pipe(Effect.scoped, Effect.orDie),
+      ));
 
     it(
       "exits 2 with nothing on stdout and the usage on stderr",
@@ -95,20 +85,26 @@ describe("cli", () => {
 
   describe("a command that writes to both of its streams", () => {
     describe("started without the wrapper", () => {
-      const it = test.extend("theWayNodeRunsItOnItsOwn", () => {
-        const child = spawnChild({
-          executable: process.execPath,
-          handed: ["-e", TWO_STREAM_SCRIPT],
-          spawnOptions: {
-            stdio: ["ignore", "pipe", "pipe"],
-          },
-        });
-        return Promise.all([
-          waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
-          streamConsumers.text(child.stdout),
-          streamConsumers.text(child.stderr),
-        ]);
-      });
+      const it = test.extend("theWayNodeRunsItOnItsOwn", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const child = yield* spawner.spawn(
+              ChildProcess.make(process.execPath, ["-e", TWO_STREAM_SCRIPT], {
+                detached: false,
+                stdin: "ignore",
+              }),
+            );
+            const [stdout, stderr] = yield* Effect.all(
+              [
+                Stream.mkString(Stream.decodeText(child.stdout)),
+                Stream.mkString(Stream.decodeText(child.stderr)),
+              ],
+              { concurrency: "unbounded" },
+            );
+            const end = yield* childEndOf(child);
+            return [[end.code, end.signal], stdout, stderr];
+          }).pipe(Effect.scoped, Effect.orDie),
+        ));
 
       it(
         "exits zero after writing two lines to each stream",
@@ -124,25 +120,35 @@ describe("cli", () => {
     });
 
     describe("started through the wrapper", () => {
-      const it = test.extend("theWayThrottleRunsIt", ({}, { onCleanup }) => {
-        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
-        onCleanup(() => {
-          removePath(tmpRoot);
-        });
-        const child = spawnChild({
-          executable: process.execPath,
-          handed: [CLI_PATH, "--", process.execPath, "-e", TWO_STREAM_SCRIPT],
-          spawnOptions: {
-            stdio: ["ignore", "pipe", "pipe"],
-            env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
-          },
-        });
-        return Promise.all([
-          waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
-          streamConsumers.text(child.stdout),
-          streamConsumers.text(child.stderr),
-        ]);
-      });
+      const it = test.extend("theWayThrottleRunsIt", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const tmpRoot = yield* filesystem.makeTempDirectoryScoped({
+              prefix: "throttle-cli-tmp-",
+            });
+            const child = yield* spawner.spawn(
+              ChildProcess.make(
+                process.execPath,
+                [CLI_PATH, "--", process.execPath, "-e", TWO_STREAM_SCRIPT],
+                {
+                  env: { TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+                  extendEnv: true,
+                  detached: false,
+                  stdin: "ignore",
+                },
+              ),
+            );
+            const [stdout, stderr] = yield* Effect.all(
+              [
+                Stream.mkString(Stream.decodeText(child.stdout)),
+                Stream.mkString(Stream.decodeText(child.stderr)),
+              ],
+              { concurrency: "unbounded" },
+            );
+            const end = yield* childEndOf(child);
+            return [[end.code, end.signal], stdout, stderr];
+          }).pipe(Effect.scoped, Effect.orDie),
+        ));
 
       it(
         "hands both streams through byte for byte and adds only its own lines to stderr",
@@ -160,15 +166,14 @@ describe("cli", () => {
 
   describe("a wrapper left waiting because the only slot is held", () => {
     describe("when a SIGTERM reaches it", () => {
-      const it = test.extend("theWayAWaitingWrapperEnds", ({}, { onCleanup }) => {
-        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
-        onCleanup(() => {
-          removePath(tmpRoot);
-        });
-        return Effect.runPromise(
+      const it = test.extend("theWayAWaitingWrapperEnds", () =>
+        Effect.runPromise(
           Effect.gen(function* () {
+            const tmpRoot = yield* filesystem.makeTempDirectoryScoped({
+              prefix: "throttle-cli-tmp-",
+            });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
-            ensureSlots(slotDir, 1);
+            yield* ensureSlots(slotDir, 1);
             const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
                 const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
@@ -177,40 +182,43 @@ describe("cli", () => {
                 return yield* holdTheOnlySlot();
               });
             const release = yield* holdTheOnlySlot();
-            const child = spawnChild({
-              executable: process.execPath,
-              handed: [CLI_PATH, "--", process.execPath, "-e", ""],
-              spawnOptions: {
-                stdio: ["ignore", "pipe", "pipe"],
-                env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
-              },
-            });
+            const child = yield* spawner.spawn(
+              ChildProcess.make(process.execPath, [CLI_PATH, "--", process.execPath, "-e", ""], {
+                env: { TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+                extendEnv: true,
+                detached: false,
+                stdin: "ignore",
+              }),
+            );
             const waitersDir = joinPath(slotDir, "waiters");
-            const ownEntries = (): string[] =>
-              readDirectory(waitersDir).filter((waiterFileName) =>
-                waiterFileName.includes(`-${String(child.pid)}-`),
-              );
-            const untilEnqueued = (): Effect.Effect<void> =>
+            const ownEntries = readDirectory(waitersDir).pipe(
+              Effect.map((waiterFileNames) =>
+                waiterFileNames.filter((waiterFileName) =>
+                  waiterFileName.includes(`-${String(child.pid)}-`),
+                ),
+              ),
+            );
+            const untilEnqueued = (): Effect.Effect<void, Error> =>
               Effect.gen(function* () {
-                if (ownEntries().length === 1) return;
+                if ((yield* ownEntries).length === 1) return;
                 yield* Effect.sleep("100 millis");
                 return yield* untilEnqueued();
               });
             yield* untilEnqueued();
-            child.kill("SIGTERM");
-            const { stdout } = child;
-            if (stdout === null) throw new Error("stdout was not piped");
-            const ended = yield* Effect.promise(() =>
-              Promise.all([
-                waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
-                streamConsumers.text(stdout),
-              ]),
+            const ended = yield* Effect.all(
+              [
+                child.kill({ killSignal: "SIGTERM" }).pipe(
+                  Effect.andThen(childEndOf(child)),
+                  Effect.map((end) => [end.code, end.signal]),
+                ),
+                Stream.mkString(Stream.decodeText(child.stdout)),
+              ],
+              { concurrency: "unbounded" },
             );
             yield* Effect.promise(() => release());
             return ended;
-          }),
-        );
-      });
+          }).pipe(Effect.scoped, Effect.orDie),
+        ));
 
       it(
         "dies of the signal it was sent, having written nothing to stdout",
@@ -222,15 +230,14 @@ describe("cli", () => {
     });
 
     describe("once a SIGTERM has ended it", () => {
-      const it = test.extend("theQueueEntriesOfAKilledWrapper", ({}, { onCleanup }) => {
-        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
-        onCleanup(() => {
-          removePath(tmpRoot);
-        });
-        return Effect.runPromise(
+      const it = test.extend("theQueueEntriesOfAKilledWrapper", () =>
+        Effect.runPromise(
           Effect.gen(function* () {
+            const tmpRoot = yield* filesystem.makeTempDirectoryScoped({
+              prefix: "throttle-cli-tmp-",
+            });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
-            ensureSlots(slotDir, 1);
+            yield* ensureSlots(slotDir, 1);
             const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
                 const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
@@ -239,43 +246,43 @@ describe("cli", () => {
                 return yield* holdTheOnlySlot();
               });
             const release = yield* holdTheOnlySlot();
-            const child = spawnChild({
-              executable: process.execPath,
-              handed: [CLI_PATH, "--", process.execPath, "-e", ""],
-              spawnOptions: {
-                stdio: ["ignore", "pipe", "pipe"],
-                env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
-              },
-            });
+            const child = yield* spawner.spawn(
+              ChildProcess.make(process.execPath, [CLI_PATH, "--", process.execPath, "-e", ""], {
+                env: { TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+                extendEnv: true,
+                detached: false,
+                stdin: "ignore",
+              }),
+            );
             const waitersDir = joinPath(slotDir, "waiters");
-            const ownEntries = (): string[] =>
-              readDirectory(waitersDir).filter((waiterFileName) =>
-                waiterFileName.includes(`-${String(child.pid)}-`),
-              );
-            const untilEnqueued = (): Effect.Effect<void> =>
+            const ownEntries = readDirectory(waitersDir).pipe(
+              Effect.map((waiterFileNames) =>
+                waiterFileNames.filter((waiterFileName) =>
+                  waiterFileName.includes(`-${String(child.pid)}-`),
+                ),
+              ),
+            );
+            const untilEnqueued = (): Effect.Effect<void, Error> =>
               Effect.gen(function* () {
-                if (ownEntries().length === 1) return;
+                if ((yield* ownEntries).length === 1) return;
                 yield* Effect.sleep("100 millis");
                 return yield* untilEnqueued();
               });
             yield* untilEnqueued();
-            child.kill("SIGTERM");
-            yield* Effect.promise(() =>
-              waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
-            );
-            const untilDrained = (): Effect.Effect<void> =>
+            yield* child.kill({ killSignal: "SIGTERM" });
+            yield* childEndOf(child);
+            const untilDrained = (): Effect.Effect<void, Error> =>
               Effect.gen(function* () {
-                if (ownEntries().length === 0) return;
+                if ((yield* ownEntries).length === 0) return;
                 yield* Effect.sleep("100 millis");
                 return yield* untilDrained();
               });
             yield* untilDrained();
-            const drained = ownEntries();
+            const drained = yield* ownEntries;
             yield* Effect.promise(() => release());
             return drained;
-          }),
-        );
-      });
+          }).pipe(Effect.scoped, Effect.orDie),
+        ));
 
       it(
         "has taken its own entry out of the wait queue",

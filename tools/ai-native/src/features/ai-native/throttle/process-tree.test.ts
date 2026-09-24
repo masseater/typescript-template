@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { signalProcessTree } from "./process-tree.ts";
@@ -11,20 +12,24 @@ describe("signalProcessTree", () => {
   describe("a Windows tree that taskkill accepted", () => {
     const it = test
       .extend("theOutcomeOfATaskkillThatAccepted", () => {
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        return signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "win32", executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        return Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "win32", executeTaskkill },
+          }),
+        );
       })
       .extend("theTaskkillInvocationOfAnAcceptedTree", () => {
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "win32", executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "win32", executeTaskkill },
+          }),
+        );
         return executeTaskkill;
       });
 
@@ -38,7 +43,6 @@ describe("signalProcessTree", () => {
       expect(theTaskkillInvocationOfAnAcceptedTree).toHaveBeenCalledWith({
         executable: "taskkill",
         handedArguments: ["/PID", "4321", "/T", "/F"],
-        spawnConfiguration: { stdio: "ignore", windowsHide: true },
       });
     });
   });
@@ -47,15 +51,17 @@ describe("signalProcessTree", () => {
     const it = test.extend("theOutcomeOfATaskkillThatNeverStartedIsTheStartFailure", () => {
       const startFailure = new Error("taskkill missing");
       return (
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: {
-            platform: "win32",
-            executeTaskkill: () => ({ error: startFailure, status: null }),
-            signalProcess: () => null,
-          },
-        }) === startFailure
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: {
+              platform: "win32",
+              executeTaskkill: () => Effect.succeed({ error: startFailure, status: null }),
+              signalProcess: () => null,
+            },
+          }),
+        ) === startFailure
       );
     });
 
@@ -68,15 +74,17 @@ describe("signalProcessTree", () => {
 
   describe("a taskkill that exited with a code", () => {
     const it = test.extend("theOutcomeOfATaskkillThatExitedWithACode", () =>
-      signalProcessTree({
-        pid: 4321,
-        signal: "SIGTERM",
-        dependencies: {
-          platform: "win32",
-          executeTaskkill: () => ({ status: 5 }),
-          signalProcess: () => null,
-        },
-      }));
+      Effect.runSync(
+        signalProcessTree({
+          pid: 4321,
+          signal: "SIGTERM",
+          dependencies: {
+            platform: "win32",
+            executeTaskkill: () => Effect.succeed({ status: 5 }),
+            signalProcess: () => null,
+          },
+        }),
+      ));
 
     it("names the exit code in the failure", ({ theOutcomeOfATaskkillThatExitedWithACode }) => {
       expect(theOutcomeOfATaskkillThatExitedWithACode).toStrictEqual(
@@ -87,15 +95,17 @@ describe("signalProcessTree", () => {
 
   describe("a taskkill that exited without a code", () => {
     const it = test.extend("theOutcomeOfATaskkillThatExitedWithoutACode", () =>
-      signalProcessTree({
-        pid: 4321,
-        signal: "SIGTERM",
-        dependencies: {
-          platform: "win32",
-          executeTaskkill: () => ({ status: null }),
-          signalProcess: () => null,
-        },
-      }));
+      Effect.runSync(
+        signalProcessTree({
+          pid: 4321,
+          signal: "SIGTERM",
+          dependencies: {
+            platform: "win32",
+            executeTaskkill: () => Effect.succeed({ status: null }),
+            signalProcess: () => null,
+          },
+        }),
+      ));
 
     it("calls the missing exit code unknown", ({ theOutcomeOfATaskkillThatExitedWithoutACode }) => {
       expect(theOutcomeOfATaskkillThatExitedWithoutACode).toStrictEqual(
@@ -105,14 +115,14 @@ describe("signalProcessTree", () => {
   });
 
   describe("the native taskkill invocation aimed at a nonexistent process", () => {
-    const it = test.extend("theNativeTaskkillOutcomeForANonexistentProcessIsAFailure", () => {
-      const nativeTaskkillFailure = signalProcessTree({
-        pid: 999_999_999,
-        signal: "SIGTERM",
-        dependencies: { platform: "win32" },
-      });
-      return nativeTaskkillFailure instanceof Error;
-    });
+    const it = test.extend("theNativeTaskkillOutcomeForANonexistentProcessIsAFailure", () =>
+      Effect.runPromise(
+        signalProcessTree({
+          pid: 999_999_999,
+          signal: "SIGTERM",
+          dependencies: { platform: "win32" },
+        }).pipe(Effect.map((nativeTaskkillFailure) => nativeTaskkillFailure instanceof Error)),
+      ));
 
     it("reports the nonexistent process as a failure", ({
       theNativeTaskkillOutcomeForANonexistentProcessIsAFailure,
@@ -127,35 +137,41 @@ describe("signalProcessTree", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        return signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "linux", signalProcess, executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        return Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "linux", signalProcess, executeTaskkill },
+          }),
+        );
       })
       .extend("theProcessSignalsOfASignalledPosixProcessGroup", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "linux", signalProcess, executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "linux", signalProcess, executeTaskkill },
+          }),
+        );
         return signalProcess;
       })
       .extend("theTaskkillInvocationsOfASignalledPosixProcessGroup", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "linux", signalProcess, executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "linux", signalProcess, executeTaskkill },
+          }),
+        );
         return executeTaskkill;
       });
 
@@ -186,35 +202,41 @@ describe("signalProcessTree", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        return signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "win32", signalProcess, executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        return Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "win32", signalProcess, executeTaskkill },
+          }),
+        );
       })
       .extend("theTaskkillInvocationsOfAWindowsTreeHandedOverAsAWhole", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "win32", signalProcess, executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "win32", signalProcess, executeTaskkill },
+          }),
+        );
         return executeTaskkill;
       })
       .extend("theProcessSignalsOfAWindowsTreeHandedOverAsAWhole", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        const executeTaskkill = vi.fn<TaskkillExecutor>(() => ({ status: 0 }));
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: { platform: "win32", signalProcess, executeTaskkill },
-        });
+        const executeTaskkill = vi.fn<TaskkillExecutor>(() => Effect.succeed({ status: 0 }));
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: { platform: "win32", signalProcess, executeTaskkill },
+          }),
+        );
         return signalProcess;
       });
 
@@ -242,15 +264,17 @@ describe("signalProcessTree", () => {
           .mockReturnValueOnce(groupFailure)
           .mockReturnValueOnce(null);
         return (
-          signalProcessTree({
-            pid: 4321,
-            signal: "SIGTERM",
-            dependencies: {
-              platform: "darwin",
-              signalProcess,
-              executeTaskkill: () => ({ status: 0 }),
-            },
-          }) === groupFailure
+          Effect.runSync(
+            signalProcessTree({
+              pid: 4321,
+              signal: "SIGTERM",
+              dependencies: {
+                platform: "darwin",
+                signalProcess,
+                executeTaskkill: () => Effect.succeed({ status: 0 }),
+              },
+            }),
+          ) === groupFailure
         );
       })
       .extend("theProcessSignalsOfAPosixGroupThatRefused", () => {
@@ -258,15 +282,17 @@ describe("signalProcessTree", () => {
           .fn<(pid: number, signal: NodeJS.Signals) => Error | null>()
           .mockReturnValueOnce(new Error("group missing"))
           .mockReturnValueOnce(null);
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: {
-            platform: "darwin",
-            signalProcess,
-            executeTaskkill: () => ({ status: 0 }),
-          },
-        });
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: {
+              platform: "darwin",
+              signalProcess,
+              executeTaskkill: () => Effect.succeed({ status: 0 }),
+            },
+          }),
+        );
         return signalProcess;
       });
 
@@ -298,15 +324,17 @@ describe("signalProcessTree", () => {
         message: "missing",
         code: "ESRCH",
       };
-      return signalProcessTree({
-        pid: 4321,
-        signal: "SIGKILL",
-        dependencies: {
-          platform: "darwin",
-          signalProcess: () => missingProcess,
-          executeTaskkill: () => ({ status: 0 }),
-        },
-      });
+      return Effect.runSync(
+        signalProcessTree({
+          pid: 4321,
+          signal: "SIGKILL",
+          dependencies: {
+            platform: "darwin",
+            signalProcess: () => missingProcess,
+            executeTaskkill: () => Effect.succeed({ status: 0 }),
+          },
+        }),
+      );
     });
 
     it("treats the shutdown as already completed", ({
@@ -321,30 +349,35 @@ describe("signalProcessTree", () => {
       .extend("theOutcomeOfADeniedTaskkillIsTheTaskkillFailure", () => {
         const taskkillFailure = new Error("taskkill denied");
         return (
-          signalProcessTree({
-            pid: 4321,
-            signal: "SIGTERM",
-            dependencies: {
-              platform: "win32",
-              signalProcess: () => null,
-              executeTaskkill: () => ({ error: taskkillFailure, status: null }),
-            },
-          }) === taskkillFailure
+          Effect.runSync(
+            signalProcessTree({
+              pid: 4321,
+              signal: "SIGTERM",
+              dependencies: {
+                platform: "win32",
+                signalProcess: () => null,
+                executeTaskkill: () => Effect.succeed({ error: taskkillFailure, status: null }),
+              },
+            }),
+          ) === taskkillFailure
         );
       })
       .extend("theProcessSignalsOfADeniedTaskkill", () => {
         const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
           () => null,
         );
-        signalProcessTree({
-          pid: 4321,
-          signal: "SIGTERM",
-          dependencies: {
-            platform: "win32",
-            signalProcess,
-            executeTaskkill: () => ({ error: new Error("taskkill denied"), status: null }),
-          },
-        });
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: {
+              platform: "win32",
+              signalProcess,
+              executeTaskkill: () =>
+                Effect.succeed({ error: new Error("taskkill denied"), status: null }),
+            },
+          }),
+        );
         return signalProcess;
       });
 
@@ -362,27 +395,33 @@ describe("signalProcessTree", () => {
   describe("a tree and a root that both refused termination", () => {
     const it = test
       .extend("theOutcomeOfATreeAndRootThatBothRefusedIsAnAggregate", () => {
-        const bothRefused = signalProcessTree({
-          pid: 4321,
-          signal: "SIGKILL",
-          dependencies: {
-            platform: "win32",
-            signalProcess: () => new Error("root denied"),
-            executeTaskkill: () => ({ error: new Error("tree denied"), status: null }),
-          },
-        });
+        const bothRefused = Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGKILL",
+            dependencies: {
+              platform: "win32",
+              signalProcess: () => new Error("root denied"),
+              executeTaskkill: () =>
+                Effect.succeed({ error: new Error("tree denied"), status: null }),
+            },
+          }),
+        );
         return bothRefused instanceof AggregateError;
       })
       .extend("theRefusalsGatheredFromATreeAndItsRoot", () => {
-        const bothRefused = signalProcessTree({
-          pid: 4321,
-          signal: "SIGKILL",
-          dependencies: {
-            platform: "win32",
-            signalProcess: () => new Error("root denied"),
-            executeTaskkill: () => ({ error: new Error("tree denied"), status: null }),
-          },
-        });
+        const bothRefused = Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGKILL",
+            dependencies: {
+              platform: "win32",
+              signalProcess: () => new Error("root denied"),
+              executeTaskkill: () =>
+                Effect.succeed({ error: new Error("tree denied"), status: null }),
+            },
+          }),
+        );
         return bothRefused instanceof AggregateError ? bothRefused.errors : null;
       });
 
