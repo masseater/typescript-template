@@ -4,6 +4,7 @@ import {
   priceIntervals,
   readStripeConfig,
   stripeApiVersion,
+  stripeTrialPeriodDays,
 } from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Redirect } from "@repo/runtime/contracts";
@@ -146,27 +147,12 @@ function request(
   );
 }
 
-function taxFields(config: StripeConfig, returning: boolean): Record<string, string> {
-  return config.automaticTax
-    ? {
-        "automatic_tax[enabled]": "true",
-        "tax_id_collection[enabled]": "true",
-        ...(returning
-          ? { "customer_update[address]": "auto", "customer_update[name]": "auto" }
-          : {}),
-      }
-    : {};
-}
-
-const noTrial = 0;
-
-function trialFields(config: StripeConfig): Record<string, string> {
-  return config.trialPeriodDays === noTrial
-    ? {}
-    : {
-        "subscription_data[trial_period_days]": String(config.trialPeriodDays),
-        "subscription_data[trial_settings][end_behavior][missing_payment_method]": "cancel",
-      };
+function taxFields(returning: boolean): Record<string, string> {
+  return {
+    "automatic_tax[enabled]": "true",
+    "tax_id_collection[enabled]": "true",
+    ...(returning ? { "customer_update[address]": "auto", "customer_update[name]": "auto" } : {}),
+  };
 }
 
 function asIssuedInvoice(invoice: typeof IssuedInvoiceBody.Type): IssuedInvoice {
@@ -189,8 +175,9 @@ function invoiceItemForm(input: InvoiceInput): URLSearchParams {
   });
 }
 
-function invoiceForm(config: StripeConfig, input: InvoiceInput): URLSearchParams {
+function invoiceForm(input: InvoiceInput): URLSearchParams {
   return new URLSearchParams({
+    "automatic_tax[enabled]": "true",
     auto_advance: "true",
     collection_method: "send_invoice",
     customer: input.customerId,
@@ -198,7 +185,6 @@ function invoiceForm(config: StripeConfig, input: InvoiceInput): URLSearchParams
     "metadata[member_id]": input.memberId,
     "metadata[origin_key]": input.originKey,
     pending_invoice_items_behavior: "include",
-    ...(config.automaticTax ? { "automatic_tax[enabled]": "true" } : {}),
   });
 }
 
@@ -216,10 +202,11 @@ function checkoutForm(config: StripeConfig, input: CheckoutInput): URLSearchPara
     "line_items[1][price]": config.meteredPriceId,
     mode: "subscription",
     "subscription_data[metadata][member_id]": input.memberId,
+    "subscription_data[trial_period_days]": String(stripeTrialPeriodDays),
+    "subscription_data[trial_settings][end_behavior][missing_payment_method]": "cancel",
     success_url: input.successUrl,
     ...customerFields,
-    ...taxFields(config, "customer" in customerFields),
-    ...trialFields(config),
+    ...taxFields("customer" in customerFields),
   });
 }
 
@@ -238,9 +225,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
       ),
     createInvoice: (input) =>
       send("/invoiceitems", invoiceItemForm(input), `${input.originKey}:item`).pipe(
-        Effect.flatMap(() =>
-          send("/invoices", invoiceForm(config, input), `${input.originKey}:invoice`),
-        ),
+        Effect.flatMap(() => send("/invoices", invoiceForm(input), `${input.originKey}:invoice`)),
         Effect.flatMap((body) => decodeStripe(IssuedInvoiceBody, body)),
         Effect.map(asIssuedInvoice),
       ),

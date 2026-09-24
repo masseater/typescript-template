@@ -1,11 +1,4 @@
-import {
-  appEnvKey,
-  applicationOrigins,
-  grants,
-  mailpitOrigin,
-  stripeAutomaticTax,
-  stripeTrialPeriodDays,
-} from "@repo/config";
+import { appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
 import { optionalSetting } from "@repo/config/process-environment";
 import { receiverOrigin } from "@repo/local";
 import { Crypto, Effect } from "effect";
@@ -47,11 +40,9 @@ function billingVariables(app: App, credentials: Credentials): Readonly<Record<s
   }
   const stripe = credentials.stripe ?? stripePlaceholders;
   return {
-    STRIPE_AUTOMATIC_TAX: String(stripeAutomaticTax),
     STRIPE_METERED_PRICE_ID: stripe.meteredPriceId,
     STRIPE_PRICE_ID: stripe.priceId,
     STRIPE_SECRET_KEY: stripe.secretKey,
-    STRIPE_TRIAL_PERIOD_DAYS: String(stripeTrialPeriodDays),
     STRIPE_WEBHOOK_SECRET: stripe.webhookSecret,
   };
 }
