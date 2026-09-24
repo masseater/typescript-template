@@ -6,6 +6,7 @@ import { parse } from "yaml";
 
 import { directoryEntries, filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
 import { filePathOf } from "../platform/path.ts";
+import { field, rootManifests } from "./dependencies-test-fixture.ts";
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks-test-fixture.ts";
 import {
   commands,
@@ -49,6 +50,9 @@ const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
 
+const engines = field(rootManifests["../../../../../../package.json"], "engines");
+const [, requiredNodeMajor = ""] = /^>=(?<major>\d+)\./u.exec(String(field(engines, "node"))) ?? [];
+
 const hookStages = Object.entries(hooks).map(
   ([file, source]) => [file.replace(/^.*\/pre-/u, "pre"), source] as const,
 );
@@ -60,6 +64,7 @@ function misplacedHooks(): string[] {
         !lifecycles.some((name) => name === stage) ||
         source !==
           [
+            `node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= ${requiredNodeMajor} ? 0 : 1)' || { echo "Node ${requiredNodeMajor} or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }`,
             `scope="$(node tools/dont-review-it/src/features/dont-review-it/repository/hook-scope.ts ${stage})" || scope="-r"`,
             '[ -n "$scope" ] || exit 0',
             `vp run --concurrency-limit ${stage === "prepush" ? "1" : "2"} $scope ${stage}`,

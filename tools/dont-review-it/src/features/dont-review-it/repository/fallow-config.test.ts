@@ -54,7 +54,62 @@ const rootPatternsOf = (config: Readonly<Record<string, unknown>>): readonly str
   ...stringsIn(config["ignoreExports"]).filter((value) => value !== "default"),
 ];
 
+const exclusionKeys = [
+  "ignorePatterns",
+  "ignoreDependencies",
+  "ignoreDependencyOverrides",
+  "ignoreExports",
+  "ignoreFindings",
+  "duplicates",
+] as const;
+
+const grantedExclusions: Readonly<Record<string, readonly string[]>> = {
+  ".fallowrc.json": [
+    "**/routeTree.gen.ts",
+    "**/mockServiceWorker.js",
+    "@effect/tsgo",
+    "@scalar/api-reference",
+    "@storybook/addon-mcp",
+    "@tanstack/intent",
+    "agent-browser",
+    "oxc-transform-react",
+    "playwright",
+    "portless",
+    "valibot",
+    "zod-validation-error",
+    "**/*",
+    "default",
+    "**/vite.config.ts",
+  ],
+  ".fallowrc.production.json": ["**", "!**/src/**"],
+};
+
+const exclusionsOf = (file: string): readonly string[] =>
+  exclusionKeys.flatMap((key) => stringsIn(configOf(file)[key]));
+
+const rulesTurnedOff = (file: string): readonly string[] => {
+  const rules = configOf(file)["rules"];
+  return typeof rules === "object" && rules !== null
+    ? Object.entries(rules).flatMap(([rule, level]) => (level === "off" ? [rule] : []))
+    : [];
+};
+
 describe("fallow configuration", () => {
+  it.for(configFiles)("%s only shrinks its exclusions", (file) => {
+    expect.hasAssertions();
+    const granted = new Set(grantedExclusions[file] ?? []);
+    expect(exclusionsOf(file).filter((value) => !granted.has(value))).toStrictEqual([]);
+  });
+
+  it.for(configFiles)("%s turns off no rule beyond the ones already off", (file) => {
+    expect.hasAssertions();
+    expect(
+      rulesTurnedOff(file).filter(
+        (rule) => rule !== "boundary-violation" && rule !== "policy-violation",
+      ),
+    ).toStrictEqual([]);
+  });
+
   it.for(configFiles)("%s names no individual workspace", (file) => {
     expect.hasAssertions();
     expect(
