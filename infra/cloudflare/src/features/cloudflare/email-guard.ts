@@ -90,3 +90,4 @@ const assertSendingDomainUnclaimed = Effect.fn("assertSendingDomainUnclaimed")(
 );
 
 export { alertQuotaVerdict, assertSendingDomainUnclaimed, emailBlocked, emailVerdicts };
+export type { EmailVerdicts };

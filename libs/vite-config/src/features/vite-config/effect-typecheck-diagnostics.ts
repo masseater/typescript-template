@@ -194,4 +194,4 @@ export {
   portableDiagnostic,
   snapshotOf,
 };
-export type { CountedDiagnostic, Diagnostic };
+export type { CountedDiagnostic, Diagnostic, TypecheckVerdict };

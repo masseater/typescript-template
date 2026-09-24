@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noPromiseChain } from "./no-promise-chain--use-async-await.ts";
 
 describe("dont-review-it/no-promise-chain--use-async-await", () => {

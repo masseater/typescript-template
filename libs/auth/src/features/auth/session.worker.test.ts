@@ -11,8 +11,6 @@ import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
-import { SessionInvalid } from "./session-invalid.ts";
-import { SessionRequired } from "./session-required.ts";
 import {
   AuthApps,
   assignRoleByEmail,
@@ -28,7 +26,9 @@ import {
   signInAgainAfterTotp,
   signInAs,
   wikiStaff,
-} from "./testing.ts";
+} from "./index-test-fixture.ts";
+import { SessionInvalid } from "./session-invalid.ts";
+import { SessionRequired } from "./session-required.ts";
 
 describe("verifySession", () => {
   describe("an administrator signed in with a password alone", () => {

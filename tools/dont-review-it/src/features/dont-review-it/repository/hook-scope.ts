@@ -30,28 +30,34 @@ const git = (...handed: readonly string[]) =>
 const lines = (output: Option.Option<string>): Option.Option<readonly string[]> =>
   Option.map(output, (text) => text.split("\n"));
 
+const mergeInProgress = Effect.fn("mergeInProgress")(function* mergeInProgress() {
+  const paths = yield* Path.Path;
+  const gitDirectory = yield* git("rev-parse", "--git-dir");
+  return Option.isSome(gitDirectory)
+    ? yield* pathExists(paths.resolve(repositoryRoot, gitDirectory.value, "MERGE_HEAD"))
+    : false;
+});
+
+const stagedFiles = Effect.fn("stagedFiles")(function* stagedFiles() {
+  const merging = yield* mergeInProgress();
+  return lines(
+    yield* git("diff", "--cached", "--name-only", "--no-renames", merging ? "MERGE_HEAD" : "HEAD"),
+  );
+});
+
+const pushedFiles = Effect.fn("pushedFiles")(function* pushedFiles() {
+  const base = yield* git("merge-base", "origin/main", "HEAD");
+  return Option.isNone(base)
+    ? Option.none()
+    : lines(yield* git("diff", "--name-only", "--no-renames", base.value, "HEAD"));
+});
+
 const changedFiles = Effect.fn("changedFiles")(function* changedFiles(stage: string) {
   if (stage === "precommit") {
-    const paths = yield* Path.Path;
-    const gitDirectory = yield* git("rev-parse", "--git-dir");
-    const merging = Option.isSome(gitDirectory)
-      ? yield* pathExists(paths.resolve(repositoryRoot, gitDirectory.value, "MERGE_HEAD"))
-      : false;
-    return lines(
-      yield* git(
-        "diff",
-        "--cached",
-        "--name-only",
-        "--no-renames",
-        merging ? "MERGE_HEAD" : "HEAD",
-      ),
-    );
+    return yield* stagedFiles();
   }
   if (stage === "prepush") {
-    const base = yield* git("merge-base", "origin/main", "HEAD");
-    return Option.isNone(base)
-      ? Option.none()
-      : lines(yield* git("diff", "--name-only", "--no-renames", base.value, "HEAD"));
+    return yield* pushedFiles();
   }
   return yield* new NotAHookStage({ stage });
 });

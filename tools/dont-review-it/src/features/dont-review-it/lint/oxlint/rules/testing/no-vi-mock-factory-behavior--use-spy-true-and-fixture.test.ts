@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noViMockFactoryBehavior } from "./no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts";
 
 const GROUNDED_EXEMPTION =

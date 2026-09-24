@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noHardcodedProviderId } from "./no-hardcoded-provider-id--read-from-configuration.ts";
 
 describe("dont-review-it/no-hardcoded-provider-id--read-from-configuration", () => {

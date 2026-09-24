@@ -19,7 +19,6 @@ import {
   designMdSource,
   designMdViolations,
   designSystemComponents,
-  designSystemProbe,
   designTokens,
   indexedComponents,
   linkParts,
@@ -29,9 +28,9 @@ import {
   stylesheetSource,
   tokenViolations,
   untouchedTokens,
-} from "./design-system.ts";
-import { hoverViolations, relativeLuminance } from "./hover-colors.ts";
-import { field } from "./record-field.ts";
+} from "./design-system-test-fixture.ts";
+import { hoverViolations, relativeLuminance } from "./hover-colors-test-fixture.ts";
+import { field } from "./record-field-test-fixture.ts";
 import { Heading } from "./src/features/ui/shared/ui/heading.tsx";
 
 const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(

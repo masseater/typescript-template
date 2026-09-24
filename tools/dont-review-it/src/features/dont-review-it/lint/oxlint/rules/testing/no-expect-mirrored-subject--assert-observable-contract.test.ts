@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noExpectMirroredSubject } from "./no-expect-mirrored-subject--assert-observable-contract.ts";
 
 const SPEC_FILE = "report.test.ts";

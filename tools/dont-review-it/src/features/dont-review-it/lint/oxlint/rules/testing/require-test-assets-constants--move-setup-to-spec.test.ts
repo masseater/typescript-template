@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { requireTestAssetsConstants } from "./require-test-assets-constants--move-setup-to-spec.ts";
 
 const ASSETS_FILE = "report.assets.ts";

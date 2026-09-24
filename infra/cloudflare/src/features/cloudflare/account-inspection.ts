@@ -181,3 +181,4 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
 }
 
 export { blocked, inspectAccount, preflightAccount, preflightBlocked };
+export type { Inspection, Preflight };

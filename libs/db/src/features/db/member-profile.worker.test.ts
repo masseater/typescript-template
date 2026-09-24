@@ -2,6 +2,7 @@ import { PHOTO_SLOT, PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { TestDatabase } from "./database-test-fixture.ts";
 import {
   canViewProfile,
   photoKeysOf,
@@ -10,8 +11,7 @@ import {
   updateVisibility,
   visiblePhotoKey,
 } from "./member-profile.ts";
-import { addUser } from "./records-fixture.ts";
-import { TestDatabase } from "./testing.ts";
+import { addUser } from "./records-test-fixture.ts";
 import { UserNotFound } from "./user-not-found.ts";
 
 describe("canViewProfile among open and self-only profiles", () => {

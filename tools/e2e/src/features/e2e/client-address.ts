@@ -1,4 +1,4 @@
-import { browserHeaders as agentBrowserHeaders } from "./agent-user-agent.ts";
+import { agentBrowserHeaders } from "./agent-user-agent.ts";
 
 const documentationPrefix = "203.0.113";
 const hostCount = 254;

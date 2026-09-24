@@ -5,7 +5,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/features/observability/index.ts",
-    "./testing": "./src/features/observability/testing.ts",
+    "./testing": "./src/features/observability/recording-sink-test-fixture.ts",
     "./deployment-keys": "./src/features/observability/deployment-keys.ts"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "@msw/cloudflare": "catalog:",
     "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
-    "msw": "catalog:"
+    "msw": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

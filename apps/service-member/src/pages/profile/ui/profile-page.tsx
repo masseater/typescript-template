@@ -1,11 +1,11 @@
-import { Button, ButtonLink, localState, useAction } from "@repo/ui";
+import { localState, useAction } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 
 import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
 import { blockMember, unblockMember } from "#shared/api/index.ts";
 import { ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
+import { ProfileActions } from "./profile-actions.tsx";
 import { ProfileBody } from "./profile-body.tsx";
-import { ProfileShare } from "./profile-share.tsx";
 
 import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
@@ -13,14 +13,18 @@ import type { ReactElement } from "react";
 const useFollowingOverride = localState<boolean | undefined>(undefined);
 const useBlockedOverride = localState<boolean | undefined>(undefined);
 
+function overridden(override: boolean | undefined, stored: boolean | undefined): boolean {
+  return override ?? stored ?? false;
+}
+
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
   const router = useRouter();
   const followAction = useAction();
   const blockAction = useAction();
   const [followingOverride, setFollowingOverride] = useFollowingOverride();
   const [blockedOverride, setBlockedOverride] = useBlockedOverride();
-  const following = followingOverride ?? member.following ?? false;
-  const blocked = blockedOverride ?? member.blocked ?? false;
+  const following = overridden(followingOverride, member.following);
+  const blocked = overridden(blockedOverride, member.blocked);
 
   const toggleFollow = (): void => {
     followAction.run(() =>
@@ -43,55 +47,17 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
     );
   };
 
-  const actions = own ? (
-    <>
-      <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>
-      <ProfileShare memberId={member.id} privateProfile={false} />
-    </>
-  ) : blocked ? (
-    <>
-      <Button
-        disabled={blockAction.blocked}
-        onClick={toggleBlock}
-        type="button"
-        variant="secondary"
-      >
-        ブロックを解除
-      </Button>
-      {blockAction.error !== undefined && (
-        <p className="text-sm text-destructive">{blockAction.error}</p>
-      )}
-    </>
-  ) : (
-    <>
-      <div className="flex flex-wrap gap-3">
-        <Button
-          disabled={followAction.blocked}
-          onClick={toggleFollow}
-          type="button"
-          variant="secondary"
-        >
-          {following ? "フォロー中" : "フォロー"}
-        </Button>
-        <ButtonLink to="/messages/new" search={{ peer: member.id }} variant="secondary">
-          メッセージを送る
-        </ButtonLink>
-        <Button
-          disabled={blockAction.blocked}
-          onClick={toggleBlock}
-          type="button"
-          variant="secondary"
-        >
-          ブロック
-        </Button>
-      </div>
-      {followAction.error !== undefined && (
-        <p className="text-sm text-destructive">{followAction.error}</p>
-      )}
-      {blockAction.error !== undefined && (
-        <p className="text-sm text-destructive">{blockAction.error}</p>
-      )}
-    </>
+  const actions = (
+    <ProfileActions
+      block={blockAction}
+      blocked={blocked}
+      follow={followAction}
+      following={following}
+      memberId={member.id}
+      onToggleBlock={toggleBlock}
+      onToggleFollow={toggleFollow}
+      own={own}
+    />
   );
 
   return (

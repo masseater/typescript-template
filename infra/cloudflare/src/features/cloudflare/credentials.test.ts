@@ -3,10 +3,10 @@ import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 import { vi } from "vite-plus/test";
 
-import { verifySecretsFile } from "./credentials.ts";
-import { secretsFile } from "./deployment.ts";
+import { verifiedSecrets } from "./credentials.ts";
+import { ENVIRONMENT_FILE_VARIABLE, secretsFile } from "./deployment.ts";
 import { layer, path } from "./platform.ts";
-import { verificationEnvironment } from "./verification-fixture.ts";
+import { verificationEnvironment } from "./verification-settings.ts";
 
 import type { Scope } from "effect";
 
@@ -33,6 +33,19 @@ function writeSecrets(filename: string, content: string, mode: number): Effect.E
     yield* filesystem.writeFileString(filename, content);
     yield* filesystem.chmod(filename, mode);
   }).pipe(Effect.orDie, Effect.provide(layer));
+}
+
+function verifySecretsFile(filename: string): ReturnType<typeof verifiedSecrets> {
+  return Effect.acquireUseRelease(
+    Effect.sync(() => {
+      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, filename);
+    }),
+    () => verifiedSecrets(),
+    () =>
+      Effect.sync(() => {
+        vi.unstubAllEnvs();
+      }),
+  );
 }
 
 it.effect("accepts an owner-only file that declares every deployment input", () =>
@@ -114,12 +127,12 @@ it.effect("reports a missing file instead of deploying without it", () =>
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
     Effect.sync(() => {
-      vi.stubEnv("TEMPLATE_CLOUDFLARE_ENV_FILE", undefined);
+      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, undefined);
     }),
     () =>
       Effect.sync(() => {
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        vi.stubEnv("TEMPLATE_CLOUDFLARE_ENV_FILE", "/elsewhere/cloudflare.env");
+        vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, "/elsewhere/cloudflare.env");
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
     () =>

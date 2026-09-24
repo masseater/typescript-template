@@ -52,4 +52,4 @@ const formatMessage = (notifications: readonly Notification[]): string =>
   ].join("\n");
 
 export { decideNotifications, formatMessage };
-export type { SeenFingerprints };
+export type { Notification, SeenFingerprints };

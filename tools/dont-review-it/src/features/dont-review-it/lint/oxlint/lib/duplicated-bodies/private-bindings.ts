@@ -157,7 +157,9 @@ const bindApart = (left: BindingsByName, right: BindingsByName): boolean => {
   );
 };
 
-type ReferencingBody = IndexedFile["bodies"][number] & { readonly references: readonly string[] };
+export type ReferencingBody = IndexedFile["bodies"][number] & {
+  readonly references: readonly string[];
+};
 
 export type ReferencingFile = {
   readonly relativePath: string;

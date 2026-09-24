@@ -70,6 +70,25 @@ const reachesNamespace = (node: ESTree.Expression, reading: Reading): boolean =>
   return binding.defs.some((definition) => definitionReachesNamespace(definition, traced));
 };
 
+const throughConstBinding = (
+  written: Extract<ESTree.Expression, { readonly type: "Identifier" }>,
+  reading: Reading,
+  follow: (initializer: ESTree.Expression, traced: Reading) => string | null,
+): string | null => {
+  const binding = resolveBinding(reading.scopeAt(written), written.name);
+  if (binding === null || reading.followed.includes(binding)) return null;
+
+  const traced = { ...reading, followed: [...reading.followed, binding] };
+  return (
+    binding.defs
+      .map((definition) => {
+        const initializer = constInitializerOf(definition);
+        return initializer === null ? null : follow(initializer, traced);
+      })
+      .find((found) => found !== null) ?? null
+  );
+};
+
 const replacementMemberOf = (node: ESTree.Expression, reading: Reading): string | null => {
   const written = unwrapSubject(node);
   if (written.type === "MemberExpression") {
@@ -79,18 +98,7 @@ const replacementMemberOf = (node: ESTree.Expression, reading: Reading): string 
   }
   if (written.type !== "Identifier") return null;
 
-  const binding = resolveBinding(reading.scopeAt(written), written.name);
-  if (binding === null || reading.followed.includes(binding)) return null;
-
-  const traced = { ...reading, followed: [...reading.followed, binding] };
-  return (
-    binding.defs
-      .map((definition) => {
-        const initializer = constInitializerOf(definition);
-        return initializer === null ? null : replacementMemberOf(initializer, traced);
-      })
-      .find((found) => found !== null) ?? null
-  );
+  return throughConstBinding(written, reading, replacementMemberOf);
 };
 
 const LOCAL_DOUBLE_MESSAGE = "localFileSystemDouble";
@@ -103,18 +111,7 @@ const staticSpecifierOf = (node: ESTree.Expression, reading: Reading): string | 
   if (spelled !== null) return spelled;
   if (written.type !== "Identifier") return null;
 
-  const binding = resolveBinding(reading.scopeAt(written), written.name);
-  if (binding === null || reading.followed.includes(binding)) return null;
-
-  const traced = { ...reading, followed: [...reading.followed, binding] };
-  return (
-    binding.defs
-      .map((definition) => {
-        const initializer = constInitializerOf(definition);
-        return initializer === null ? null : staticSpecifierOf(initializer, traced);
-      })
-      .find((found) => found !== null) ?? null
-  );
+  return throughConstBinding(written, reading, staticSpecifierOf);
 };
 
 const handedArgument = (

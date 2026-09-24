@@ -40,3 +40,4 @@ const provideSessionLoader = (queries: QueryClient, load: SessionLoader): void =
 };
 
 export { loadBrowserSession, provideSessionLoader, sessionOptions };
+export type { SessionLoader };

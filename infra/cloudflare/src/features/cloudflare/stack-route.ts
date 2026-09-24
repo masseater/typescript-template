@@ -18,3 +18,4 @@ const applyDeployment = (
   StackRoute.apply(snapshot).pipe(Effect.provideService(Progress, report), Effect.asVoid);
 
 export { applyDeployment, planDeployment };
+export type { PlanRoute, PlanSnapshot };

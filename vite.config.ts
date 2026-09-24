@@ -32,6 +32,8 @@ const textModule = (code: string, moduleId: string): string | undefined =>
 const rootOwnedPaths = [
   ".claude",
   ".cursor",
+  ".fallowrc.json",
+  ".fallowrc.production.json",
   ".gitattributes",
   ".github",
   ".gitignore",
@@ -39,14 +41,12 @@ const rootOwnedPaths = [
   ".mergify.yml",
   ".textlint-ai-words.json",
   ".textlintignore",
-  ".textlintrc.json",
   ".vite-hooks",
   "AGENTS.md",
   "CLAUDE.md",
   "DESIGN.md",
   "README.md",
   "docs",
-  "knip.ts",
   "mise.toml",
   "package.json",
   "patches",
@@ -102,17 +102,17 @@ export default defineConfig({
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
-      knip: {
-        command: ["knip", "knip --strict"],
+      fallow: {
+        command: ["fallow", "fallow dead-code --config .fallowrc.production.json"],
         env: [...telemetryEnv],
         dependsOn: ["compile:paraglide"],
-        input: [...taskInput, "!node_modules/.cache/**"],
-        output: [{ auto: true }, "!node_modules/.cache/**"],
+        input: [...taskInput, "!.fallow/**"],
+        output: [{ auto: true }, "!.fallow/**"],
       },
       mutation: {
         cache: false,
         command:
-          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.ts",
+          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker-test-fixture.ts",
       },
       test: {
         ...testRun.test,
@@ -130,19 +130,18 @@ export default defineConfig({
         dependsOn: ["compile:paraglide"],
       },
       "check:text": {
-        command: 'textlint "**/*.md"',
+        command: "dont-review-it-text",
         env: [...telemetryEnv],
         input: [
           ...taskInput,
           { base: "workspace", pattern: "**/*.md" },
           { base: "workspace", pattern: ".textlint-ai-words.json" },
           { base: "workspace", pattern: ".textlintignore" },
-          { base: "workspace", pattern: ".textlintrc.json" },
         ],
       },
       ...lifecycle({
         precommit: ["check:text", "check:code"],
-        prepush: ["check:effect", "knip", "check:canonical-literal-types"],
+        prepush: ["check:effect", "fallow", "check:canonical-literal-types"],
         prepr: ["check:repository"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],

@@ -191,6 +191,7 @@ export {
   runtimeUnavailable,
 };
 export type {
+  AnyFailureEntry,
   AnyFailureTable,
   ExactFailureTable,
   Failure,
@@ -198,6 +199,8 @@ export type {
   FailureMapping,
   FailureStatus,
   FailureTable,
+  HttpStatus,
+  InputFailure,
   InputKind,
   Tagged,
 };

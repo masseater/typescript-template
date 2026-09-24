@@ -9,7 +9,9 @@
   "exports": {
     ".": "./src/features/ui/index.ts",
     "./shell": "./src/features/ui/shell.ts",
-    "./styles.css": "./src/features/ui/styles.css"
+    "./request-client": "./src/features/ui/request-client.ts",
+    "./styles.css": "./src/features/ui/styles.css",
+    "./testing": "./src/features/ui/rendered-test-fixture.tsx"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
@@ -22,6 +24,7 @@
     "class-variance-authority": "0.7.1",
     "cn": "0.3.0",
     "effect": "catalog:",
+    "elysia": "catalog:",
     "es-toolkit": "catalog:",
     "lucide-react": "catalog:",
     "motion": "13.4.0",

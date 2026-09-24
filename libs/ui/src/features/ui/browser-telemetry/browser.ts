@@ -95,13 +95,13 @@ const tracedFetch = (instrumentation: FetchInstrumentation, outgoing: Request): 
     }),
   );
 
+const requestUrl = (input: RequestInfo | URL): URL =>
+  new URL(input instanceof Request ? input.url : String(input), globalThis.location.href);
+
 const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
   const originalFetch = globalThis.fetch;
   const instrumentedFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = new URL(
-      input instanceof Request ? input.url : String(input),
-      globalThis.location.href,
-    );
+    const url = requestUrl(input);
     if (url.origin !== globalThis.location.origin || url.pathname === instrumentation.endpoint) {
       return instrumentation.send(input, init);
     }

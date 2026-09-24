@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noSingleUseLocalType } from "./no-single-use-local-type--inline-at-the-use-site.ts";
 
 describe("dont-review-it/no-single-use-local-type--inline-at-the-use-site", () => {

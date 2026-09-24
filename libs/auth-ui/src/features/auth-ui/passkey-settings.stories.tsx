@@ -4,28 +4,11 @@ import { expect } from "storybook/test";
 
 import preview, { playTask } from "../../../storybook/preview";
 import { PasskeySettings } from "./passkey-settings";
+import { settingsContext } from "./settings-context-test-fixture";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";
 
-const settingsContext = {
-  action: { blocked: false, error: undefined, pending: false, run: () => undefined },
-  onNotice: () => undefined,
-  onNoticeClear: () => undefined,
-  recovery: undefined,
-  session: {
-    strong: true,
-    user: {
-      email: "taro@example.com",
-      id: "user_01",
-      name: "山田 太郎",
-      permission: null,
-      role: "member",
-      twoFactorEnabled: false,
-    },
-  },
-} as const;
-
-const meta = preview.meta({ args: { context: settingsContext }, component: PasskeySettings });
+const meta = preview.meta({ args: { context: settingsContext() }, component: PasskeySettings });
 
 export const Registered = meta.story({
   beforeEach: ({ msw }) => {

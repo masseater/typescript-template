@@ -186,28 +186,32 @@ const scannedRegularFile = (input: ScanDirectoryInput, absolutePath: string): Sc
   return scanned === null ? EMPTY_SCANNED_FILES : { files: [scanned], problems: [] };
 };
 
+const isIgnoredDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent): boolean =>
+  input.ignoredDirectoryNames.has(directoryEntry.name) &&
+  (directoryEntry.isDirectory() || directoryEntry.isSymbolicLink());
+
+const scannedSubdirectory = (input: ScanDirectoryInput, absolutePath: string): ScannedFiles =>
+  input.sourceScope.isIgnored(absolutePath)
+    ? EMPTY_SCANNED_FILES
+    : scannedFilesUnder({ ...input, directory: absolutePath });
+
+const isIncludedFile = (
+  input: ScanDirectoryInput,
+  directoryEntry: Dirent,
+  absolutePath: string,
+): boolean =>
+  directoryEntry.isFile() &&
+  input.includesFileName(directoryEntry.name) &&
+  !input.sourceScope.isIgnored(absolutePath);
+
 const scannedDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
   const absolutePath = path.join(input.directory, directoryEntry.name);
-  if (
-    input.ignoredDirectoryNames.has(directoryEntry.name) &&
-    (directoryEntry.isDirectory() || directoryEntry.isSymbolicLink())
-  ) {
-    return EMPTY_SCANNED_FILES;
-  }
+  if (isIgnoredDirectoryEntry(input, directoryEntry)) return EMPTY_SCANNED_FILES;
   if (directoryEntry.isSymbolicLink()) return scannedSymbolicLink(input, directoryEntry);
-  if (directoryEntry.isDirectory()) {
-    return input.sourceScope.isIgnored(absolutePath)
-      ? EMPTY_SCANNED_FILES
-      : scannedFilesUnder({ ...input, directory: absolutePath });
-  }
-  if (
-    !directoryEntry.isFile() ||
-    !input.includesFileName(directoryEntry.name) ||
-    input.sourceScope.isIgnored(absolutePath)
-  ) {
-    return EMPTY_SCANNED_FILES;
-  }
-  return scannedRegularFile(input, absolutePath);
+  if (directoryEntry.isDirectory()) return scannedSubdirectory(input, absolutePath);
+  return isIncludedFile(input, directoryEntry, absolutePath)
+    ? scannedRegularFile(input, absolutePath)
+    : EMPTY_SCANNED_FILES;
 };
 
 const scannedFilesUnder = ({

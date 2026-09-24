@@ -6,6 +6,7 @@ import { BoardMemberRequired } from "./board-member-required.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
 import { clockDate, verifiedMember } from "./verified-member.ts";
 
+import type { DrizzleDatabase } from "@repo/db";
 import type { MemberReference, OffsetPage } from "./verified-member.ts";
 
 const { boardPost, boardThread, user, withdrawnMember } = schema;
@@ -111,6 +112,14 @@ const requireBoardMember = Effect.fn("requireBoardMember")(function* requireBoar
   }
 });
 
+const authoredThreads = (database: DrizzleDatabase, condition: ReturnType<typeof or>) =>
+  database
+    .select(threadColumns)
+    .from(boardThread)
+    .leftJoin(user, and(eq(user.id, boardThread.authorId), verifiedMember))
+    .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
+    .where(condition);
+
 const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThreads(
   viewerId: string,
   page: OffsetPage,
@@ -121,12 +130,7 @@ const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThread
     not(blockBetween(viewerId, boardThread.authorId)),
   );
   const threads = yield* query((database) =>
-    database
-      .select(threadColumns)
-      .from(boardThread)
-      .leftJoin(user, and(eq(user.id, boardThread.authorId), verifiedMember))
-      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
-      .where(visible)
+    authoredThreads(database, visible)
       .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
       .limit(page.limit)
       .offset(page.offset),
@@ -144,13 +148,7 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
 ) {
   yield* requireBoardMember(viewerId);
   const [thread] = yield* query((database) =>
-    database
-      .select(threadColumns)
-      .from(boardThread)
-      .leftJoin(user, and(eq(user.id, boardThread.authorId), verifiedMember))
-      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
-      .where(eq(boardThread.id, threadId))
-      .limit(1),
+    authoredThreads(database, eq(boardThread.id, threadId)).limit(1),
   );
   if (thread === undefined) {
     return yield* new BoardThreadNotFound();

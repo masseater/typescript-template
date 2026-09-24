@@ -1,5 +1,6 @@
 import { DateTime, Effect, Result, Schema } from "effect";
 
+import { inboxRouteOf } from "./inbox-route.ts";
 import {
   CreateFeedPost,
   CreateNotification,
@@ -9,6 +10,8 @@ import {
   NotificationKind,
   NotificationRecord,
 } from "./messages.ts";
+
+import type { InboxRoute } from "./inbox-route.ts";
 
 interface InboxBindings {
   readonly USER_INBOX: DurableObjectNamespace;
@@ -96,23 +99,18 @@ class UserInbox {
   }
 
   public fetch(request: Request): Promise<Response> {
-    if (request.headers.get("Upgrade") === "websocket") {
-      return Promise.resolve(this.acceptSocket());
+    const route = inboxRouteOf(request);
+    if (route === undefined) {
+      return Promise.resolve(new Response(undefined, { status: 404 }));
     }
-    const path = URL.parse(request.url)?.pathname ?? "";
-    if (request.method === "POST" && path.endsWith("/notifications")) {
-      return this.createNotification(request);
-    }
-    if (request.method === "POST" && path.endsWith("/notifications/read")) {
-      return this.markNotificationsRead(request);
-    }
-    if (request.method === "POST" && path.endsWith("/posts")) {
-      return this.createFeedPost(request);
-    }
-    if (request.method === "GET" && path.endsWith("/snapshot")) {
-      return Promise.resolve(Response.json(this.snapshot()));
-    }
-    return Promise.resolve(new Response(undefined, { status: 404 }));
+    const handlers: Readonly<Record<InboxRoute, (routed: Request) => Promise<Response>>> = {
+      feedPost: (routed) => this.createFeedPost(routed),
+      markRead: (routed) => this.markNotificationsRead(routed),
+      notification: (routed) => this.createNotification(routed),
+      snapshot: () => Promise.resolve(Response.json(this.snapshot())),
+      socket: () => Promise.resolve(this.acceptSocket()),
+    };
+    return handlers[route](request);
   }
 
   private acceptSocket(): Response {

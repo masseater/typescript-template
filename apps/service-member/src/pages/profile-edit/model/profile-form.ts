@@ -6,11 +6,7 @@ import { saveProfile } from "#entities/profile/index.ts";
 import { ProfileUpdate } from "#shared/contracts/index.ts";
 
 import type { Profile, ProfileDraft } from "#entities/profile/index.ts";
-
-type SocialLinkField = {
-  readonly id: string;
-  readonly url: string;
-};
+import type { SocialLinkField } from "./social-link-field.ts";
 
 type ProfileFormValues = {
   readonly name: string;
@@ -70,4 +66,3 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
 }
 
 export { useProfileForm };
-export type { SocialLinkField };

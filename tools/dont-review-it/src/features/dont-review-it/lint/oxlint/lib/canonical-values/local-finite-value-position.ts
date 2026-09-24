@@ -281,3 +281,4 @@ export const localFiniteSchemaPosition = (
     ? objectKeysPosition(input, expression)
     : localFiniteValuePosition(input, expression);
 };
+export type { ArrayBinding, ImportedBinding, ObjectBinding, PositionInput };

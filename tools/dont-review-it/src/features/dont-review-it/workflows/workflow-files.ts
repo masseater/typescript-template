@@ -6,7 +6,7 @@ import { parseWorkflowDocument, type WorkflowDocument } from "./workflow-documen
 
 import type { WorkflowChecksConfig } from "./config.ts";
 
-type WorkflowTree =
+export type WorkflowTree =
   | { readonly kind: "no-ci-tree" }
   | { readonly kind: "workflows-omitted" }
   | { readonly kind: "read"; readonly documents: readonly WorkflowDocument[] };

@@ -4,6 +4,7 @@ import { DateTime, Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { query } from "./database.ts";
 import { withdrawnMember } from "./member-leave-schema.ts";
 import {
@@ -21,10 +22,9 @@ import {
   oauthGrantCounts,
   profileFieldsOf,
   withdrawnSnapshotCount,
-} from "./records-fixture.ts";
+} from "./records-test-fixture.ts";
 import { leaveRequest as leaveRequestTable } from "./schema.ts";
 import { findUser, getSessionSecurity } from "./security.ts";
-import { TestDatabase } from "./testing.ts";
 
 describe("withdrawMember", () => {
   describe("a member who leaves with retention", () => {

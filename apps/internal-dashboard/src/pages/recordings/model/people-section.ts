@@ -3,6 +3,8 @@ import { Effect } from "effect";
 
 import { removePerson } from "#pages/recordings/api/recordings.ts";
 
+import type { PeopleActions } from "./recording-state.ts";
+
 function forget(personId: string, onChanged: () => Promise<void>): Promise<void> {
   return Effect.runPromise(
     Effect.gen(function* forgetPerson() {
@@ -10,12 +12,6 @@ function forget(personId: string, onChanged: () => Promise<void>): Promise<void>
       yield* Effect.promise(() => onChanged());
     }),
   );
-}
-
-interface PeopleActions {
-  readonly blocked: boolean;
-  readonly error: string | undefined;
-  readonly handleRemove: (personId: string) => void;
 }
 
 function usePeopleActions(onChanged: () => Promise<void>): PeopleActions {

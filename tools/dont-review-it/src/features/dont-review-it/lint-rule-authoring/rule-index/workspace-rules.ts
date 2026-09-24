@@ -8,7 +8,7 @@ import { ruleSourceFilesIn } from "./rule-source-files.ts";
 import type { TreeFailure } from "../../platform/directory-entries.ts";
 import type { LintRuleWorkspace } from "./lint-rule-workspaces.ts";
 
-type WorkspaceRules = {
+export type WorkspaceRules = {
   readonly rules: readonly BundledLintRule[];
   readonly absentDirectories: readonly string[];
 };
@@ -44,3 +44,28 @@ export const workspaceRulesOf = ({
     );
     return { rules: rules.flat(), absentDirectories };
   });
+
+export type WorkspaceRule = {
+  readonly workspace: LintRuleWorkspace;
+  readonly rule: BundledLintRule;
+};
+
+export const rulesAcross = ({
+  repositoryRoot,
+  workspaces,
+}: {
+  readonly repositoryRoot: string;
+  readonly workspaces: readonly LintRuleWorkspace[];
+}): Effect.Effect<
+  readonly WorkspaceRule[],
+  TreeFailure | PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.map(
+    Effect.forEach(workspaces, (workspace) =>
+      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
+        Effect.map(({ rules }) => rules.map((rule) => ({ workspace, rule }))),
+      ),
+    ),
+    (workspaceRules) => workspaceRules.flat(),
+  );

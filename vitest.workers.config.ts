@@ -39,7 +39,7 @@ export default defineProject({
         [jobsWorkflowClass]: "WorkflowEntrypoint",
         [mailRecorder]: "WorkerEntrypoint",
       },
-      main: paths.join(root, "vitest.workers.main.ts"),
+      main: Effect.runSync(paths.fromFileUrl(new URL("./vitest.workers.main.ts", import.meta.url))),
       miniflare: {
         bindings: {
           ALERT_FROM: "monitor@example.test",
@@ -79,7 +79,14 @@ export default defineProject({
     name: "workers",
     root,
     setupFiles: [
-      paths.join(root, "tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields.ts"),
+      Effect.runSync(
+        paths.fromFileUrl(
+          new URL(
+            "./tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields-test-fixture.ts",
+            import.meta.url,
+          ),
+        ),
+      ),
     ],
     testTimeout: 30_000,
   },

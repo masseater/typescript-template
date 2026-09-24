@@ -3,7 +3,7 @@ import { Effect } from "effect";
 
 import { registerPerson } from "#pages/recordings/api/recordings.ts";
 
-import type { SubmitEventHandler } from "react";
+import type { PersonForm } from "./recording-state.ts";
 
 const useConsent = localState(false);
 
@@ -21,17 +21,6 @@ function register(
       yield* Effect.promise(() => onRegistered());
     }),
   );
-}
-
-interface PersonForm {
-  readonly blocked: boolean;
-  readonly consented: boolean;
-  readonly error: string | undefined;
-  readonly handleConsentChange: (consented: boolean) => void;
-  readonly handleNameChange: (value: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly name: string;
-  readonly pending: boolean;
 }
 
 function usePersonForm(onRegistered: () => Promise<void>): PersonForm {

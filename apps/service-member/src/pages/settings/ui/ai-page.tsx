@@ -66,16 +66,44 @@ function ApiKeyItem({
     </li>
   );
 }
+function ApiKeyEntries({
+  action,
+  failure,
+  keys,
+  onRevoked,
+}: Readonly<{
+  action: ActionState;
+  failure: string | undefined;
+  keys: readonly ListedApiKey[] | undefined;
+  onRevoked: () => void;
+}>): ReactElement {
+  if (failure !== undefined) {
+    return <StatusMessage variant={STATUS_VARIANT.failure}>{failure}</StatusMessage>;
+  }
+  if (keys === undefined) {
+    return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
+  }
+  if (keys.length === 0) {
+    return <StatusMessage>API キーはまだありません。</StatusMessage>;
+  }
+  return (
+    <ul>
+      {keys.map((entry) => (
+        <ApiKeyItem action={action} entry={entry} key={entry.id} onRevoked={onRevoked} />
+      ))}
+    </ul>
+  );
+}
+function issuedNotice(issued: Readonly<{ key: string }> | undefined): string | undefined {
+  return issued === undefined
+    ? undefined
+    : `発行した API キー（この画面を離れると再表示できません）: ${issued.key}`;
+}
 function AiPage(): ReactElement {
   const listed = useAtomValue(apiKeysAtom);
   const reload = useAtomRefresh(apiKeysAtom);
   const form = useApiKeyForm(reload);
-  const failure = resultError(listed);
   const keys = AsyncResult.isSuccess(listed) ? listed.value : undefined;
-  const issuedNotice =
-    form.issued === undefined
-      ? undefined
-      : `発行した API キー（この画面を離れると再表示できません）: ${form.issued.key}`;
   return (
     <Page title="AI と API">
       <FormColumn>
@@ -104,21 +132,14 @@ function AiPage(): ReactElement {
         >
           APIキーを発行
         </Button>
-        <ActionStatus action={form.action} notice={issuedNotice} />
+        <ActionStatus action={form.action} notice={issuedNotice(form.issued)} />
       </FormColumn>
-      {failure !== undefined ? (
-        <StatusMessage variant={STATUS_VARIANT.failure}>{failure}</StatusMessage>
-      ) : keys === undefined ? (
-        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-      ) : keys.length === 0 ? (
-        <StatusMessage>API キーはまだありません。</StatusMessage>
-      ) : (
-        <ul>
-          {keys.map((entry) => (
-            <ApiKeyItem action={form.action} entry={entry} key={entry.id} onRevoked={reload} />
-          ))}
-        </ul>
-      )}
+      <ApiKeyEntries
+        action={form.action}
+        failure={resultError(listed)}
+        keys={keys}
+        onRevoked={reload}
+      />
     </Page>
   );
 }

@@ -27,3 +27,4 @@ const nodesUnder = (sourceCode: SourceTree, input: SourceNode): readonly SourceN
 
 export const sourceNodes = (sourceCode: SourceTree): readonly SourceNode[] =>
   nodesUnder(sourceCode, { ancestors: [], node: sourceCode.ast });
+export type { SourceTree };

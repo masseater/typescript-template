@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { forbidGenericRestrictionRule } from "./forbid-generic-restriction-rule--use-the-declared-rule.ts";
 
 const OWN_RULE = "forbid-declared-command-invocation--use-designated-replacement";

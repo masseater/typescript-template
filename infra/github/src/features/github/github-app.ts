@@ -19,6 +19,16 @@ const GitHubApp = Resource<GitHubApp>("Repo.GitHubApp");
 const pollInterval = Duration.seconds(3);
 const humanStepTimeout = Duration.minutes(15);
 
+const appChange = (
+  replaced: boolean,
+  installationId: number | undefined,
+): { readonly action: "replace" | "update" } | undefined => {
+  if (replaced) {
+    return { action: "replace" };
+  }
+  return installationId === undefined ? { action: "update" } : undefined;
+};
+
 const gitHubAppProvider = (): Layer.Layer<Provider.Provider<GitHubApp>, never, GitHubCredentials> =>
   Provider.succeed(GitHubApp, {
     delete: Effect.fn(function* deleteGitHubApp({ output, session }) {
@@ -31,11 +41,7 @@ const gitHubAppProvider = (): Layer.Layer<Provider.Provider<GitHubApp>, never, G
     }),
     diff: ({ news, olds, output }) =>
       Effect.succeed(
-        isResolved(news) && replacesApp(olds, news)
-          ? ({ action: "replace" } as const)
-          : output?.installationId === undefined
-            ? ({ action: "update" } as const)
-            : undefined,
+        appChange(isResolved(news) && replacesApp(olds, news), output?.installationId),
       ),
     reconcile: Effect.fn(function* reconcileGitHubApp({ news, output, session }) {
       const credentials = yield* yield* GitHubCredentials;

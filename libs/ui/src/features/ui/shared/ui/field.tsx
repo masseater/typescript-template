@@ -1,5 +1,10 @@
 import { FormControl } from "baseui/form-control";
-import { type ComponentProps, type ReactElement } from "react";
+import {
+  type ChangeEventHandler,
+  type ComponentProps,
+  type FocusEventHandler,
+  type ReactElement,
+} from "react";
 
 import { localState } from "../../local-state";
 import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
@@ -20,6 +25,14 @@ const messageForValidity = (
     }
   }
   return undefined;
+};
+
+const errorText = (
+  reportedMessage: string | undefined,
+  constraintMessage: string | undefined,
+): ReactElement | null => {
+  const shownError = reportedMessage ?? constraintMessage;
+  return shownError === undefined ? null : <span className={errorClassName}>{shownError}</span>;
 };
 
 const Field = ({
@@ -62,9 +75,12 @@ const Field = ({
   >): ReactElement => {
   const validationMessages = useFieldValidationMessages();
   const [constraintMessage, setConstraintMessage] = useConstraintMessage();
-  const shownError = error ?? constraintMessage;
-  const syncConstraintMessage = (validity: globalThis.ValidityState): void => {
-    setConstraintMessage(messageForValidity(validity, validationMessages));
+  const handleBlur: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement> = (blur) => {
+    setConstraintMessage(messageForValidity(blur.currentTarget.validity, validationMessages));
+    onBlur?.();
+  };
+  const handleChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (change) => {
+    onValueChange?.(change.currentTarget.value);
   };
   const control =
     multiline === true ? (
@@ -77,13 +93,8 @@ const Field = ({
         maxLength={maxLength}
         minLength={minLength}
         className={`block field-sizing-content min-h-16 ${controlClassName}`}
-        onBlur={(blur) => {
-          syncConstraintMessage(blur.currentTarget.validity);
-          onBlur?.();
-        }}
-        onChange={(change) => {
-          onValueChange?.(change.currentTarget.value);
-        }}
+        onBlur={handleBlur}
+        onChange={handleChange}
       />
     ) : (
       <input
@@ -99,22 +110,15 @@ const Field = ({
         readOnly={readOnly}
         required={required}
         className={`inline-block leading-none ${controlClassName}`}
-        onBlur={(blur) => {
-          syncConstraintMessage(blur.currentTarget.validity);
-          onBlur?.();
-        }}
-        onChange={(change) => {
-          onValueChange?.(change.currentTarget.value);
-        }}
+        onBlur={handleBlur}
+        onChange={handleChange}
       />
     );
   return (
     <div data-slot="field" className={fieldClassName}>
       <FormControl
         label={<span className={labelClassName}>{label}</span>}
-        error={
-          shownError === undefined ? null : <span className={errorClassName}>{shownError}</span>
-        }
+        error={errorText(error, constraintMessage)}
       >
         {control}
       </FormControl>

@@ -1,14 +1,15 @@
 import { PHOTO_SLOT } from "@repo/config";
 import { Avatar, Heading, TextLink, formatWarekiMonth } from "@repo/ui";
+import { Fragment } from "react";
 
 import { displayValue, fieldDefinitions } from "#shared/interview/sheet.ts";
 import { memberPhotoUrl } from "#shared/photo-url/index.ts";
 import { SocialLinks } from "#shared/social-link/index.ts";
 import { profileBlock } from "./schema.ts";
 
-import type { SheetData } from "#shared/interview/sheet.ts";
+import type { FieldName, SheetData } from "#shared/interview/sheet.ts";
 import type { ReactElement } from "react";
-import type { ProfileLayoutData } from "./schema.ts";
+import type { ProfileBlockKind, ProfileLayoutData } from "./schema.ts";
 
 interface ProfileMember {
   readonly id: string;
@@ -66,6 +67,57 @@ function CompanyPhoto({
   );
 }
 
+function Identity({ member }: Readonly<{ member: ProfileMember }>): ReactElement {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-4">
+        <Avatar
+          name={member.name}
+          size="large"
+          src={memberPhotoUrl(member.id, PHOTO_SLOT.face, member.photos.face)}
+        />
+        <Heading as="h1" size="page">
+          {member.name}
+        </Heading>
+      </div>
+      <CompanyPhoto memberId={member.id} version={member.photos.company} />
+    </div>
+  );
+}
+
+interface BlockContext {
+  readonly actions: ReactElement | undefined;
+  readonly member: ProfileMember;
+  readonly own: boolean;
+  readonly sheet: SheetData;
+}
+
+type BlockRenderer = (context: BlockContext) => ReactElement | undefined;
+
+function sheetBlock(key: FieldName): BlockRenderer {
+  return ({ sheet }) => (
+    <SheetField label={fieldDefinitions[key].label} value={displayValue(sheet, key)} />
+  );
+}
+
+const blockRenderers: Readonly<Record<ProfileBlockKind, BlockRenderer>> = {
+  [profileBlock.actions]: ({ actions }) =>
+    actions === undefined ? undefined : <div className="flex flex-col gap-3">{actions}</div>,
+  [profileBlock.biography]: ({ member, own }) => <Biography own={own} text={member.profile} />,
+  [profileBlock.identity]: ({ member }) => <Identity member={member} />,
+  [profileBlock.joined]: ({ member }) => (
+    <p className="text-sm leading-normal text-muted-foreground">
+      {formatWarekiMonth(member.joined)}に登録
+    </p>
+  ),
+  [profileBlock.sheetArea]: sheetBlock("area"),
+  [profileBlock.sheetInterests]: sheetBlock("interests"),
+  [profileBlock.sheetMessage]: sheetBlock("message"),
+  [profileBlock.sheetNickname]: sheetBlock("nickname"),
+  [profileBlock.sheetOccupation]: sheetBlock("occupation"),
+  [profileBlock.socialLinks]: ({ member }) => <SocialLinks urls={member.socialLinks} />,
+};
+
 function ProfileLayoutRenderer({
   actions,
   layout,
@@ -79,86 +131,15 @@ function ProfileLayoutRenderer({
   own: boolean;
   sheet: SheetData;
 }>): ReactElement {
-  const blocks = layout.blocks.map((block) => {
-    switch (block.kind) {
-      case profileBlock.identity:
-        return (
-          <div className="flex flex-col gap-4" key={block.kind}>
-            <div className="flex items-center gap-4">
-              <Avatar
-                name={member.name}
-                size="large"
-                src={memberPhotoUrl(member.id, PHOTO_SLOT.face, member.photos.face)}
-              />
-              <Heading as="h1" size="page">
-                {member.name}
-              </Heading>
-            </div>
-            <CompanyPhoto memberId={member.id} version={member.photos.company} />
-          </div>
-        );
-      case profileBlock.biography:
-        return <Biography key={block.kind} own={own} text={member.profile} />;
-      case profileBlock.sheetNickname:
-        return (
-          <SheetField
-            key={block.kind}
-            label={fieldDefinitions.nickname.label}
-            value={displayValue(sheet, "nickname")}
-          />
-        );
-      case profileBlock.sheetOccupation:
-        return (
-          <SheetField
-            key={block.kind}
-            label={fieldDefinitions.occupation.label}
-            value={displayValue(sheet, "occupation")}
-          />
-        );
-      case profileBlock.sheetInterests:
-        return (
-          <SheetField
-            key={block.kind}
-            label={fieldDefinitions.interests.label}
-            value={displayValue(sheet, "interests")}
-          />
-        );
-      case profileBlock.sheetArea:
-        return (
-          <SheetField
-            key={block.kind}
-            label={fieldDefinitions.area.label}
-            value={displayValue(sheet, "area")}
-          />
-        );
-      case profileBlock.sheetMessage:
-        return (
-          <SheetField
-            key={block.kind}
-            label={fieldDefinitions.message.label}
-            value={displayValue(sheet, "message")}
-          />
-        );
-      case profileBlock.socialLinks:
-        return <SocialLinks key={block.kind} urls={member.socialLinks} />;
-      case profileBlock.joined:
-        return (
-          <p className="text-sm leading-normal text-muted-foreground" key={block.kind}>
-            {formatWarekiMonth(member.joined)}に登録
-          </p>
-        );
-      case profileBlock.actions:
-        return actions === undefined ? undefined : (
-          <div className="flex flex-col gap-3" key={block.kind}>
-            {actions}
-          </div>
-        );
-      default:
-        return undefined;
-    }
-  });
-
-  return <>{blocks.filter((block) => block !== undefined)}</>;
+  const context = { actions, member, own, sheet };
+  return (
+    <>
+      {layout.blocks.map((block) => (
+        <Fragment key={block.kind}>{blockRenderers[block.kind](context)}</Fragment>
+      ))}
+    </>
+  );
 }
 
 export { ProfileLayoutRenderer };
+export type { ProfileMember };

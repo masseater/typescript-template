@@ -15,6 +15,7 @@
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",

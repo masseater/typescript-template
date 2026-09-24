@@ -277,4 +277,4 @@ export {
   svgOf,
   withoutSpaces,
 };
-export type { Box, DiagramGeometry, Label, Point, Route };
+export type { Box, DiagramGeometry, Label, Point, Route, Shape };

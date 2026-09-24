@@ -1,5 +1,5 @@
 import { setupNetwork } from "@msw/cloudflare";
-import { httpStatus } from "@repo/config";
+import { googleAnalyticsImgSrc, googleAnalyticsScriptSrc, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { Telemetry } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
@@ -9,7 +9,7 @@ import { Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vite-plus/test";
 
-import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
+import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
 import { appLayer } from "./bindings.ts";
 import { appServerEntry, serveApp, serveWorker, workerRuntime } from "./worker.ts";
 
@@ -182,6 +182,41 @@ describe("a worker serving a rendered document", () => {
         }),
       ),
     )
+    .extend("analyticsPolicy", ({}, { onCleanup }) =>
+      Effect.runPromise(
+        Effect.gen(function* analyticsPolicyProgram() {
+          yield* migrated;
+          const runtime = workerRuntime(() =>
+            appLayer({
+              audience: "service-member",
+              env: appEnvironment(),
+              routes: { "/": "home" },
+            }),
+          );
+          onCleanup(() => runtime.dispose());
+          const worker = appServerEntry({
+            googleAnalytics: true,
+            reporting: { service: "service-member" },
+            routeHandler: {
+              fetch: (): Response =>
+                new Response("<!DOCTYPE html>", {
+                  headers: { "content-type": "text/html; charset=utf-8" },
+                }),
+            },
+            runtime,
+          });
+          const invocation = createExecutionContext();
+          const answered = yield* Effect.promise(() =>
+            worker.fetch(new Request(fixtureOrigin), {}, invocation),
+          );
+          yield* Effect.promise(() => waitOnExecutionContext(invocation));
+          const policy = answered.headers.get("content-security-policy") ?? "";
+          return [...googleAnalyticsScriptSrc, ...googleAnalyticsImgSrc].filter(
+            (host) => !policy.includes(host),
+          );
+        }),
+      ),
+    )
     .extend("unavailableHeaders", () =>
       Effect.runPromise(
         Effect.gen(function* unavailableHeadersProgram() {
@@ -233,6 +268,10 @@ describe("a worker serving a rendered document", () => {
       overHttp: null,
       overHttps: "max-age=31536000; includeSubDomains",
     });
+  });
+
+  it("allows the analytics hosts once analytics is configured", ({ analyticsPolicy }) => {
+    expect(analyticsPolicy).toStrictEqual([]);
   });
 
   it("forbids every resource and indexing when the runtime cannot answer", ({

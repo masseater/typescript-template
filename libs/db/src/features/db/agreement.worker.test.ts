@@ -20,10 +20,10 @@ import {
   requireSignupAgreements,
   withdrawAgreementKind,
 } from "./agreement.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { query } from "./database.ts";
-import { addSession, addUser } from "./records-fixture.ts";
+import { addSession, addUser } from "./records-test-fixture.ts";
 import { auditEvent } from "./schema.ts";
-import { TestDatabase } from "./testing.ts";
 
 const acceptedAt = DateTime.toDate(DateTime.makeUnsafe("2026-02-01T00:00:00.000Z"));
 const seededAgreementPublishedAt = 1_789_862_400_000;

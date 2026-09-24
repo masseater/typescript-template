@@ -47,17 +47,22 @@ type CanonicalValuesEntryFields = Record<(typeof ENTRY_FIELDS)[number], unknown>
 const hasEntryFields = (candidate: object): candidate is CanonicalValuesEntryFields =>
   ENTRY_FIELDS.every((field) => field in candidate);
 
-const hasValidEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
+const hasIntegerEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
   Number.isSafeInteger(candidate.annotationStart) &&
   Number.isSafeInteger(candidate.bindingStart) &&
   Number.isSafeInteger(candidate.declarationEnd) &&
-  Number.isSafeInteger(candidate.declarationStart) &&
+  Number.isSafeInteger(candidate.declarationStart);
+
+const hasOrderedEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
   (candidate.annotationStart as number) >= 0 &&
   (candidate.declarationStart as number) >= 0 &&
   (candidate.annotationStart as number) < (candidate.declarationStart as number) &&
   (candidate.bindingStart as number) >= (candidate.declarationStart as number) &&
   (candidate.bindingStart as number) < (candidate.declarationEnd as number) &&
   (candidate.declarationEnd as number) > (candidate.declarationStart as number);
+
+const hasValidEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
+  hasIntegerEntryOffsets(candidate) && hasOrderedEntryOffsets(candidate);
 
 const isPackageName = (candidate: unknown): candidate is string | null =>
   candidate === null || (typeof candidate === "string" && candidate.length > 0);

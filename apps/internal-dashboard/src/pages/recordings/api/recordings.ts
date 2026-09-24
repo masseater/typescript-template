@@ -14,12 +14,10 @@ import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
 import { wikiClient } from "#shared/api/index.ts";
 import { PeopleList, RecordingList, RecordingView } from "#shared/contracts/index.ts";
 
-type RegisteredPeople = (typeof PeopleList.Type)["people"];
-type RecordingDetail = RecordingView & Readonly<{ people: RegisteredPeople }>;
-type RecordingsOverview = Readonly<{
-  people: RegisteredPeople;
-  recordings: (typeof RecordingList.Type)["recordings"];
-}>;
+import type {
+  RecordingDetail,
+  RecordingsOverview,
+} from "#pages/recordings/model/recording-state.ts";
 
 function loadRecordings(): Promise<RecordingsOverview> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
@@ -121,4 +119,3 @@ export {
   retryRecording,
   uploadRecording,
 };
-export type { RecordingDetail, RecordingsOverview, RegisteredPeople };

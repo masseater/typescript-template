@@ -128,4 +128,4 @@ function rankPages(
 }
 
 export { createSemanticIndex, exactMatchesFirst, rankPages };
-export type { SemanticDocument, SemanticMatch };
+export type { PageScore, SemanticDocument, SemanticMatch, SemanticSearch };

@@ -1,17 +1,15 @@
-import { LINT_BUNDLE } from "../configs/bundles/bundle-names.ts";
 import { destructuresD1Operation, isD1Operation } from "./d1-references.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { specifierVisitor } from "./module-specifiers.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const shippedDbAdapters = [LINT_BUNDLE.testing] as const;
 const rawD1Modules = [
-  ...shippedDbAdapters.map((adapter) => `libs/db/src/features/db/${adapter}.ts`),
+  "libs/db/src/features/db/database-test-fixture.ts",
   "libs/db-local/src/features/db-local/testing-node.ts",
 ];
 const rawD1Pattern = new RegExp(
-  String.raw`/libs/db/src/features/db/(?:${shippedDbAdapters.join("|")})\.ts$|/libs/db-local/src/features/db-local/testing-node\.ts$`,
+  String.raw`/libs/db/src/features/db/database-test-fixture\.ts$|/libs/db-local/src/features/db-local/testing-node\.ts$`,
   "u",
 );
 

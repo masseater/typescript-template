@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noArrayMutation } from "./no-array-mutation--derive-new-array.ts";
 
 describe("dont-review-it/no-array-mutation--derive-new-array", () => {

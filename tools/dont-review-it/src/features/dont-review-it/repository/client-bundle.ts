@@ -6,6 +6,7 @@ import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
+import { denialReason } from "./client-bundle-denial.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 const probeModules: Readonly<Record<BuildTarget, string>> = {
@@ -34,15 +35,6 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["@repo/auth", "**/libs/auth/src/features/auth/**"],
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
-
-function denialReason(error: unknown): string {
-  const text = String(error);
-  return (
-    /Denied by file pattern: (?<pattern>\S+)/u.exec(text)?.groups?.["pattern"] ??
-    /Denied by specifier pattern: (?<pattern>\S+)/u.exec(text)?.groups?.["pattern"] ??
-    (text.includes("Denied by marker") ? "marker" : "denied")
-  );
-}
 
 class BuildDenied extends Schema.TaggedError<BuildDenied>()("BuildDenied", {
   reason: Schema.String,
@@ -109,6 +101,25 @@ const temporaryOutput = Effect.gen(function* temporaryOutput() {
   return yield* filesystem.makeTempDirectoryScoped({ prefix: "template-client-bundle-" });
 });
 
+const undeclaredProblems = (specifier: string, denial: string): readonly string[] =>
+  denial === "" ? [`${specifier} reached the client bundle undeclared`] : [];
+
+const mismatchedProblems = (
+  specifier: string,
+  pattern: string,
+  denial: string,
+): readonly string[] =>
+  denial === pattern ? [] : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`];
+
+const denialProblems = (
+  specifier: string,
+  pattern: string | undefined,
+  denial: string,
+): readonly string[] =>
+  pattern === undefined
+    ? undeclaredProblems(specifier, denial)
+    : mismatchedProblems(specifier, pattern, denial);
+
 const serverOnlyProblems = (
   application: BuildTarget,
   [specifier, pattern]: readonly [string, string | undefined],
@@ -116,14 +127,7 @@ const serverOnlyProblems = (
   Effect.scoped(
     temporaryOutput.pipe(
       Effect.flatMap((outDirectory) => clientBuild(application, [specifier], outDirectory)),
-      Effect.map((denial) => {
-        if (pattern === undefined) {
-          return denial === "" ? [`${specifier} reached the client bundle undeclared`] : [];
-        }
-        return denial === pattern
-          ? []
-          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`];
-      }),
+      Effect.map((denial) => denialProblems(specifier, pattern, denial)),
     ),
   );
 

@@ -1,7 +1,7 @@
-import { OAuthClientView, encodeConsentBody, postConsent } from "@repo/auth-ui/consent";
+import { submitConsent } from "@repo/auth-ui";
+import { OAuthClientView } from "@repo/auth-ui/consent";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
-import { Redirect } from "@repo/runtime/contracts";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { Schema } from "effect";
 
@@ -61,20 +61,7 @@ const loadClientName = createIsomorphicFn()
   );
 
 function submitDecision(accept: boolean, scopes: readonly string[]): Promise<void> {
-  return encodeConsentBody({
-    accept,
-    oauth_query: globalThis.location.search.slice(1),
-    ...(accept ? { scope: scopes.join(" ") } : {}),
-  }).then((body) =>
-    postConsent(fetch, body).then((response) => {
-      if (!response.ok) {
-        throw new Error("連携の許可を処理できませんでした。");
-      }
-      return response.json().then((payload) => {
-        globalThis.location.assign(decodeJson(Redirect, payload).url);
-      });
-    }),
-  );
+  return submitConsent(accept ? { accept, scope: scopes.join(" ") } : { accept });
 }
 
 export { ConsentClientUnavailable, loadClientName, submitDecision };

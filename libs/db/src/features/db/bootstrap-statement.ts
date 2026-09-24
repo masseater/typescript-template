@@ -30,25 +30,28 @@ type RolePromotion = Readonly<{
   updatedAt: number;
 }>;
 
-const bootstrapStatement = ({ bootstrapKind, email, updatedAt }: RolePromotion): SQL => {
+const roleStatement = (
+  { bootstrapKind, email, updatedAt }: RolePromotion,
+  vacancy: (role: Role) => SQL,
+): SQL => {
   const { permission, role } = bootstrapRoles[bootstrapKind];
   return sql`UPDATE ${user}
     SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
-      AND ${user.emailVerified} = ${1}
-      AND ${user.role} = ${ROLE.member}
-      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${role})
+      AND ${user.emailVerified} = ${1}${vacancy(role)}
     RETURNING id, email, role, permission`;
 };
 
-const ensureRoleStatement = ({ bootstrapKind, email, updatedAt }: RolePromotion): SQL => {
-  const { permission, role } = bootstrapRoles[bootstrapKind];
-  return sql`UPDATE ${user}
-    SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
-    WHERE ${user.email} = ${email.toLowerCase()}
-      AND ${user.emailVerified} = ${1}
-    RETURNING id, email, role, permission`;
-};
+const bootstrapStatement = (promotion: RolePromotion): SQL =>
+  roleStatement(
+    promotion,
+    (role) => sql`
+      AND ${user.role} = ${ROLE.member}
+      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${role})`,
+  );
+
+const ensureRoleStatement = (promotion: RolePromotion): SQL =>
+  roleStatement(promotion, () => sql``);
 
 class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
   "BootstrapUnavailable",
@@ -97,3 +100,4 @@ export {
   bootstrapStatement,
   ensureAdminRole,
 };
+export type { RolePromotion };

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noRedundantMockReset } from "./no-redundant-mock-reset--lift-mocks-into-fixture.ts";
 
 const SPEC_FILE = "send-mail.test.ts";

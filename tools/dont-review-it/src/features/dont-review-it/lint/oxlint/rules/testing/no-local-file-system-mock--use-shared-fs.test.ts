@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noLocalFileSystemMock } from "./no-local-file-system-mock--use-shared-fs.ts";
 
 const SPEC_FILE = "mailer.test.ts";

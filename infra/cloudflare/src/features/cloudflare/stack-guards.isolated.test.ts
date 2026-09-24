@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { mockServer } from "./account-fixture.ts";
+import { mockServer } from "./account-test-fixture.ts";
 import {
   access,
   accountHandlers,
@@ -11,7 +11,7 @@ import {
   deployedState,
   emptyState,
   sendingRecords,
-} from "./inspection-fixture.ts";
+} from "./inspection-test-fixture.ts";
 import { describeFailure } from "./secrets.ts";
 import { assertStackReady } from "./stack-guards.ts";
 import { sendingStacks, stackDependencies, traceDestinationStack } from "./stacks.ts";

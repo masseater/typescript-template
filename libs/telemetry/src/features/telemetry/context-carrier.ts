@@ -21,3 +21,4 @@ const environmentCarryingContext = (
 };
 
 export { environmentCarryingContext, inheritedContext };
+export type { Environment };

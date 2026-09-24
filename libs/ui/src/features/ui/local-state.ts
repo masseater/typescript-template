@@ -25,3 +25,4 @@ const optionalState = <Value>(): LocalState<Option.Option<Value>> =>
 const useOptionalString = optionalState<string>();
 
 export { localState, optionalState, useOptionalString };
+export type { LocalState };

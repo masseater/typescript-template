@@ -1,5 +1,12 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { localState, requestAtom, resultError, useAction } from "@repo/ui";
+import {
+  type ActionState,
+  type RequestResult,
+  localState,
+  requestAtom,
+  resultError,
+  useAction,
+} from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { spoken } from "#shared/interview/index.ts";
@@ -34,6 +41,28 @@ const interviewAtom = requestAtom(loadInterview);
 const useView = localState<InterviewViewData | undefined>(undefined);
 const useFailedTurn = localState<MemberUtterance | undefined>(undefined);
 
+function firstError(actions: readonly ActionState[]): string | undefined {
+  return actions.find((action) => action.error !== undefined)?.error;
+}
+
+function heardTurn(failedTurn: MemberUtterance | undefined): string | undefined {
+  return failedTurn === undefined ? undefined : spoken(failedTurn);
+}
+
+function loadedView(loaded: RequestResult<InterviewViewData>): InterviewViewData | undefined {
+  return AsyncResult.isSuccess(loaded) ? loaded.value : undefined;
+}
+
+function settle(
+  publish: (next: InterviewViewData) => void,
+  onSaved: (() => Promise<void>) | undefined,
+): (next: InterviewViewData) => Promise<void> | undefined {
+  return (next) => {
+    publish(next);
+    return next.phase === "saved" ? onSaved?.() : undefined;
+  };
+}
+
 function useInterview(onSaved?: () => Promise<void>): InterviewSession {
   const loaded = useAtomValue(interviewAtom);
   const refresh = useAtomRefresh(interviewAtom);
@@ -43,30 +72,23 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
   const saveAction = useAction();
   const restartAction = useAction();
   const consentAction = useAction();
+  const actions = [turnAction, saveAction, restartAction, consentAction];
   const publish = (next: InterviewViewData): void => {
     setFailedTurn(undefined);
     setView(next);
   };
+  const afterSave = settle(publish, onSaved);
   const say = (utterance: MemberUtterance): void => {
     setFailedTurn(utterance);
     turnAction.run(() => submitTurn(utterance).then(publish));
   };
   return {
-    busy:
-      turnAction.pending || saveAction.pending || restartAction.pending || consentAction.pending,
+    busy: actions.some((action) => action.pending),
     consent: (accept: boolean) => {
-      consentAction.run(() =>
-        respondHistoryConsent(accept).then((next) => {
-          publish(next);
-          if (next.phase === "saved" && onSaved !== undefined) {
-            return onSaved();
-          }
-          return undefined;
-        }),
-      );
+      consentAction.run(() => respondHistoryConsent(accept).then(afterSave));
     },
-    failure: turnAction.error ?? saveAction.error ?? restartAction.error ?? consentAction.error,
-    heard: failedTurn === undefined ? undefined : spoken(failedTurn),
+    failure: firstError(actions),
+    heard: heardTurn(failedTurn),
     loadError: resultError(loaded),
     pending: loaded.waiting,
     reload: () => {
@@ -82,21 +104,14 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
       }
     },
     save: () => {
-      saveAction.run(() =>
-        saveInterviewSheet().then((next) => {
-          publish(next);
-          if (next.phase === "saved" && onSaved !== undefined) {
-            return onSaved();
-          }
-          return undefined;
-        }),
-      );
+      saveAction.run(() => saveInterviewSheet().then(afterSave));
     },
     say,
     turnFailed: turnAction.error !== undefined,
     typing: turnAction.pending,
-    view: view ?? (AsyncResult.isSuccess(loaded) ? loaded.value : undefined),
+    view: view ?? loadedView(loaded),
   };
 }
 
 export { useInterview };
+export type { InterviewSession };

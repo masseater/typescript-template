@@ -19,6 +19,7 @@
     "@types/k6": "2.2.1",
     "@types/node": "catalog:",
     "msw": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

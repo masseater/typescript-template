@@ -1,5 +1,6 @@
 import { CloudflareId } from "@repo/config";
-import { Effect, Schema, SchemaIssue } from "effect";
+import { schemaMismatches } from "@repo/config/schema-mismatches";
+import { Effect, Schema } from "effect";
 
 import { ErrorMonitorFailure } from "./config.ts";
 
@@ -126,20 +127,13 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
     try: () => telemetryResponse.json(),
   });
   const telemetryEnvelope = yield* Schema.decodeUnknownEffect(QueryEnvelope)(telemetryPayload).pipe(
-    Effect.mapError((decodeError) => {
-      const { issues } = SchemaIssue.makeFormatterStandardSchemaV1({
-        leafHook: (leafIssue) => leafIssue._tag,
-      })(decodeError.issue);
-      return new ErrorMonitorFailure({
-        code: "telemetry_response_invalid",
-        keys: issues.map((mismatch) => {
-          const mismatchPath = (mismatch.path ?? [])
-            .map((segment) => (typeof segment === "object" ? String(segment.key) : String(segment)))
-            .join(".");
-          return `${mismatchPath === "" ? "$" : mismatchPath}:${mismatch.message}`;
+    Effect.mapError(
+      (decodeError) =>
+        new ErrorMonitorFailure({
+          code: "telemetry_response_invalid",
+          keys: schemaMismatches(decodeError.issue),
         }),
-      });
-    }),
+    ),
   );
   return telemetryEnvelope.result.calculations.flatMap(
     (calculationRow) => calculationRow.aggregates,

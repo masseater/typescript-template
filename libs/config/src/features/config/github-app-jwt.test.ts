@@ -1,8 +1,8 @@
 import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { gitHubAppKeyFixture } from "./github-app-key-test-fixture.ts";
 import { signGitHubAppJwt } from "./index.ts";
-import { gitHubAppKeyFixture } from "./testing.ts";
 
 const pemLabel = "PRIVATE KEY";
 

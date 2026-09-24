@@ -1,32 +1,12 @@
-import { memoize } from "es-toolkit";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
-import { path } from "../../../../platform/path.ts";
-import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import {
   namedFingerprintOf,
-  type BodyIndex,
   type BodyIndexLoader,
 } from "../../lib/duplicated-bodies/body-index.ts";
-import { spellSites, statementCovering } from "../../lib/duplicated-bodies/site-report.ts";
+import { repeatedBodyVisitor } from "../../lib/duplicated-bodies/site-report.ts";
 import { isOutOfScopeSource } from "../../lib/out-of-scope-source.ts";
-import { toPosixPath } from "../../lib/posix-path.ts";
 
-import type { ESTree } from "@oxlint/plugins";
 import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
-
-const twinReports = (input: {
-  readonly index: BodyIndex;
-  readonly relativePath: string;
-}): readonly { readonly line: number; readonly sites: string }[] => {
-  const { index, relativePath } = input;
-  return (index.bodiesByPath.get(relativePath) ?? []).flatMap((writtenBody) => {
-    const elsewhere = (
-      index.sitesByNamedFingerprint.get(namedFingerprintOf(writtenBody)) ?? []
-    ).filter((site) => site.relativePath !== relativePath || site.line !== writtenBody.line);
-    return elsewhere.length === 0 ? [] : [{ line: writtenBody.line, sites: spellSites(elsewhere) }];
-  });
-};
 
 export const createNoTwinDeclaration = ({
   loadIndex,
@@ -51,27 +31,12 @@ export const createNoTwinDeclaration = ({
     create(inspection) {
       if (isOutOfScopeSource(inspection.filename)) return {};
 
-      const repositoryRootOf = memoize((): string => findWorkspaceRoot(inspection.cwd));
-
-      return {
-        Program(node: ESTree.Program) {
-          const repositoryRoot = repositoryRootOf();
-          const relativePath = toPosixPath(
-            path.relative(repositoryRoot, path.resolve(inspection.filename)),
-          );
-          const reports = twinReports({
-            index: loadIndex({ repositoryRoot }),
-            relativePath,
-          });
-
-          for (const report of reports) {
-            inspection.report({
-              node: statementCovering(node.body, report.line) ?? node,
-              messageId: "twinDeclaration",
-              data: { sites: report.sites },
-            });
-          }
-        },
-      };
+      return repeatedBodyVisitor({
+        inspection,
+        loadIndex,
+        messageId: "twinDeclaration",
+        sitesOf: (index, writtenBody) =>
+          index.sitesByNamedFingerprint.get(namedFingerprintOf(writtenBody)) ?? [],
+      });
     },
   });

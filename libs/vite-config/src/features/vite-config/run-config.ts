@@ -26,4 +26,4 @@ const measured = <Defined extends Tasks>(tasks: Defined): MeasuredTasks<Defined>
   ) as MeasuredTasks<Defined>;
 
 export { measured, telemetryEnv };
-export type { RunConfig, Tasks };
+export type { MeasuredTasks, RunConfig, Tasks };

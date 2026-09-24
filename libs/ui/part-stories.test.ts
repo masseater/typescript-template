@@ -2,14 +2,14 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { partsDirectory } from "./design-system.ts";
+import { partsDirectory } from "./design-system-test-fixture.ts";
 import {
   a11yRelaxations,
   storybookEndpointViolations,
   storylessParts,
   vendoredWorkerViolations,
-} from "./part-stories.ts";
-import { field } from "./record-field.ts";
+} from "./part-stories-test-fixture.ts";
+import { field } from "./record-field-test-fixture.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob("./storybook/preview.tsx", {
   eager: true,

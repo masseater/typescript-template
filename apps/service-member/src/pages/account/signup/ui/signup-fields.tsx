@@ -1,15 +1,12 @@
 import { authClient, requireSuccess } from "@repo/auth-ui";
 import { AUTHENTICATION_METHOD } from "@repo/config";
+import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import { type ActionState, Button, Field, FormColumn } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
 import { Schema } from "effect";
 
-import {
-  SignUpSubmission,
-  maximumNameLength,
-  maximumPasswordLength,
-} from "#shared/contracts/index.ts";
-import { fieldError } from "#shared/forms/index.ts";
+import { SignUpSubmission } from "#shared/contracts/index.ts";
+import { EmailField, NameField, fieldError } from "#shared/forms/index.ts";
 
 import type { FormEvent, ReactElement } from "react";
 
@@ -51,31 +48,9 @@ const SignUpFields = ({
     <form noValidate onSubmit={handleSubmit} aria-busy={action.pending}>
       <FormColumn>
         <form.Field name="name">
-          {(field) => (
-            <Field
-              label="ユーザー名"
-              name="name"
-              autoComplete="name"
-              maxLength={maximumNameLength}
-              value={field.state.value}
-              onValueChange={field.handleChange}
-              error={fieldError(field.state.meta.errors)}
-            />
-          )}
+          {(field) => <NameField field={field} label="ユーザー名" maxLength={maximumNameLength} />}
         </form.Field>
-        <form.Field name="email">
-          {(field) => (
-            <Field
-              label="メールアドレス"
-              name="email"
-              type="email"
-              autoComplete="username"
-              value={field.state.value}
-              onValueChange={field.handleChange}
-              error={fieldError(field.state.meta.errors)}
-            />
-          )}
-        </form.Field>
+        <form.Field name="email">{(field) => <EmailField field={field} />}</form.Field>
         <form.Field name={AUTHENTICATION_METHOD.password}>
           {(field) => (
             <Field

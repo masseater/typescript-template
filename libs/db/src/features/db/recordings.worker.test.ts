@@ -2,6 +2,7 @@ import { RECORDING_STATUS } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { TestDatabase, runStatement } from "./database-test-fixture.ts";
 import {
   assignSpeaker,
   beginTranscription,
@@ -14,7 +15,6 @@ import {
   retryRecording,
   storeTranscript,
 } from "./recordings.ts";
-import { TestDatabase, runStatement } from "./testing.ts";
 
 const heard = {
   durationMs: 4200,

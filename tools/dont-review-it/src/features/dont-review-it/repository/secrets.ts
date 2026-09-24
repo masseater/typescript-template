@@ -73,28 +73,5 @@ const leaks = (content: string, { key, value }: DeploymentValue, scan: PrefixSca
   return key === PREFIX_KEY ? prefixPattern(value, scan).test(content) : content.includes(value);
 };
 
-const secretViolations = (
-  staged: Readonly<{ content: string; filename: string }>,
-  environmentValues: readonly DeploymentValue[] = [],
-  scan: PrefixScan = "separated",
-): string[] => {
-  const { content, filename } = staged;
-  return [
-    ...(privateFile(filename) ? ["private-file"] : []),
-    ...Object.keys(contentRules).filter((rule) => contentRules[rule]?.test(content) === true),
-    ...environmentValues.flatMap((entry) =>
-      leaks(content, entry, scan) ? [`deployment-value:${entry.key}`] : [],
-    ),
-  ];
-};
-
-export {
-  contentRules,
-  deploymentValues,
-  PREFIX_KEY,
-  prefixScan,
-  privateFile,
-  secretViolations,
-  wordPattern,
-};
+export { contentRules, deploymentValues, leaks, PREFIX_KEY, prefixScan, privateFile };
 export type { DeploymentValue, PrefixScan };

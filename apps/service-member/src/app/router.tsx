@@ -1,4 +1,4 @@
-import { provideSessionLoader } from "@repo/auth-ui";
+import { provideSessionLoader } from "@repo/auth-ui/session";
 import { createAppRouter } from "@repo/ui/shell";
 import { QueryClient } from "@tanstack/react-query";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";

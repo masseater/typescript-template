@@ -1,5 +1,5 @@
-import { AppShell, appHead } from "@repo/ui/shell";
-import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import { LocalizedAppShell, appHead } from "@repo/ui/shell";
+import { createRootRouteWithContext } from "@tanstack/react-router";
 
 import styles from "#app/styles.css?url";
 import { serviceName } from "#shared/config/index.ts";
@@ -10,18 +10,13 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 
 const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  component: (): ReactElement => {
-    const locale = getLocale();
-    return (
-      <AppShell
-        fieldValidationMessages={fieldValidationMessages(locale)}
-        lang={locale}
-        routes={routes}
-      >
-        <Outlet />
-      </AppShell>
-    );
-  },
+  component: (): ReactElement => (
+    <LocalizedAppShell
+      fieldValidationMessages={fieldValidationMessages}
+      getLocale={getLocale}
+      routes={routes}
+    />
+  ),
   head: () => appHead(serviceName, styles),
 });
 

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { requireItOnlyExpect } from "./require-it-only-expect--move-setup-into-fixture.ts";
 
 const SPEC_FILENAME = "order.test.ts";

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { requireMockTypeParameter } from "./require-mock-type-parameter--annotate-vi-fn.ts";
 
 const IMPORTED_NAMESPACE = 'import { vi } from "vitest";';
