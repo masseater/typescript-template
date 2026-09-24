@@ -37,9 +37,7 @@ const acquireSlot = (configuration: WaitConfiguration): Promise<SlotHold | null>
   Effect.runPromise(
     Effect.gen(function* takeSlot() {
       process.stderr.write(`throttle: acquiring a slot (limit ${configuration.limit})\n`);
-      yield* Effect.try(() => {
-        ensureSlots(configuration.slotDir, configuration.limit);
-      });
+      yield* ensureSlots(configuration.slotDir, configuration.limit);
       const immediate = yield* Effect.promise(() => tryAcquireAny(configuration));
       if (immediate !== null) {
         return immediate;

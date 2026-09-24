@@ -2,15 +2,8 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { DateTime, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import { joinPath, readFileString, removePath } from "../host.ts";
+import { filesystem, joinPath, readFileString, removePath } from "../host.ts";
 import { runSpool } from "./run-spool.ts";
-
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-};
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
 
 const NODE = process.execPath;
 
@@ -20,7 +13,9 @@ const SEAM_SUFFIX = "cafe0123";
 
 const SEAMED_LOG_NAME = "20260811T120000Z-node--e-cafe0123.log";
 
-const TEST_ROOT = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "run-spool-volume-"));
+const TEST_ROOT = await Effect.runPromise(
+  filesystem.makeTempDirectory({ prefix: "run-spool-volume-" }),
+);
 
 const FIVE_THOUSAND_LINES_SCRIPT = 'for (let i = 0; i < 5000; i += 1) console.log("line " + i);';
 
@@ -90,27 +85,29 @@ describe("runSpool", () => {
   describe("a command printing five thousand lines", () => {
     const it = standardIoTest
       .extend("theCodeOfFiveThousandLines", ({}, { onCleanup }) => {
-        removePath(FIVE_THOUSAND_LINES_ROOT);
-        onCleanup(() => {
-          removePath(FIVE_THOUSAND_LINES_ROOT);
-        });
-        return runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          isPassthrough: () => false,
-          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-          uniqueSuffix: () => SEAM_SUFFIX,
-          monotonicNow: () => 0,
-          spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
-        });
-      })
-      .extend("theSummaryOfFiveThousandLines", ({ stdout }, { onCleanup }) =>
-        Effect.runPromise(
+        onCleanup(() => Effect.runPromise(removePath(FIVE_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(FIVE_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(FIVE_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(FIVE_THOUSAND_LINES_ROOT);
+            return yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
+              }),
+            );
+          }),
+        );
+      })
+      .extend("theSummaryOfFiveThousandLines", ({ stdout }, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(FIVE_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            yield* removePath(FIVE_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -124,15 +121,13 @@ describe("runSpool", () => {
             );
             return stdout.text();
           }),
-        ),
-      )
-      .extend("theStderrOfFiveThousandLines", ({ stderr }, { onCleanup }) =>
-        Effect.runPromise(
+        );
+      })
+      .extend("theStderrOfFiveThousandLines", ({ stderr }, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(FIVE_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(FIVE_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(FIVE_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(FIVE_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -146,15 +141,13 @@ describe("runSpool", () => {
             );
             return stderr.text();
           }),
-        ),
-      )
-      .extend("theRecordOfFiveThousandLines", ({}, { onCleanup }) =>
-        Effect.runPromise(
+        );
+      })
+      .extend("theRecordOfFiveThousandLines", ({}, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(FIVE_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(FIVE_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(FIVE_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(FIVE_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -166,10 +159,10 @@ describe("runSpool", () => {
                 spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
               }),
             );
-            return readFileString(joinPath(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME), "utf8");
+            return yield* readFileString(joinPath(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME));
           }),
-        ),
-      );
+        );
+      });
 
     it(
       "carries the code of the command it wrapped",
@@ -211,27 +204,29 @@ describe("runSpool", () => {
   describe("a command printing ten thousand lines of a hundred bytes", () => {
     const it = standardIoTest
       .extend("theCodeOfTenThousandLines", ({}, { onCleanup }) => {
-        removePath(TEN_THOUSAND_LINES_ROOT);
-        onCleanup(() => {
-          removePath(TEN_THOUSAND_LINES_ROOT);
-        });
-        return runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          isPassthrough: () => false,
-          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-          uniqueSuffix: () => SEAM_SUFFIX,
-          monotonicNow: () => 0,
-          spoolRoot: () => TEN_THOUSAND_LINES_ROOT,
-        });
-      })
-      .extend("theSummaryOfTenThousandLines", ({ stdout }, { onCleanup }) =>
-        Effect.runPromise(
+        onCleanup(() => Effect.runPromise(removePath(TEN_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(TEN_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(TEN_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(TEN_THOUSAND_LINES_ROOT);
+            return yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => TEN_THOUSAND_LINES_ROOT,
+              }),
+            );
+          }),
+        );
+      })
+      .extend("theSummaryOfTenThousandLines", ({ stdout }, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(TEN_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            yield* removePath(TEN_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -245,15 +240,13 @@ describe("runSpool", () => {
             );
             return stdout.text();
           }),
-        ),
-      )
-      .extend("theRecordSizeOfTenThousandLines", ({}, { onCleanup }) =>
-        Effect.runPromise(
+        );
+      })
+      .extend("theRecordSizeOfTenThousandLines", ({}, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(TEN_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(TEN_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(TEN_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(TEN_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -266,11 +259,11 @@ describe("runSpool", () => {
               }),
             );
             return Buffer.byteLength(
-              readFileString(joinPath(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
+              yield* readFileString(joinPath(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
             );
           }),
-        ),
-      );
+        );
+      });
 
     it(
       "carries the code of the command it wrapped",
@@ -304,27 +297,29 @@ describe("runSpool", () => {
   describe("a command printing a hundred thousand lines of a hundred bytes", () => {
     const it = standardIoTest
       .extend("theCodeOfHundredThousandLines", ({}, { onCleanup }) => {
-        removePath(HUNDRED_THOUSAND_LINES_ROOT);
-        onCleanup(() => {
-          removePath(HUNDRED_THOUSAND_LINES_ROOT);
-        });
-        return runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          isPassthrough: () => false,
-          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-          uniqueSuffix: () => SEAM_SUFFIX,
-          monotonicNow: () => 0,
-          spoolRoot: () => HUNDRED_THOUSAND_LINES_ROOT,
-        });
-      })
-      .extend("theSummaryOfHundredThousandLines", ({ stdout }, { onCleanup }) =>
-        Effect.runPromise(
+        onCleanup(() => Effect.runPromise(removePath(HUNDRED_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(HUNDRED_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(HUNDRED_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(HUNDRED_THOUSAND_LINES_ROOT);
+            return yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => HUNDRED_THOUSAND_LINES_ROOT,
+              }),
+            );
+          }),
+        );
+      })
+      .extend("theSummaryOfHundredThousandLines", ({ stdout }, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(HUNDRED_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            yield* removePath(HUNDRED_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -338,15 +333,13 @@ describe("runSpool", () => {
             );
             return stdout.text();
           }),
-        ),
-      )
-      .extend("theRecordSizeOfHundredThousandLines", ({}, { onCleanup }) =>
-        Effect.runPromise(
+        );
+      })
+      .extend("theRecordSizeOfHundredThousandLines", ({}, { onCleanup }) => {
+        onCleanup(() => Effect.runPromise(removePath(HUNDRED_THOUSAND_LINES_ROOT)));
+        return Effect.runPromise(
           Effect.gen(function* () {
-            removePath(HUNDRED_THOUSAND_LINES_ROOT);
-            onCleanup(() => {
-              removePath(HUNDRED_THOUSAND_LINES_ROOT);
-            });
+            yield* removePath(HUNDRED_THOUSAND_LINES_ROOT);
             yield* Effect.promise(() =>
               runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
                 stdout: process.stdout,
@@ -359,11 +352,11 @@ describe("runSpool", () => {
               }),
             );
             return Buffer.byteLength(
-              readFileString(joinPath(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
+              yield* readFileString(joinPath(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
             );
           }),
-        ),
-      );
+        );
+      });
 
     it(
       "carries the code of the command it wrapped",

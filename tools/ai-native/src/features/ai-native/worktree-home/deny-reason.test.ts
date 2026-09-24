@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { denyReasonOf } from "./deny-reason.ts";
@@ -6,93 +7,129 @@ import { insideRepositoryReason, unresolvedDestinationReason } from "./message.t
 describe("denyReasonOf", () => {
   const it = test
     .extend("nestedReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git worktree add .claude/worktrees/x" },
-        toolName: "Bash",
-      }))
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git worktree add .claude/worktrees/x" },
+          toolName: "Bash",
+        }),
+      ))
     .extend("directoryNestedReason", () =>
-      denyReasonOf({
-        cwd: "/elsewhere",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git -C /repo worktree add wt" },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/elsewhere",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git -C /repo worktree add wt" },
+          toolName: "Bash",
+        }),
+      ),
     )
     .extend("outsideReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git worktree add ~/worktrees/github.com/acme/widgets/x" },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git worktree add ~/worktrees/github.com/acme/widgets/x" },
+          toolName: "Bash",
+        }),
+      ),
     )
     .extend("siblingReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git worktree add ../repo-x" },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git worktree add ../repo-x" },
+          toolName: "Bash",
+        }),
+      ),
     )
     .extend("variableReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: 'git worktree add "$TARGET"' },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: 'git worktree add "$TARGET"' },
+          toolName: "Bash",
+        }),
+      ),
     )
     .extend("missingPathReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git worktree add -b x" },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git worktree add -b x" },
+          toolName: "Bash",
+        }),
+      ),
     )
     .extend("outsideRepositoryReason", () =>
-      denyReasonOf({
-        cwd: "/tmp",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git worktree add x" },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/tmp",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git worktree add x" },
+          toolName: "Bash",
+        }),
+      ),
     )
     .extend("otherToolReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: "git worktree add .claude/worktrees/x" },
-        toolName: "Write",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: "git worktree add .claude/worktrees/x" },
+          toolName: "Write",
+        }),
+      ),
     )
     .extend("malformedInputReason", () =>
-      denyReasonOf({
-        cwd: "/repo",
-        home: "/home/dev",
-        repositoryRootOf: (directory) =>
-          directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
-        toolInput: { command: 42 },
-        toolName: "Bash",
-      }),
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) =>
+            Effect.succeed(
+              directory === "/repo" || directory.startsWith("/repo/") ? "/repo" : undefined,
+            ),
+          toolInput: { command: 42 },
+          toolName: "Bash",
+        }),
+      ),
     );
 
   it("refuses a worktree inside the repository", ({ nestedReason }) => {

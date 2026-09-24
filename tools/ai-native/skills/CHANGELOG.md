@@ -5,6 +5,7 @@ What each published version changes for the packages that install it, and for th
 ## 0.0.0
 
 - `throttle` caps how many wrapped commands run at once per host and namespace, reclaims slots held by processes that died, and can kill a command's whole process group on a timeout. Preparing the slots discards anything left at a lock's path that is not the directory the lock library creates, so a slot directory polluted by something else does not block every later run.
+- `throttle` ends the rest of the command's process group when the command exits, SIGTERM first and then SIGKILL after the grace period, before it gives the slot back. `--timeout 0` still never interrupts the command itself.
 - `spool` diverts a child's merged output into a log file under `.spool/` and prints a fixed-size summary in its place, passing the child's exit code through. In CI it streams the output instead and writes no file.
 - `unabridged`, a Claude Code `PreToolUse` hook that denies a Bash call when `head` or `tail` stands at a command position of the command line, and says nothing otherwise.
 - `sync-base`, a Claude Code `SessionStart` / `UserPromptSubmit` / `Stop` hook that, when the current branch has an open pull request whose `mergeStateStatus` is `BEHIND`, injects an `additionalContext` instruction to bring the latest base into the head, and says nothing otherwise.

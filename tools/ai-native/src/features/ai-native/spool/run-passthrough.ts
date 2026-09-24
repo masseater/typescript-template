@@ -1,14 +1,10 @@
 import { Effect } from "effect";
+import { ChildProcess } from "effect/unstable/process";
 
-import { spawnChild } from "../node-spawn.ts";
+import { childEndOf } from "../child-process.ts";
+import { nativeFailure, spawner } from "../host.ts";
 import { childEnvironment } from "../telemetry/command-telemetry.ts";
-import {
-  exitCodeOf,
-  startFailureSummary,
-  waitClose,
-  waitSpawn,
-  type ChildEnd,
-} from "./child-outcome.ts";
+import { exitCodeOf, startFailureSummary } from "./child-outcome.ts";
 import { formatElapsed } from "./format-elapsed.ts";
 
 import type { Command } from "./parse-command.ts";
@@ -22,47 +18,39 @@ export type PassthroughDeps = {
   monotonicNow: () => number;
 };
 
-const reportStartFailure = (input: {
-  deps: PassthroughDeps;
-  commandLine: string;
-  closed: Promise<ChildEnd>;
-  spawnError: Error;
-}): Promise<number> =>
-  Effect.runPromise(
-    Effect.gen(function* announceStartFailure() {
-      yield* Effect.promise(() => input.closed);
-      input.deps.stderr.write(startFailureSummary(input.commandLine, input.spawnError));
-      return 127;
-    }),
-  );
-
-const spawnPassthrough = (command: Command) => {
+export const spoolChildCommand = (
+  command: Command,
+  childStreams: "inherit" | "pipe",
+): ChildProcess.Command => {
   const environment = childEnvironment();
-  return spawnChild({
-    executable: command[0],
-    handed: command.slice(1),
-    spawnOptions:
-      environment === undefined ? { stdio: "inherit" } : { stdio: "inherit", env: environment },
+  return ChildProcess.make(command[0], command.slice(1), {
+    ...(environment === undefined ? {} : { env: environment }),
+    detached: false,
+    stdin: "inherit",
+    stdout: childStreams,
+    stderr: childStreams,
   });
 };
 
-export const runPassthrough = (command: Command, deps: PassthroughDeps): Promise<number> =>
-  Effect.runPromise(
+export const passThrough = (command: Command, deps: PassthroughDeps): Effect.Effect<number> =>
+  Effect.scoped(
     Effect.gen(function* passThroughCommand() {
       const commandLine = command.join(" ");
       const startedAt = deps.monotonicNow();
-      const child = spawnPassthrough(command);
-      const closed = waitClose(child);
-      const spawnError = yield* Effect.promise(() => waitSpawn(child));
-      if (spawnError !== null) {
-        return yield* Effect.promise(() =>
-          reportStartFailure({ deps, commandLine, closed, spawnError }),
-        );
-      }
-      const exitCode = exitCodeOf(yield* Effect.promise(() => closed));
+      const handle = yield* spawner.spawn(spoolChildCommand(command, "inherit"));
+      const exitCode = exitCodeOf(yield* childEndOf(handle));
       deps.stdout.write(
         `spool: command: ${commandLine}\nspool: exit: ${exitCode} (${formatElapsed(deps.monotonicNow() - startedAt)})\n`,
       );
       return exitCode;
+    }),
+  ).pipe(
+    Effect.matchEffect({
+      onFailure: (spawnFailure) =>
+        Effect.sync(() => {
+          deps.stderr.write(startFailureSummary(command.join(" "), nativeFailure(spawnFailure)));
+          return 127;
+        }),
+      onSuccess: Effect.succeed,
     }),
   );

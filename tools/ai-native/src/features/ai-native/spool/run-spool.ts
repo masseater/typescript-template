@@ -1,35 +1,26 @@
-import { Effect } from "effect";
+import { Effect, Result, Stream, type FileSystem, type PlatformError, type Scope } from "effect";
 
-import { waitEmitterEvent } from "../emitter-wait.ts";
+import { childEndOf, type ChildEnd } from "../child-process.ts";
 import {
+  filesystem,
   joinPath,
   makeDirectory,
+  nativeFailure,
+  onDisk,
   optionalSetting,
   randomHex,
   removePath,
+  spawner,
   wallClockDate,
 } from "../host.ts";
-import { STREAM_EVENT } from "../node-event-names.ts";
-import { openWriteStream, type FileWriteStream } from "../node-file-stream.ts";
-import { spawnChild, type SpawnedChild } from "../node-spawn.ts";
-import {
-  childEnvironment,
-  measureCommand,
-  recordCommandRecord,
-} from "../telemetry/command-telemetry.ts";
-import {
-  exitCodeOf,
-  startFailureSummary,
-  waitClose,
-  waitSpawn,
-  type ChildEnd,
-} from "./child-outcome.ts";
+import { measureCommand, recordCommandRecord } from "../telemetry/command-telemetry.ts";
+import { exitCodeOf, startFailureSummary } from "./child-outcome.ts";
 import { formatElapsed } from "./format-elapsed.ts";
 import { defaultSpoolRoot } from "./log-destination.ts";
 import { parseCommand, type Command } from "./parse-command.ts";
 import { recordNameOf } from "./record-name.ts";
-import { isPassthroughSignalled, runPassthrough } from "./run-passthrough.ts";
-import { createEscapeStripper } from "./strip-escapes.ts";
+import { isPassthroughSignalled, passThrough, spoolChildCommand } from "./run-passthrough.ts";
+import { stripEscapes } from "./strip-escapes.ts";
 
 const defaultIsPassthrough = (): boolean => isPassthroughSignalled(optionalSetting("CI"));
 
@@ -49,7 +40,7 @@ type ResolvedDeps = {
   now: () => Date;
   monotonicNow: () => number;
   uniqueSuffix: () => string;
-  spoolRoot: () => string;
+  spoolRoot: Effect.Effect<string, Error>;
 };
 
 const resolveDeps = (deps: SpoolDeps): ResolvedDeps => ({
@@ -58,57 +49,80 @@ const resolveDeps = (deps: SpoolDeps): ResolvedDeps => ({
   now: deps.now ?? wallClockDate,
   monotonicNow: deps.monotonicNow ?? (() => performance.now()),
   uniqueSuffix: deps.uniqueSuffix ?? (() => randomHex(4)),
-  spoolRoot: deps.spoolRoot ?? defaultSpoolRoot,
+  spoolRoot: deps.spoolRoot === undefined ? defaultSpoolRoot() : Effect.sync(deps.spoolRoot),
 });
 
-const prepareRecordFile = (rootDir: string, filePath: string): FileWriteStream => {
-  makeDirectory(rootDir);
-  return openWriteStream(filePath);
+type Recording = {
+  readonly bytes: number;
+  readonly newlines: number;
+  readonly endsWithNewline: boolean;
+  readonly tailParts: readonly Uint8Array[];
+  readonly tailLength: number;
+  readonly failure: Error | undefined;
 };
 
-const recordOpenFailure = (cause: unknown): Error =>
-  cause instanceof Error ? cause : new Error(String(cause));
+const freshRecording = (failure: Error | undefined): Recording => ({
+  bytes: 0,
+  newlines: 0,
+  endsWithNewline: true,
+  tailParts: [],
+  tailLength: 0,
+  failure,
+});
 
-const openRecordFile = (rootDir: string, filePath: string): Promise<FileWriteStream | Error> => {
-  try {
-    const stream = prepareRecordFile(rootDir, filePath);
-    return Effect.runPromise(
-      Effect.promise(() => waitEmitterEvent(stream, "open")).pipe(
-        Effect.map(() => stream),
-        Effect.match({
-          onFailure: recordOpenFailure,
-          onSuccess: (opened) => opened,
-        }),
-      ),
-    );
-  } catch (caught) {
-    return Promise.resolve(recordOpenFailure(caught));
-  }
+const tailLimit = 32768;
+
+const trimmedTail = (
+  tailParts: readonly Uint8Array[],
+  tailLength: number,
+): Pick<Recording, "tailParts" | "tailLength"> => {
+  const [oldest, ...newer] = tailParts;
+  return oldest !== undefined && newer.length > 0 && tailLength - oldest.length >= tailLimit
+    ? trimmedTail(newer, tailLength - oldest.length)
+    : { tailParts, tailLength };
 };
 
-const discardRecord = (input: {
-  deps: ResolvedDeps;
-  commandLine: string;
-  filePath: string;
-  fileStream: FileWriteStream;
-  closed: Promise<ChildEnd>;
-  spawnError: Error;
-}): Promise<number> =>
-  Effect.runPromise(
-    Effect.gen(function* dropFailedRecord() {
-      yield* Effect.promise(() => input.closed);
-      input.fileStream.destroy();
-      removePath(input.filePath);
-      input.deps.stderr.write(startFailureSummary(input.commandLine, input.spawnError));
-      return 127;
-    }),
-  );
+const observed = (recording: Recording, part: Uint8Array): Recording => ({
+  ...recording,
+  bytes: recording.bytes + part.length,
+  newlines:
+    recording.newlines + part.reduce((counted, byte) => (byte === 0x0a ? counted + 1 : counted), 0),
+  endsWithNewline: part.at(-1) === 0x0a,
+  ...trimmedTail([...recording.tailParts, part], recording.tailLength + part.length),
+});
 
-const recordFailureSummary = (
-  commandLine: string,
-  written: { filePath: string; reason: unknown },
-): string =>
-  `spool: command: ${commandLine}\nspool: error: cannot record to ${written.filePath}: ${String(written.reason)}\n`;
+const recordPart =
+  (file: FileSystem.File) =>
+  (recording: Recording, part: Uint8Array): Effect.Effect<Recording> =>
+    recording.failure === undefined
+      ? file.writeAll(part).pipe(
+          Effect.match({
+            onFailure: (writeFailure) => ({
+              ...observed(recording, part),
+              failure: nativeFailure(writeFailure),
+            }),
+            onSuccess: () => observed(recording, part),
+          }),
+        )
+      : Effect.succeed(observed(recording, part));
+
+const recordArrival =
+  (file: FileSystem.File) =>
+  (
+    recording: Recording,
+    arrival: Result.Result<Uint8Array, PlatformError.PlatformError>,
+  ): Effect.Effect<Recording> =>
+    Result.isSuccess(arrival)
+      ? recordPart(file)(recording, arrival.success)
+      : Effect.succeed({
+          ...recording,
+          failure: recording.failure ?? nativeFailure(arrival.failure),
+        });
+
+const sizeSummaryOf = (recording: Recording): { bytes: number; lineCount: number } => ({
+  bytes: recording.bytes,
+  lineCount: recording.newlines + (recording.endsWithNewline ? 0 : 1),
+});
 
 const excerptOf = (tail: Buffer): string => {
   const lines = tail.toString().split("\n");
@@ -119,135 +133,34 @@ const excerptOf = (tail: Buffer): string => {
     .join("");
 };
 
-const tailLimit = 32768;
+const recordedExcerpt = (recording: Recording): string =>
+  excerptOf(Buffer.concat(recording.tailParts));
 
-class SpoolRecording {
-  private readonly fileStream: FileWriteStream;
-  private readonly strippers: readonly [
-    ReturnType<typeof createEscapeStripper>,
-    ReturnType<typeof createEscapeStripper>,
-  ];
-  private failure: Error | undefined = undefined;
-  private bytes = 0;
-  private newlines = 0;
-  private endsWithNewline = true;
-  private tailParts: readonly Buffer[] = [];
-  private tailLength = 0;
-
-  constructor(fileStream: FileWriteStream) {
-    this.fileStream = fileStream;
-    this.strippers = [createEscapeStripper(), createEscapeStripper()];
-    fileStream.on(STREAM_EVENT.failure, (streamError: Error) => {
-      this.abort(streamError);
-    });
-    for (const stripper of this.strippers) {
-      stripper.on?.(STREAM_EVENT.data, (part: Buffer | Error) => {
-        if (part instanceof Error) {
-          this.abort(part);
-          return;
-        }
-        this.observe(part);
-      });
-    }
-  }
-
-  private abort(streamError: Error): void {
-    this.failure = streamError;
-    for (const stripper of this.strippers) {
-      stripper.unpipe?.(this.fileStream);
-      stripper.resume?.();
-    }
-  }
-
-  private observe(part: Buffer): void {
-    this.bytes += part.length;
-    this.newlines += part.reduce((counted, byte) => (byte === 0x0a ? counted + 1 : counted), 0);
-    this.endsWithNewline = part.at(-1) === 0x0a;
-    this.tailParts = [...this.tailParts, part];
-    this.tailLength += part.length;
-    this.trimTail();
-  }
-
-  private trimTail(): void {
-    while (
-      this.tailParts.length > 1 &&
-      this.tailLength - (this.tailParts[0] as Buffer).length >= tailLimit
-    ) {
-      this.tailLength -= (this.tailParts[0] as Buffer).length;
-      this.tailParts = this.tailParts.slice(1);
-    }
-  }
-
-  capture(input: { child: SpawnedChild; closed: Promise<ChildEnd> }): Promise<ChildEnd> {
-    const [stdoutStripper, stderrStripper] = this.strippers;
-    const fileStream = this.fileStream;
-    const finishRecording = (): Promise<void> => this.finish();
-    return Effect.runPromise(
-      Effect.gen(function* captureChild() {
-        input.child.stdout?.pipe(stdoutStripper).pipe(fileStream, { end: false });
-        input.child.stderr?.pipe(stderrStripper).pipe(fileStream, { end: false });
-        const [end] = yield* Effect.promise(() =>
-          Promise.all([
-            input.closed,
-            waitEmitterEvent(stdoutStripper, "end"),
-            waitEmitterEvent(stderrStripper, "end"),
-          ]),
-        );
-        yield* Effect.promise(() => finishRecording());
-        return end;
-      }),
-    );
-  }
-
-  private finish(): Promise<void> {
-    if (this.failure !== undefined) {
-      return Promise.resolve();
-    }
-    return Effect.runPromise(
-      Effect.callback((resume) => {
-        this.fileStream.end(() => {
-          resume(Effect.void);
-        });
-      }),
-    );
-  }
-
-  get failed(): boolean {
-    return this.failure !== undefined;
-  }
-
-  get reason(): unknown {
-    return this.failure;
-  }
-
-  get sizeSummary(): { bytes: number; lineCount: number } {
-    return { bytes: this.bytes, lineCount: this.newlines + (this.endsWithNewline ? 0 : 1) };
-  }
-
-  excerpt(): string {
-    return excerptOf(Buffer.concat(this.tailParts));
-  }
-}
+const recordFailureSummary = (
+  commandLine: string,
+  written: { filePath: string; reason: unknown },
+): string =>
+  `spool: command: ${commandLine}\nspool: error: cannot record to ${written.filePath}: ${String(written.reason)}\n`;
 
 const reportCompletion = (input: {
   deps: ResolvedDeps;
   commandLine: string;
   filePath: string;
-  recording: SpoolRecording;
+  recording: Recording;
   end: ChildEnd;
   elapsed: string;
 }): number => {
-  if (input.recording.failed) {
+  if (input.recording.failure !== undefined) {
     input.deps.stderr.write(
       recordFailureSummary(input.commandLine, {
         filePath: input.filePath,
-        reason: input.recording.reason,
+        reason: input.recording.failure,
       }),
     );
     return 1;
   }
   const exitCode = exitCodeOf(input.end);
-  const { bytes, lineCount } = input.recording.sizeSummary;
+  const { bytes, lineCount } = sizeSummaryOf(input.recording);
   input.deps.stdout.write(
     `spool: command: ${input.commandLine}\nspool: log: ${input.filePath} (${bytes} bytes, ${lineCount} lines)\nspool: exit: ${exitCode} (${input.elapsed})\n`,
   );
@@ -257,84 +170,119 @@ const reportCompletion = (input: {
     filePath: input.filePath,
     bytes,
     lineCount,
-    excerpt: input.recording.excerpt(),
+    excerpt: recordedExcerpt(input.recording),
   });
   if (exitCode !== 0) {
-    input.deps.stdout.write(input.recording.excerpt());
+    input.deps.stdout.write(recordedExcerpt(input.recording));
   }
   return exitCode;
 };
 
-const spawnRecorded = (command: Command): SpawnedChild => {
-  const environment = childEnvironment();
-  return spawnChild({
-    executable: command[0],
-    handed: command.slice(1),
-    spawnOptions:
-      environment === undefined
-        ? { stdio: ["inherit", "pipe", "pipe"] }
-        : { stdio: ["inherit", "pipe", "pipe"], env: environment },
-  });
-};
+type RecordedRun =
+  | { readonly kind: "completed"; readonly exitCode: number }
+  | { readonly kind: "start-failure"; readonly spawnError: Error };
 
 const recordRun = (input: {
   command: Command;
   deps: ResolvedDeps;
   filePath: string;
-  fileStream: FileWriteStream;
-}): Promise<number> =>
-  Effect.runPromise(
-    Effect.gen(function* recordCommand() {
-      const recording = new SpoolRecording(input.fileStream);
-      input.fileStream.write(`${input.command.join(" ")}\n\n`);
-      const startedAt = input.deps.monotonicNow();
-      const child = spawnRecorded(input.command);
-      const closed = waitClose(child);
-      const spawnError = yield* Effect.promise(() => waitSpawn(child));
-      if (spawnError !== null) {
-        return yield* Effect.promise(() =>
-          discardRecord({
-            deps: input.deps,
-            commandLine: input.command.join(" "),
-            filePath: input.filePath,
-            fileStream: input.fileStream,
-            closed,
-            spawnError,
-          }),
-        );
-      }
-      const end = yield* Effect.promise(() => recording.capture({ child, closed }));
-      return reportCompletion({
+  file: FileSystem.File;
+}): Effect.Effect<RecordedRun, never, Scope.Scope> =>
+  Effect.gen(function* recordCommand() {
+    const headerFailure = yield* input.file
+      .writeAll(new TextEncoder().encode(`${input.command.join(" ")}\n\n`))
+      .pipe(Effect.match({ onFailure: nativeFailure, onSuccess: () => undefined }));
+    const startedAt = input.deps.monotonicNow();
+    const handle = yield* spawner.spawn(spoolChildCommand(input.command, "pipe"));
+    const recording = yield* Stream.merge(
+      Stream.result(stripEscapes(handle.stdout)),
+      Stream.result(stripEscapes(handle.stderr)),
+    ).pipe(Stream.runFoldEffect(() => freshRecording(headerFailure), recordArrival(input.file)));
+    const end = yield* childEndOf(handle);
+    return {
+      kind: "completed" as const,
+      exitCode: reportCompletion({
         deps: input.deps,
         commandLine: input.command.join(" "),
         filePath: input.filePath,
         recording,
         end,
         elapsed: formatElapsed(input.deps.monotonicNow() - startedAt),
-      });
+      }),
+    };
+  }).pipe(
+    Effect.match({
+      onFailure: (spawnFailure): RecordedRun => ({
+        kind: "start-failure",
+        spawnError: nativeFailure(spawnFailure),
+      }),
+      onSuccess: (completed): RecordedRun => completed,
     }),
   );
 
-const runEscaped = (command: Command, deps: ResolvedDeps): Promise<number> =>
-  Effect.runPromise(
-    Effect.gen(function* runRecorded() {
-      const rootDir = deps.spoolRoot();
-      const filePath = joinPath(
-        rootDir,
-        recordNameOf({
-          stampedInstant: deps.now(),
-          command,
-          uniqueSuffix: deps.uniqueSuffix(),
-        }),
-      );
-      const opened = yield* Effect.promise(() => openRecordFile(rootDir, filePath));
-      if (opened instanceof Error) {
-        deps.stderr.write(recordFailureSummary(command.join(" "), { filePath, reason: opened }));
+const openRecordFile = (
+  rootDir: string,
+  filePath: string,
+): Effect.Effect<FileSystem.File, Error, Scope.Scope> =>
+  makeDirectory(rootDir).pipe(Effect.andThen(onDisk(filesystem.open(filePath, { flag: "a" }))));
+
+const recordedRunOf = (input: {
+  command: Command;
+  deps: ResolvedDeps;
+  filePath: string;
+  rootDir: string;
+}): Effect.Effect<RecordedRun | { readonly kind: "unrecordable"; readonly reason: Error }> =>
+  Effect.scoped(
+    openRecordFile(input.rootDir, input.filePath).pipe(
+      Effect.matchEffect({
+        onFailure: (reason) => Effect.succeed({ kind: "unrecordable" as const, reason }),
+        onSuccess: (file) => recordRun({ ...input, file }),
+      }),
+    ),
+  );
+
+const runEscapedUnder = (input: {
+  command: Command;
+  deps: ResolvedDeps;
+  rootDir: string;
+}): Effect.Effect<number> =>
+  Effect.gen(function* runRecorded() {
+    const { command, deps, rootDir } = input;
+    const filePath = joinPath(
+      rootDir,
+      recordNameOf({
+        stampedInstant: deps.now(),
+        command,
+        uniqueSuffix: deps.uniqueSuffix(),
+      }),
+    );
+    const recordedRun = yield* recordedRunOf({ command, deps, filePath, rootDir });
+    switch (recordedRun.kind) {
+      case "completed":
+        return recordedRun.exitCode;
+      case "unrecordable":
+        deps.stderr.write(
+          recordFailureSummary(command.join(" "), { filePath, reason: recordedRun.reason }),
+        );
         return 1;
-      }
-      return yield* Effect.promise(() =>
-        recordRun({ command, deps, filePath, fileStream: opened }),
-      );
+      case "start-failure":
+        yield* Effect.ignore(removePath(filePath));
+        deps.stderr.write(startFailureSummary(command.join(" "), recordedRun.spawnError));
+        return 127;
+    }
+  });
+
+const runEscaped = (command: Command, deps: ResolvedDeps): Effect.Effect<number> =>
+  deps.spoolRoot.pipe(
+    Effect.matchEffect({
+      onFailure: (reason) =>
+        Effect.sync(() => {
+          deps.stderr.write(
+            recordFailureSummary(command.join(" "), { filePath: ".spool", reason }),
+          );
+          return 1;
+        }),
+      onSuccess: (rootDir) => runEscapedUnder({ command, deps, rootDir }),
     }),
   );
 
@@ -362,8 +310,10 @@ export const runSpool = (argv: string[], deps: SpoolDeps): Promise<number> => {
   return measureCommand({
     command,
     run: () =>
-      (deps.isPassthrough ?? defaultIsPassthrough)()
-        ? runPassthrough(command, resolved)
-        : runEscaped(command, resolved),
+      Effect.runPromise(
+        (deps.isPassthrough ?? defaultIsPassthrough)()
+          ? passThrough(command, resolved)
+          : runEscaped(command, resolved),
+      ),
   });
 };

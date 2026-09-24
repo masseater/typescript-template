@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 import { instructionOf } from "./instruction.ts";
 import { openPullRequestOf, type CommandRunner } from "./read-open-pr.ts";
 
@@ -41,12 +43,18 @@ const decisionFor = (hookEvent: SyncBaseEvent, instruction: string): SyncBaseDec
   },
 });
 
-export const decisionOf = (inquiry: DecisionInquiry): SyncBaseDecision | undefined => {
+export const decisionOf = (
+  inquiry: DecisionInquiry,
+): Effect.Effect<SyncBaseDecision | undefined> => {
   const hookEvent = syncBaseEventOf(inquiry.hookEventName);
   if (hookEvent === undefined) {
-    return undefined;
+    return Effect.succeed(hookEvent);
   }
-  const instruction = instructionOf(openPullRequestOf(inquiry.cwd, inquiry.run));
-  return instruction === undefined ? undefined : decisionFor(hookEvent, instruction);
+  return openPullRequestOf(inquiry.cwd, inquiry.run).pipe(
+    Effect.map((openPullRequest) => {
+      const instruction = instructionOf(openPullRequest);
+      return instruction === undefined ? undefined : decisionFor(hookEvent, instruction);
+    }),
+  );
 };
 export type { SyncBaseEvent };

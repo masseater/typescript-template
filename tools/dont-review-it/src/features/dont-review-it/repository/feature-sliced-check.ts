@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { NodeServices } from "@effect/platform-node";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import fsd from "@feature-sliced/steiger-plugin";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, Path } from "effect";

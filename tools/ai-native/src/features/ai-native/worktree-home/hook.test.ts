@@ -1,25 +1,22 @@
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { joinPath } from "../host.ts";
+import { filesystem, joinPath } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { hook } from "./hook.ts";
 import { insideRepositoryReason } from "./message.ts";
 
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-};
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
-
 describe("worktree-home hook", () => {
   describe("a Bash command adding a worktree inside the repository", () => {
     const it = test
-      .extend("theCheckout", () => {
-        const checkout = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "worktree-home-"));
-        gitOutput(runGit, { cwd: checkout, handed: ["init", "--quiet", "-b", "main"] });
-        return checkout;
-      })
+      .extend("theCheckout", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const checkout = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-" });
+            yield* gitOutput(runGit, { cwd: checkout, handed: ["init", "--quiet", "-b", "main"] });
+            return checkout;
+          }),
+        ))
       .extend("theDecision", ({ theCheckout }) =>
         hook.run({
           input: {
