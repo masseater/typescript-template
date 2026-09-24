@@ -208,4 +208,4 @@ const runTypecheckGate = (
 };
 
 export { baselinePath, runTypecheckGate };
-export type { GateRun };
+export type { GateFailure, GateRun };
