@@ -1,5 +1,9 @@
-import { paraglideVitePlugin } from "@inlang/paraglide-js";
+import { fileURLToPath } from "node:url";
 
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
+import { repositoryRoot } from "@repo/config/repository-root";
+
+import { paths } from "./host.ts";
 import { localizedApps, paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
 import { taskInput } from "./task-input.ts";
 
@@ -17,8 +21,15 @@ const withoutInlangState = [
   "!project.inlang/.lix/**",
 ] as const;
 
+const compileWorkspaceScript = paths
+  .relative(
+    repositoryRoot,
+    fileURLToPath(new URL("./compile-workspace-paraglide.ts", import.meta.url).href),
+  )
+  .replaceAll("\\", "/");
+
 const workspaceParaglideCompile = {
-  command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+  command: `./${compileWorkspaceScript}`,
   input: [
     ...taskInput,
     ...localizedApps.flatMap((app) =>
@@ -35,10 +46,7 @@ const workspaceParaglideCompile = {
       base: "workspace",
       pattern: "libs/vite-config/src/features/vite-config/paraglide-options.ts",
     },
-    {
-      base: "workspace",
-      pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-    },
+    { base: "workspace", pattern: compileWorkspaceScript },
   ],
   output: localizedApps.map((app) => ({
     base: "workspace" as const,

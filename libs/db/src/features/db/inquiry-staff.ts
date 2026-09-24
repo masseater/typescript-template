@@ -1,14 +1,14 @@
 import { INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
-import { asc, count, desc, eq, gte, sql } from "drizzle-orm";
+import { count, desc, eq, gte, sql } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
+import { inquiryThread, memberInquiryColumns } from "./inquiry-thread.ts";
 import {
   INQUIRY_AUTHOR_KIND,
   inquiry,
   inquiryAuthorKinds,
-  inquiryMessage,
   inquiryStatuses,
   user,
 } from "./schema.ts";
@@ -96,14 +96,7 @@ const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
     }
     return yield* query((database) =>
       database
-        .select({
-          createdAt: inquiry.createdAt,
-          id: inquiry.id,
-          memberId: inquiry.memberId,
-          status: inquiry.status,
-          subject: inquiry.subject,
-          updatedAt: inquiry.updatedAt,
-        })
+        .select(memberInquiryColumns)
         .from(inquiry)
         .where(eq(inquiry.memberId, memberId))
         .orderBy(desc(inquiry.updatedAt), inquiry.id),
@@ -112,37 +105,10 @@ const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
 );
 
 const staffGetInquiry = Effect.fn("staffGetInquiry")(function* staffGetInquiry(inquiryId: string) {
-  const [staffInquiry] = yield* query((database) =>
-    database
-      .select({
-        createdAt: inquiry.createdAt,
-        id: inquiry.id,
-        memberId: inquiry.memberId,
-        status: inquiry.status,
-        subject: inquiry.subject,
-        updatedAt: inquiry.updatedAt,
-      })
-      .from(inquiry)
-      .where(eq(inquiry.id, inquiryId))
-      .limit(1),
+  const found = query((database) =>
+    database.select(memberInquiryColumns).from(inquiry).where(eq(inquiry.id, inquiryId)).limit(1),
   );
-  if (!staffInquiry) {
-    return yield* new InquiryNotFound();
-  }
-  const threadMessages = yield* query((database) =>
-    database
-      .select({
-        authorId: inquiryMessage.authorId,
-        authorKind: inquiryMessage.authorKind,
-        body: inquiryMessage.body,
-        createdAt: inquiryMessage.createdAt,
-        id: inquiryMessage.id,
-      })
-      .from(inquiryMessage)
-      .where(eq(inquiryMessage.inquiryId, inquiryId))
-      .orderBy(asc(inquiryMessage.createdAt), inquiryMessage.id),
-  );
-  return { ...staffInquiry, messages: threadMessages } satisfies StaffInquiryThread;
+  return (yield* inquiryThread(inquiryId, found)) satisfies StaffInquiryThread;
 });
 
 type ReadOnlyInquiryStaff = Readonly<{

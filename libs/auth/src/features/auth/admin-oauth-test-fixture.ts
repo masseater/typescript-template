@@ -31,13 +31,15 @@ const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
   return client;
 });
 
-const startAuthorization = Effect.fn("startAuthorization")(function* startAuthorization() {
-  return yield* startClientAuthorization({
-    application: APPLICATION.admin,
-    clientName: "Test admin MCP client",
-    redirectUri: adminRedirectUri,
-    scope: "admin:read offline_access",
-  });
-});
+const startAdminAuthorization = Effect.fn("startAdminAuthorization")(
+  function* startAdminAuthorization() {
+    return yield* startClientAuthorization({
+      application: APPLICATION.admin,
+      clientName: "Test admin MCP client",
+      redirectUri: adminRedirectUri,
+      scope: "admin:read offline_access",
+    });
+  },
+);
 
-export { adminOperator, adminOrigin, adminRedirectUri, startAuthorization };
+export { adminOperator, adminOrigin, adminRedirectUri, startAdminAuthorization };

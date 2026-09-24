@@ -1,18 +1,11 @@
-import { Button, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-import { DateTime } from "effect";
+import { Button, Heading, STATUS_VARIANT, StatusMessage, formatWarekiDateTime } from "@repo/ui";
 
 import type { NotificationList } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
 type NotificationItem = (typeof NotificationList.Type)["items"][number];
 
-const updatedAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
-
-function NotificationEntry({
+function NotificationRow({
   disabled,
   item,
   onOpen,
@@ -31,7 +24,7 @@ function NotificationEntry({
       >
         <p className="text-sm leading-normal">{item.label}</p>
         <p className="text-xs leading-normal text-muted-foreground">
-          {updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(item.createdAt)))}
+          {formatWarekiDateTime(item.createdAt)}
         </p>
       </button>
     </li>
@@ -75,7 +68,7 @@ function NotificationsView({
       {items.length > 0 && (
         <ul className="flex flex-col gap-3">
           {items.map((item) => (
-            <NotificationEntry key={item.id} disabled={openBlocked} item={item} onOpen={onOpen} />
+            <NotificationRow key={item.id} disabled={openBlocked} item={item} onOpen={onOpen} />
           ))}
         </ul>
       )}

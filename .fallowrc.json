@@ -44,7 +44,11 @@
     "ignore": ["**/vite.config.ts"],
     "threshold": 0.0001
   },
-  "dynamicallyLoaded": ["**/src/shared/server-api/server-app.ts", "**/*-stub.mjs"],
+  "dynamicallyLoaded": [
+    "**/src/shared/server-api/server-app.ts",
+    "**/src/features/*/verify/cli.ts",
+    "**/*-stub.mjs"
+  ],
   "framework": [
     {
       "name": "alchemy",

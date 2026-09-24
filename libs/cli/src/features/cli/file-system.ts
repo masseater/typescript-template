@@ -18,3 +18,4 @@ const modeAllowsGroupOrOther = (fileMode: number): boolean =>
   (fileMode & GROUP_AND_OTHER_PERMISSIONS) !== 0;
 
 export { isNotFound, isSystemError, modeAllowsGroupOrOther };
+export type { PlatformFailure };

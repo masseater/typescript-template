@@ -6,7 +6,6 @@ import { describe, expect } from "vite-plus/test";
 
 import { Auth } from "./auth.ts";
 import { mailSubjects } from "./email.ts";
-import { acceptInvitation, mailInvite, previewInvitation } from "./invite.ts";
 import {
   AuthApps,
   PASSWORD,
@@ -21,6 +20,7 @@ import {
   signInAs,
   wikiStaff,
 } from "./index-test-fixture.ts";
+import { acceptInvitation, mailInvite, previewInvitation } from "./invite.ts";
 
 describe("an administrator invite", () => {
   const it = authTest.extend("invitedAdministrator", ({ auth }) =>

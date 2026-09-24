@@ -497,4 +497,4 @@ export {
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { runTypecheckGate } from "./effect-typecheck.ts";
-export { devBoundary, failOnBrokenSourceMaps, privateSourceMaps, type Tasks };
+export { devBoundary, failOnBrokenSourceMaps, privateSourceMaps, type RunConfig, type Tasks };

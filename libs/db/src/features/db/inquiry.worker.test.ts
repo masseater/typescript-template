@@ -2,6 +2,7 @@ import { APPLICATION, ROLE } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { TestDatabase } from "./database-test-fixture.ts";
 import { staffInquiryCounts } from "./inquiry-staff.ts";
 import {
   closeInquiry,
@@ -13,7 +14,6 @@ import {
 } from "./inquiry.ts";
 import { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
 import { INQUIRY_STATUS } from "./schema.ts";
-import { TestDatabase } from "./database-test-fixture.ts";
 
 describe("listMemberInquiries", () => {
   const it = test.extend("listedSubjects", () =>

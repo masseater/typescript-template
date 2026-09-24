@@ -1,13 +1,13 @@
-import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import {
+  Heading,
+  NavigationLink,
+  STATUS_VARIANT,
+  StatusMessage,
+  formatWarekiDateTime,
+} from "@repo/ui";
 
 import type { InquirySummary } from "#pages/support/model/inquiry.ts";
 import type { ReactElement } from "react";
-
-const updatedAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 function InquiryEntries({
   error,
@@ -35,7 +35,7 @@ function InquiryEntries({
               {inquiry.subject}
             </Heading>
             <p className="text-sm leading-normal text-muted-foreground">
-              {inquiry.statusLabel}・{updatedAtLabel.format(inquiry.updatedAt)}
+              {inquiry.statusLabel}・{formatWarekiDateTime(inquiry.updatedAt.getTime())}
             </p>
           </NavigationLink>
         </li>

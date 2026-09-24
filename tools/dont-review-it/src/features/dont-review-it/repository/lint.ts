@@ -657,7 +657,6 @@ const lintOptions = {
         "libs/db/src/features/db/identity-schema.ts",
         "infra/budget-monitor/src/features/budget-monitor/decision.ts",
         "infra/error-monitor/src/features/error-monitor/telemetry.ts",
-        "libs/observability/src/features/observability/server-test-fixture.ts",
         "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
       ],
       rules: {
@@ -906,7 +905,7 @@ const lintOptions = {
         "libs/auth/src/features/auth/auth-request.ts",
         "libs/auth/src/features/auth/auth-test-fixture.ts",
         "libs/auth/src/features/auth/browser-client-test-fixture.ts",
-        "libs/auth/src/features/auth/email-change.ts",
+        "libs/auth/src/features/auth/email-change-test-fixture.ts",
         "libs/auth/src/features/auth/email-change.worker.test.ts",
         "libs/auth/src/features/auth/wiki-oauth-test-fixture.ts",
       ],
@@ -997,8 +996,6 @@ const lintOptions = {
     },
     {
       files: [
-        "infra/cloudflare/src/features/cloudflare/unix-permission-bits.ts",
-        "tools/dev/src/features/dev/unix-permission-bits.ts",
         "apps/service-member/src/shared/photo/image-test-fixture.ts",
         "apps/service-member/src/shared/photo/image.ts",
       ],

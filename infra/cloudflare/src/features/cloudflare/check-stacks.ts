@@ -54,7 +54,7 @@ import {
 import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-settings.ts";
 
-import type { Application } from "@repo/config";
+import type { Application, Capability } from "@repo/config";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 
@@ -103,19 +103,69 @@ function tokenValue(name: string, resource: string): string {
   return `${name}:deferred:${stackName("tokens")}.${resource}.value`;
 }
 
+function wikiBindings(app: Application): readonly string[] {
+  return app === APPLICATION.wiki
+    ? [
+        tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
+        `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
+        `${wikiApiBinding}:service:entrypoint=${wikiApiEntrypoint}:service=${stackName(wikiWorker)}.Worker.workerName`,
+        `${wikiPagesBinding}:service:service=${stackName(wikiWorker)}.Worker.workerName`,
+      ]
+    : [];
+}
+
+function analyticsBindings(app: Application): readonly string[] {
+  return app === APPLICATION.user
+    ? [
+        plainText(
+          appEnvKey.googleAnalyticsMeasurementId,
+          verificationSettings.googleAnalyticsMeasurementId,
+        ),
+      ]
+    : [];
+}
+
+const capabilityBindings: readonly (readonly [Capability, readonly string[]])[] = [
+  [
+    "billing",
+    [
+      `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
+      `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
+      `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
+    ],
+  ],
+  ["workers-ai", ["AI:ai"]],
+  [
+    "jobs",
+    [
+      `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,
+      `${jobsWorkflowBinding}:workflow:className=${jobsWorkflowClass}:workflowName=<unresolved EffectExpr>`,
+    ],
+  ],
+  ["realtime", [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]],
+  [
+    "storage",
+    [
+      `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
+      `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+    ],
+  ],
+];
+
+function grantedBindings(app: Application): readonly string[] {
+  return capabilityBindings.flatMap(([capability, bindings]) =>
+    grants(app, capability) ? bindings : [],
+  );
+}
+
+function applicationCrons(app: Application): { readonly crons?: readonly string[] } {
+  return {
+    ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
+    ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+  };
+}
+
 function applicationResource(app: Application, release: string): ResourceInventory {
-  const flagshipBindings = [
-    plainText(appEnvKey.flagshipAccountId, accountId),
-    `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
-    ...(app === APPLICATION.wiki
-      ? [
-          tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
-          `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
-          `${wikiApiBinding}:service:entrypoint=${wikiApiEntrypoint}:service=${stackName(wikiWorker)}.Worker.workerName`,
-          `${wikiPagesBinding}:service:service=${stackName(wikiWorker)}.Worker.workerName`,
-        ]
-      : []),
-  ];
   return {
     adopt: false,
     bindings: [
@@ -126,42 +176,15 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
-      ...flagshipBindings,
-      ...(app === APPLICATION.user
-        ? [
-            plainText(
-              appEnvKey.googleAnalyticsMeasurementId,
-              verificationSettings.googleAnalyticsMeasurementId,
-            ),
-          ]
-        : []),
+      plainText(appEnvKey.flagshipAccountId, accountId),
+      `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
+      ...wikiBindings(app),
+      ...analyticsBindings(app),
       plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
-      ...(grants(app, "billing")
-        ? [
-            `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
-            `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
-            `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
-          ]
-        : []),
-      ...(grants(app, "workers-ai") ? ["AI:ai"] : []),
-      ...(grants(app, "jobs")
-        ? [
-            `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,
-            `${jobsWorkflowBinding}:workflow:className=${jobsWorkflowClass}:workflowName=<unresolved EffectExpr>`,
-          ]
-        : []),
-      ...(grants(app, "realtime")
-        ? [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]
-        : []),
-      ...(grants(app, "storage")
-        ? [
-            `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
-            `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
-          ]
-        : []),
+      ...grantedBindings(app),
     ].toSorted(),
     declared: {
       ...sharedWorker,
@@ -170,8 +193,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
         runWorkerFirst: true,
       },
       bundle: false,
-      ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-      ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+      ...applicationCrons(app),
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
@@ -478,17 +500,25 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
   return differs;
 });
 
+function coreViolationOf(stack: StackName, inventory: StackInventory): string | undefined {
+  return stack === "core" || stack === wikiWorker ? assertCoreNotPublic(inventory) : undefined;
+}
+
+const reportCoreViolation = Effect.fn("reportCoreViolation")(function* reportCoreViolation(
+  stack: StackName,
+  violation: string | undefined,
+) {
+  if (violation !== undefined) {
+    yield* Console.error(yield* encodeJson({ event: "core.public_entry", stack, violation }));
+  }
+});
+
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
-  const coreViolation =
-    stack === "core" || stack === wikiWorker ? assertCoreNotPublic(inventory) : undefined;
+  const coreViolation = coreViolationOf(stack, inventory);
   const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
-  if (coreViolation !== undefined) {
-    yield* Console.error(
-      yield* encodeJson({ event: "core.public_entry", stack, violation: coreViolation }),
-    );
-  }
+  yield* reportCoreViolation(stack, coreViolation);
   if (!matches) {
     yield* Console.error(
       yield* encodeJson({ actual: inventory, event: "stacks.differs", expected, stack }),

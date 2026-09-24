@@ -74,22 +74,93 @@ const wikiBindings = Effect.fn("wikiBindings")(function* wikiBindings() {
   };
 });
 
+function analyticsEnv(target: Application, config: SharedConfig): Partial<SharedEnv> {
+  return target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+    ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
+    : {};
+}
+
+function telemetryEnv(
+  config: SharedConfig,
+  authorization: Redacted.Redacted | undefined,
+): Partial<SharedEnv> {
+  if (config.otlp === undefined) {
+    return {};
+  }
+  return {
+    OTLP_ENABLED: String(config.otlp.enabled),
+    OTLP_ENDPOINT: config.otlp.endpoint,
+    ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+  };
+}
+
+function operationsEmail(config: SharedConfig): string {
+  return config.budget.recipients[0] ?? config.mailFrom;
+}
+
+const optionalBilling = Effect.fn("optionalBilling")(function* optionalBilling(
+  target: Application,
+) {
+  const billing: BillingEnv | undefined = grants(target, "billing")
+    ? yield* stripeSettings
+    : undefined;
+  return billing;
+});
+
+const optionalJobsQueue = Effect.fn("optionalJobsQueue")(function* optionalJobsQueue(
+  target: Application,
+) {
+  return grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
+});
+
+const targetEnv = Effect.fn("targetEnv")(function* targetEnv(
+  target: Application,
+  shared: DeclaredEnv,
+  flags: Effect.Success<ReturnType<typeof flagshipAppRef>>,
+) {
+  if (target !== APPLICATION.wiki) {
+    return shared;
+  }
+  return {
+    ...shared,
+    FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
+    FLAGSHIP_APP_ID: flags.appId,
+    ...(yield* wikiBindings()),
+  };
+});
+
+function jobsEnv(jobsQueue: Queues.Queue | undefined) {
+  return jobsQueue === undefined
+    ? {}
+    : {
+        JOBS: jobsQueue,
+        PROCESS: Workflow<{ jobId: string }>("Process", {
+          className: jobsWorkflowClass,
+        }),
+      };
+}
+
+function workerCrons(target: Application): { crons?: string[] } {
+  return {
+    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
+    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+  };
+}
+
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
 ) {
   const config: SharedConfig = yield* Effect.orDie(settings);
   const secret: Redacted.Redacted = yield* authSecret;
   const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
-  const billing: BillingEnv | undefined = grants(target, "billing")
-    ? yield* stripeSettings
-    : undefined;
+  const billing = yield* optionalBilling(target);
   const origin = config.origins[target];
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const core = yield* coreWorkerRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const jobsQueue = grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
+  const jobsQueue = yield* optionalJobsQueue(target);
   const shared: DeclaredEnv = yield* appEnv(
     target,
     {
@@ -102,44 +173,21 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       EMAIL_FROM: config.mailFrom,
       FLAGSHIP_ACCOUNT_ID: config.accountId,
       FLAGS: flags,
-      OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-      ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
-        ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
-        : {}),
-      ...(config.otlp === undefined
-        ? {}
-        : {
-            OTLP_ENABLED: String(config.otlp.enabled),
-            OTLP_ENDPOINT: config.otlp.endpoint,
-            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-          }),
+      OPS_EMAIL: operationsEmail(config),
+      ...analyticsEnv(target, config),
+      ...telemetryEnv(config, authorization),
     },
     billing,
   );
   const env = {
-    ...(target === APPLICATION.wiki
-      ? {
-          ...shared,
-          FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
-          FLAGSHIP_APP_ID: flags.appId,
-          ...(yield* wikiBindings()),
-        }
-      : shared),
-    ...(jobsQueue === undefined
-      ? {}
-      : {
-          JOBS: jobsQueue,
-          PROCESS: Workflow<{ jobId: string }>("Process", {
-            className: jobsWorkflowClass,
-          }),
-        }),
+    ...(yield* targetEnv(target, shared, flags)),
+    ...jobsEnv(jobsQueue),
   };
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
-    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+    ...workerCrons(target),
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,

@@ -10,7 +10,7 @@ import {
   type RepositoryChange,
 } from "./repository-diff.ts";
 
-export type CompareRevisionsOptions = Readonly<{
+type CompareRevisionsOptions = Readonly<{
   repositoryRoot: string;
   baseRevision: string;
   headRevision: string;
@@ -78,7 +78,7 @@ export class BlobUnreadable extends Schema.TaggedError<BlobUnreadable>()("BlobUn
   message: Schema.String,
 }) {}
 
-type Side = "base" | "head";
+export type Side = "base" | "head";
 
 export type SourceRequest = Readonly<{ side: Side; sourcePath: string }>;
 
@@ -240,6 +240,36 @@ type RawInventory = Readonly<{
 const RAW_RECORD_HEADER =
   /^:\d{6} \d{6} ([\da-f]{40}(?:[\da-f]{24})?) ([\da-f]{40}(?:[\da-f]{24})?) ([A-Z]\d{0,3})$/u;
 
+type RawRecord = Readonly<{
+  beforeObject: string;
+  afterObject: string;
+  beforePath: string;
+  afterPath: string;
+  status: string;
+  recordPaths: readonly string[];
+}>;
+
+type RawHeader = Readonly<{ beforeObject: string; afterObject: string; status: string }>;
+
+const rawHeaderOf = (field: string | undefined): RawHeader | undefined => {
+  const [, beforeObject, afterObject, status] = RAW_RECORD_HEADER.exec(field ?? "") ?? [];
+  return status === undefined || beforeObject === undefined || afterObject === undefined
+    ? undefined
+    : { beforeObject, afterObject, status };
+};
+
+const rawRecordAt = (fields: readonly string[], index: number): RawRecord | undefined => {
+  const header = rawHeaderOf(fields[index]);
+  if (header === undefined) return undefined;
+  const pathCount = header.status.startsWith("R") ? 2 : 1;
+  const recordPaths = fields.slice(index + 1, index + 1 + pathCount);
+  const [beforePath, afterPath = beforePath] = recordPaths;
+  if (beforePath === undefined || afterPath === undefined || recordPaths.length !== pathCount) {
+    return undefined;
+  }
+  return { ...header, beforePath, afterPath, recordPaths };
+};
+
 const rawInventoryOf = (rawOutput: string): Effect.Effect<RawInventory, DiffUnreadable> =>
   Effect.suspend(() => {
     const fields = rawOutput.split("\0");
@@ -249,25 +279,17 @@ const rawInventoryOf = (rawOutput: string): Effect.Effect<RawInventory, DiffUnre
     const objectAt = new Map<string, string>();
     let index = 0;
     while (index < fields.length) {
-      const [, beforeObject, afterObject, status] =
-        RAW_RECORD_HEADER.exec(fields[index] ?? "") ?? [];
-      const pathCount = status?.startsWith("R") === true ? 2 : 1;
-      const recordPaths = fields.slice(index + 1, index + 1 + pathCount);
-      const [beforePath, afterPath = beforePath] = recordPaths;
-      if (
-        status === undefined ||
-        beforeObject === undefined ||
-        afterObject === undefined ||
-        beforePath === undefined ||
-        afterPath === undefined ||
-        recordPaths.length !== pathCount
-      ) {
+      const record = rawRecordAt(fields, index);
+      if (record === undefined) {
         return Effect.fail(unreadableRecord);
       }
-      objectAt.set(requestKey({ side: "base", sourcePath: beforePath }), beforeObject);
-      objectAt.set(requestKey({ side: "head", sourcePath: afterPath }), afterObject);
-      records.push([status, ...recordPaths, ""].join("\0"));
-      index += 1 + pathCount;
+      objectAt.set(
+        requestKey({ side: "base", sourcePath: record.beforePath }),
+        record.beforeObject,
+      );
+      objectAt.set(requestKey({ side: "head", sourcePath: record.afterPath }), record.afterObject);
+      records.push([record.status, ...record.recordPaths, ""].join("\0"));
+      index += 1 + record.recordPaths.length;
     }
     return Effect.succeed({ inventoryOutput: records.join(""), objectAt });
   });

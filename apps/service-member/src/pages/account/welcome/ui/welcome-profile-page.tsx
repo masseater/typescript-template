@@ -1,9 +1,10 @@
+import { maximumNameLength } from "@repo/runtime/contracts";
 import { Button, Field, FormColumn, Heading, localState, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Effect } from "effect";
 
 import { saveProfile } from "#entities/profile/index.ts";
-import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
+import { maximumProfileLength } from "#shared/contracts/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { ReactElement } from "react";

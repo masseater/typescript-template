@@ -1,5 +1,5 @@
 import { setupNetwork } from "@msw/cloudflare";
-import { httpStatus } from "@repo/config";
+import { googleAnalyticsImgSrc, googleAnalyticsScriptSrc, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { Telemetry } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
@@ -211,7 +211,7 @@ describe("a worker serving a rendered document", () => {
           );
           yield* Effect.promise(() => waitOnExecutionContext(invocation));
           const policy = answered.headers.get("content-security-policy") ?? "";
-          return ["https://www.googletagmanager.com", "https://www.google-analytics.com"].filter(
+          return [...googleAnalyticsScriptSrc, ...googleAnalyticsImgSrc].filter(
             (host) => !policy.includes(host),
           );
         }),

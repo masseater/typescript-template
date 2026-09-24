@@ -1,13 +1,11 @@
-import type { Application, Capability, CapabilityOf } from "@repo/config";
+import type { Capability } from "@repo/config";
 import type { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import type {
   AIBinding,
-  Assets,
   D1,
   DurableObjectLike,
   Email,
   Flagship,
-  InferEnv,
   KV,
   Queues,
   R2,
@@ -39,14 +37,6 @@ type BillingEnv = Readonly<{
   STRIPE_WEBHOOK_SECRET: Redacted.Redacted;
 }>;
 
-type WikiEnv = SharedEnv &
-  Readonly<{
-    FLAGSHIP_API_TOKEN: Redacted.Redacted;
-    FLAGSHIP_APP_ID: string;
-    WIKI: WorkerEntrypointBinding;
-    WIKI_API: WorkerEntrypointBinding;
-  }>;
-
 interface CapabilityEnv {
   readonly billing: BillingEnv;
   readonly jobs: Readonly<{
@@ -66,22 +56,6 @@ type UnionToIntersection<Union> = (Union extends unknown ? (value: Union) => voi
   ? Intersection
   : never;
 
-type GrantedEnv<App extends Application> = [CapabilityOf<App>] extends [never]
-  ? unknown
-  : UnionToIntersection<CapabilityEnv[CapabilityOf<App>]>;
-
-type AppEnv<App extends Application> = SharedEnv & GrantedEnv<App>;
 type DeclaredEnv = SharedEnv & Partial<UnionToIntersection<CapabilityEnv[Capability]>>;
 
-type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
-
-export type {
-  AppBindings,
-  AppEnv,
-  BillingEnv,
-  CapabilityEnv,
-  DeclaredEnv,
-  SharedEnv,
-  UnionToIntersection,
-  WikiEnv,
-};
+export type { BillingEnv, CapabilityEnv, DeclaredEnv, SharedEnv, UnionToIntersection };

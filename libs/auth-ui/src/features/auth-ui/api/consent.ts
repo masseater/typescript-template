@@ -1,21 +1,7 @@
 import { Effect, Schema } from "effect";
 
+import { encodeConsentBody, postConsent } from "../oauth-consent.ts";
 import { decodeJson } from "../protocol.ts";
-
-const ConsentBody = Schema.Struct({
-  accept: Schema.Boolean,
-  oauth_query: Schema.String,
-  scope: Schema.optionalKey(Schema.String),
-});
-const encodeConsentBody = Schema.encodePromise(Schema.fromJsonString(ConsentBody));
-
-const postConsent = (fetchImpl: typeof fetch, encodedDecision: string): Promise<Response> =>
-  fetchImpl("/api/auth/oauth2/consent", {
-    body: encodedDecision,
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
 
 const sendConsent = (
   decision: Readonly<{ accept: boolean; scope?: string }>,

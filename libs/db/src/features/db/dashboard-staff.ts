@@ -1,8 +1,9 @@
 import { METRIC_KEY, METRIC_PERIOD, ROLE, metricKeys } from "@repo/config";
-import { and, count, desc, eq, gte, lte, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, type ClientKind } from "./client-kind.ts";
+import { countRows } from "./count-rows.ts";
 import { query } from "./database.ts";
 import { bucketFor, currentSnapshotValues, refreshMetricSnapshots } from "./metric-snapshot.ts";
 import {
@@ -169,12 +170,10 @@ const staffAuditEvents = Effect.fn("staffAuditEvents")(function* staffAuditEvent
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [matching] = yield* query((database) =>
-    database.select({ count: count() }).from(auditEvent).where(matchesAuditPage(page)),
-  );
+  const matchingCount = yield* countRows(auditEvent, () => matchesAuditPage(page));
   return {
     events: auditEvents satisfies readonly AuditEventView[],
-    total: matching?.count ?? 0,
+    total: matchingCount,
   };
 });
 

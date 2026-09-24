@@ -15,16 +15,18 @@ const inquiryColumns = {
   updatedAt: inquiry.updatedAt,
 };
 
-function memberKeyed<Member extends object>(member: Member) {
-  const { createdAt, id, ...rest } = inquiryColumns;
-  return { createdAt, id, ...member, ...rest };
-}
+const { createdAt, id, ...inquiryDetails } = inquiryColumns;
+const memberInquiryColumns = { createdAt, id, memberId: inquiry.memberId, ...inquiryDetails };
+const adminInquiryColumns = {
+  createdAt,
+  id,
+  memberId: inquiry.memberId,
+  memberName: user.name,
+  ...inquiryDetails,
+};
 
-const memberInquiryColumns = memberKeyed({ memberId: inquiry.memberId });
-const adminInquiryColumns = memberKeyed({ memberId: inquiry.memberId, memberName: user.name });
-
-const inquiryMessages = (inquiryId: string) =>
-  query((database) =>
+const inquiryMessages = Effect.fn("inquiryMessages")(function* inquiryMessages(inquiryId: string) {
+  return yield* query((database) =>
     database
       .select({
         authorId: inquiryMessage.authorId,
@@ -37,6 +39,7 @@ const inquiryMessages = (inquiryId: string) =>
       .where(eq(inquiryMessage.inquiryId, inquiryId))
       .orderBy(asc(inquiryMessage.createdAt), inquiryMessage.id),
   );
+});
 
 type InquiryMessageRow = Effect.Success<ReturnType<typeof inquiryMessages>>[number];
 
@@ -49,12 +52,12 @@ const inquiryThread = <Row extends object>(
   Database
 > =>
   Effect.gen(function* inquiryThreadProgram() {
-    const [row] = yield* found;
-    if (!row) {
+    const [foundInquiry] = yield* found;
+    if (!foundInquiry) {
       return yield* new InquiryNotFound();
     }
-    const messages = yield* inquiryMessages(inquiryId);
-    return { ...row, messages };
+    const threadMessages = yield* inquiryMessages(inquiryId);
+    return { ...foundInquiry, messages: threadMessages };
   });
 
 export { adminInquiryColumns, inquiryColumns, inquiryThread, memberInquiryColumns };

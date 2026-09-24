@@ -322,7 +322,9 @@ const restoreWithdrawn = Effect.fn("restoreWithdrawnMember")(function* restoreWi
   );
 });
 
-const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
+const pendingWithdrawal = Effect.fn("pendingWithdrawal")(function* pendingWithdrawal(
+  memberId: string,
+) {
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const email = yield* recoverableEmail(memberId);
   const [pending] = yield* query((database) =>
@@ -337,6 +339,11 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
   if (pending === undefined) {
     return yield* new RecoveryExpired();
   }
+  return pending;
+});
+
+const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
+  const pending = yield* pendingWithdrawal(memberId);
   const snapshot = yield* decodeSnapshot(pending.withdrawn);
   const restoredAt = DateTime.toDate(yield* DateTime.now);
   yield* restoreWithdrawn(memberId, { restoredAt, snapshot, withdrawn: pending.withdrawn });
@@ -344,26 +351,13 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
 });
 
 const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(memberId: string) {
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
-  const email = yield* recoverableEmail(memberId);
-  const [pending] = yield* query((database) =>
-    database
-      .select({ memberId: withdrawnMember.memberId })
-      .from(withdrawnMember)
-      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
-      .where(pendingRecovery(email, checkedAt))
-      .orderBy(desc(withdrawnMember.withdrawnAt))
-      .limit(1),
-  );
-  if (pending === undefined) {
-    return yield* new RecoveryExpired();
-  }
+  const pending = yield* pendingWithdrawal(memberId);
   const declinedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .update(leaveRequest)
       .set({ recoveryDeclinedAt: declinedAt })
-      .where(eq(leaveRequest.memberId, pending.memberId)),
+      .where(eq(leaveRequest.memberId, pending.withdrawn.memberId)),
   );
   return { declinedAt };
 });

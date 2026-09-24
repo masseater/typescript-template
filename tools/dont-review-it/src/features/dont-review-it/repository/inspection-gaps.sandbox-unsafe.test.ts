@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { Effect } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { overridePluginMismatches } from "./lint-test-fixture.ts";
@@ -165,6 +165,24 @@ describe("inspection coverage", () => {
     expect(missingWorkspaceGlobs(templateWorkspaces)).toStrictEqual([]);
     expect(missingWorkspaceGlobs(awaitingPresetPackages)).toStrictEqual([]);
   });
+
+  it("points every literal lint override path at a file in the tree", () =>
+    Effect.runPromise(
+      Effect.gen(function* literalOverridePathsExist() {
+        expect.hasAssertions();
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const literalPaths = lintOptions.overrides
+          .flatMap((override) => override.files ?? [])
+          .filter((file) => !/[*{]/u.test(file));
+        const missing = yield* Effect.forEach(literalPaths, (file) =>
+          Effect.map(filesystem.exists(paths.join(repositoryRoot, file)), (exists) =>
+            exists ? [] : [file],
+          ),
+        );
+        expect(missing.flat()).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 
   it("does not declare built-in plugin rules under an override that dropped that plugin", () => {
     expect.hasAssertions();

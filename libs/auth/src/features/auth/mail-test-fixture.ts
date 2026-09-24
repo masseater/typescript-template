@@ -94,7 +94,6 @@ const hasMail = Effect.fn("hasMail")(function* hasMail(email: string) {
 });
 
 export {
-  Mailbox,
   clearMailbox,
   hasMail,
   mailConfig,

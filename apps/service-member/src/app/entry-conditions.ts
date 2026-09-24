@@ -51,6 +51,50 @@ function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void>
   );
 }
 
+type PendingStep = Exclude<OnboardingStep, "done">;
+
+const signedIn = (session: Session | undefined, href: string): Session => {
+  if (session === undefined) {
+    throw redirect({ href: loginPath(href) });
+  }
+  return session;
+};
+
+const pendingStep = (step: OnboardingStep): PendingStep => {
+  if (step === "done") {
+    throw redirect({ to: "/home" });
+  }
+  return step;
+};
+
+const requireOnboarded = (queries: QueryClient): Effect.Effect<void> =>
+  Effect.gen(function* requireOnboarded() {
+    const step = yield* currentOnboardingStep(queries);
+    if (step === "done") {
+      return;
+    }
+    const offer = yield* Effect.promise(() => loadRecoveryOffer());
+    throw redirect({ to: offer.available ? recoveryPath : welcomePath[step] });
+  });
+
+const leaveWelcome = (pathname: string): void => {
+  if (pathname.startsWith("/welcome")) {
+    throw redirect({ to: "/home" });
+  }
+};
+
+const requireAgreed = (agreements: Agreements, href: string, pathname: string): void => {
+  if (blocksMember(agreements.pending) && pathname !== agreementPath) {
+    throw redirect({ search: { redirect: href }, to: agreementPath });
+  }
+};
+
+const settleRecovery = (available: boolean, pathname: string, step: PendingStep): void => {
+  if (available !== (pathname === recoveryPath)) {
+    throw redirect({ to: available ? recoveryPath : welcomePath[step] });
+  }
+};
+
 function enterMemberFrame(
   queries: QueryClient,
   href: string,
@@ -58,25 +102,11 @@ function enterMemberFrame(
 ): Promise<{ agreements: Agreements; session: Session }> {
   return Effect.runPromise(
     Effect.gen(function* enterMember() {
-      const session = yield* currentSession(queries);
-      if (session === undefined) {
-        throw redirect({ href: loginPath(href) });
-      }
-      const step = yield* currentOnboardingStep(queries);
-      if (step !== "done") {
-        const offer = yield* Effect.promise(() => loadRecoveryOffer());
-        if (offer.available) {
-          throw redirect({ to: recoveryPath });
-        }
-        throw redirect({ to: welcomePath[step] });
-      }
-      if (pathname.startsWith("/welcome")) {
-        throw redirect({ to: "/home" });
-      }
+      const session = signedIn(yield* currentSession(queries), href);
+      yield* requireOnboarded(queries);
+      leaveWelcome(pathname);
       const agreements = yield* Effect.promise(() => loadAgreements());
-      if (blocksMember(agreements.pending) && pathname !== agreementPath) {
-        throw redirect({ search: { redirect: href }, to: agreementPath });
-      }
+      requireAgreed(agreements, href, pathname);
       return { agreements, session };
     }),
   );
@@ -89,21 +119,10 @@ function enterWelcomeFrame(
 ): Promise<{ session: Session; step: OnboardingStep }> {
   return Effect.runPromise(
     Effect.gen(function* enterWelcome() {
-      const session = yield* currentSession(queries);
-      if (session === undefined) {
-        throw redirect({ href: loginPath(href) });
-      }
-      const step = yield* currentOnboardingStep(queries);
-      if (step === "done") {
-        throw redirect({ to: "/home" });
-      }
+      const session = signedIn(yield* currentSession(queries), href);
+      const step = pendingStep(yield* currentOnboardingStep(queries));
       const offer = yield* Effect.promise(() => loadRecoveryOffer());
-      if (offer.available && pathname !== recoveryPath) {
-        throw redirect({ to: recoveryPath });
-      }
-      if (!offer.available && pathname === recoveryPath) {
-        throw redirect({ to: welcomePath[step] });
-      }
+      settleRecovery(offer.available, pathname, step);
       return { session, step };
     }),
   );

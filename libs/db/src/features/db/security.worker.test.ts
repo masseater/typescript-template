@@ -3,10 +3,10 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { deleteUser } from "./admin.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { addOAuthGrant, addSession, addUser, oauthGrantCounts } from "./records-test-fixture.ts";
 import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
 import { removeStaff } from "./staff.ts";
-import { TestDatabase } from "./database-test-fixture.ts";
 
 describe("findWikiReader", () => {
   describe("a verified staff member", () => {

@@ -17,10 +17,7 @@ const unread = {
   read: false,
 } as const satisfies NotificationItem;
 
-function rendered(
-  items: readonly NotificationItem[],
-  error: string | undefined = undefined,
-): string {
+function rendered(items: readonly NotificationItem[], error?: string): string {
   return renderedAt(
     <NotificationsView
       error={error}

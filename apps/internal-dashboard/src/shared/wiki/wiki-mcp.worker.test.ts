@@ -6,23 +6,21 @@ import {
   authTest,
   bootstrapVerifiedStaff,
   clientOf,
+  exchangeOAuthCode,
+  grantOAuthAuthorization,
   registerVerified,
+  responseStatus,
   signIn,
   signInAs,
+  startAuthorization,
+  wikiOrigin,
+  wikiStaff,
 } from "@repo/auth/testing";
 import { APPLICATION, ROLE, httpStatus } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import {
-  exchangeCode,
-  grantAuthorization,
-  mcpRequest,
-  responseStatus,
-  startAuthorization,
-  wikiStaff,
-  wikiOrigin,
-} from "./wiki-oauth-test-fixture.ts";
+import { mcpRequest } from "./wiki-oauth-test-fixture.ts";
 
 const tamperedSuffix = "xx";
 
@@ -38,8 +36,8 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
 const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedTokens() {
   const flow = yield* startAuthorization();
   const wiki = yield* wikiStaff("owner@example.com");
-  const code = yield* grantAuthorization(wiki, flow.oauthQuery);
-  return { tokens: yield* exchangeCode(flow, code), wiki };
+  const code = yield* grantOAuthAuthorization(wiki, { oauthQuery: flow.oauthQuery });
+  return { tokens: yield* exchangeOAuthCode(flow, code), wiki };
 });
 
 describe("wiki MCP authorization", () => {

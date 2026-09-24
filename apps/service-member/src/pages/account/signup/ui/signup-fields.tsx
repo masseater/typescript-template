@@ -1,14 +1,11 @@
 import { authClient, requireSuccess } from "@repo/auth-ui";
 import { AUTHENTICATION_METHOD } from "@repo/config";
+import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import { type ActionState, Button, Field, FormColumn } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
 import { Schema } from "effect";
 
-import {
-  SignUpSubmission,
-  maximumNameLength,
-  maximumPasswordLength,
-} from "#shared/contracts/index.ts";
+import { SignUpSubmission } from "#shared/contracts/index.ts";
 import { EmailField, NameField, fieldError } from "#shared/forms/index.ts";
 
 import type { FormEvent, ReactElement } from "react";

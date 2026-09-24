@@ -19,6 +19,7 @@
     "dont-review-it-canonical-literal-types": "./src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
     "dont-review-it-check-staged": "./src/features/dont-review-it/repository/check-staged.ts",
     "dont-review-it-clean-shared-task-cache": "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
+    "dont-review-it-hook-scope": "./src/features/dont-review-it/repository/hook-scope.ts",
     "dont-review-it-pr-affected": "./src/features/dont-review-it/repository/pr-affected.ts",
     "dont-review-it-typecheck": "./src/features/dont-review-it/repository/typecheck-workspaces.ts",
     "quality-check-client": "./src/features/dont-review-it/repository/client-bundle.ts",

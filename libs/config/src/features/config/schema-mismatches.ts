@@ -6,13 +6,12 @@ const issueFormatter = SchemaIssue.makeFormatterStandardSchemaV1({
   leafHook: (issue) => issue._tag,
 });
 
-function schemaMismatches(issue: SchemaIssue.Issue): readonly string[] {
-  return issueFormatter(issue).issues.map((reported) => {
+const schemaMismatches = (issue: SchemaIssue.Issue): readonly string[] =>
+  issueFormatter(issue).issues.map((reported) => {
     const path = (reported.path ?? [])
-      .map((key) => (typeof key === "object" ? String(key.key) : String(key)))
+      .map((segment) => (typeof segment === "object" ? String(segment.key) : String(segment)))
       .join(".");
     return `${path === "" ? WHOLE_BODY : path}:${reported.message}`;
   });
-}
 
 export { schemaMismatches };

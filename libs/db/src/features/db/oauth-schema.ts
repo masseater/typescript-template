@@ -86,14 +86,13 @@ const oauthResource = sqliteTable(
   (table) => [uniqueIndex("oauth_resource_identifier_unique").on(table.identifier)],
 );
 
-const clientColumn = () =>
-  text("client_id")
-    .notNull()
-    .references(() => oauthClient.clientId, { onDelete: "cascade" });
+const clientColumn = text("client_id")
+  .notNull()
+  .references(() => oauthClient.clientId, { onDelete: "cascade" });
 
-const issuedTokenColumns = () => ({
+const issuedTokenColumns = {
   authorizationCodeId: text("authorization_code_id"),
-  clientId: clientColumn(),
+  clientId: clientColumn,
   confirmation: text("confirmation"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
@@ -104,12 +103,12 @@ const issuedTokenColumns = () => ({
   revoked: integer("revoked", { mode: "timestamp_ms" }),
   scopes: text("scopes").notNull(),
   sessionId: text("session_id").references(() => session.id, { onDelete: "set null" }),
-});
+};
 
 const oauthClientResource = sqliteTable(
   "oauth_client_resource",
   {
-    clientId: clientColumn(),
+    clientId: clientColumn,
     createdAt: integer("created_at", { mode: "timestamp_ms" }),
     id: text("id").primaryKey(),
     metadata: text("metadata"),
@@ -127,7 +126,7 @@ const oauthClientResource = sqliteTable(
 const oauthRefreshToken = sqliteTable(
   "oauth_refresh_token",
   {
-    ...issuedTokenColumns(),
+    ...issuedTokenColumns,
     authTime: integer("auth_time", { mode: "timestamp_ms" }),
     rotatedAt: integer("rotated_at", { mode: "timestamp_ms" }),
     rotationReplayExpiresAt: integer("rotation_replay_expires_at", { mode: "timestamp_ms" }),
@@ -150,7 +149,7 @@ const oauthRefreshToken = sqliteTable(
 const oauthAccessToken = sqliteTable(
   "oauth_access_token",
   {
-    ...issuedTokenColumns(),
+    ...issuedTokenColumns,
     refreshId: text("refresh_id").references(() => oauthRefreshToken.id, { onDelete: "cascade" }),
     token: text("token"),
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
@@ -169,7 +168,7 @@ const oauthAccessToken = sqliteTable(
 const oauthConsent = sqliteTable(
   "oauth_consent",
   {
-    clientId: clientColumn(),
+    clientId: clientColumn,
     createdAt: integer("created_at", { mode: "timestamp_ms" }),
     id: text("id").primaryKey(),
     referenceId: text("reference_id"),

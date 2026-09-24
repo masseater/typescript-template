@@ -6,20 +6,11 @@ import { Atom } from "effect/unstable/reactivity";
 
 import { loadAuditPage } from "#pages/audit/api/audit.ts";
 
-import type { AuditPageQuery, StaffAuditPageView } from "#shared/contracts/index.ts";
-import type { SubmitEventHandler } from "react";
+import type { StaffAuditPageView } from "#shared/contracts/index.ts";
+import type { AuditPage } from "@repo/config/paging";
+import type { AuditFilter, AuditFilterForm } from "./audit-filter.ts";
 
-interface AuditFilter {
-  readonly action: string;
-  readonly actorId: string;
-  readonly targetId: string;
-}
-
-interface AuditList extends AuditFilter {
-  readonly handleActionChange: (action: string) => void;
-  readonly handleActorIdChange: (actorId: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly handleTargetIdChange: (targetId: string) => void;
+interface AuditList extends AuditFilterForm {
   readonly listing: RequestResult<StaffAuditPageView>;
 }
 
@@ -28,7 +19,7 @@ const AuditAction = Schema.Literals(auditActions);
 
 const emptyFilter: AuditFilter = { action: "", actorId: "", targetId: "" };
 
-function auditPageQuery(filter: AuditFilter): typeof AuditPageQuery.Type {
+function auditPageQuery(filter: AuditFilter): typeof AuditPage.Type {
   return {
     ...(Schema.is(AuditAction)(filter.action) ? { action: filter.action } : {}),
     ...(filter.actorId.length > 0 ? { actorId: filter.actorId } : {}),

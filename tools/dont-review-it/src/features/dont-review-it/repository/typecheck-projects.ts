@@ -56,3 +56,4 @@ const typecheckProjects = (root: string): ProjectDiscovery<readonly string[]> =>
   });
 
 export { typecheckProjects };
+export type { ProjectDiscovery };

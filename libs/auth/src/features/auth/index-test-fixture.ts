@@ -32,6 +32,7 @@ export { mailSubjects } from "./email.ts";
 export {
   McpJson,
   McpTokens,
+  authorizeMcpAs,
   callMcpTool,
   decodeOAuthRedirect,
   responseStatus,
@@ -41,13 +42,22 @@ export type { FetchMcp } from "./mcp-client-test-fixture.ts";
 export { MockNetwork } from "./mock-network-test-fixture.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-test-fixture.ts";
 export { signedSessionCookie } from "./auth-test-fixture.ts";
-export { startClientAuthorization } from "./oauth-client-test-fixture.ts";
+export {
+  exchangeOAuthCode,
+  grantOAuthAuthorization,
+  startClientAuthorization,
+} from "./oauth-client-test-fixture.ts";
 export { UnexpectedStatus } from "./unexpected-status-test-fixture.ts";
-export { redirectUri, startAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-test-fixture.ts";
+export {
+  redirectUri,
+  startAuthorization,
+  wikiOrigin,
+  wikiStaff,
+} from "./wiki-oauth-test-fixture.ts";
 export type { AuthorizationFlow } from "./oauth-client-test-fixture.ts";
 export {
   adminOperator,
   adminOrigin,
   adminRedirectUri,
-  startAuthorization as startAdminAuthorization,
+  startAdminAuthorization,
 } from "./admin-oauth-test-fixture.ts";

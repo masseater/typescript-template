@@ -11,13 +11,15 @@ declare module "@tanstack/react-router" {
   }
 }
 
+const localizedRewrite = {
+  input: ({ url }: Readonly<{ url: URL }>) => deLocalizeUrl(url),
+  output: ({ url }: Readonly<{ url: URL }>) => localizeUrl(url),
+};
+
 function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
   const queryClient = sessionQueryClient(loadBrowserSession);
   const router = createAppRouter(routeTree, {
-    rewrite: {
-      input: ({ url }) => deLocalizeUrl(url),
-      output: ({ url }) => localizeUrl(url),
-    },
+    rewrite: localizedRewrite,
     routerContext: { queryClient },
   });
   setupRouterSsrQueryIntegration({ queryClient, router });

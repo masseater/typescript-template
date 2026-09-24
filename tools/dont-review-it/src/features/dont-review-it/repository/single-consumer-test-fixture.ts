@@ -436,6 +436,89 @@ const runOnlyByRoot = (input: {
   !input.imported.includes("root") &&
   declaredBins(input.manifest).some((bin) => input.invoked.has(bin));
 
+type SpecifierIndex = ReadonlyMap<string, ReadonlySet<string>>;
+
+type CheckedWorkspace = {
+  readonly workspace: WorkspaceManifest;
+  readonly name: string;
+  readonly self: string;
+};
+
+const checkedWorkspace = (workspace: WorkspaceManifest): CheckedWorkspace | undefined => {
+  const name = field(workspace.manifest, "name");
+  if (typeof name !== "string" || (workspace.area !== "libs" && workspace.area !== "tools")) {
+    return undefined;
+  }
+  return { workspace, name, self: directoryOf(workspace.file) };
+};
+
+type ConsumerUsage = {
+  readonly consumers: readonly string[];
+  readonly imported: readonly string[];
+  readonly invoked: ReadonlySet<string>;
+};
+
+const subpathMatcher =
+  (target: { readonly specifier: string; readonly wildcard: boolean }) =>
+  (specifier: string): boolean =>
+    target.wildcard
+      ? specifier === target.specifier || specifier.startsWith(`${target.specifier}/`)
+      : specifier === target.specifier;
+
+const subpathFindingsOf = (
+  { workspace, name, self }: CheckedWorkspace,
+  index: SpecifierIndex,
+): readonly Finding[] =>
+  exportKeys(workspace.manifest).flatMap((key) => {
+    const target = subpathTarget(name, key);
+    if (target === undefined) {
+      return [];
+    }
+    const consumers = importers(index, subpathMatcher(target), self);
+    return consumers.length < 2
+      ? [
+          {
+            id: `subpath:${target.specifier}`,
+            message: subpathMessage(workspace.file, target.specifier, consumers),
+          },
+        ]
+      : [];
+  });
+
+const isRootRunTool = (workspace: WorkspaceManifest, usage: ConsumerUsage): boolean =>
+  workspace.area === "tools" && runOnlyByRoot({ manifest: workspace.manifest, ...usage });
+
+const packageFindingsOf = (
+  { workspace, name }: CheckedWorkspace,
+  usage: ConsumerUsage,
+): readonly Finding[] =>
+  usage.consumers.length < 2 && !isRootRunTool(workspace, usage)
+    ? [{ id: `package:${name}`, message: packageMessage(workspace.file, name, usage.consumers) }]
+    : [];
+
+const workspaceFindings = (
+  checked: CheckedWorkspace,
+  workspaces: readonly WorkspaceManifest[],
+  index: SpecifierIndex,
+  invoked: ReadonlySet<string>,
+): readonly Finding[] => {
+  const { workspace, name, self } = checked;
+  const dependencies = dependencyConsumers(name, self, workspaces);
+  const imported = importers(
+    index,
+    (specifier) => specifier === name || specifier.startsWith(`${name}/`),
+    self,
+  );
+  if (workspace.area === "tools" && dependencies.length === 0 && imported.length === 0) {
+    return [];
+  }
+  const consumers = [...new Set([...dependencies, ...imported])].sort();
+  return [
+    ...packageFindingsOf(checked, { consumers, imported, invoked }),
+    ...subpathFindingsOf(checked, index),
+  ];
+};
+
 const singleConsumerFindings = (
   workspaces: readonly WorkspaceManifest[],
   sources: readonly SourceText[],
@@ -445,57 +528,8 @@ const singleConsumerFindings = (
   const invoked = invokedWords([...rootScriptCommands(workspaces), ...rootTaskCommands]);
   return workspaces
     .flatMap((workspace): readonly Finding[] => {
-      const name = field(workspace.manifest, "name");
-      if (typeof name !== "string" || (workspace.area !== "libs" && workspace.area !== "tools")) {
-        return [];
-      }
-      const self = directoryOf(workspace.file);
-      const dependencies = dependencyConsumers(name, self, workspaces);
-      const imported = importers(
-        index,
-        (specifier) => specifier === name || specifier.startsWith(`${name}/`),
-        self,
-      );
-      if (workspace.area === "tools" && dependencies.length === 0 && imported.length === 0) {
-        return [];
-      }
-      const consumers = [...new Set([...dependencies, ...imported])].sort();
-      const packageFinding =
-        consumers.length < 2 &&
-        !(
-          workspace.area === "tools" &&
-          runOnlyByRoot({ manifest: workspace.manifest, consumers, imported, invoked })
-        )
-          ? [
-              {
-                id: `package:${name}`,
-                message: packageMessage(workspace.file, name, consumers),
-              },
-            ]
-          : [];
-      const subpathFindings = exportKeys(workspace.manifest).flatMap((key) => {
-        const target = subpathTarget(name, key);
-        if (target === undefined) {
-          return [];
-        }
-        const consumers = importers(
-          index,
-          (specifier) =>
-            target.wildcard
-              ? specifier === target.specifier || specifier.startsWith(`${target.specifier}/`)
-              : specifier === target.specifier,
-          self,
-        );
-        return consumers.length < 2
-          ? [
-              {
-                id: `subpath:${target.specifier}`,
-                message: subpathMessage(workspace.file, target.specifier, consumers),
-              },
-            ]
-          : [];
-      });
-      return [...packageFinding, ...subpathFindings];
+      const checked = checkedWorkspace(workspace);
+      return checked === undefined ? [] : workspaceFindings(checked, workspaces, index, invoked);
     })
     .sort((left, right) => left.id.localeCompare(right.id));
 };

@@ -7,7 +7,7 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Context, DateTime, Effect, Layer, Schema } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
@@ -70,26 +70,20 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
   };
 }
 
-const toolText = (body: unknown): string => {
-  if (typeof body !== "object" || body === null || !("result" in body)) {
-    return "";
-  }
-  const result = body.result;
-  if (typeof result !== "object" || result === null || !("content" in result)) {
-    return "";
-  }
-  const content = result.content;
-  if (!Array.isArray(content)) {
-    return "";
-  }
-  const [first] = content;
-  return typeof first === "object" &&
-    first !== null &&
-    "text" in first &&
-    typeof first.text === "string"
-    ? first.text
-    : "";
-};
+const ToolTextBody = Schema.Struct({
+  result: Schema.Struct({
+    content: Schema.TupleWithRest(Schema.Tuple([Schema.Struct({ text: Schema.String })]), [
+      Schema.Unknown,
+    ]),
+  }),
+});
+const decodeToolText = Schema.decodeUnknownOption(ToolTextBody);
+
+const toolText = (body: unknown): string =>
+  Option.match(decodeToolText(body), {
+    onNone: () => "",
+    onSome: ({ result }) => result.content[0].text,
+  });
 
 describe("member MCP authorization", () => {
   const it = authTest;

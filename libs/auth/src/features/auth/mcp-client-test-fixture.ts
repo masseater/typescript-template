@@ -1,5 +1,11 @@
 import { Data, Effect, Schema } from "effect";
 
+import { AuthApps } from "./auth-test-fixture.ts";
+import { Auth } from "./auth.ts";
+import { origins } from "./browser-client-test-fixture.ts";
+
+import type { Application } from "@repo/config";
+
 type FetchMcp = (outgoing: Request) => Effect.Effect<Response>;
 type McpCall = Readonly<{ fetchMcp: FetchMcp; origin: string; token: string }>;
 
@@ -12,6 +18,24 @@ const decodeOAuthRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Sche
 const responseStatus = (candidate: unknown): number | undefined =>
   candidate instanceof Response ? candidate.status : undefined;
 
+const bearerHeaders = (token: string | undefined): Readonly<Record<string, string>> =>
+  token === undefined ? {} : { authorization: `Bearer ${token}` };
+
+const authorizeMcpAs = <Value, Failure, Requirements>(
+  { application, token }: Readonly<{ application: Application; token?: string }>,
+  authorize: (incoming: Request, origin: string) => Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<Value, Failure, Exclude<Requirements, Auth> | AuthApps> => {
+  const origin = origins[application];
+  const incoming = new Request(`${origin}/mcp`, {
+    headers: { accept: "application/json, text/event-stream", ...bearerHeaders(token) },
+    method: "POST",
+  });
+  return Effect.gen(function* authorizeAs() {
+    const auth = (yield* AuthApps)[application];
+    return yield* authorize(incoming, origin).pipe(Effect.provideService(Auth, auth));
+  });
+};
+
 const sendMcp = Effect.fn("sendMcp")(function* sendMcp(call: McpCall, rpcEnvelope?: unknown) {
   const encoded =
     rpcEnvelope === undefined ? undefined : yield* Schema.encodeEffect(McpJson)(rpcEnvelope);
@@ -20,7 +44,7 @@ const sendMcp = Effect.fn("sendMcp")(function* sendMcp(call: McpCall, rpcEnvelop
     headers: {
       accept: "application/json, text/event-stream",
       ...(encoded === undefined ? {} : { "content-type": "application/json" }),
-      authorization: `Bearer ${call.token}`,
+      ...bearerHeaders(call.token),
     },
     method: "POST",
   });
@@ -53,5 +77,13 @@ const callMcpTool = Effect.fn("callMcpTool")(function* callMcpTool(
   return yield* parseMcpBody(mcpReply);
 });
 
-export { McpJson, McpTokens, callMcpTool, decodeOAuthRedirect, responseStatus, sendMcp };
+export {
+  McpJson,
+  McpTokens,
+  authorizeMcpAs,
+  callMcpTool,
+  decodeOAuthRedirect,
+  responseStatus,
+  sendMcp,
+};
 export type { FetchMcp };

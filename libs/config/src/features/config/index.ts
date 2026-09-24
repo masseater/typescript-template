@@ -217,3 +217,4 @@ export {
   wikiWorker,
 } from "./wiki.ts";
 export type { BuildTarget, WikiWorker } from "./wiki.ts";
+export { webCrypto } from "./web-crypto.ts";

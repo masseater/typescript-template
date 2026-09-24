@@ -23,7 +23,7 @@ const nextQuoteState = (state: QuoteState, character: string): QuoteState => {
 };
 
 const assertBalancedShellQuotes = (command: string): void => {
-  const end = [...command].reduce(nextQuoteState, { escaped: false, quote: undefined });
+  const end = Array.from(command).reduce(nextQuoteState, { escaped: false, quote: undefined });
   if (end.quote !== undefined || end.escaped) {
     throw new Error("Script has an unfinished shell quote or escape");
   }

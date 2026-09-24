@@ -1,9 +1,17 @@
 import { applications } from "@repo/config";
 import { accountPermissions, roles } from "@repo/config/identity";
-import { Effect, Schema, SchemaGetter } from "effect";
+import {
+  Identifier,
+  SearchKeyword,
+  UserKeyword,
+  laterPage,
+  maximumIdentifierLength,
+  maximumKeywordLength,
+  pageNumber,
+} from "@repo/config/paging";
+import { Schema } from "effect";
 
 const maximumTokenLength = 4096;
-const maximumIdentifierLength = 256;
 
 const maximumNameLength = 100;
 const minimumPasswordLength = 12;
@@ -11,8 +19,6 @@ const maximumPasswordLength = 128;
 
 const Role = Schema.Literals(roles);
 const AccountPermission = Schema.Literals(accountPermissions);
-
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const ErrorBody = Schema.Struct({ error: Schema.String });
 
@@ -69,39 +75,6 @@ const InquiryMessage = Schema.Struct({
   createdAt: Schema.DateFromString,
   id: Schema.String,
 });
-
-const pageNumber = ({
-  fallback,
-  maximum,
-  minimum,
-}: {
-  readonly fallback: number;
-  readonly maximum: number;
-  readonly minimum: number;
-}): Schema.withDecodingDefaultKey<Schema.FiniteFromString> => {
-  const range = Schema.isBetween({ maximum, minimum });
-  const bounded = Schema.FiniteFromString.check(Schema.isInt(), range);
-  const fallbackText = Effect.succeed(String(fallback));
-  return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
-};
-
-const secondPage = 2;
-const laterPage = (maximum: number): Schema.Codec<number, number | string> =>
-  Schema.Union([Schema.Finite, Schema.FiniteFromString]).check(
-    Schema.isInt(),
-    Schema.isBetween({ maximum, minimum: secondPage }),
-  );
-
-const maximumKeywordLength = 100;
-const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
-const JsonScalar = Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Null]);
-const ScalarText = JsonScalar.pipe(
-  Schema.decodeTo(Schema.String, {
-    decode: SchemaGetter.transform<string, string | number | boolean | null>(String),
-    encode: SchemaGetter.transform((scalarText: string) => scalarText),
-  }),
-);
-const SearchKeyword = ScalarText.pipe(Schema.decodeTo(UserKeyword));
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 

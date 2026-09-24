@@ -101,6 +101,25 @@ const temporaryOutput = Effect.gen(function* temporaryOutput() {
   return yield* filesystem.makeTempDirectoryScoped({ prefix: "template-client-bundle-" });
 });
 
+const undeclaredProblems = (specifier: string, denial: string): readonly string[] =>
+  denial === "" ? [`${specifier} reached the client bundle undeclared`] : [];
+
+const mismatchedProblems = (
+  specifier: string,
+  pattern: string,
+  denial: string,
+): readonly string[] =>
+  denial === pattern ? [] : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`];
+
+const denialProblems = (
+  specifier: string,
+  pattern: string | undefined,
+  denial: string,
+): readonly string[] =>
+  pattern === undefined
+    ? undeclaredProblems(specifier, denial)
+    : mismatchedProblems(specifier, pattern, denial);
+
 const serverOnlyProblems = (
   application: BuildTarget,
   [specifier, pattern]: readonly [string, string | undefined],
@@ -108,14 +127,7 @@ const serverOnlyProblems = (
   Effect.scoped(
     temporaryOutput.pipe(
       Effect.flatMap((outDirectory) => clientBuild(application, [specifier], outDirectory)),
-      Effect.map((denial) => {
-        if (pattern === undefined) {
-          return denial === "" ? [`${specifier} reached the client bundle undeclared`] : [];
-        }
-        return denial === pattern
-          ? []
-          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`];
-      }),
+      Effect.map((denial) => denialProblems(specifier, pattern, denial)),
     ),
   );
 

@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { architectureKindOf, modularBudgets } from "@repo/config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 
-import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
+import {
+  featureFindings,
+  isModularWorkspace,
+  isPublicApiIndex,
+  layerBudgetFindings,
+} from "./modular-budgets.ts";
+import { collectSourceFiles } from "./source-files.ts";
 
-const sourceSuffix = /\.[cm]?[jt]sx?$/u;
+import type { DirectoryEntry, TreeScan } from "../platform/directory-entries.ts";
 
 class NotAModularPackage extends Schema.TaggedError<NotAModularPackage>()("NotAModularPackage", {
   cwd: Schema.String,
@@ -16,27 +22,6 @@ class NotAModularPackage extends Schema.TaggedError<NotAModularPackage>()("NotAM
     return `modular budgets require a modular package cwd: ${this.cwd}`;
   }
 }
-
-const collectFiles = (directory: string): TreeScan<readonly string[]> =>
-  Effect.gen(function* listFiles() {
-    const paths = yield* Path.Path;
-    const entries = yield* directoryEntries(directory);
-    const nested = yield* Effect.forEach(
-      entries,
-      (entry): TreeScan<readonly string[]> => {
-        const entryPath = paths.join(directory, entry.name);
-        if (entry.kind === "directory") {
-          return collectFiles(entryPath);
-        }
-        if (entry.kind === "file" && sourceSuffix.test(entry.name)) {
-          return Effect.succeed([entryPath]);
-        }
-        return Effect.succeed([]);
-      },
-      { concurrency: "unbounded" },
-    );
-    return nested.flat();
-  });
 
 const lineCount = (file: string): TreeScan<number> =>
   Effect.gen(function* countLines() {
@@ -50,7 +35,7 @@ const lineCount = (file: string): TreeScan<number> =>
 
 const directoryLines = (directory: string): TreeScan<number> =>
   Effect.gen(function* sum() {
-    const files = yield* collectFiles(directory);
+    const files = yield* collectSourceFiles(directory);
     const counts = yield* Effect.forEach(files, lineCount, { concurrency: "unbounded" });
     return counts.reduce((total, count) => total + count, 0);
   });
@@ -64,64 +49,42 @@ const whenPresent = <Scanned>(
     return (yield* pathExists(directory)) ? yield* scan(directory) : absent;
   });
 
-const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
-  Effect.gen(function* scan() {
+const featureEntry = (
+  featuresRoot: string,
+  entry: DirectoryEntry,
+): TreeScan<{ readonly directory: boolean; readonly name: string; readonly publicApi: boolean }> =>
+  Effect.gen(function* featureEntry() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
-    const findings: string[] = [];
-    const appLines = yield* whenPresent(paths.join(srcRoot, "app"), 0, directoryLines);
-    if (appLines > modularBudgets.app) {
-      findings.push(
-        `app: ${appLines} lines exceeds ${modularBudgets.app}. Move composition out into features/<name>.`,
-      );
-    }
-    const sharedLines = yield* whenPresent(paths.join(srcRoot, "shared"), 0, directoryLines);
-    if (sharedLines > modularBudgets.shared) {
-      findings.push(
-        `shared: ${sharedLines} lines exceeds ${modularBudgets.shared}. Extract a features/<name> slice.`,
-      );
-    }
-    const featureEntries = yield* whenPresent(
-      paths.join(srcRoot, "features"),
-      [],
-      directoryEntries,
-    );
-    for (const entry of featureEntries) {
-      if (entry.kind !== "directory") {
-        findings.push(`features/${entry.name}: place slice code in a directory, not a loose file.`);
-        continue;
-      }
-      const sliceRoot = paths.join(srcRoot, "features", entry.name);
-      const hasPublicApi = (yield* filesystem.readDirectory(sliceRoot)).some((name) =>
-        /^index\.[cm]?[jt]sx?$/u.test(name),
-      );
-      if (!hasPublicApi) {
-        findings.push(
-          `features/${entry.name}: missing public API index (features/${entry.name}/index.ts).`,
-        );
-      }
-    }
-    return findings.toSorted();
+    const directory = entry.kind === "directory";
+    const names = directory
+      ? yield* filesystem.readDirectory(paths.join(featuresRoot, entry.name))
+      : [];
+    return { directory, name: entry.name, publicApi: names.some(isPublicApiIndex) };
   });
+
+const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
+  Effect.gen(function* scan() {
+    const paths = yield* Path.Path;
+    const app = yield* whenPresent(paths.join(srcRoot, "app"), 0, directoryLines);
+    const shared = yield* whenPresent(paths.join(srcRoot, "shared"), 0, directoryLines);
+    const featuresRoot = paths.join(srcRoot, "features");
+    const entries = yield* whenPresent(featuresRoot, [], directoryEntries);
+    const features = yield* Effect.forEach(entries, (entry) => featureEntry(featuresRoot, entry));
+    return [...layerBudgetFindings({ app, shared }), ...featureFindings(features)].toSorted();
+  });
+
+const modularPackage = Effect.gen(function* modularPackage() {
+  const cwd = process.cwd().replaceAll("\\", "/");
+  if (!isModularWorkspace(cwd)) {
+    return yield* new NotAModularPackage({ cwd });
+  }
+  return cwd;
+});
 
 const program = Effect.gen(function* main() {
   const paths = yield* Path.Path;
-  const cwd = process.cwd().replaceAll("\\", "/");
-  const workspacePath = ["apps", "libs", "tools", "infra"]
-    .map((area) => {
-      const marker = `/${area}/`;
-      const index = cwd.lastIndexOf(marker);
-      if (index < 0) {
-        return undefined;
-      }
-      const rest = cwd.slice(index + 1);
-      const [root, name] = rest.split("/");
-      return root !== undefined && name !== undefined ? `${root}/${name}` : undefined;
-    })
-    .find((value) => value !== undefined);
-  if (workspacePath === undefined || architectureKindOf(workspacePath) !== "modular") {
-    return yield* new NotAModularPackage({ cwd });
-  }
+  yield* modularPackage;
   const srcRoot = paths.join(process.cwd(), process.argv[2] ?? "src");
   const findings = yield* budgetFindings(srcRoot);
   if (findings.length > 0) {

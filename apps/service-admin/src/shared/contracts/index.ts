@@ -47,11 +47,8 @@ export {
   BooleanText,
   MemberStateChange,
   MemberStateChanged,
-  SearchKeyword,
   UserDeleted,
   UserDeletion,
   UserList,
   UserListQuery,
-  laterPage,
-  maximumKeywordLength,
 } from "./users.ts";

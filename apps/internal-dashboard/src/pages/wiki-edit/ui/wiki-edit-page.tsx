@@ -4,8 +4,6 @@ import {
   ConfirmDialog,
   Field,
   Page,
-  STATUS_VARIANT,
-  StatusMessage,
   localState,
   useAction,
   useOptionalString,
@@ -16,6 +14,7 @@ import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
 import { discardDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
 import { wikiPageHref, writeWikiDocument } from "#shared/wiki-document/index.ts";
+import { DraftNotices } from "./draft-notices.tsx";
 import { EditorToolbar } from "./editor-toolbar.tsx";
 import { wikiEditorComponents, wikiEditorPlugins } from "./wiki-editor-plugins.ts";
 
@@ -107,17 +106,11 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
             ページに戻る
           </ButtonAnchor>
         </div>
-        {version === 0 ? null : (
-          <StatusMessage variant={STATUS_VARIANT.info}>
-            下書きとして保存されています。公開されたページはまだ変わっていません。
-          </StatusMessage>
-        )}
-        {saving.error === undefined ? null : (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{saving.error}</StatusMessage>
-        )}
-        {discarding.error === undefined ? null : (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{discarding.error}</StatusMessage>
-        )}
+        <DraftNotices
+          discardError={discarding.error}
+          drafted={version !== 0}
+          saveError={saving.error}
+        />
       </div>
       <ConfirmDialog
         confirmLabel="捨てる"

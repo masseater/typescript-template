@@ -8,9 +8,6 @@ const adminPermissionLabels: Readonly<Record<typeof AdminPermission.Type, string
   [ADMIN_PERMISSION.owner]: "管理者を追加できる",
 };
 
-const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
-  AdminPermission.literals.some((permission) => permission === value);
-
 const adminPermissionOptions = AdminPermission.literals.map((permission) => ({
   label: adminPermissionLabels[permission],
   value: permission,
@@ -26,7 +23,15 @@ const adminStateChangeLabels: Readonly<Record<typeof AccountState.Type, string>>
   [ACCOUNT_STATE.suspended]: "有効にする",
 };
 
+const nextAdminStates: Readonly<Record<typeof AccountState.Type, typeof AccountState.Type>> = {
+  [ACCOUNT_STATE.active]: ACCOUNT_STATE.suspended,
+  [ACCOUNT_STATE.suspended]: ACCOUNT_STATE.active,
+};
+
 const adminsTableColumns = ["名前", "メールアドレス", "権限", "状態", "登録日", "操作"] as const;
+
+const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
+  AdminPermission.literals.some((permission) => permission === value);
 
 export {
   adminPermissionLabels,
@@ -35,4 +40,5 @@ export {
   adminStateLabels,
   adminsTableColumns,
   isAdminPermission,
+  nextAdminStates,
 };

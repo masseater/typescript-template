@@ -11,6 +11,7 @@ import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
 import { path } from "../platform/path.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { REACT_DOCTOR_SKIP_DETAIL, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
+import { reactDoctorPassed } from "./react-doctor-verdict.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {
@@ -131,35 +132,44 @@ const scanProjects = Effect.fn("scanProjects")(function* scanProjects(applicatio
   return { report, scanned };
 });
 
+const reportScanError = ({
+  failed,
+  stderr,
+}: {
+  readonly failed: boolean;
+  readonly stderr: string;
+}): Effect.Effect<void> => (failed && stderr !== "" ? Console.error(stderr) : Effect.void);
+
+const errorMessageOf = (report: typeof Scanned.Type): string | undefined => report.error?.message;
+
 const inspect = Effect.fn("inspect")(function* inspect(application: BuildTarget) {
   const [{ report, scanned }, listed] = yield* Effect.all(
     [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
     { concurrency: "unbounded" },
   );
-  const { failed, stderr } = scanned;
-  if (failed && stderr !== "") {
-    yield* Console.error(stderr);
-  }
+  yield* reportScanError(scanned);
   const unclassified = yield* unclassifiedRules(listed);
   const findings = report.projects.flatMap((entry) => findingsOf(entry));
   const skipped = skippedIn(report);
   const found = new Set(report.projects.map((entry) => entry.project.projectName));
   const missing = [`@repo/${application}`].filter((name) => !found.has(name));
+  const error = errorMessageOf(report);
+  const projects = report.projects.length;
   return {
     application,
-    error: report.error?.message,
+    error,
     findings,
     missing,
-    ok:
-      !failed &&
-      !listed.failed &&
-      report.error === null &&
-      findings.length === 0 &&
-      skipped.length === 0 &&
-      unclassified.length === 0 &&
-      report.projects.length > 0 &&
-      missing.length === 0,
-    projects: report.projects.length,
+    ok: reactDoctorPassed({
+      error,
+      failed: scanned.failed || listed.failed,
+      findings,
+      missing,
+      projects,
+      skipped,
+      unclassified,
+    }),
+    projects,
     skipped,
     unclassified,
   };

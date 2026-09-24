@@ -13,7 +13,7 @@ import {
   type LintRuleWorkspace,
   type LintRuleWorkspaceFailure,
 } from "./lint-rule-workspaces.ts";
-import { workspaceRulesOf } from "./workspace-rules.ts";
+import { rulesAcross } from "./workspace-rules.ts";
 
 import type { LintRuleCheckReport, LintRuleProblem } from "../lint-rule-problem.ts";
 import type { BundledLintRule } from "./rule-bundle.ts";
@@ -126,12 +126,7 @@ export const relatedGuidelineProblems = ({
       places,
       workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),
     });
-    const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
-      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
-        Effect.map(({ rules }) => rules.map((rule) => ({ workspace, rule }))),
-      ),
-    );
-    const scanned = workspaceRules.flat();
+    const scanned = yield* rulesAcross({ repositoryRoot, workspaces });
 
     const namingAPlace = scanned.some(({ rule }) =>
       rule.relatedGuidelines.some((declaredPath) => declaredPath.includes("/")),

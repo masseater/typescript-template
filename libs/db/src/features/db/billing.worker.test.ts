@@ -16,9 +16,9 @@ import {
   type StripeEventRecord,
   type SubscriptionRecord,
 } from "./billing.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { query } from "./database.ts";
 import { addUser } from "./records-test-fixture.ts";
-import { TestDatabase } from "./database-test-fixture.ts";
 
 const monthLater = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00.000Z"));
 
