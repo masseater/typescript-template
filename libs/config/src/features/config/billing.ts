@@ -56,6 +56,14 @@ export const stripeApiVersion = "2026-08-26.dahlia";
 
 export const invoiceDueDays = 30;
 
+/** @canonical-values config.stripe-collection-method */
+export const stripeCollectionMethods = ["charge_automatically", "send_invoice"] as const;
+export type StripeCollectionMethod = (typeof stripeCollectionMethods)[number];
+export const STRIPE_COLLECTION_METHOD = {
+  chargeAutomatically: stripeCollectionMethods[0],
+  sendInvoice: stripeCollectionMethods[1],
+} as const satisfies Record<string, StripeCollectionMethod>;
+
 export const stripeWebhookEvents = [
   "charge.refunded",
   "checkout.session.completed",

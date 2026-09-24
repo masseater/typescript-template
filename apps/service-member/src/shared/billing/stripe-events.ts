@@ -1,6 +1,7 @@
 import {
   SUBSCRIPTION_STATUS,
   WEBHOOK_DISPOSITION,
+  stripeCollectionMethods,
   stripeWebhookEvents,
   subscriptionStatuses,
 } from "@repo/config";
@@ -92,7 +93,7 @@ const RefundedCharge = Schema.Struct({
 
 const Quote = Schema.Struct({
   amount_total: Schema.Finite,
-  collection_method: Schema.String,
+  collection_method: Schema.Literals(stripeCollectionMethods),
   currency: Schema.String,
   customer: Schema.NullOr(Schema.String),
   expires_at: Schema.Finite,

@@ -11,6 +11,7 @@ import {
 } from "./billing.ts";
 import { query } from "./database.ts";
 
+import type { StripeCollectionMethod } from "@repo/config";
 import type { BatchItem } from "drizzle-orm/batch";
 
 type StoredQuote = typeof customerQuote.$inferSelect;
@@ -29,7 +30,7 @@ const asRecord = ({
 
 type QuoteState = Readonly<{
   amountTotal: number;
-  collectionMethod: string;
+  collectionMethod: StripeCollectionMethod;
   currency: string;
   daysUntilDue: number | undefined;
   expiresAt: Date;
