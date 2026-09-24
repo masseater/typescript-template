@@ -2,4 +2,4 @@
 
 - 構造化ログ・トレース・Web Vitals の送出を提供する。サーバー用とブラウザ用でエントリが分かれる。
 - 技術スタック: OpenTelemetry (OTLP), Effect 4。
-- MUST: 外へ出す文字列は `src/redact.ts` を通す。
+- MUST: 外へ出す文字列は `src/features/observability/redact.ts` を通す。

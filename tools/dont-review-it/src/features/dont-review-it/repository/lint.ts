@@ -567,6 +567,7 @@ const lintOptions = {
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
+        "project/app-frame-sidebar": LINT_SEVERITY.ERROR,
         "project/atom-server-data": LINT_SEVERITY.ERROR,
         "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
