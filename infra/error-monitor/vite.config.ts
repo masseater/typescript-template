@@ -1,7 +1,6 @@
-import { fileURLToPath } from "node:url";
-
 import { monitorWorkerVite } from "@repo/monitor/vite";
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
+import { vitestSdkPath } from "@repo/telemetry/vitest-sdk-path";
 import { defineConfig } from "vite-plus";
 
 const errorMonitorVite = monitorWorkerVite(import.meta.dirname);
@@ -12,7 +11,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: telemetryAsked,
-        sdkPath: fileURLToPath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+        sdkPath: vitestSdkPath,
       },
     },
     ...errorMonitorVite.test,

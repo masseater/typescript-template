@@ -442,7 +442,6 @@ const softPresetRules = Object.fromEntries(
 );
 
 const nodeBuiltinBoundaryFiles = [
-  "**/vite.config.ts",
   "infra/cloudflare/src/features/cloudflare/deployment.ts",
   "libs/config/src/features/config/local-database-path.test.ts",
   "libs/config/src/features/config/process-environment.test.ts",
