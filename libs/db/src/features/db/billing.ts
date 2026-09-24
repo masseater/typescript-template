@@ -147,21 +147,28 @@ const subscriptionValues = (
   updatedAt,
 });
 
+const subscriptionUpsertWrite = (
+  webhookEvent: StripeEventRecord,
+  subscription: SubscriptionRecord,
+): StripeEventWrite => {
+  const subscriptionUpsert = subscriptionValues(subscription, webhookEvent.createdAt);
+  return (database): BatchItem<"sqlite"> =>
+    database
+      .insert(planSubscription)
+      .values(subscriptionUpsert)
+      .onConflictDoUpdate({
+        set: subscriptionUpsert,
+        setWhere: lte(planSubscription.updatedAt, webhookEvent.createdAt),
+        target: planSubscription.memberId,
+      });
+};
+
 const recordSubscription = Effect.fn("recordSubscription")(function* recordSubscription(
   webhookEvent: StripeEventRecord,
   subscription: SubscriptionRecord,
 ) {
-  const subscriptionUpsert = subscriptionValues(subscription, webhookEvent.createdAt);
   return yield* applyStripeEvent(webhookEvent, [
-    (database): BatchItem<"sqlite"> =>
-      database
-        .insert(planSubscription)
-        .values(subscriptionUpsert)
-        .onConflictDoUpdate({
-          set: subscriptionUpsert,
-          setWhere: lte(planSubscription.updatedAt, webhookEvent.createdAt),
-          target: planSubscription.memberId,
-        }),
+    subscriptionUpsertWrite(webhookEvent, subscription),
   ]);
 });
 
@@ -221,5 +228,6 @@ export {
   recordSubscription,
   recoverSubscriptionWrite,
   requirePaid,
+  subscriptionUpsertWrite,
 };
 export type { StripeEventRecord, StripeEventWrite, SubscriptionRecord };

@@ -68,5 +68,8 @@ export const stripeWebhookEvents = [
   "invoice.paid",
   "invoice.payment_failed",
   "invoice.updated",
+  "quote.accepted",
+  "quote.canceled",
+  "quote.finalized",
 ] as const;
 export type StripeWebhookEvent = (typeof stripeWebhookEvents)[number];

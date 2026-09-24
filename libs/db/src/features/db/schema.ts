@@ -13,7 +13,13 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { apikey } from "./api-key-schema.ts";
-import { aiUsageEvent, customerInvoice, planSubscription, stripeEvent } from "./billing-schema.ts";
+import {
+  aiUsageEvent,
+  customerInvoice,
+  customerQuote,
+  planSubscription,
+  stripeEvent,
+} from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
@@ -220,6 +226,7 @@ const schema = {
   conversation,
   conversationParticipant,
   customerInvoice,
+  customerQuote,
   directMessage,
   metricSnapshot,
   follow,
@@ -300,7 +307,13 @@ export type { InquiryStatus } from "@repo/config";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { memberMcpGrant } from "./member-mcp-schema.ts";
 export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
-export { aiUsageEvent, customerInvoice, planSubscription, stripeEvent } from "./billing-schema.ts";
+export {
+  aiUsageEvent,
+  customerInvoice,
+  customerQuote,
+  planSubscription,
+  stripeEvent,
+} from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
 export { notification, notificationPreference } from "./notification-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
