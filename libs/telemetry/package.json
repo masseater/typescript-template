@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/features/telemetry/index.ts",
     "./optional-setting": "./src/features/telemetry/optional-setting.ts",
-    "./vitest-sdk": "./src/features/telemetry/vitest-sdk.ts"
+    "./vitest-sdk": "./src/features/telemetry/vitest-sdk.ts",
+    "./vitest-sdk-path": "./src/features/telemetry/vitest-sdk-path.ts"
   },
   "dependencies": {
     "@opentelemetry/api": "catalog:",

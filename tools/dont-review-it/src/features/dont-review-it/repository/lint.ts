@@ -442,15 +442,17 @@ const softPresetRules = Object.fromEntries(
 );
 
 const nodeBuiltinBoundaryFiles = [
-  "**/vite.config.ts",
   "infra/cloudflare/src/features/cloudflare/deployment.ts",
   "libs/config/src/features/config/local-database-path.test.ts",
   "libs/config/src/features/config/process-environment.test.ts",
   "libs/telemetry/src/features/telemetry/telemetry.test.ts",
   "libs/vite-config/src/features/vite-config/cloudflare-workers-loader.ts",
   "libs/vite-config/src/features/vite-config/elysia-aot.ts",
+  "tools/dev/src/features/dev/ci-runner.test.ts",
+  "tools/dev/src/features/dev/ci-runner.ts",
   "tools/dev/src/features/dev/dev-start.ts",
   "tools/dev/src/features/dev/local-environment.ts",
+  "tools/dev/src/features/dev/observe/source-maps.ts",
   "tools/dont-review-it/src/features/dont-review-it/configs/git-excludes/git-exclude-patterns.test.ts",
   "tools/dont-review-it/src/features/dont-review-it/configs/git-excludes/git-exclude-patterns.ts",
   "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/catalog-build-lock.ts",
@@ -482,6 +484,30 @@ const nodeBuiltinBoundaryFiles = [
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages: readonly string[] = [];
+
+const builtinLoaderFiles = [
+  "tools/ai-native/src/features/ai-native/host-descriptors.ts",
+  "tools/ai-native/src/features/ai-native/host.ts",
+  "tools/ai-native/src/features/ai-native/node-file-stream.ts",
+  "tools/ai-native/src/features/ai-native/node-spawn.ts",
+  "tools/ai-native/src/features/ai-native/spool/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/log-destination.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/run-spool.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/strip-escapes.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/strip-escapes.ts",
+  "tools/ai-native/src/features/ai-native/sync-base/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/sync-base/hook.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/run-command.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/run-throttle.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/slots.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/wait-for-slot.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/create-worktree.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/hook.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/remove-worktree.test.ts",
+];
 
 const templateWorkspaces = [
   "apps/**",
@@ -635,6 +661,7 @@ const lintOptions = {
                 from: "package",
                 name: [
                   "Codec",
+                  "Command",
                   "Deferred",
                   "Duration",
                   "Effect",
@@ -1061,15 +1088,26 @@ const lintOptions = {
       rules: softPresetRules,
     },
     {
+      files: softPresetPackages,
+      rules: { "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }] },
+    },
+    {
       files: nodeBuiltinBoundaryFiles,
       rules: {
         "import/no-nodejs-modules": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: builtinLoaderFiles,
+      rules: {
+        "project/process-boundary": LINT_SEVERITY.OFF,
       },
     },
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
     "import/no-nodejs-modules": LINT_SEVERITY.ERROR,
+    "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }],
     "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
       LINT_SEVERITY.ERROR,
       { branches: 50, functions: 50, lines: 50, statements: 50 },

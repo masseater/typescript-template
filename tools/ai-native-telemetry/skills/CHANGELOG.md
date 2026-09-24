@@ -8,3 +8,4 @@ What each published version changes for the packages that install it, and for th
 - `inheritedContext` and `environmentCarryingContext`, which read and write the W3C trace context through environment variables so a child process continues its parent's trace.
 - `@repo/ai-native-telemetry/optional-setting`, whose `telemetryAsked` tells a config whether `MST_TELEMETRY` is defined.
 - `@repo/ai-native-telemetry/vitest-sdk`, the entry Vitest's `experimental.openTelemetry.sdkPath` is pointed at.
+- `@repo/ai-native-telemetry/vitest-sdk-path`, whose `sdkFilePath` turns the resolved URL of that entry into the absolute file path Vitest needs, so a Vite config needs no `node:url`.
