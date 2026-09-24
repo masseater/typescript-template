@@ -1,5 +1,3 @@
-import { env as processEnvironment } from "node:process";
-
 import {
   context,
   metrics,
@@ -98,7 +96,7 @@ describe("childEnvironment", () => {
       ));
 
     it("is the environment the wrapper itself runs in", ({ childEnvironmentWithoutTelemetry }) => {
-      expect(childEnvironmentWithoutTelemetry).toBe(processEnvironment);
+      expect(childEnvironmentWithoutTelemetry).toBe(process.env);
     });
   });
 

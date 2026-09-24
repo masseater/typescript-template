@@ -1,5 +1,3 @@
-import { parseArgs } from "node:util";
-
 export type Invocation = {
   timeoutSec: number;
   executable: string;
@@ -34,18 +32,46 @@ Exit codes:
      the timeout, or the wrapper could not get or release a slot
   2  throttle itself was called incorrectly`;
 
+const unexpectedArgument = (argument: string): Error =>
+  argument.startsWith("-") && argument !== "-"
+    ? new Error(`Unknown option '${argument}'`)
+    : new Error(
+        `Unexpected argument '${argument}'. This command does not take positional arguments`,
+      );
+
+const TIMEOUT_FLAG = "--timeout";
+
+const separatedTimeout = (
+  rest: readonly string[],
+): readonly [string, readonly string[]] | Error => {
+  const [timeoutText, ...after] = rest;
+  if (timeoutText === undefined) {
+    return new Error(`Option '${TIMEOUT_FLAG} <value>' argument missing`);
+  }
+  if (timeoutText.startsWith("-")) {
+    return new Error(
+      `Option '${TIMEOUT_FLAG}' argument is ambiguous. To specify an option argument starting with a dash use '${TIMEOUT_FLAG}=-XYZ'.`,
+    );
+  }
+  return [timeoutText, after];
+};
+
+const timeoutArgument = (
+  head: readonly string[],
+  found: string | undefined,
+): string | undefined | Error => {
+  const [first, ...rest] = head;
+  if (first === undefined) return found;
+  if (first.startsWith(`${TIMEOUT_FLAG}=`)) {
+    return timeoutArgument(rest, first.slice(TIMEOUT_FLAG.length + 1));
+  }
+  if (first !== TIMEOUT_FLAG) return unexpectedArgument(first);
+  const separated = separatedTimeout(rest);
+  return separated instanceof Error ? separated : timeoutArgument(separated[1], separated[0]);
+};
+
 const parsedTimeoutSeconds = (head: readonly string[]): { seconds: number } | string => {
-  const raw = ((): string | undefined | Error => {
-    try {
-      return parseArgs({
-        args: [...head],
-        options: { timeout: { type: "string" } },
-        allowPositionals: false,
-      }).values.timeout;
-    } catch (failure) {
-      return failure as Error;
-    }
-  })();
+  const raw = timeoutArgument(head, undefined);
   if (raw instanceof Error) return `throttle: ${raw.message}\n\n${USAGE}`;
   if (raw !== undefined && !/^[0-9]+$/.test(raw)) {
     return `throttle: --timeout expects a whole number of seconds, got "${raw}"\n\n${USAGE}`;
