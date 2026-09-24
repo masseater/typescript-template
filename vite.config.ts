@@ -111,7 +111,7 @@ export default defineConfig({
       mutation: {
         cache: false,
         command:
-          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker-test-fixture.ts",
+          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.config.ts",
       },
       test: {
         ...testRun.test,

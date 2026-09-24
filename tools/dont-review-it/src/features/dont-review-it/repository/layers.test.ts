@@ -36,9 +36,7 @@ describe("steiger coverage", () => {
       .toSorted();
     expect(checks).toStrictEqual(
       buildTargets
-        .map(
-          (app) => `apps/${app}: steiger src --fail-on-warnings && quality-check-thin-app-routes`,
-        )
+        .map((app) => `apps/${app}: quality-check-feature-sliced && quality-check-thin-app-routes`)
         .toSorted(),
     );
   });
