@@ -5,18 +5,21 @@ import {
   subscriptionStatuses,
 } from "@repo/config";
 import {
+  applyInvoiceState,
   attachCheckout,
+  creditInvoice,
   markPaymentFailed,
-  markPaymentSettled,
   memberOfCustomer,
   recordSubscription,
+  refundInvoice,
+  settleInvoicePayment,
 } from "@repo/db";
 import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 
 import type { StripeWebhookEvent, WebhookOutcome } from "@repo/config";
-import type { StripeEventRecord, SubscriptionRecord } from "@repo/db";
+import type { InvoiceState, StripeEventRecord, SubscriptionRecord } from "@repo/db";
 import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeEvent } from "./stripe.ts";
 
@@ -60,6 +63,28 @@ const Invoice = Schema.Struct({
     ),
   ),
   subscription: Schema.optionalKey(Schema.NullOr(Schema.String)),
+});
+
+const FinalizedInvoice = Schema.Struct({
+  amount_due: Schema.Finite,
+  amount_paid: Schema.Finite,
+  amount_remaining: Schema.Finite,
+  currency: Schema.String,
+  customer: Schema.String,
+  hosted_invoice_url: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  id: Schema.String,
+  metadata: Metadata,
+  status: Schema.String,
+});
+
+const CreditNote = Schema.Struct({
+  amount: Schema.Finite,
+  invoice: Schema.String,
+});
+
+const RefundedCharge = Schema.Struct({
+  amount_refunded: Schema.Finite,
+  invoice: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
 
 function readObject<Contract extends Decodable>(
@@ -150,21 +175,77 @@ const failPayment = Effect.fn("failPayment")(function* failPayment(event: Stripe
   return yield* markPaymentFailed(eventRecord(event), subscriptionId);
 });
 
+const invoiceLedgerState = Effect.fn("invoiceLedgerState")(function* invoiceLedgerState(
+  event: StripeEvent,
+) {
+  const invoice = yield* readObject(FinalizedInvoice, event.data.object);
+  const memberId = invoice.metadata?.["member_id"] ?? (yield* memberOfCustomer(invoice.customer));
+  return memberId === undefined
+    ? undefined
+    : ({
+        amountDue: invoice.amount_due,
+        amountPaid: invoice.amount_paid,
+        amountRemaining: invoice.amount_remaining,
+        currency: invoice.currency,
+        hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+        memberId,
+        originKey: invoice.metadata?.["origin_key"] ?? `invoice:${invoice.id}`,
+        status: invoice.status,
+        stripeInvoiceId: invoice.id,
+      } satisfies InvoiceState);
+});
+
+const recordInvoice = Effect.fn("recordInvoice")(function* recordInvoice(event: StripeEvent) {
+  const ledgerState = yield* invoiceLedgerState(event);
+  return ledgerState === undefined
+    ? WEBHOOK_DISPOSITION.ignored
+    : yield* applyInvoiceState(eventRecord(event), ledgerState);
+});
+
 const settlePayment = Effect.fn("settlePayment")(function* settlePayment(event: StripeEvent) {
-  const subscriptionId = yield* invoiceSubscription(event);
-  if (subscriptionId === undefined) {
+  const ledgerState = yield* invoiceLedgerState(event);
+  if (ledgerState === undefined) {
     return WEBHOOK_DISPOSITION.ignored;
   }
-  return yield* markPaymentSettled(eventRecord(event), subscriptionId);
+  return yield* settleInvoicePayment(eventRecord(event), {
+    invoice: ledgerState,
+    stripeSubscriptionId: yield* invoiceSubscription(event),
+  });
+});
+
+const creditNoteIssued = Effect.fn("creditNoteIssued")(function* creditNoteIssued(
+  event: StripeEvent,
+) {
+  const creditNote = yield* readObject(CreditNote, event.data.object);
+  return yield* creditInvoice(eventRecord(event), {
+    amount: creditNote.amount,
+    stripeInvoiceId: creditNote.invoice,
+  });
+});
+
+const chargeRefunded = Effect.fn("chargeRefunded")(function* chargeRefunded(event: StripeEvent) {
+  const charge = yield* readObject(RefundedCharge, event.data.object);
+  const refundedInvoiceId = charge.invoice ?? undefined;
+  if (refundedInvoiceId === undefined) {
+    return WEBHOOK_DISPOSITION.ignored;
+  }
+  return yield* refundInvoice(eventRecord(event), {
+    amountRefunded: charge.amount_refunded,
+    stripeInvoiceId: refundedInvoiceId,
+  });
 });
 
 const eventHandlers = {
+  "charge.refunded": chargeRefunded,
   "checkout.session.completed": completeCheckout,
+  "credit_note.created": creditNoteIssued,
   "customer.subscription.created": syncSubscription,
   "customer.subscription.deleted": syncSubscription,
   "customer.subscription.updated": syncSubscription,
+  "invoice.finalized": recordInvoice,
   "invoice.paid": settlePayment,
   "invoice.payment_failed": failPayment,
+  "invoice.updated": recordInvoice,
 } as const satisfies Record<StripeWebhookEvent, (event: StripeEvent) => unknown>;
 
 const isHandledEvent = (type: string): type is StripeWebhookEvent =>

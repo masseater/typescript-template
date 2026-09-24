@@ -122,13 +122,22 @@ export {
   findSubscription,
   isPaidMember,
   markPaymentFailed,
-  markPaymentSettled,
   memberOfCustomer,
   planOf,
   recordSubscription,
   requirePaid,
 } from "./billing.ts";
 export type { StripeEventRecord, SubscriptionRecord } from "./billing.ts";
+export {
+  applyInvoiceState,
+  creditInvoice,
+  findInvoiceOfOrigin,
+  listMemberInvoices,
+  recordIssuedInvoice,
+  refundInvoice,
+  settleInvoicePayment,
+} from "./invoice.ts";
+export type { InvoiceState } from "./invoice.ts";
 export {
   TrustSubjectNotFound,
   TrustTargetUnavailable,

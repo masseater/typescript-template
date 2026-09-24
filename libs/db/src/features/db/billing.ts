@@ -104,9 +104,11 @@ const requirePaid = Effect.fn("requirePaid")(function* requirePaid(memberId: str
   }
 });
 
+type StripeEventWrite = (database: DrizzleDatabase) => BatchItem<"sqlite">;
+
 const applyStripeEvent = Effect.fn("applyStripeEvent")(function* applyStripeEvent(
   webhookEvent: StripeEventRecord,
-  write: (database: DrizzleDatabase) => BatchItem<"sqlite">,
+  writes: readonly StripeEventWrite[],
 ) {
   const [seen] = yield* query((database) =>
     database
@@ -119,12 +121,14 @@ const applyStripeEvent = Effect.fn("applyStripeEvent")(function* applyStripeEven
     return WEBHOOK_DISPOSITION.duplicate;
   }
   const receivedAt = yield* clockDate;
+  const applied = (database: DrizzleDatabase): readonly BatchItem<"sqlite">[] =>
+    writes.map((write) => write(database));
   yield* query((database) =>
     database.batch([
       database
         .insert(stripeEvent)
         .values({ id: webhookEvent.id, receivedAt, type: webhookEvent.type }),
-      write(database),
+      ...applied(database),
     ]),
   );
   return WEBHOOK_DISPOSITION.applied;
@@ -148,52 +152,53 @@ const recordSubscription = Effect.fn("recordSubscription")(function* recordSubsc
   subscription: SubscriptionRecord,
 ) {
   const subscriptionUpsert = subscriptionValues(subscription, webhookEvent.createdAt);
-  return yield* applyStripeEvent(webhookEvent, (database) =>
-    database
-      .insert(planSubscription)
-      .values(subscriptionUpsert)
-      .onConflictDoUpdate({
-        set: subscriptionUpsert,
-        setWhere: lte(planSubscription.updatedAt, webhookEvent.createdAt),
-        target: planSubscription.memberId,
-      }),
-  );
+  return yield* applyStripeEvent(webhookEvent, [
+    (database): BatchItem<"sqlite"> =>
+      database
+        .insert(planSubscription)
+        .values(subscriptionUpsert)
+        .onConflictDoUpdate({
+          set: subscriptionUpsert,
+          setWhere: lte(planSubscription.updatedAt, webhookEvent.createdAt),
+          target: planSubscription.memberId,
+        }),
+  ]);
 });
 
 const attachCheckout = Effect.fn("attachCheckout")(function* attachCheckout(
   webhookEvent: StripeEventRecord,
   subscription: SubscriptionRecord,
 ) {
-  return yield* applyStripeEvent(webhookEvent, (database) =>
-    database
-      .insert(planSubscription)
-      .values(subscriptionValues(subscription, webhookEvent.createdAt))
-      .onConflictDoNothing(),
-  );
+  return yield* applyStripeEvent(webhookEvent, [
+    (database): BatchItem<"sqlite"> =>
+      database
+        .insert(planSubscription)
+        .values(subscriptionValues(subscription, webhookEvent.createdAt))
+        .onConflictDoNothing(),
+  ]);
 });
 
 const markPaymentFailed = Effect.fn("markPaymentFailed")(function* markPaymentFailed(
   webhookEvent: StripeEventRecord,
   stripeSubscriptionId: string,
 ) {
-  return yield* applyStripeEvent(webhookEvent, (database) =>
-    database
-      .update(planSubscription)
-      .set({ status: SUBSCRIPTION_STATUS.pastDue, updatedAt: webhookEvent.createdAt })
-      .where(
-        and(
-          eq(planSubscription.stripeSubscriptionId, stripeSubscriptionId),
-          lte(planSubscription.updatedAt, webhookEvent.createdAt),
+  return yield* applyStripeEvent(webhookEvent, [
+    (database): BatchItem<"sqlite"> =>
+      database
+        .update(planSubscription)
+        .set({ status: SUBSCRIPTION_STATUS.pastDue, updatedAt: webhookEvent.createdAt })
+        .where(
+          and(
+            eq(planSubscription.stripeSubscriptionId, stripeSubscriptionId),
+            lte(planSubscription.updatedAt, webhookEvent.createdAt),
+          ),
         ),
-      ),
-  );
+  ]);
 });
 
-const markPaymentSettled = Effect.fn("markPaymentSettled")(function* markPaymentSettled(
-  webhookEvent: StripeEventRecord,
-  stripeSubscriptionId: string,
-) {
-  return yield* applyStripeEvent(webhookEvent, (database) =>
+const recoverSubscriptionWrite =
+  (webhookEvent: StripeEventRecord, stripeSubscriptionId: string): StripeEventWrite =>
+  (database): BatchItem<"sqlite"> =>
     database
       .update(planSubscription)
       .set({ status: SUBSCRIPTION_STATUS.active, updatedAt: webhookEvent.createdAt })
@@ -203,19 +208,18 @@ const markPaymentSettled = Effect.fn("markPaymentSettled")(function* markPayment
           lte(planSubscription.updatedAt, webhookEvent.createdAt),
           inArray(planSubscription.status, recoverableStatuses),
         ),
-      ),
-  );
-});
+      );
 
 export {
+  applyStripeEvent,
   attachCheckout,
   findSubscription,
   isPaidMember,
   markPaymentFailed,
-  markPaymentSettled,
   memberOfCustomer,
   planOf,
   recordSubscription,
+  recoverSubscriptionWrite,
   requirePaid,
 };
-export type { StripeEventRecord, SubscriptionRecord };
+export type { StripeEventRecord, StripeEventWrite, SubscriptionRecord };

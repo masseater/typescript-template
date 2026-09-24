@@ -52,12 +52,18 @@ export type PriceInterval = (typeof priceIntervals)[number];
 
 export const stripeApiVersion = "2026-08-26.dahlia";
 
+export const invoiceDueDays = 30;
+
 export const stripeWebhookEvents = [
+  "charge.refunded",
   "checkout.session.completed",
+  "credit_note.created",
   "customer.subscription.created",
   "customer.subscription.deleted",
   "customer.subscription.updated",
+  "invoice.finalized",
   "invoice.paid",
   "invoice.payment_failed",
+  "invoice.updated",
 ] as const;
 export type StripeWebhookEvent = (typeof stripeWebhookEvents)[number];
