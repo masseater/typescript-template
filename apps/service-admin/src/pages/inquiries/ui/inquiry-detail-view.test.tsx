@@ -1,4 +1,4 @@
-import { INQUIRY_STATUS, ROLE } from "@repo/config";
+import { INQUIRY_STATUS, ROLE, type InquiryStatus } from "@repo/config";
 import { renderedAt } from "@repo/ui/testing";
 import { DateTime } from "effect";
 import { describe, expect, it } from "vite-plus/test";
@@ -6,7 +6,6 @@ import { describe, expect, it } from "vite-plus/test";
 import { InquiryDetailView, MemberSummaryView } from "./inquiry-detail-view.tsx";
 
 import type { AdminInquiryDetail, AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
-import type { InquiryStatus } from "@repo/config";
 
 const sentAt = DateTime.toDate(DateTime.makeUnsafe("2026-04-01T09:00:00Z"));
 
@@ -20,7 +19,7 @@ const summary = {
   updatedAt: sentAt,
 } as const satisfies AdminInquirySummary;
 
-function thread(status: InquiryStatus): AdminInquiryDetail {
+function thread(status: InquiryStatus, replyable: boolean): AdminInquiryDetail {
   return {
     ...summary,
     messages: [
@@ -39,6 +38,7 @@ function thread(status: InquiryStatus): AdminInquiryDetail {
         id: "m-2",
       },
     ],
+    replyable,
     status,
   };
 }
@@ -83,7 +83,7 @@ describe("inquiry thread", () => {
   });
 
   it("says it is loading until the list arrives", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), undefined)).toContain(
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), undefined)).toContain(
       "読み込み中です。",
     );
   });
@@ -93,35 +93,37 @@ describe("inquiry thread", () => {
   });
 
   it("lists the inquiries", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain(
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
       '<span class="block truncate text-sm">ログインできません</span>',
     );
   });
 
   it("marks the operator's messages", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain(
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
       '<li class="rounded-lg border border-border p-3 bg-muted">',
     );
   });
 
   it("shows the route and the status", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain("会員・受付");
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
+      "会員・受付",
+    );
   });
 
-  it("offers the reply form while the inquiry is open", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain(
+  it("offers the reply form while the inquiry accepts replies", () => {
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
       'aria-label="返信欄"',
     );
   });
 
   it("shows the member summary", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain(
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
       "<aside>要約 member-1</aside>",
     );
   });
 
-  it("hides the reply form once the inquiry is closed", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.closed), [summary])).not.toContain(
+  it("hides the reply form once the inquiry stops accepting replies", () => {
+    expect(rendered(undefined, thread(INQUIRY_STATUS.closed, false), [summary])).not.toContain(
       'aria-label="返信欄"',
     );
   });

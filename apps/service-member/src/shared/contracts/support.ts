@@ -23,7 +23,7 @@ const InquirySummary = Schema.Struct({
 
 const InquiryThread = Schema.Struct({
   ...InquirySummary.fields,
-  closed: Schema.Boolean,
+  replyable: Schema.Boolean,
   messages: Schema.Array(InquiryMessage),
 });
 

@@ -1,3 +1,5 @@
+import { clamp } from "es-toolkit";
+
 import { DiagramCrowded } from "./diagram-crowded.ts";
 import {
   center,
@@ -240,7 +242,7 @@ const setLines = (label: Label, metrics: LabelMetrics, count: number): void => {
 };
 
 const naturalLines = (label: Label): number =>
-  Math.min(MOST_LINES, Math.max(1, Math.ceil(label.box.width / LINE_WIDTH)));
+  clamp(Math.ceil(label.box.width / LINE_WIDTH), 1, MOST_LINES);
 
 const LOOP_REACHES = [28, 56, 84];
 

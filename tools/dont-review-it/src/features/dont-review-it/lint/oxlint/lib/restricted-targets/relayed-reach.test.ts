@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { repositoryFile } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -35,16 +36,7 @@ layer(NodeServices.layer)("restrictedTargetReachedBy", (it) => {
         specifier: "@repo/dont-review-it/tsconfig/*",
         fromFile: path.resolve(import.meta.dirname, "relayed-reach.ts"),
         policy: {
-          workspaceRoot: path.resolve(
-            import.meta.dirname,
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-            "..",
-          ),
+          workspaceRoot: repositoryFile("tools/dont-review-it"),
           entries: [],
           aliases: [],
         },

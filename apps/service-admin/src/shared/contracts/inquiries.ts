@@ -31,6 +31,7 @@ const AdminInquirySummary = Schema.Struct({
 const AdminInquiryThread = Schema.Struct({
   ...AdminInquirySummary.fields,
   messages: Schema.Array(InquiryMessage),
+  replyable: Schema.Boolean,
 });
 
 const AdminInquiryList = Schema.Struct({

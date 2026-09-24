@@ -3,7 +3,7 @@ import { Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
-import { inquiry, inquiryMessage, user } from "./schema.ts";
+import { INQUIRY_STATUS, inquiry, inquiryMessage, user, type InquiryStatus } from "./schema.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
@@ -43,11 +43,14 @@ const inquiryMessages = Effect.fn("inquiryMessages")(function* inquiryMessages(i
 
 type InquiryMessageRow = Effect.Success<ReturnType<typeof inquiryMessages>>[number];
 
-const inquiryThread = <Row extends object>(
+const acceptsReplies = (inquiryStatus: InquiryStatus): boolean =>
+  inquiryStatus !== INQUIRY_STATUS.closed;
+
+const inquiryThread = <Row extends Readonly<{ status: InquiryStatus }>>(
   inquiryId: string,
   found: Effect.Effect<readonly Row[], DatabaseFailure, Database>,
 ): Effect.Effect<
-  Row & { readonly messages: InquiryMessageRow[] },
+  Row & { readonly messages: InquiryMessageRow[]; readonly replyable: boolean },
   DatabaseFailure | InquiryNotFound,
   Database
 > =>
@@ -57,8 +60,12 @@ const inquiryThread = <Row extends object>(
       return yield* new InquiryNotFound();
     }
     const threadMessages = yield* inquiryMessages(inquiryId);
-    return { ...foundInquiry, messages: threadMessages };
+    return {
+      ...foundInquiry,
+      messages: threadMessages,
+      replyable: acceptsReplies(foundInquiry.status),
+    };
   });
 
-export { adminInquiryColumns, inquiryColumns, inquiryThread, memberInquiryColumns };
+export { acceptsReplies, adminInquiryColumns, inquiryColumns, inquiryThread, memberInquiryColumns };
 export type { InquiryMessageRow };

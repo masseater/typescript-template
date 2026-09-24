@@ -1,4 +1,4 @@
-import { INQUIRY_STATUS } from "@repo/config";
+import { INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
 import { renderedAt } from "@repo/ui/testing";
 import { DateTime } from "effect";
 import { describe, expect, it } from "vite-plus/test";
@@ -6,7 +6,6 @@ import { describe, expect, it } from "vite-plus/test";
 import { InquiriesView } from "./inquiries-view.tsx";
 
 import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
-import type { InquiryStatus } from "@repo/config";
 
 const updatedAt = DateTime.toDate(DateTime.makeUnsafe("2026-04-01T09:00:00Z"));
 

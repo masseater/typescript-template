@@ -60,7 +60,7 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
           </li>
         ))}
       </ul>
-      {!inquiry.closed && <InquiryReplyForm inquiryId={inquiryId} onReplied={reload} />}
+      {inquiry.replyable && <InquiryReplyForm inquiryId={inquiryId} onReplied={reload} />}
     </Page>
   );
 }

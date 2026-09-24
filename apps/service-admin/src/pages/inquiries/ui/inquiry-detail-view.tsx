@@ -1,4 +1,4 @@
-import { inquiryStatusLabels, ROLE } from "@repo/config";
+import { ROLE, inquiryStatusLabels } from "@repo/config";
 import {
   Heading,
   NavigationLink,
@@ -8,8 +8,6 @@ import {
   formatWarekiDateTime,
   type UiNode,
 } from "@repo/ui";
-
-import { isInquiryClosed } from "#pages/inquiries/model/status-label.ts";
 
 import type {
   AdminInquiryDetail,
@@ -76,7 +74,7 @@ function InquiryConversation({
           </li>
         ))}
       </ul>
-      {isInquiryClosed(inquiry.status) ? null : replyForm}
+      {inquiry.replyable ? replyForm : null}
     </section>
   );
 }
