@@ -271,7 +271,7 @@ describe("bootstrapDatabase", () => {
 describe("the last administrator guard of the migrated database", () => {
   describe.for([
     ["a direct delete", "DELETE FROM user WHERE id = ?"],
-    ["a direct demotion", "UPDATE user SET role = 'user' WHERE id = ?"],
+    ["a direct demotion", "UPDATE user SET role = 'member' WHERE id = ?"],
   ] as const)("%s of the only administrator", ([, statement]) => {
     const it = test.extend("remainingAdministrator", async () =>
       Effect.runPromise(

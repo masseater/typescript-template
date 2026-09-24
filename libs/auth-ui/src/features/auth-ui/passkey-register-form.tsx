@@ -58,8 +58,7 @@ const PasskeyRegisterForm = ({
       ),
     );
   };
-  const recoveringAdmin =
-    session.user.role === ROLE.administrator && !session.strong && recovery === "1";
+  const recoveringAdmin = session.user.role !== ROLE.member && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
       <FormColumn>

@@ -6,10 +6,14 @@ import { SessionView } from "./contracts.ts";
 
 import type { UserRecord } from "@repo/db";
 
-const storedUser: Pick<UserRecord, "email" | "id" | "name" | "role" | "twoFactorEnabled"> = {
+const storedUser: Pick<
+  UserRecord,
+  "email" | "id" | "name" | "permission" | "role" | "twoFactorEnabled"
+> = {
   email: "member@example.test",
   id: "user-1",
   name: "Member",
+  permission: null,
   role: "member",
   twoFactorEnabled: false,
 };
@@ -17,7 +21,7 @@ const storedUser: Pick<UserRecord, "email" | "id" | "name" | "role" | "twoFactor
 describe("session user view", () => {
   const it = test
     .extend("decodedSessionUser", (): Promise<
-      Pick<UserRecord, "email" | "id" | "name" | "role" | "twoFactorEnabled">
+      Pick<UserRecord, "email" | "id" | "name" | "permission" | "role" | "twoFactorEnabled">
     > => Effect.runPromise(Schema.decodeEffect(SessionView.fields.user)(storedUser)))
     .extend("fieldsMissingFromUserRow", () =>
       new Set(Object.keys(SessionView.fields.user.fields)).difference(

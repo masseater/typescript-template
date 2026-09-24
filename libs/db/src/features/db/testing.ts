@@ -27,7 +27,7 @@ const getSchemaShape = (): Record<string, string[]> =>
 
 const runStatement = (
   sql: string,
-  ...statementParams: readonly (string | number)[]
+  ...statementParams: readonly (string | number | null)[]
 ): Effect.Effect<D1Result, DatabaseFailure> =>
   Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
@@ -51,5 +51,6 @@ const testDatabase = (migrated: boolean): Layer.Layer<Database> =>
 const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
 
-export { bootstrapAdmin } from "./bootstrap-statement.ts";
+export { BOOTSTRAP_KIND, BootstrapKind, bootstrapAdmin } from "./bootstrap-statement.ts";
+export { addSession, addUser, auditActionsOf } from "./records-fixture.ts";
 export { EmptyTestDatabase, TestDatabase, getSchemaShape, runStatement };

@@ -58,3 +58,12 @@
 - 識別子・処理の段階・引数は、秘密の値を落としたうえで構造化した欄に載せる。文言は固定し、変わる値は欄に置く。
 - 出力先の容量に収まらないなら、出力先を分けるか構造化した欄へ移す。削って残りを捨てない。どうしても落とすなら、落とした事実を記録に残し、在り処は読み手に開示が許された場所だけを指す。
 - 秘密を落とした後の形を出してよい内容の全体として扱う。落とす前の複製を残さない。
+
+## 利用者アプリの Google Analytics
+
+- [Google Analytics](https://marketingplatform.google.com/about/analytics/) は利用者アプリ（`service-member`）だけに読み込む。管理アプリと Wiki には入れない。
+- 計測 ID は GitHub Environment の `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID` から [Alchemy](https://alchemy.run/) の `GOOGLE_ANALYTICS_MEASUREMENT_ID` binding として利用者 Worker だけへ渡す。未設定ならスクリプトを出さない。
+- ローカル開発と自動テストでは Google へ送らない。`readEnvironment` が local と判定した環境と、ID が無い環境では計測を止める。
+- ページ URL の利用者 ID は、送る前に `/users/_` など特定できない形へ置き換える。メールアドレスと利用者 ID を計測データに載せない。
+- AI と bot の操作を計測から除外しない。User-Agent で区別する。
+- Content-Security-Policy で Google Analytics と Tag Manager のホストを許可するのは、計測が有効なときだけにする。

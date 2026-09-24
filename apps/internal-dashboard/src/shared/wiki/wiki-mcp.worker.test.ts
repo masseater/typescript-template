@@ -1,26 +1,26 @@
-import { APPLICATION, ROLE, httpStatus } from "@repo/config";
-import { Effect } from "effect";
-import { describe, expect } from "vite-plus/test";
-
 import {
   AuthApps,
   PASSWORD,
   assignRoleByEmail,
   assignRoleById,
   authTest,
-  bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   registerVerified,
   signIn,
   signInAs,
-} from "../../../../../libs/auth/src/features/auth/testing.ts";
+} from "@repo/auth/testing";
+import { APPLICATION, ROLE, httpStatus } from "@repo/config";
+import { Effect } from "effect";
+import { describe, expect } from "vite-plus/test";
+
 import {
   exchangeCode,
   grantAuthorization,
   mcpRequest,
   responseStatus,
   startAuthorization,
-  wikiAdministrator,
+  wikiStaff,
   wikiOrigin,
 } from "./wiki-oauth-fixture.ts";
 
@@ -37,7 +37,7 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
 
 const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedTokens() {
   const flow = yield* startAuthorization();
-  const wiki = yield* wikiAdministrator("owner@example.com");
+  const wiki = yield* wikiStaff("owner@example.com");
   const code = yield* grantAuthorization(wiki, flow.oauthQuery);
   return { tokens: yield* exchangeCode(flow, code), wiki };
 });
@@ -77,35 +77,33 @@ describe("wiki MCP authorization", () => {
     ),
   );
 
-  authTest(
-    "strong wiki administrator authorizes an MCP client that can then read the wiki",
-    ({ auth }) =>
-      Effect.runPromise(
-        Effect.gen(function* authorizeClient() {
-          const result = yield* Effect.gen(function* program() {
-            const { tokens } = yield* authorizedTokens();
-            const granted = yield* mcpRequest(tokens.access_token);
-            const token = tokens.access_token;
-            const tampered = `${token.slice(0, token.length - tamperedSuffix.length)}${tamperedSuffix}`;
-            return {
-              grantedUserId: granted instanceof Response ? "" : granted.userId,
-              tamperedStatus: responseStatus(yield* mcpRequest(tampered)),
-            };
-          }).pipe(Effect.provideContext(auth));
-          expect(result.grantedUserId).toMatch(/^.+$/u);
-          expect(result.tamperedStatus).toBe(httpStatus.unauthorized);
-        }),
-      ),
+  authTest("strong wiki staff authorizes an MCP client that can then read the wiki", ({ auth }) =>
+    Effect.runPromise(
+      Effect.gen(function* authorizeClient() {
+        const result = yield* Effect.gen(function* program() {
+          const { tokens } = yield* authorizedTokens();
+          const granted = yield* mcpRequest(tokens.access_token);
+          const token = tokens.access_token;
+          const tampered = `${token.slice(0, token.length - tamperedSuffix.length)}${tamperedSuffix}`;
+          return {
+            grantedUserId: granted instanceof Response ? "" : granted.userId,
+            tamperedStatus: responseStatus(yield* mcpRequest(tampered)),
+          };
+        }).pipe(Effect.provideContext(auth));
+        expect(result.grantedUserId).toMatch(/^.+$/u);
+        expect(result.tamperedStatus).toBe(httpStatus.unauthorized);
+      }),
+    ),
   );
 
-  authTest("demoted administrator loses MCP access even with an unexpired token", ({ auth }) =>
+  authTest("removed staff loses MCP access even with an unexpired token", ({ auth }) =>
     Effect.runPromise(
-      Effect.gen(function* demoteAdministrator() {
+      Effect.gen(function* demoteStaff() {
         const result = yield* Effect.gen(function* program() {
           const { tokens, wiki } = yield* authorizedTokens();
           const owner = yield* wiki.verify();
           yield* registerVerified("second@example.com");
-          yield* assignRoleByEmail("second@example.com", ROLE.administrator);
+          yield* assignRoleByEmail("second@example.com", ROLE.staff);
           yield* assignRoleById(owner.user.id, ROLE.member);
           return {
             mcpStatus: responseStatus(yield* mcpRequest(tokens.access_token)),
@@ -118,12 +116,12 @@ describe("wiki MCP authorization", () => {
     ),
   );
 
-  authTest("weak or non-administrator wiki sessions cannot grant MCP access", ({ auth }) =>
+  authTest("weak or non-staff wiki sessions cannot grant MCP access", ({ auth }) =>
     Effect.runPromise(
       Effect.gen(function* refuseWeakGrant() {
         const result = yield* Effect.gen(function* program() {
           const flow = yield* startAuthorization();
-          yield* bootstrapVerifiedAdmin("owner@example.com");
+          yield* bootstrapVerifiedStaff("owner@example.com");
           const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
           const continued = yield* weak.json("/oauth2/continue", {
             oauth_query: flow.oauthQuery,
@@ -148,7 +146,7 @@ describe("wiki MCP authorization", () => {
     ),
   );
 
-  authTest("non-administrator wiki members cannot sign in or sign up", ({ auth }) =>
+  authTest("members cannot sign in to the wiki or sign up there", ({ auth }) =>
     Effect.runPromise(
       Effect.gen(function* refuseMemberSignIn() {
         const result = yield* Effect.gen(function* program() {

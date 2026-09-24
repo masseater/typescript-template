@@ -1,6 +1,6 @@
 ---
 title: Internal Dashboard
-description: 社内向けの文書と、MCP で文書を配る入口
+description: 社内向けの文書と、MCP で文書を配る窓口
 ---
 
 強い認証を済ませた社内の人が、開発と運用の文書を読む場所である。文書は MCP でも配る。

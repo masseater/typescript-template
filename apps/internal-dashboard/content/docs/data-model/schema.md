@@ -22,32 +22,124 @@ erDiagram
     integer updated_at
     text user_id FK
   }
+  agreement_acceptance {
+    integer accepted_at
+    text user_id PK, FK
+    text version_id PK, FK
+  }
+  agreement_version {
+    text body
+    integer created_at
+    text created_by FK "nullable"
+    text id PK
+    text kind
+    integer published_at "nullable"
+    text published_by FK "nullable"
+    text summary "nullable"
+    text version UK
+  }
+  apikey {
+    text config_id
+    integer created_at
+    integer enabled "nullable"
+    integer expires_at "nullable"
+    text id PK
+    text key
+    integer last_refill_at "nullable"
+    integer last_request "nullable"
+    text metadata "nullable"
+    text name "nullable"
+    text permissions "nullable"
+    text prefix "nullable"
+    integer rate_limit_enabled "nullable"
+    integer rate_limit_max "nullable"
+    integer rate_limit_time_window "nullable"
+    text reference_id
+    integer refill_amount "nullable"
+    integer refill_interval "nullable"
+    integer remaining "nullable"
+    integer request_count "nullable"
+    text start "nullable"
+    integer updated_at
+  }
   audit_event {
     text action
     text actor_id
+    text actor_kind
+    text channel
     integer created_at
     text id PK
     text target_id
   }
   board_post {
-    text author_id FK "nullable"
+    text author_id "nullable"
     text body
     integer created_at
     text id PK
     text thread_id FK
   }
   board_thread {
-    text author_id FK "nullable"
+    text author_id "nullable"
     integer created_at
     text id PK
     integer last_posted_at
     integer post_count
     text title
   }
+  conversation {
+    text direct_key UK "nullable"
+    text kind
+    integer last_message_at
+    text id PK
+  }
+  conversation_participant {
+    text id PK
+    text conversation_id FK
+    integer joined_at
+    integer last_read_at "nullable"
+    text member_id FK "nullable"
+    text member_name
+  }
+  direct_message {
+    text id PK
+    text body
+    text conversation_id FK
+    integer created_at
+    text sender_id FK "nullable"
+    text sender_name
+  }
   follow {
     integer created_at
     text followee_id PK, FK
     text follower_id PK, FK
+  }
+  group_invite {
+    text id PK
+    integer expires_at
+    text group_id FK
+    text token UK
+  }
+  group_membership {
+    text group_id PK, FK
+    integer joined_at
+    text member_id PK, FK
+    text role
+  }
+  inquiry {
+    integer created_at
+    text id PK
+    text member_id FK
+    text status
+    text subject
+    integer updated_at
+  }
+  inquiry_message {
+    text author_id
+    text author_kind
+    text body
+    integer created_at
+    text id PK
+    text inquiry_id FK
   }
   interview {
     text day
@@ -58,6 +150,17 @@ erDiagram
     text user_id PK, FK
     integer version
   }
+  invite {
+    integer accepted_at "nullable"
+    text audience
+    integer created_at
+    text email
+    integer expires_at
+    text id PK
+    text inviter_id
+    text permission
+    text token_hash UK
+  }
   jwks {
     text alg "nullable"
     integer created_at
@@ -67,10 +170,78 @@ erDiagram
     text private_key
     text public_key
   }
+  leave_request {
+    text member_id PK, FK
+    integer purge_at
+    integer recovery_declined_at "nullable"
+    integer requested_at
+    integer restored_at "nullable"
+  }
+  member_block {
+    text blocked_id PK, FK
+    text blocker_id PK, FK
+    integer created_at
+  }
+  member_group {
+    text id PK
+    text conversation_id FK, UK
+    text join_policy
+    text name
+    text owner_id FK
+  }
+  member_mcp_grant {
+    text capability PK
+    text member_id PK, FK
+  }
   member_onboarding {
     text step
     integer updated_at
     text user_id PK, FK
+  }
+  member_report {
+    text body
+    integer created_at
+    text id PK
+    text reason
+    text reporter_id FK "nullable"
+    text status
+    text subject_id
+    text subject_kind
+    text target_member_id FK "nullable"
+  }
+  metric_snapshot {
+    text bucket
+    text client_kind
+    integer computed_at
+    text id PK
+    text metric
+    text period
+    integer value
+  }
+  moderation_action {
+    text actor_id FK
+    integer created_at
+    text id PK
+    text kind
+    text note
+    text report_id FK
+    text target_member_id FK "nullable"
+  }
+  notification {
+    text actor_id FK "nullable"
+    text actor_name "nullable"
+    integer created_at
+    text id PK
+    text kind
+    text member_id FK
+    integer read_at "nullable"
+    text subject_id
+    text title "nullable"
+  }
+  notification_preference {
+    integer board_mail
+    text member_id PK, FK
+    integer message_mail
   }
   oauth_access_token {
     text authorization_code_id "nullable"
@@ -200,6 +371,15 @@ erDiagram
     text transports "nullable"
     text user_id FK
   }
+  plan_subscription {
+    integer cancel_at_period_end
+    integer current_period_end "nullable"
+    text member_id PK, FK
+    text status
+    text stripe_customer_id UK
+    text stripe_subscription_id UK
+    integer updated_at
+  }
   rate_limit {
     integer count
     text id PK
@@ -253,6 +433,11 @@ erDiagram
     text id PK
     text name
   }
+  stripe_event {
+    text id PK
+    integer received_at
+    text type
+  }
   two_factor {
     text backup_codes
     integer failed_verification_count
@@ -263,18 +448,24 @@ erDiagram
     integer verified
   }
   user {
+    text account_state
+    text company_photo_key "nullable"
     integer created_at
     text email UK
     integer email_verified
+    text face_photo_key "nullable"
     text id PK
     text image "nullable"
     text name
+    text permission "nullable"
     text profile
     text social_links
     text role
+    integer searchable
     integer security_version
     integer two_factor_enabled
     integer updated_at
+    text visibility
   }
   verification {
     text audience
@@ -285,14 +476,53 @@ erDiagram
     integer updated_at
     text value
   }
+  withdrawn_member {
+    integer created_at
+    text email
+    integer email_verified
+    text image "nullable"
+    text member_id PK
+    text name
+    text profile
+    integer security_version
+    text snapshot
+    text social_links
+    integer two_factor_enabled
+    integer withdrawn_at
+  }
   user ||--o{ account : "user_id"
-  user |o--o{ board_post : "author_id"
+  user ||--o{ agreement_acceptance : "user_id"
+  agreement_version ||--o{ agreement_acceptance : "version_id"
+  user |o--o{ agreement_version : "created_by"
+  user |o--o{ agreement_version : "published_by"
   board_thread ||--o{ board_post : "thread_id"
-  user |o--o{ board_thread : "author_id"
+  conversation ||--o{ conversation_participant : "conversation_id"
+  user |o--o{ conversation_participant : "member_id"
+  conversation ||--o{ direct_message : "conversation_id"
+  user |o--o{ direct_message : "sender_id"
   user ||--o{ follow : "followee_id"
   user ||--o{ follow : "follower_id"
+  member_group ||--o{ group_invite : "group_id"
+  member_group ||--o{ group_membership : "group_id"
+  user ||--o{ group_membership : "member_id"
+  user ||--o{ inquiry : "member_id"
+  inquiry ||--o{ inquiry_message : "inquiry_id"
   user ||--o| interview : "user_id"
+  withdrawn_member ||--o| leave_request : "member_id"
+  user ||--o{ member_block : "blocked_id"
+  user ||--o{ member_block : "blocker_id"
+  conversation ||--o| member_group : "conversation_id"
+  user ||--o{ member_group : "owner_id"
+  user ||--o{ member_mcp_grant : "member_id"
   user ||--o| member_onboarding : "user_id"
+  user |o--o{ member_report : "reporter_id"
+  user |o--o{ member_report : "target_member_id"
+  user ||--o{ moderation_action : "actor_id"
+  member_report ||--o{ moderation_action : "report_id"
+  user |o--o{ moderation_action : "target_member_id"
+  user |o--o{ notification : "actor_id"
+  user ||--o{ notification : "member_id"
+  user ||--o| notification_preference : "member_id"
   oauth_client ||--o{ oauth_access_token : "client_id"
   oauth_refresh_token |o--o{ oauth_access_token : "refresh_id"
   session |o--o{ oauth_access_token : "session_id"
@@ -306,6 +536,7 @@ erDiagram
   session |o--o{ oauth_refresh_token : "session_id"
   user ||--o{ oauth_refresh_token : "user_id"
   user ||--o{ passkey : "user_id"
+  user ||--o| plan_subscription : "member_id"
   user |o--o{ recording : "owner_id"
   recording ||--o{ recording_segment : "recording_id"
   speaker_person |o--o{ recording_speaker : "person_id"

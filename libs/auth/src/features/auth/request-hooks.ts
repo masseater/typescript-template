@@ -1,7 +1,6 @@
 import {
-  APPLICATION,
   AUTHENTICATION_METHOD,
-  ROLE,
+  audienceRoles,
   loopbackHosts,
   type Application,
 } from "@repo/config";
@@ -19,11 +18,12 @@ import { emailChangePath } from "./email-change-path.ts";
 import {
   deny,
   enrollmentPaths,
+  isPrivilegedRole,
   isRecentlyStrong,
   isStrongMethod,
   sessionIsLive,
 } from "./policy.ts";
-import { emailChangeTarget } from "./verification-token.ts";
+import { emailChangePrevious, emailChangeTarget } from "./verification-token.ts";
 
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
@@ -200,13 +200,13 @@ const enforceAdminAccess = function enforceAdminAccess({
   role,
   strong,
 }: SessionPolicyInput): void {
-  if (role === ROLE.administrator && path === "/two-factor/get-totp-uri" && !strong) {
+  if (isPrivilegedRole(role) && path === "/two-factor/get-totp-uri" && !strong) {
     deny("ADMIN_MFA_REQUIRED");
   }
-  if (audience === APPLICATION.user) {
+  if (!isPrivilegedRole(audienceRoles[audience])) {
     return;
   }
-  if (role !== ROLE.administrator) {
+  if (role !== audienceRoles[audience]) {
     deny("ADMIN_REQUIRED");
   }
   if (!strong && !enrollmentPaths.has(path)) {
@@ -224,7 +224,7 @@ const enforceFactorChanges = Effect.fn("enforceFactorChanges")(function* enforce
   { audience, path, role, strong, userId }: SessionPolicyInput,
   run: Run,
 ) {
-  if (role !== ROLE.administrator) {
+  if (!isPrivilegedRole(role)) {
     return;
   }
   if (
@@ -260,12 +260,19 @@ const enforceSessionPolicy = Effect.fn("enforceSessionPolicy")(function* enforce
   yield* enforceFactorChanges(input, run);
 });
 
+const queryToken = function queryToken(
+  hookRequest: Readonly<Pick<HookContext, "query">>,
+): string | undefined {
+  const query: unknown = hookRequest.query;
+  const token = Predicate.isObject(query) && "token" in query ? query["token"] : undefined;
+  return typeof token === "string" ? token : undefined;
+};
+
 const confirmsEmailChange = function confirmsEmailChange(
   hookRequest: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
-  const query: unknown = hookRequest.query;
-  const token = Predicate.isObject(query) && "token" in query ? query["token"] : undefined;
-  if (hookRequest.path !== emailVerificationPath || typeof token !== "string") {
+  const token = queryToken(hookRequest);
+  if (hookRequest.path !== emailVerificationPath || token === undefined) {
     return false;
   }
   const emailChangeDestination = emailChangeTarget(token);
@@ -282,12 +289,38 @@ const notifyEmailChange = Effect.fn("notifyEmailChange")(function* notifyEmailCh
   }
 });
 
+const notifyEmailChangeCompleted = Effect.fn("notifyEmailChangeCompleted")(
+  function* notifyEmailChangeCompleted(
+    scope: HookScope,
+    onEmailChangeCompleted: (email: string) => Promise<void>,
+  ) {
+    const token = queryToken(scope.hookContext);
+    const previousEmail = token === undefined ? undefined : emailChangePrevious(token);
+    if (previousEmail !== undefined) {
+      yield* Effect.promise(() => onEmailChangeCompleted(previousEmail));
+    }
+  },
+);
+
+const settleFactorChange = Effect.fn("settleFactorChange")(function* settleFactorChange(
+  scope: HookScope,
+) {
+  if (scope.hookContext.path === "/two-factor/verify-totp") {
+    yield* markTotpSessionStrong(scope);
+  }
+  if (sessionRevokingPaths.has(scope.hookContext.path)) {
+    yield* revokeSessionsAfterFactorChange(scope);
+  }
+});
+
 const createRequestHooks = function createRequestHooks({
   audience,
+  onEmailChangeCompleted,
   onEmailChangeRequested,
   run,
 }: {
   readonly audience: Application;
+  readonly onEmailChangeCompleted: (email: string) => Promise<void>;
   readonly onEmailChangeRequested: (email: string) => Promise<void>;
   readonly run: Run;
 }): NonNullable<BetterAuthOptions["hooks"]> {
@@ -299,14 +332,12 @@ const createRequestHooks = function createRequestHooks({
             return;
           }
           const scope = { audience, hookContext, run };
-          if (hookContext.path === "/two-factor/verify-totp") {
-            yield* markTotpSessionStrong(scope);
-          }
-          if (sessionRevokingPaths.has(hookContext.path)) {
-            yield* revokeSessionsAfterFactorChange(scope);
-          }
+          yield* settleFactorChange(scope);
           if (hookContext.path === emailChangePath) {
             yield* notifyEmailChange(scope, onEmailChangeRequested);
+          }
+          if (confirmsEmailChange(hookContext)) {
+            yield* notifyEmailChangeCompleted(scope, onEmailChangeCompleted);
           }
         }),
       ),
