@@ -1,6 +1,6 @@
 # Lint rules this package ships
 
-Every rule below is registered at error severity unless the table says the preset leaves it off. Generated from the rule implementations; regenerate with `vp run guard:fix` rather than editing it.
+Every rule below is registered at error severity unless the table says the preset leaves it off. Generated from the rule implementations; regenerate with `dont-review-it check --write` rather than editing it.
 
 <!-- BEGIN GENERATED shipped-lint-rules -->
 

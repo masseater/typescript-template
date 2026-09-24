@@ -1,6 +1,6 @@
 # Lint rules this package ships
 
-Every rule below is registered at error severity unless the table says the preset leaves it off. Generated from the rule implementations; regenerate with `vp run guard:fix` rather than editing it.
+Every rule below is registered at error severity unless the table says the preset leaves it off. Generated from the rule implementations; regenerate with `dont-review-it check --write` rather than editing it.
 
 <!-- BEGIN GENERATED shipped-lint-rules -->
 
@@ -154,17 +154,6 @@ Each bundle is adopted on its own, and a rule sits in exactly one of them. Name 
 | [no-unordered-import--group-by-origin-then-sort-by-specifier](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-unordered-import--group-by-origin-then-sort-by-specifier.md) | Disallow an import list whose order does not follow origin then specifier, so what a file depends on is read off the block boundaries instead of every specifier |  |
 | [no-unused-style-class--delete-or-reference-it](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-unused-style-class--delete-or-reference-it.md) | Disallow a style sheet class that no script and no markup in the repository spells, so the style sheet keeps only the classes that reach the rendered page |  |
 | [require-re-export-only-files--move-declaration-to-owning-module](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/require-re-export-only-files--move-declaration-to-owning-module.md) | Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards | ⚙️ |
-
-## Rules this package ships without enabling them
-
-Whether these hold depends on the adopting repository, so the preset leaves them off. Name one in `rules` to turn it on; its document says why it is not enabled by default.
-
-| Rule | What it rejects | Notices |
-| --- | --- | --- |
-| [no-barrel-import--import-from-the-owning-module](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-barrel-import--import-from-the-owning-module.md) | Disallow a module specifier that names a re-export module while the statement takes a value through it, so the module a binding is taken from is the module that declares it |  |
-| [no-barrel-module--declare-in-the-owning-module](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-barrel-module--declare-in-the-owning-module.md) | Disallow a module whose every statement is a re-export and which forwards at least one value, so the module a binding is taken from is the module that declares it | ⚙️ |
-| [no-mixed-package-surface--declare-one-surface](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/no-mixed-package-surface--declare-one-surface.md) | Require a package to declare either the surface it is run through or the surface it is imported through, so which discipline owns the package is decided by its manifest instead of by whoever reaches into it next | ⚙️ |
-| [require-spec-or-assets-only-in-spec-directory--move-out-or-inline](https://github.com/masseater/typescript-template/blob/main/tools/dont-review-it/docs/lint/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.md) | Require every file under a directory named for specs to be a spec or the test data one of those specs owns, so setup carved out of a spec is reported where it sits instead of only where a spec imports it | ⚙️ |
 
 Notices — 🔧: fixes itself / 💡: offers an editor suggestion / ⚙️: reads options
 

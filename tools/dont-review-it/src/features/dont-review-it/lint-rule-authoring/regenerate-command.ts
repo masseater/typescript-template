@@ -1,1 +1,1 @@
-export const REGENERATE_COMMAND = "vp run guard:fix";
+export const REGENERATE_COMMAND = "dont-review-it check --write";

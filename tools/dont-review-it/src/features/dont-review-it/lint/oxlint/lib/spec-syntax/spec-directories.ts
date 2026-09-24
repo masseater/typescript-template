@@ -1,26 +1,4 @@
-import { configuredSuffixesFrom } from "../file-name-suffixes.ts";
 import { segmentsOf } from "../path-segments.ts";
-
-import type { Options } from "@oxlint/plugins";
-
-const DEFAULT_SPEC_DIRECTORY_NAMES: readonly string[] = [
-  "__specs__",
-  "__tests__",
-  "spec",
-  "specs",
-  "test",
-  "tests",
-];
-
-const SPEC_DIRECTORY_NAMES_OPTION = "specDirectoryNames";
-
-export const specDirectoryNamesFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> =>
-  new Set(
-    configuredSuffixesFrom(ruleOptions, {
-      optionName: SPEC_DIRECTORY_NAMES_OPTION,
-      carried: DEFAULT_SPEC_DIRECTORY_NAMES,
-    }),
-  );
 
 export const specDirectoryOf = ({
   relativePath,
