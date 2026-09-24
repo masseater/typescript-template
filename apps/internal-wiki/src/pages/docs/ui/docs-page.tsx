@@ -24,7 +24,7 @@ function DocsPage({ data }: Readonly<{ data: DocsLoaderData }>): ReactElement {
   }
   return (
     <DocsLayout nav={nav} tree={pageTree}>
-      <DocsContent page={page} />
+      <DocsContent page={page} path={path} />
     </DocsLayout>
   );
 }
