@@ -1,16 +1,15 @@
 import { flagDefinitions } from "@repo/feature-flags/definitions";
-import { Stack } from "alchemy";
 import { Flagship } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
+import { prefixedStack } from "./prefixed-stack.ts";
 import { settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
+import { stackName } from "./stacks.ts";
 
 const appResource = "App";
 
-const stack = Stack(
-  stackName("flagship"),
-  stackOptions,
+const stack = prefixedStack(
+  "flagship",
   Effect.gen(function* flagship() {
     const config = yield* Effect.orDie(settings);
     const app = yield* Flagship.App(appResource, { name: `${config.prefix}-flags` });
