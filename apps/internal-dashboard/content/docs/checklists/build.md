@@ -8,7 +8,7 @@ description: 計画に沿って作り、受け入れの条件を満たすまで
 
 ## 統制
 
-- 開発は [開発の流れ](/getting-started/development-flow) に沿って進めます。品質の確認は CI とレビューが持ちます。
+- 開発は [開発の流れ](/getting-started/development-flow) に沿って進めます。品質の確認は CI とレビューで行います。
 - 品質の定義で決めた指標を、作った機能ごとに観測できるようにします。信号の層は [Observability](/observability) にあります。
 - 決めたことは、決めた時点で wiki と issue に残します。
 

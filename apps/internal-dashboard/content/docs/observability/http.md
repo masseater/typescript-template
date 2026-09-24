@@ -3,7 +3,7 @@ title: HTTP
 description: ブラウザとサーバが、要求と応答と計時を往復させるプロトコル
 ---
 
-HTTP は、ブラウザとサーバが要求と応答を往復させるプロトコルである。状態コードは応答の意味を一つに決め、所要時間は送り始めから応答を受け終わるまでである。どの状態コードを選ぶかは `.claude/skills/reviews/references/observability.md` が持つ。
+HTTP は、ブラウザとサーバが要求と応答を往復させるプロトコルである。状態コードは応答の意味を一つに決め、所要時間は送り始めから応答を受け終わるまでである。
 
 ```http
 GET /users/123 HTTP/1.1
@@ -15,7 +15,7 @@ content-type: application/json
 server-timing: db;dur=12
 ```
 
-`server-timing` の `db;dur=12` は、サーバがデータベースに使った 12 ミリ秒を、応答のヘッダでブラウザへ返す。ナビゲーションのエントリは、これを `serverTiming` の `name` と `duration` として持つ。`traceparent` の桁の意味は [W3C Trace Context](/observability/trace-context) が持つ。
+`server-timing` の `db;dur=12` は、サーバがデータベースに使った 12 ミリ秒を、応答のヘッダでブラウザへ返す。ナビゲーションのエントリは、これを `serverTiming` の `name` と `duration` として持つ。
 
 ## 参考文献
 

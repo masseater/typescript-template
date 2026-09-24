@@ -32,6 +32,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.budgetJpy]: String(verificationSettings.budget.budgetJpy),
   [deploymentKey.cloudflareAccountId]: verificationSettings.accountId,
   [deploymentKey.cloudflareApiToken]: "stack-verification-not-a-real-token",
+  [deploymentKey.cloudflareWorkersSubdomain]: "verify-workers",
   [deploymentKey.cloudflareZoneId]: verificationSettings.zoneId,
   [deploymentKey.appDomain]: "example.com",
   [deploymentKey.authSecret]: verificationAuthSecret,

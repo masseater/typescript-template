@@ -115,7 +115,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 
 [@shadcn/lint](https://github.com/shadcn-ui/lint) を Oxlint の `jsPlugins` で読み込み、コンポーネントの場所は `components.json` の `aliases.ui` で示します。余白の上書きは許可し、色、角丸、影、文字をコンポーネントの外から変えることを禁止します。
 
-状況は導入済みです。どの規則をどこで緩めているかは `vite.config.ts` の `lint` が持ちます。
+状況は導入済みです。
 
 ### その他のフロントエンドのライブラリ
 

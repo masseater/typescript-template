@@ -41,7 +41,8 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
     - `BUDGET_JPY`: 正の数。予算監視は実行のたびに取得した為替レートで米ドルに換算し、固定費と予備費を引いた残りを使える額とします。残りが無いと予算監視が失敗を通知します。
     - `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_ZONE_ID`: 16進 32 文字。
-    - `CLOUDFLARE_API_TOKEN`: Cloudflare API トークン。
+    - `CLOUDFLARE_API_TOKEN`: Cloudflare API トークン。アカウント側は Workers Admin、D1 Edit、Secrets Store Edit、Account API Tokens Edit、Billing Read、Workers Observability Write、Email Sending Write、Email Routing Addresses Edit。ゾーン側は Workers Routes Edit、DNS Read、Zone Settings Edit。
+    - `CLOUDFLARE_WORKERS_SUBDOMAIN`: アカウントの `workers.dev` サブドメイン（`https://<name>.<ここ>.workers.dev` の部分）。英小文字・数字・ハイフン。
     - `TEMPLATE_APP_DOMAIN`: URL ではなくホスト名（`example.com`）。`workers.dev` は不可。origin は `https://{TEMPLATE_PREFIX}-member.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-admin.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-dashboard.{TEMPLATE_APP_DOMAIN}` になります。
     - `TEMPLATE_AUTH_SECRET`: 32 文字以上、異なる文字が 16 種以上、前後に空白を付けない。
     - `TEMPLATE_MAIL_FROM`: メールアドレス。`@` 以降は `{TEMPLATE_PREFIX}.` で始まること。

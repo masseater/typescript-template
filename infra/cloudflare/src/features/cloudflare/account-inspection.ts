@@ -7,7 +7,6 @@ import {
   recordsPresent,
   secretsStoreCount,
   workerNames,
-  workersSubdomain,
 } from "./account-lookup.ts";
 import { isUnreadable, readVerdict, unreadableState, unreadableVerdict } from "./account-read.ts";
 import { databaseVerdict } from "./database-guard.ts";
@@ -130,9 +129,6 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
   const stores = yield* secretsStoreCount(access).pipe(
     Effect.catchTag("CloudflareFailure", unreadableVerdict),
   );
-  const subdomain = yield* workersSubdomain(access).pipe(
-    Effect.catchTag("CloudflareFailure", unreadableVerdict),
-  );
   const workerDomains = yield* domainVerdict(access, config, recorded);
   return {
     alertQuota: yield* alertQuotaVerdict(access, config.budget.recipients),
@@ -150,7 +146,6 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
     workerNames: readVerdict(scripts, (live) =>
       workerVerdict(live, declaredNames(config.prefix), recorded),
     ),
-    workersSubdomain: readVerdict(subdomain, (found) => presence(found !== undefined)),
   };
 });
 
@@ -159,23 +154,14 @@ type Inspection = Effect.Success<ReturnType<typeof inspectAccount>>;
 const preflightAccount = Effect.fn("preflightAccount")(function* preflightAccount(
   access: AccountAccess,
 ) {
-  const subdomain = yield* workersSubdomain(access).pipe(
-    Effect.catchTag("CloudflareFailure", unreadableVerdict),
-  );
-  return {
-    deployToken: yield* tokenVerdict(access),
-    workersSubdomain: readVerdict(subdomain, (found) => presence(found !== undefined)),
-  };
+  return { deployToken: yield* tokenVerdict(access) };
 });
 
 type Preflight = Effect.Success<ReturnType<typeof preflightAccount>>;
 
 function preflightBlocked(preflight: Readonly<Preflight>): readonly string[] {
-  const { deployToken, workersSubdomain: subdomain } = preflight;
-  return [
-    ...(isUnreadable(deployToken) || deployToken.length > 0 ? ["deployToken"] : []),
-    ...(isUnreadable(subdomain) || subdomain === "absent" ? ["workersSubdomain"] : []),
-  ];
+  const { deployToken } = preflight;
+  return isUnreadable(deployToken) || deployToken.length > 0 ? ["deployToken"] : [];
 }
 
 function blocked(inspection: Readonly<Inspection>): readonly string[] {
@@ -189,7 +175,6 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
       ...claimed.filter((name) => inspection[name] === "taken"),
       ...emailBlocked(inspection),
       ...(alertQuota === "counted" ? ["alertQuota"] : []),
-      ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
       ...(isUnreadable(deployToken) || deployToken.length === 0 ? [] : ["deployToken"]),
     ]),
   ];

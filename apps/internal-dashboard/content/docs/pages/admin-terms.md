@@ -8,8 +8,6 @@ description: 利用規約とプライバシーポリシーの版を公開する�
 - `/terms`: サイドバー「規約」から開く一覧
 - `/terms/{version}`: 1 つの版の内容と公開
 
-実体は [信頼と安全](/data-model/trust) の AgreementVersion が持つ。会員の再同意は [規約への同意](/pages/member-agreement) が持つ。
-
 ## 一覧
 
 上から次の順に置く。

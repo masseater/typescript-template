@@ -17,4 +17,4 @@
 - キューを `useRef` や `useState` で自前実装する。`useAction` の `run` に載せる。
 - `useActionState` / `useFormStatus` に戻す。
 
-一度きりの送信フォームは、いまどおり `disabled={action.blocked}` と `aria-busy={action.pending}` で二重送信を防いでよい。操作を連打させたい列だけ、上の「やる」に従う。
+一度きりの送信フォームは、いまどおり `disabled={action.blocked}` と `aria-busy={action.pending}` で二重送信を防いでよい。操作を連打させたい列だけ、上の「やる」を適用する。

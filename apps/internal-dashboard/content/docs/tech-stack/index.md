@@ -3,8 +3,6 @@ title: 技術スタック
 description: 主要技術の働きと、公式ドキュメント・サンプル・解説記事への参照
 ---
 
-この節が持つのは、各技術の働きと、公式ドキュメント・サンプル・記事へのリンクである。版は `pnpm-workspace.yaml` の catalog が持つので、ここには書かない。コンポーネントをどこに置くかは `.claude/skills/reviews/references/frontend.md`、資源をどう宣言するかは `.claude/skills/reviews/references/infrastructure.md` が持つ。どの領域に何を置くかは [このテンプレートは何か](/getting-started/what-is-this) の表にある。ブラウザから SLI までの層は [Observability](/observability) が持つ。各ページの「採ると」は、そのページの例が採る前と採ったあとでどう変わるかを持つ。
-
 ## ページ
 
 - [TanStack Start](/tech-stack/tanstack-start) — ファイルのルート、loader、server function

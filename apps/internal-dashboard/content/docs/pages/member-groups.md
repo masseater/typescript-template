@@ -5,8 +5,6 @@ description: グループの情報を見て、参加と招待リンクを扱う�
 
 パス: `/groups/{id}`。[会員の枠](/pages/member-layout#会員の枠) に入る。会話の「情報」と、グループの招待リンクから開く。
 
-実体は [メッセージ](/data-model/messaging) の Group が持つ。
-
 ## 構成
 
 上から次の順に置く。

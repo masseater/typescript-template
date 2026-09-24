@@ -217,20 +217,17 @@ it.effect("keeps every other check when one read is refused", () =>
       secretsStore: "absent",
       senderDomain: "dedicated",
       workerDomains: "free",
-      workersSubdomain: "present",
     });
   }).pipe(Effect.scoped),
 );
 
-it.effect(
-  "clears the preflight of an account whose token and workers.dev subdomain are ready",
-  () =>
-    Effect.gen(function* program() {
-      yield* mockServer(...accountHandlers({}));
-      const preflight = yield* preflightAccount(access);
-      assert.deepStrictEqual(preflight, { deployToken: [], workersSubdomain: "present" });
-      assert.deepStrictEqual(preflightBlocked(preflight), []);
-    }).pipe(Effect.scoped),
+it.effect("clears the preflight of an account whose token is ready", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({}));
+    const preflight = yield* preflightAccount(access);
+    assert.deepStrictEqual(preflight, { deployToken: [] });
+    assert.deepStrictEqual(preflightBlocked(preflight), []);
+  }).pipe(Effect.scoped),
 );
 
 it.effect("stops at the preflight when the token cannot be read", () =>
@@ -241,18 +238,5 @@ it.effect("stops at the preflight when the token cannot be read", () =>
     assert.deepStrictEqual(preflight.deployToken, {
       unreadable: ["accounts/{}/tokens/verify", "status_404"],
     });
-  }).pipe(Effect.scoped),
-);
-
-it.effect("stops at the preflight when the account has no workers.dev subdomain", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(
-      http.get(`${account}/workers/subdomain`, () =>
-        HttpResponse.json({ success: false }, { status: FORBIDDEN_STATUS }),
-      ),
-      ...accountHandlers({}),
-    );
-    const preflight = yield* preflightAccount(access);
-    assert.deepStrictEqual(preflightBlocked(preflight), ["workersSubdomain"]);
   }).pipe(Effect.scoped),
 );

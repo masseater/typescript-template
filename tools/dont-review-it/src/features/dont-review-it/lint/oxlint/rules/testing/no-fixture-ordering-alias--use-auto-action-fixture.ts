@@ -139,7 +139,7 @@ export const noFixtureOrderingAlias = createDontReviewItRule({
     docs: {
       description:
         "Disallow a fixture taking apart a dependency whose value it never consumes, so the dependency graph a spec declares is the data flow it has rather than an order somebody wanted the fixtures to run in",
-      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
     },
     messages: {
       orderingAlias:

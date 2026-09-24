@@ -198,7 +198,7 @@ export const noLocalFileSystemMock = createDontReviewItRule({
     docs: {
       description:
         "Disallow a spec standing up its own file system double or naming the in-memory implementation behind the standard API, so every spec reads and writes through one abstraction that the shared setup rebuilds before each test",
-      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
     },
     messages: {
       localFileSystemDouble:

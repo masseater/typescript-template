@@ -11,11 +11,7 @@ interface RequiredPermission {
   readonly scope: "account" | "zone";
 }
 
-const workersAdmin = { name: "Workers Admin" } as const;
-const workersScriptsWrite = {
-  id: "e086da7e2179491d91ee5f35b3ca210a",
-  name: "Workers Scripts Write",
-} as const;
+const workersAdmin = { id: "98d78cd2433d4c3687191bc0244ef948", name: "Workers Admin" } as const;
 const d1Write = { id: "09b2857d1c31407795e75e3fed8617a1", name: "D1 Write" } as const;
 const secretsStoreWrite = {
   id: "adc8fa2bc6124928a8b3314dc63a1235",
@@ -49,10 +45,6 @@ const routingAddressesWrite = {
   id: "e4589eb09e63436686cd64252a3aebeb",
   name: "Email Routing Addresses Write",
 } as const;
-const routingAddressesRead = {
-  id: "5272e56105d04b5897466995b9bd4643",
-  name: "Email Routing Addresses Read",
-} as const;
 const zoneSettingsWrite = {
   id: "3030687196b94b638145a3953da2b699",
   name: "Zone Settings Write",
@@ -61,7 +53,7 @@ const zoneSettingsWrite = {
 const deployTokenPermissions = [
   {
     dashboard: "Account / Workers / Admin",
-    satisfiedBy: [workersAdmin, workersScriptsWrite],
+    satisfiedBy: [workersAdmin],
     scope: "account",
   },
   { dashboard: "Account / D1 / Edit", satisfiedBy: [d1Write], scope: "account" },
@@ -96,8 +88,8 @@ const deployTokenPermissions = [
     scope: "account",
   },
   {
-    dashboard: "Account / Email Routing Addresses / Read",
-    satisfiedBy: [routingAddressesRead, routingAddressesWrite],
+    dashboard: "Account / Email Routing Addresses / Edit",
+    satisfiedBy: [routingAddressesWrite],
     scope: "account",
   },
   {

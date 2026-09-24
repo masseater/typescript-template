@@ -3,7 +3,7 @@ title: Elysia
 description: URL を持つ HTTP API のルーター。ハンドラは Effect で、呼び出し側の型は Eden Treaty が出す
 ---
 
-Elysia は HTTP のルーターである。URL とメソッドをインスタンスに登録し、来た `Request` は `app.fetch` が受ける。[TanStack Start](/tech-stack/tanstack-start) の `createServerFn` は URL を持たない。URL として置く API は Elysia に置き、Workers の fetch 自体は Start が持つ。`/api/$` のサーバールートが、受け取った `Request` を渡す。
+Elysia は HTTP のルーターである。URL とメソッドをインスタンスに登録し、来た `Request` は `app.fetch` が受ける。[TanStack Start](/tech-stack/tanstack-start) の `createServerFn` は URL を持たない。URL として置く API は Elysia に置き、Workers の fetch 自体は Start が受ける。`/api/$` のサーバールートが、受け取った `Request` を渡す。
 
 ```ts
 const Route = createFileRoute("/api/$")({

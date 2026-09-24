@@ -386,6 +386,18 @@ const staticExpected: Readonly<
     },
   }),
   email: declaredStack("email", {
+    ...Object.fromEntries(
+      budget.recipients.map((recipient, index) => [
+        `Alert${index + 1}`,
+        {
+          adopt: false,
+          bindings: [],
+          declared: { email: recipient },
+          removalPolicy: "retain",
+          type: "Cloudflare.Email.Address",
+        } satisfies ResourceInventory,
+      ]),
+    ),
     Sending: {
       adopt: false,
       bindings: [],
