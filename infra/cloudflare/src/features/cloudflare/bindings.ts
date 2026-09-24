@@ -14,6 +14,7 @@ import type {
   WorkerEntrypointBinding,
   WorkflowLike,
 } from "alchemy/Cloudflare";
+import type { Output } from "alchemy/Output";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{
@@ -34,9 +35,9 @@ type SharedEnv = Readonly<{
 }>;
 
 type BillingEnv = Readonly<{
-  STRIPE_PRICE_ID: Redacted.Redacted;
+  STRIPE_PRICE_ID: Output<string>;
   STRIPE_SECRET_KEY: Redacted.Redacted;
-  STRIPE_WEBHOOK_SECRET: Redacted.Redacted;
+  STRIPE_WEBHOOK_SECRET: Output<Redacted.Redacted>;
 }>;
 
 type WikiEnv = SharedEnv &
