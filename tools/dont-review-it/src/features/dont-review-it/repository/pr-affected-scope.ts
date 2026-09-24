@@ -84,6 +84,8 @@ const shardDirectories = (
     .toSorted();
 };
 
+const rootText = /^(?!(?:apps|libs|infra|tools)\/)(?:.+\.md|\.textlint[^/]*)$/u;
+
 const hookFilters = (
   files: readonly string[],
   packages: readonly WorkspacePackage[],
@@ -91,7 +93,11 @@ const hookFilters = (
   if (files.length === 0) {
     return [];
   }
-  const affected = affectedTests(files, packages);
+  const readByWorkspaces = files.filter((file) => !rootText.test(file));
+  if (readByWorkspaces.length === 0) {
+    return ["-w"];
+  }
+  const affected = affectedTests(readByWorkspaces, packages);
   if (affected.kind === "all") {
     return ["-r"];
   }
