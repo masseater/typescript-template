@@ -24,7 +24,7 @@ import {
   createdTree,
   fakeGitHub,
   pullRequestUrl,
-} from "#shared/wiki-publish/github-fixture.ts";
+} from "#shared/wiki-publish/github-test-fixture.ts";
 import { WikiPublisher } from "#shared/wiki-publish/index.ts";
 import { mergeQueueLabel, wikiDocsDirectory } from "#shared/wiki-publish/wiki-repository.ts";
 import { wikiLayer } from "#shared/wiki/index.ts";
