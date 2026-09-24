@@ -9,6 +9,7 @@ import {
   TextLink,
 } from "@repo/ui";
 
+import { ActionFailure } from "#shared/ui/index.ts";
 import { GroupBody } from "./group-body.tsx";
 
 import type { GroupView } from "#shared/contracts/index.ts";
@@ -35,15 +36,6 @@ function MemberRow({ id, name }: Readonly<{ id: string; name: string }>): ReactE
       </TextLink>
     </li>
   );
-}
-
-function ActionFailure({
-  error,
-}: Readonly<{ error: string | undefined }>): ReactElement | undefined {
-  if (error === undefined) {
-    return undefined;
-  }
-  return <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>;
 }
 
 function MemberActions({

@@ -1889,7 +1889,7 @@ importers:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
       elysia:
-        specifier: 2.0.0-beta.16
+        specifier: 'catalog:'
         version: 2.0.0-beta.16(exact-mirror@1.2.6(typebox@1.3.34))(openapi-types@12.1.3)(typebox@1.3.34)(typescript@7.0.2)
       es-toolkit:
         specifier: 'catalog:'

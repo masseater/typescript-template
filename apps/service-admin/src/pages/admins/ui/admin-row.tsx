@@ -13,9 +13,9 @@ import {
   adminPermissionOptions,
   adminStateChangeLabels,
   adminStateLabels,
-  nextAdminStates,
 } from "#pages/admins/model/admin-labels.ts";
 import { useAdminRowAction, type RowOperation } from "#pages/admins/model/admin-row-action.ts";
+import { nextAccountStates } from "#shared/contracts/index.ts";
 
 import type { ListedAdmin } from "#pages/admins/model/admin-list.ts";
 import type { ReactElement } from "react";
@@ -66,7 +66,7 @@ function AdminRow({
             type="button"
             disabled={action.pending}
             onClick={() => {
-              action.handleStateChange(nextAdminStates[admin.accountState]);
+              action.handleStateChange(nextAccountStates[admin.accountState]);
             }}
           >
             {adminStateChangeLabels[admin.accountState]}

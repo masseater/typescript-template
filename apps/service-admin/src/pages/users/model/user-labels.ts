@@ -1,15 +1,10 @@
 import { ACCOUNT_STATE } from "@repo/config";
 
-import { AccountState } from "#shared/contracts/index.ts";
+import { AccountState, nextAccountStates } from "#shared/contracts/index.ts";
 
 const accountStateLabels: Readonly<Record<typeof AccountState.Type, string>> = {
   [ACCOUNT_STATE.active]: "利用中",
   [ACCOUNT_STATE.suspended]: "停止中",
-};
-
-const nextAccountStates: Readonly<Record<typeof AccountState.Type, typeof AccountState.Type>> = {
-  [ACCOUNT_STATE.active]: ACCOUNT_STATE.suspended,
-  [ACCOUNT_STATE.suspended]: ACCOUNT_STATE.active,
 };
 
 const stateChangeLabels: Readonly<Record<typeof AccountState.Type, string>> = {
@@ -73,7 +68,6 @@ function rowConfirmation(
 export {
   accountStateLabels,
   accountStateOptions,
-  nextAccountStates,
   rowConfirmation,
   stateChangeLabels,
   verificationLabels,

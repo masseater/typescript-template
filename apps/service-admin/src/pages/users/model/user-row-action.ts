@@ -3,8 +3,8 @@ import { confirmedChange, type ConfirmedChange } from "@repo/ui";
 import { Effect } from "effect";
 
 import { adminClient } from "#shared/api/index.ts";
-import { MemberStateChanged, UserDeleted } from "#shared/contracts/index.ts";
-import { accountStateLabels, nextAccountStates } from "./user-labels.ts";
+import { MemberStateChanged, UserDeleted, nextAccountStates } from "#shared/contracts/index.ts";
+import { accountStateLabels } from "./user-labels.ts";
 
 import type { ListedUser } from "./user-list.ts";
 

@@ -1,9 +1,10 @@
 import { MEMBER_MCP_SCOPE } from "@repo/config";
-import { Button, FormColumn, STATUS_VARIANT, StatusMessage, localState, useAction } from "@repo/ui";
+import { Button, FormColumn, localState, useAction } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
 
 import { submitDecision } from "#pages/account/consent/api/consent.ts";
 import { serviceName } from "#shared/config/index.ts";
+import { ActionFailure } from "#shared/ui/index.ts";
 import { McpScopeFields, requestedToolScopes, useChosenScopes } from "./mcp-scope-fields.tsx";
 
 import type { ReactElement } from "react";
@@ -42,14 +43,6 @@ function DecisionButtons({
     </div>
   );
 }
-function DecisionFailure({
-  error,
-}: Readonly<{ error: string | undefined }>): ReactElement | undefined {
-  if (error === undefined) {
-    return undefined;
-  }
-  return <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>;
-}
 function ConsentActions({
   client,
 }: Readonly<{
@@ -80,7 +73,7 @@ function ConsentActions({
         denyDisabled={disabled}
         onDecide={decide}
       />
-      <DecisionFailure error={action.error} />
+      <ActionFailure error={action.error} />
     </FormColumn>
   );
 }

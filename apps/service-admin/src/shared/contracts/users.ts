@@ -1,9 +1,14 @@
-import { accountStates } from "@repo/config";
+import { ACCOUNT_STATE, accountStates } from "@repo/config";
 import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
 import { Identifier, IdentifierQuery, UserKeyword, pageNumber } from "@repo/runtime/contracts";
 import { Schema, Struct } from "effect";
 
 const AccountState = Schema.Literals(accountStates);
+
+const nextAccountStates: Readonly<Record<typeof AccountState.Type, typeof AccountState.Type>> = {
+  [ACCOUNT_STATE.active]: ACCOUNT_STATE.suspended,
+  [ACCOUNT_STATE.suspended]: ACCOUNT_STATE.active,
+};
 
 const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
 
@@ -44,4 +49,5 @@ export {
   UserDeletion,
   UserList,
   UserListQuery,
+  nextAccountStates,
 };

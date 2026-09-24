@@ -23,11 +23,6 @@ const adminStateChangeLabels: Readonly<Record<typeof AccountState.Type, string>>
   [ACCOUNT_STATE.suspended]: "有効にする",
 };
 
-const nextAdminStates: Readonly<Record<typeof AccountState.Type, typeof AccountState.Type>> = {
-  [ACCOUNT_STATE.active]: ACCOUNT_STATE.suspended,
-  [ACCOUNT_STATE.suspended]: ACCOUNT_STATE.active,
-};
-
 const adminsTableColumns = ["名前", "メールアドレス", "権限", "状態", "登録日", "操作"] as const;
 
 const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
@@ -40,5 +35,4 @@ export {
   adminStateLabels,
   adminsTableColumns,
   isAdminPermission,
-  nextAdminStates,
 };
