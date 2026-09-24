@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { causeRecord, runCli } from "@repo/cli";
-import { Console, Effect, Option, Path, Schema } from "effect";
-import { ChildProcess } from "effect/unstable/process";
+import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { Effect, Option, Path, Schema } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { pathExists } from "../platform/file-system.ts";
 import { capturedProcess } from "./captured-process.ts";
@@ -10,13 +10,13 @@ import { hookFilters } from "./pr-affected-scope.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { workspacePackages } from "./workspace-packages.ts";
 
-class NotAHookStage extends Schema.TaggedError<NotAHookStage>()("NotAHookStage", {
-  stage: Schema.String,
-}) {
-  public override get message(): string {
-    return `${this.stage} is not a hook stage`;
-  }
-}
+import type { lifecycles } from "@repo/vite-config";
+
+const HookStage = Schema.Literals([
+  "precommit",
+  "prepush",
+] as const satisfies readonly (typeof lifecycles)[number][]);
+type HookStage = typeof HookStage.Type;
 
 const git = (...handed: readonly string[]) =>
   capturedProcess(
@@ -52,26 +52,35 @@ const pushedFiles = Effect.fn("pushedFiles")(function* pushedFiles() {
     : lines(yield* git("diff", "--name-only", "--no-renames", base.value, "HEAD"));
 });
 
-const changedFiles = Effect.fn("changedFiles")(function* changedFiles(stage: string) {
-  if (stage === "precommit") {
-    return yield* stagedFiles();
-  }
-  if (stage === "prepush") {
-    return yield* pushedFiles();
-  }
-  return yield* new NotAHookStage({ stage });
-});
+const stages = {
+  precommit: { changedFiles: stagedFiles, concurrencyLimit: 2 },
+  prepush: { changedFiles: pushedFiles, concurrencyLimit: 1 },
+} as const satisfies Readonly<Record<HookStage, unknown>>;
 
 runCli(
-  Effect.gen(function* hookScope() {
-    const files = yield* changedFiles(process.argv[2] ?? "");
+  Effect.gen(function* hook() {
+    const stage = yield* Schema.decodeUnknownEffect(HookStage)(process.argv[2]);
+    const files = yield* stages[stage].changedFiles();
     const filters = Option.isNone(files)
       ? ["-r"]
       : hookFilters(
           files.value.filter((file) => file !== ""),
           yield* workspacePackages,
         );
-    yield* Console.log(filters.join(" "));
+    if (filters.length === 0) {
+      return;
+    }
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const exitCode = yield* spawner.exitCode(
+      ChildProcess.make(
+        "vp",
+        ["run", "--concurrency-limit", String(stages[stage].concurrencyLimit), ...filters, stage],
+        { cwd: repositoryRoot, stderr: "inherit", stdin: "inherit", stdout: "inherit" },
+      ),
+    );
+    if (exitCode !== 0) {
+      yield* markFailed;
+    }
   }).pipe(Effect.provide(NodeServices.layer)),
-  (cause) => causeRecord("quality.hook_scope_failed", { cause }),
+  (cause) => causeRecord("quality.hook_failed", { cause }),
 );
