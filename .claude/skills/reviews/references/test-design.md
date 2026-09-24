@@ -66,7 +66,12 @@ expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effe
 
 ## 書き方の例
 
-テストは次のように書く（`tools/ai-native/src/features/ai-native/sync-base/read-open-pr.test.ts`）。
+書く前に、対象の契約から確かめたいことを文で決める。`openPullRequestOf` なら次の 2 つになる。
+
+- 開いている PR について `gh pr view` が成功したら、その PR の番号、URL、base、merge 状態を返す。
+- `gh pr view` が失敗したら何も返さない。
+
+1 つの文が 1 つの `describe` になり、文の前半の状況を fixture が作り、後半の観測できる結果を `it` が確かめる（`tools/ai-native/src/features/ai-native/sync-base/read-open-pr.test.ts`）。
 
 ```ts
 import { describe, expect, test } from "vite-plus/test";
