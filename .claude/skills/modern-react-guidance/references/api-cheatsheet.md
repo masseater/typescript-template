@@ -4,7 +4,7 @@
 
 | API | このリポジトリ |
 | --- | --- |
-| `use(context)` | Context を読む。サーバーデータの取得には使わない |
+| `use(context)` | Context の値を取り出す。サーバーデータの取得には使わない |
 | `useOptimistic` | 楽観更新。許可されている |
 | `useTransition` / `startTransition` | 急がない更新 |
 | `useDeferredValue` | 重い派生を入力と分ける。タイマーデバウンスの代わり |
