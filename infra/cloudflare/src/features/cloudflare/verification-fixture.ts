@@ -1,6 +1,7 @@
 import { deploymentKey } from "@repo/observability/deployment-keys";
 
 const HEX_ID_LENGTH = 32;
+const pemLabel = "PRIVATE KEY";
 const verificationAuthSecret = "verification-test-secret-0123456789abcdef";
 
 const verificationSettings = {
@@ -20,6 +21,11 @@ const verificationSettings = {
   otlpAuthorization: "Bearer stack-verification-not-a-real-token",
   prefix: "template-verify",
   stripeSecretKey: "sk_test_stackVerificationNotAReal",
+  wikiPublish: {
+    appId: "424242",
+    privateKey: `-----BEGIN ${pemLabel}-----\nstack-verification-not-a-real-key\n-----END ${pemLabel}-----\n`,
+    repository: "template-verify/wiki",
+  },
   zoneId: "b".repeat(HEX_ID_LENGTH),
 };
 
@@ -39,6 +45,9 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.otlpEndpoint]: verificationSettings.otlp.endpoint,
   [deploymentKey.prefix]: verificationSettings.prefix,
   [deploymentKey.stripeSecretKey]: verificationSettings.stripeSecretKey,
+  [deploymentKey.wikiPublishAppId]: verificationSettings.wikiPublish.appId,
+  [deploymentKey.wikiPublishPrivateKey]: verificationSettings.wikiPublish.privateKey,
+  [deploymentKey.wikiPublishRepository]: verificationSettings.wikiPublish.repository,
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };

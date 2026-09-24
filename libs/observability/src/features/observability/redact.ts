@@ -9,6 +9,7 @@ const secretWords = [
   "passphrase",
   "authorization",
   String.raw`api[_-]?key`,
+  String.raw`private[_-]?key`,
   ...listWords,
   ...privateDeploymentKeys,
 ];

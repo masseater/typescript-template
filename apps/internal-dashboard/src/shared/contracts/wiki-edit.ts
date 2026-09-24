@@ -15,9 +15,16 @@ const WikiSourceQuery = Schema.Struct({ path: WikiPagePath });
 
 const WikiSource = Schema.Struct({
   baseRevision: Schema.NullOr(Schema.String),
-  draft: Schema.NullOr(Schema.Struct({ updatedAt: Schema.DateFromString, version: DraftVersion })),
+  draft: Schema.NullOr(
+    Schema.Struct({
+      publishedUrl: Schema.NullOr(Schema.String),
+      updatedAt: Schema.DateFromString,
+      version: DraftVersion,
+    }),
+  ),
   markdown: Schema.String,
   path: WikiPagePath,
+  publishable: Schema.Boolean,
 });
 type WikiSource = typeof WikiSource.Type;
 
@@ -29,6 +36,10 @@ const WikiDraftSave = Schema.Struct({
 });
 
 const WikiDraftDiscard = Schema.Struct({ path: WikiPagePath, version: DraftVersion });
+
+const WikiDraftPublish = WikiDraftDiscard;
+
+const WikiDraftPublished = Redirect;
 
 const WikiDraftSaved = Schema.Struct({ version: DraftVersion });
 
@@ -43,6 +54,8 @@ const WikiImageUploaded = Redirect;
 
 export {
   WikiDraftDiscard,
+  WikiDraftPublish,
+  WikiDraftPublished,
   WikiDraftSave,
   WikiDraftSaved,
   WikiImageUpload,
