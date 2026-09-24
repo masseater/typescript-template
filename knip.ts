@@ -255,7 +255,11 @@ const config = ({
       "apps/internal-dashboard": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["src/**/*.{ts,tsx}!", "!src/shared/wiki/wiki-oauth-fixture.ts!"],
+        project: [
+          "src/**/*.{ts,tsx}!",
+          "!src/shared/wiki/wiki-oauth-fixture.ts!",
+          "!src/shared/wiki-publish/github-fixture.ts!",
+        ],
       },
       "apps/internal-wiki": {
         ...app,

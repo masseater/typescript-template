@@ -3,7 +3,12 @@ import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { TestDatabase, runStatement } from "./testing.ts";
-import { discardWikiDraft, findWikiDraft, saveWikiDraft } from "./wiki-draft.ts";
+import {
+  discardWikiDraft,
+  findWikiDraft,
+  markWikiDraftPublished,
+  saveWikiDraft,
+} from "./wiki-draft.ts";
 
 const SECOND = 1000;
 const SAVED_TWICE = 2;
@@ -48,6 +53,8 @@ describe("saving a wiki draft", () => {
         baseRevision: "blob-1",
         markdown: "---\ntitle: t\ndescription: d\n---\n\n本文\n",
         path: "glossary/invite",
+        publishedRevision: null,
+        publishedUrl: null,
         updatedAt: 0,
         version: 1,
       },
@@ -55,6 +62,8 @@ describe("saving a wiki draft", () => {
         baseRevision: "blob-1",
         markdown: "二",
         path: "glossary/invite",
+        publishedRevision: null,
+        publishedUrl: null,
         updatedAt: SECOND,
         version: SAVED_TWICE,
       },
@@ -142,5 +151,49 @@ describe("a draft whose editor is removed", () => {
 
   it("outlives the editor who saved it", ({ orphaned }) => {
     expect(orphaned).toBe("a");
+  });
+});
+
+describe("publishing a wiki draft", () => {
+  const pullRequest = "https://github.example.test/owner/repo/pull/7";
+  const it = test.extend("published", () =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        yield* runStatement(insertStaff);
+        const draft = { baseRevision: "blob-1", path: "index.md", updatedBy: "staff" };
+        yield* saveWikiDraft({ ...draft, markdown: "一", version: 0 });
+        yield* markWikiDraftPublished({
+          path: "index.md",
+          revision: "blob-2",
+          url: pullRequest,
+          version: 1,
+        });
+        const marked = yield* findWikiDraft("index.md");
+        const stale = yield* markWikiDraftPublished({
+          path: "index.md",
+          revision: "blob-3",
+          url: pullRequest,
+          version: 0,
+        }).pipe(Effect.flip);
+        yield* saveWikiDraft({ ...draft, markdown: "一", version: 1 });
+        const savedUnchanged = yield* findWikiDraft("index.md");
+        yield* saveWikiDraft({ ...draft, markdown: "二", version: 2 });
+        const editedAgain = yield* findWikiDraft("index.md");
+        return {
+          editedAgain: [editedAgain?.publishedRevision, editedAgain?.publishedUrl],
+          marked: [marked?.publishedRevision, marked?.publishedUrl],
+          savedUnchanged: [savedUnchanged?.publishedRevision, savedUnchanged?.publishedUrl],
+          stale: stale._tag,
+        };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("remembers the pull request until the draft's text changes", ({ published }) => {
+    expect(published).toStrictEqual({
+      editedAgain: [null, null],
+      marked: ["blob-2", pullRequest],
+      savedUnchanged: ["blob-2", pullRequest],
+      stale: "WikiDraftConflict",
+    });
   });
 });

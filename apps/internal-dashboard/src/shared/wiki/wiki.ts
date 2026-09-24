@@ -8,6 +8,8 @@ import { configuredAppLayer } from "@repo/runtime";
 import { readAppStorage, readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
+import { WikiPublisher } from "#shared/wiki-publish/index.ts";
+
 import type { AuthFailure } from "@repo/auth";
 import type { ConfigurationInvalid } from "@repo/config";
 import type { FeatureFlags } from "@repo/feature-flags";
@@ -16,7 +18,7 @@ import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
-type WikiServices = AppServices | FeatureFlags | FlagEditorAccess;
+type WikiServices = AppServices | FeatureFlags | FlagEditorAccess | WikiPublisher;
 
 const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: (user) =>
@@ -39,6 +41,7 @@ function wikiLayer(
             configuredAppLayer({ appConfig: config, audience: wikiService, routes, storage }),
             flags,
             staffFlagEditors,
+            WikiPublisher.fromEnvironment(env),
           );
         }),
       ),
