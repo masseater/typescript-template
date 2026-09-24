@@ -1,8 +1,9 @@
-import { Effect } from "effect";
+import { Effect, type Scope } from "effect";
+import { ChildProcess } from "effect/unstable/process";
 import { attemptAsync } from "es-toolkit";
 
-import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
-import { spawnChild } from "../node-spawn.ts";
+import { childEndOf } from "../child-process.ts";
+import { nativeFailure, spawner } from "../host.ts";
 import { signalProcessTree, TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { DELAY_ENDING, settledDelay } from "./settled-delay.ts";
 import {
@@ -18,19 +19,24 @@ import type { Invocation } from "./usage.ts";
 
 const KILL_GRACE_MS = 5_000;
 
+type ChildExit = {
+  kind: "exit";
+  exitCode: number | null;
+  bySignal: NodeJS.Signals | null;
+};
+
 type CommandChild = {
-  readonly pid: number | undefined;
-  once(event: "error", listener: (failure: Error) => void): unknown;
-  once(
-    event: "exit",
-    listener: (code: number | null, signal: NodeJS.Signals | null) => void,
-  ): unknown;
+  readonly pid: number;
+  readonly exited: Effect.Effect<ChildExit>;
 };
 
 type RunCommandDependencies = {
   platform: NodeJS.Platform;
-  signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Error | null;
-  spawnChild: (input: { executable: string; args: readonly string[] }) => CommandChild;
+  signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Effect.Effect<Error | null>;
+  spawnChild: (input: {
+    executable: string;
+    args: readonly string[];
+  }) => Effect.Effect<CommandChild, Error, Scope.Scope>;
   killGraceMs: number;
 };
 
@@ -52,7 +58,7 @@ const timeoutFired = (parameters: {
         parameters.dependencies.platform === "win32"
           ? TREE_TERMINATION_SIGNAL.forced
           : TREE_TERMINATION_SIGNAL.graceful;
-      const terminationFailure = parameters.dependencies.signalTree({
+      const terminationFailure = yield* parameters.dependencies.signalTree({
         pid: parameters.childPid,
         signal: firstSignal,
       });
@@ -60,7 +66,7 @@ const timeoutFired = (parameters: {
         return { fired: true, terminationFailure };
       }
       yield* Effect.sleep(`${parameters.dependencies.killGraceMs} millis`);
-      const forcedFailure = parameters.dependencies.signalTree({
+      const forcedFailure = yield* parameters.dependencies.signalTree({
         pid: parameters.childPid,
         signal: TREE_TERMINATION_SIGNAL.forced,
       });
@@ -74,51 +80,43 @@ const reportTreeTerminationFailure = (failure: Error): void => {
   );
 };
 
-type Settled =
-  | { kind: "start-failure"; failure: Error }
-  | {
-      kind: typeof CHILD_PROCESS_EVENT.exit;
-      exitCode: number | null;
-      bySignal: NodeJS.Signals | null;
-    };
-
-type Verdict = { settled: Settled; timedOut: boolean };
+type Verdict = {
+  settled: { kind: "start-failure"; failure: Error } | ChildExit;
+  timedOut: boolean;
+};
 
 const guardChild = (input: {
-  childPid: number;
-  settling: Promise<Settled>;
+  child: CommandChild;
   invocation: Invocation;
   dependencies: RunCommandDependencies;
-}): Promise<Verdict & { terminationFailure: Error | null }> => {
+}): Effect.Effect<Verdict & { terminationFailure: Error | null }> => {
   const canceller = new AbortController();
-  return Effect.runPromise(
-    Effect.gen(function* guardRunningChild() {
-      const runningHandler = makeRunningInterruptHandler({
-        childPid: input.childPid,
-        signalTree: input.dependencies.signalTree,
-        reportFailure: reportTreeTerminationFailure,
-      });
-      installInterruptHandler(runningHandler);
-      const fired =
-        input.invocation.timeoutSec === 0
-          ? Promise.resolve({ fired: false, terminationFailure: null })
-          : timeoutFired({
-              childPid: input.childPid,
-              timeoutMs: input.invocation.timeoutSec * 1000,
-              cancel: canceller.signal,
-              dependencies: input.dependencies,
-            });
-      const settled = yield* Effect.promise(() => input.settling);
-      canceller.abort();
-      const timeout = yield* Effect.promise(() => fired);
-      dropInterruptHandler(runningHandler);
-      return {
-        settled,
-        timedOut: timeout.fired,
-        terminationFailure: timeout.terminationFailure,
-      };
-    }),
-  );
+  return Effect.gen(function* guardRunningChild() {
+    const runningHandler = makeRunningInterruptHandler({
+      childPid: input.child.pid,
+      signalTree: input.dependencies.signalTree,
+      reportFailure: reportTreeTerminationFailure,
+    });
+    installInterruptHandler(runningHandler);
+    const fired =
+      input.invocation.timeoutSec === 0
+        ? Promise.resolve({ fired: false, terminationFailure: null })
+        : timeoutFired({
+            childPid: input.child.pid,
+            timeoutMs: input.invocation.timeoutSec * 1000,
+            cancel: canceller.signal,
+            dependencies: input.dependencies,
+          });
+    const settled = yield* input.child.exited;
+    canceller.abort();
+    const timeout = yield* Effect.promise(() => fired);
+    dropInterruptHandler(runningHandler);
+    return {
+      settled,
+      timedOut: timeout.fired,
+      terminationFailure: timeout.terminationFailure,
+    };
+  });
 };
 
 const releaseHold = (hold: SlotHold): Promise<undefined> =>
@@ -131,9 +129,7 @@ const releaseFailureOf = (hold: SlotHold): Promise<unknown> =>
     ),
   );
 
-const reportChildEnd = (
-  settled: Extract<Settled, { kind: typeof CHILD_PROCESS_EVENT.exit }>,
-): number => {
+const reportChildEnd = (settled: ChildExit): number => {
   if (settled.bySignal !== null) {
     process.stderr.write(`throttle: command was killed by ${settled.bySignal}\n`);
     return 1;
@@ -177,44 +173,60 @@ const reportRunEnd = (input: {
   return input.releaseFailure === null ? verdictCode : reportReleaseFailure(input.releaseFailure);
 };
 
-const settledChild = (child: CommandChild): Promise<Settled> =>
-  Effect.runPromise(
-    Effect.callback<Settled>((resume) => {
-      child.once(CHILD_PROCESS_EVENT.failure, (failure: Error) => {
-        resume(Effect.succeed({ kind: "start-failure", failure }));
-      });
-      child.once(CHILD_PROCESS_EVENT.exit, (code: number | null, signal: NodeJS.Signals | null) => {
-        resume(
-          Effect.succeed({ kind: CHILD_PROCESS_EVENT.exit, exitCode: code, bySignal: signal }),
-        );
-      });
-    }),
-  );
+const spawnDetached: RunCommandDependencies["spawnChild"] = (invocation) =>
+  spawner
+    .spawn(
+      ChildProcess.make(invocation.executable, [...invocation.args], {
+        detached: true,
+        stdin: "inherit",
+        stdout: "inherit",
+        stderr: "inherit",
+      }),
+    )
+    .pipe(
+      Effect.map((handle) => ({
+        pid: handle.pid,
+        exited: childEndOf(handle).pipe(
+          Effect.map((end): ChildExit => ({
+            kind: "exit",
+            exitCode: end.code,
+            bySignal: end.signal,
+          })),
+        ),
+      })),
+      Effect.mapError(nativeFailure),
+    );
+
+type Started = { kind: "running"; child: CommandChild } | { kind: "start-failure"; failure: Error };
 
 const spawnUnderHeldInterrupt = (input: {
   invocation: Invocation;
   hold: SlotHold;
   dependencies: RunCommandDependencies;
-}): Promise<{ childPid: number; settling: Promise<Settled> }> =>
-  Effect.runPromise(
-    Effect.gen(function* spawnHeld() {
-      const held = makeHeldInterrupt({
-        release: input.hold.release,
-        onUnreleased: warnUnreleased,
-      });
-      installInterruptHandler(held.handler);
-      process.stderr.write(`throttle: run ${input.invocation.commandLine}\n`);
-      const child = input.dependencies.spawnChild({
+}): Effect.Effect<Started, never, Scope.Scope> =>
+  Effect.gen(function* spawnHeld() {
+    const held = makeHeldInterrupt({
+      release: input.hold.release,
+      onUnreleased: warnUnreleased,
+    });
+    installInterruptHandler(held.handler);
+    process.stderr.write(`throttle: run ${input.invocation.commandLine}\n`);
+    const started = yield* input.dependencies
+      .spawnChild({
         executable: input.invocation.executable,
         args: input.invocation.args,
-      });
-      const settling = settledChild(child);
-      dropInterruptHandler(held.handler);
-      held.standDown();
-      yield* Effect.promise(() => held.settled);
-      return { childPid: child.pid ?? 0, settling };
-    }),
-  );
+      })
+      .pipe(
+        Effect.match({
+          onFailure: (failure): Started => ({ kind: "start-failure", failure }),
+          onSuccess: (child): Started => ({ kind: "running", child }),
+        }),
+      );
+    dropInterruptHandler(held.handler);
+    held.standDown();
+    yield* Effect.promise(() => held.settled);
+    return started;
+  });
 
 export const runWithSlot = (input: {
   invocation: Invocation;
@@ -222,40 +234,30 @@ export const runWithSlot = (input: {
   dependencies?: Partial<RunCommandDependencies>;
 }): Promise<number> =>
   Effect.runPromise(
-    Effect.gen(function* runHeldCommand() {
-      const dependencies: RunCommandDependencies = {
-        platform: input.dependencies?.platform ?? process.platform,
-        signalTree: input.dependencies?.signalTree ?? signalProcessTree,
-        spawnChild:
-          input.dependencies?.spawnChild ??
-          ((invocation) =>
-            spawnChild({
-              executable: invocation.executable,
-              handed: invocation.args,
-              spawnOptions: {
-                detached: true,
-                stdio: "inherit",
-              },
-            })),
-        killGraceMs: input.dependencies?.killGraceMs ?? KILL_GRACE_MS,
-      };
-      const startedCommand = yield* Effect.promise(() =>
-        spawnUnderHeldInterrupt({
+    Effect.scoped(
+      Effect.gen(function* runHeldCommand() {
+        const dependencies: RunCommandDependencies = {
+          platform: input.dependencies?.platform ?? process.platform,
+          signalTree: input.dependencies?.signalTree ?? signalProcessTree,
+          spawnChild: input.dependencies?.spawnChild ?? spawnDetached,
+          killGraceMs: input.dependencies?.killGraceMs ?? KILL_GRACE_MS,
+        };
+        const started = yield* spawnUnderHeldInterrupt({
           invocation: input.invocation,
           hold: input.hold,
           dependencies,
-        }),
-      );
-      const verdict = yield* Effect.promise(() =>
-        guardChild({
-          childPid: startedCommand.childPid,
-          settling: startedCommand.settling,
-          invocation: input.invocation,
-          dependencies,
-        }),
-      );
-      const releaseFailure = yield* Effect.promise(() => releaseFailureOf(input.hold));
-      return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
-    }),
+        });
+        const verdict =
+          started.kind === "start-failure"
+            ? { settled: started, timedOut: false, terminationFailure: null }
+            : yield* guardChild({
+                child: started.child,
+                invocation: input.invocation,
+                dependencies,
+              });
+        const releaseFailure = yield* Effect.promise(() => releaseFailureOf(input.hold));
+        return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
+      }),
+    ),
   );
 export type { CommandChild, RunCommandDependencies };

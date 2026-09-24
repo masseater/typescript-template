@@ -38,6 +38,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/api-logs": "catalog:",
     "@opentelemetry/semantic-conventions": "catalog:",

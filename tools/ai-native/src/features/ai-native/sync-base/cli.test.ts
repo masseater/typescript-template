@@ -2,22 +2,14 @@ import { runHook } from "cc-hooks-ts";
 import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
-import { joinPath, optionalSetting, writeFileString } from "../host.ts";
-import { spawnChildSync } from "../node-spawn.ts";
+import { runCaptured } from "../child-process.ts";
+import { filesystem, joinPath, optionalSetting, writeFileString } from "../host.ts";
 import { hook } from "./hook.ts";
 import { instructionFor } from "./message.ts";
 
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
 const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly chmodSync: (location: string, mode: number) => void;
-  readonly mkdtempSync: (prefix: string) => string;
-};
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
-
 const BEHIND_GH_SCRIPT = `#!/bin/sh
 echo '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":11,"url":"https://example.com/11"}'
 `;
@@ -42,13 +34,12 @@ describe("sync-base cli", () => {
   describe("a Stop where gh finds no pull request", () => {
     const it = test
       .extend("theWorkTreeWithoutAPullRequest", () =>
-        nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-no-pr-")))
+        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-no-pr-" })))
       .extend("theRunOverAStopWithoutAPullRequest", ({ theWorkTreeWithoutAPullRequest }) =>
-        spawnChildSync({
-          executable: process.execPath,
-          handed: [CLI_PATH],
-          spawnOptions: {
-            encoding: "utf8",
+        Effect.runPromise(
+          runCaptured({
+            executable: process.execPath,
+            handed: [CLI_PATH],
             env: {
               ...process.env,
               PATH: `/nonexistent-gh-bin:${optionalSetting("PATH") ?? ""}`,
@@ -60,8 +51,8 @@ describe("sync-base cli", () => {
               stop_hook_active: false,
               transcript_path: `${theWorkTreeWithoutAPullRequest}/transcript.jsonl`,
             }),
-          },
-        }),
+          }),
+        ),
       )
       .extend(
         "theExitCodeOverAStopWithoutAPullRequest",
@@ -97,20 +88,24 @@ describe("sync-base cli", () => {
 
   describe("a Stop where gh reports the head is behind its base", () => {
     const it = test
-      .extend("theWorkTree", () => nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-pr-")))
-      .extend("theBinWithABehindGh", () => {
-        const directory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-gh-"));
-        const ghPath = joinPath(directory, "gh");
-        writeFileString({ location: ghPath, written: BEHIND_GH_SCRIPT });
-        nodeFs.chmodSync(ghPath, 0o755);
-        return directory;
-      })
+      .extend("theWorkTree", () =>
+        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-pr-" })))
+      .extend("theBinWithABehindGh", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const directory = yield* filesystem.makeTempDirectory({ prefix: "sync-base-gh-" });
+            const ghPath = joinPath(directory, "gh");
+            yield* writeFileString({ location: ghPath, written: BEHIND_GH_SCRIPT });
+            yield* filesystem.chmod(ghPath, 0o755);
+            return directory;
+          }),
+        ),
+      )
       .extend("theRunOverABehindPullRequest", ({ theBinWithABehindGh, theWorkTree }) =>
-        spawnChildSync({
-          executable: process.execPath,
-          handed: [CLI_PATH],
-          spawnOptions: {
-            encoding: "utf8",
+        Effect.runPromise(
+          runCaptured({
+            executable: process.execPath,
+            handed: [CLI_PATH],
             env: {
               ...process.env,
               PATH: `${theBinWithABehindGh}:${optionalSetting("PATH") ?? ""}`,
@@ -122,8 +117,8 @@ describe("sync-base cli", () => {
               stop_hook_active: false,
               transcript_path: `${theWorkTree}/transcript.jsonl`,
             }),
-          },
-        }),
+          }),
+        ),
       )
       .extend("theExitCodeOverABehindPullRequest", ({ theRunOverABehindPullRequest }) => {
         const { status } = theRunOverABehindPullRequest;

@@ -1,19 +1,14 @@
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { joinPath } from "../host.ts";
+import { filesystem } from "../host.ts";
 import { hook } from "./hook.ts";
-
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-};
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
 
 describe("sync-base hook", () => {
   describe("a Stop in a work tree with no open pull request", () => {
     const it = test
-      .extend("theWorkTree", () => nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-hook-")))
+      .extend("theWorkTree", () =>
+        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-hook-" })))
       .extend("decisionForAStopWithoutAPullRequest", ({ theWorkTree }) =>
         hook.run({
           input: {

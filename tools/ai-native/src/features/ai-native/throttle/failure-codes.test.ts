@@ -1,4 +1,4 @@
-import { attempt } from "es-toolkit";
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { joinPath, readFileString, temporaryDirectory } from "../host.ts";
@@ -6,12 +6,12 @@ import { failureSpelling } from "./failure-codes.ts";
 
 describe("failureSpelling", () => {
   describe("a refusal the file system named with a code", () => {
-    const it = test.extend("theSpellingOfACodedRefusal", () => {
-      const [refusal] = attempt<string, Error>(() =>
-        readFileString(joinPath(temporaryDirectory(), "throttle-marker-that-was-never-written")),
-      );
-      return failureSpelling(refusal);
-    });
+    const it = test.extend("theSpellingOfACodedRefusal", () =>
+      Effect.runPromise(
+        readFileString(
+          joinPath(temporaryDirectory(), "throttle-marker-that-was-never-written"),
+        ).pipe(Effect.flip, Effect.map(failureSpelling)),
+      ));
 
     it("spells the refusal by its code", ({ theSpellingOfACodedRefusal }) => {
       expect(theSpellingOfACodedRefusal).toBe("ENOENT");
