@@ -36,6 +36,7 @@ type RunCommandDependencies = {
   spawnChild: (input: {
     executable: string;
     args: readonly string[];
+    killGraceMs: number;
   }) => Effect.Effect<CommandChild, Error, Scope.Scope>;
   killGraceMs: number;
 };
@@ -184,6 +185,11 @@ const spawnDetached: RunCommandDependencies["spawnChild"] = (invocation) =>
       }),
     )
     .pipe(
+      Effect.tap((handle) =>
+        Effect.addFinalizer(() =>
+          Effect.ignore(handle.kill({ forceKillAfter: `${invocation.killGraceMs} millis` })),
+        ),
+      ),
       Effect.map((handle) => ({
         pid: handle.pid,
         exited: childEndOf(handle).pipe(
@@ -215,6 +221,7 @@ const spawnUnderHeldInterrupt = (input: {
       .spawnChild({
         executable: input.invocation.executable,
         args: input.invocation.args,
+        killGraceMs: input.dependencies.killGraceMs,
       })
       .pipe(
         Effect.match({
@@ -234,30 +241,31 @@ export const runWithSlot = (input: {
   dependencies?: Partial<RunCommandDependencies>;
 }): Promise<number> =>
   Effect.runPromise(
-    Effect.scoped(
-      Effect.gen(function* runHeldCommand() {
-        const dependencies: RunCommandDependencies = {
-          platform: input.dependencies?.platform ?? process.platform,
-          signalTree: input.dependencies?.signalTree ?? signalProcessTree,
-          spawnChild: input.dependencies?.spawnChild ?? spawnDetached,
-          killGraceMs: input.dependencies?.killGraceMs ?? KILL_GRACE_MS,
-        };
-        const started = yield* spawnUnderHeldInterrupt({
-          invocation: input.invocation,
-          hold: input.hold,
-          dependencies,
-        });
-        const verdict =
-          started.kind === "start-failure"
+    Effect.gen(function* runHeldCommand() {
+      const dependencies: RunCommandDependencies = {
+        platform: input.dependencies?.platform ?? process.platform,
+        signalTree: input.dependencies?.signalTree ?? signalProcessTree,
+        spawnChild: input.dependencies?.spawnChild ?? spawnDetached,
+        killGraceMs: input.dependencies?.killGraceMs ?? KILL_GRACE_MS,
+      };
+      const verdict = yield* Effect.scoped(
+        Effect.gen(function* runInChildScope() {
+          const started = yield* spawnUnderHeldInterrupt({
+            invocation: input.invocation,
+            hold: input.hold,
+            dependencies,
+          });
+          return started.kind === "start-failure"
             ? { settled: started, timedOut: false, terminationFailure: null }
             : yield* guardChild({
                 child: started.child,
                 invocation: input.invocation,
                 dependencies,
               });
-        const releaseFailure = yield* Effect.promise(() => releaseFailureOf(input.hold));
-        return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
-      }),
-    ),
+        }),
+      );
+      const releaseFailure = yield* Effect.promise(() => releaseFailureOf(input.hold));
+      return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
+    }),
   );
 export type { CommandChild, RunCommandDependencies };

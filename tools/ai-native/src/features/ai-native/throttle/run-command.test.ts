@@ -37,6 +37,14 @@ const POLL_MS = 10_000;
 
 const LINGERING_ARGUMENTS = ["-e", "setInterval(() => {}, 1000);"];
 
+const TERMINABLE_MEMBER = `const { writeFileSync } = require("node:fs"); const [, stamp] = process.argv; process.on("SIGTERM", () => { writeFileSync(stamp, "terminated"); process.exit(0); }); writeFileSync(stamp, "ready"); setInterval(() => {}, 1000);`;
+
+const TRAPPING_MEMBER = `const { writeFileSync } = require("node:fs"); const [, stamp, heartbeat] = process.argv; let beats = 0; process.on("SIGTERM", () => { writeFileSync(stamp, "trapped"); }); writeFileSync(stamp, "ready"); setInterval(() => { beats += 1; writeFileSync(heartbeat, String(beats)); }, 20);`;
+
+const STARTS_A_MEMBER_THEN_EXITS_ZERO = `const { spawn } = require("node:child_process"); const { existsSync } = require("node:fs"); const [, member, stamp, ...rest] = process.argv; spawn(process.execPath, ["-e", member, stamp, ...rest], { stdio: "ignore" }); const settle = () => (existsSync(stamp) ? process.exit(0) : setTimeout(settle, 10)); settle();`;
+
+const STARTS_A_MEMBER_THEN_EXITS_THREE = `const { spawn } = require("node:child_process"); const { existsSync } = require("node:fs"); const [, member, stamp, ...rest] = process.argv; spawn(process.execPath, ["-e", member, stamp, ...rest], { stdio: "ignore" }); const settle = () => (existsSync(stamp) ? process.exit(3) : setTimeout(settle, 10)); settle();`;
+
 describe("runWithSlot", () => {
   const test = standardIoTest.extend("slotDirectory", ({}, { onCleanup }) => {
     const madeSlotDirectory = Effect.runPromise(
@@ -572,6 +580,221 @@ describe("runWithSlot", () => {
     it("leaves no grandchild behind", { timeout: 50_000 }, ({ theProbeOfTheGrandchild }) => {
       expect(theProbeOfTheGrandchild).toBe("kill ESRCH");
     });
+  });
+
+  describe("a background member of the command's group after the command exits zero", () => {
+    const it = test
+      .extend("stampsDirectory", ({}, { onCleanup }) => {
+        const madeStampsDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "throttle-member-stamps-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.promise(() => madeStampsDirectory).pipe(Effect.flatMap(removePath)),
+          ),
+        );
+        return madeStampsDirectory;
+      })
+      .extend("theMemberStampAfterACleanExit", ({ slotDirectory, stampsDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const stamp = joinPath(stampsDirectory, "member");
+            yield* Effect.promise(() =>
+              runThrottle(
+                [
+                  "--",
+                  process.execPath,
+                  "-e",
+                  STARTS_A_MEMBER_THEN_EXITS_ZERO,
+                  TERMINABLE_MEMBER,
+                  stamp,
+                ],
+                {
+                  slotDir: slotDirectory,
+                  limit: 1,
+                  waitBudgetMs: WAIT_BUDGET_MS,
+                  pollMs: POLL_MS,
+                  isInteractive: false,
+                },
+              ),
+            );
+            return yield* readFileString(stamp);
+          }),
+        ),
+      );
+
+    it(
+      "ends the member with SIGTERM before throttle returns",
+      { timeout: 30_000 },
+      ({ theMemberStampAfterACleanExit }) => {
+        expect(theMemberStampAfterACleanExit).toBe("terminated");
+      },
+    );
+  });
+
+  describe("a background member of the command's group after the command fails", () => {
+    const it = test
+      .extend("stampsDirectory", ({}, { onCleanup }) => {
+        const madeStampsDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "throttle-member-stamps-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.promise(() => madeStampsDirectory).pipe(Effect.flatMap(removePath)),
+          ),
+        );
+        return madeStampsDirectory;
+      })
+      .extend("theMemberStampAfterAFailingExit", ({ slotDirectory, stampsDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const stamp = joinPath(stampsDirectory, "member");
+            yield* Effect.promise(() =>
+              runThrottle(
+                [
+                  "--timeout",
+                  "30",
+                  "--",
+                  process.execPath,
+                  "-e",
+                  STARTS_A_MEMBER_THEN_EXITS_THREE,
+                  TERMINABLE_MEMBER,
+                  stamp,
+                ],
+                {
+                  slotDir: slotDirectory,
+                  limit: 1,
+                  waitBudgetMs: WAIT_BUDGET_MS,
+                  pollMs: POLL_MS,
+                  isInteractive: false,
+                },
+              ),
+            );
+            return yield* readFileString(stamp);
+          }),
+        ),
+      );
+
+    it(
+      "ends the member with SIGTERM before throttle returns",
+      { timeout: 30_000 },
+      ({ theMemberStampAfterAFailingExit }) => {
+        expect(theMemberStampAfterAFailingExit).toBe("terminated");
+      },
+    );
+  });
+
+  describe("a slot given back after a command that left a member running", () => {
+    const it = test
+      .extend("stampsDirectory", ({}, { onCleanup }) => {
+        const madeStampsDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "throttle-member-stamps-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.promise(() => madeStampsDirectory).pipe(Effect.flatMap(removePath)),
+          ),
+        );
+        return madeStampsDirectory;
+      })
+      .extend("theMemberStampWhenTheSlotWasGivenBack", ({ stampsDirectory }) => {
+        const stamp = joinPath(stampsDirectory, "member");
+        const seenAtRelease = Deferred.makeUnsafe<string, Error>();
+        const releaseAfterReadingTheStamp = (): Promise<void> =>
+          Effect.runPromise(
+            Deferred.complete(seenAtRelease, readFileString(stamp)).pipe(Effect.asVoid),
+          );
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runWithSlot({
+                invocation: {
+                  timeoutSec: 0,
+                  executable: process.execPath,
+                  args: ["-e", STARTS_A_MEMBER_THEN_EXITS_ZERO, TERMINABLE_MEMBER, stamp],
+                  commandLine: `${process.execPath} -e`,
+                },
+                hold: { release: releaseAfterReadingTheStamp },
+              }),
+            );
+            return yield* Deferred.await(seenAtRelease);
+          }),
+        );
+      });
+
+    it(
+      "ends the member before it gives the slot back",
+      { timeout: 30_000 },
+      ({ theMemberStampWhenTheSlotWasGivenBack }) => {
+        expect(theMemberStampWhenTheSlotWasGivenBack).toBe("terminated");
+      },
+    );
+  });
+
+  describe("a background member that traps SIGTERM after the command fails", () => {
+    const TRAPPING_KILL_GRACE_MS = 300;
+    const it = test
+      .extend("stampsDirectory", ({}, { onCleanup }) => {
+        const madeStampsDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "throttle-member-stamps-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.promise(() => madeStampsDirectory).pipe(Effect.flatMap(removePath)),
+          ),
+        );
+        return madeStampsDirectory;
+      })
+      .extend("theTrappingMemberAfterTheRun", ({ slotDirectory, stampsDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const stamp = joinPath(stampsDirectory, "member");
+            const heartbeat = joinPath(stampsDirectory, "heartbeat");
+            const before = epochMillis();
+            yield* Effect.promise(() =>
+              runThrottle(
+                [
+                  "--",
+                  process.execPath,
+                  "-e",
+                  STARTS_A_MEMBER_THEN_EXITS_THREE,
+                  TRAPPING_MEMBER,
+                  stamp,
+                  heartbeat,
+                ],
+                {
+                  slotDir: slotDirectory,
+                  limit: 1,
+                  waitBudgetMs: WAIT_BUDGET_MS,
+                  pollMs: POLL_MS,
+                  isInteractive: false,
+                  killGraceMs: TRAPPING_KILL_GRACE_MS,
+                },
+              ),
+            );
+            const waited = epochMillis() - before;
+            const lastBeat = yield* readFileString(heartbeat);
+            yield* Effect.sleep("300 millis");
+            return {
+              stamp: yield* readFileString(stamp),
+              outlastedTheGrace: waited >= TRAPPING_KILL_GRACE_MS,
+              stillBeating: (yield* readFileString(heartbeat)) !== lastBeat,
+            };
+          }),
+        ),
+      );
+
+    it(
+      "kills the member once the grace period runs out",
+      { timeout: 30_000 },
+      ({ theTrappingMemberAfterTheRun }) => {
+        expect(theTrappingMemberAfterTheRun).toStrictEqual({
+          stamp: "trapped",
+          outlastedTheGrace: true,
+          stillBeating: false,
+        });
+      },
+    );
   });
 
   describe("a timeout on a platform whose tree dies without a grace period", () => {
