@@ -4,15 +4,21 @@ import type { ESTree } from "@oxlint/plugins";
 
 type BoundMethod = "max" | "min";
 
+const isIdentifierNamed = (node: ESTree.Node, name: string): boolean =>
+  node.type === "Identifier" && node.name === name;
+
 const OPPOSITE_BOUND: Readonly<Record<BoundMethod, BoundMethod>> = { max: "min", min: "max" };
+
+const isMathMember = (callee: ESTree.Node): callee is ESTree.MemberExpression =>
+  callee.type === "MemberExpression" &&
+  !callee.computed &&
+  !callee.optional &&
+  isIdentifierNamed(callee.object, "Math");
 
 const mathBoundOf = (node: ESTree.Node): BoundMethod | null => {
   if (node.type !== "CallExpression" || node.optional || node.arguments.length !== 2) return null;
-  const { callee } = node;
-  if (callee.type !== "MemberExpression" || callee.computed || callee.optional) return null;
-  if (callee.object.type !== "Identifier" || callee.object.name !== "Math") return null;
-  if (callee.property.type !== "Identifier") return null;
-  const { name } = callee.property;
+  if (!isMathMember(node.callee) || node.callee.property.type !== "Identifier") return null;
+  const { name } = node.callee.property;
   return name === "max" || name === "min" ? name : null;
 };
 
@@ -33,9 +39,6 @@ const returnedExpressionOf = (
   return statement?.type === "ReturnStatement" ? statement.argument : null;
 };
 
-const isIdentifierNamed = (node: ESTree.Node, name: string): boolean =>
-  node.type === "Identifier" && node.name === name;
-
 const addsOntoAccumulator = (
   reducer: ESTree.ArrowFunctionExpression | ESTree.Function,
 ): boolean => {
@@ -52,17 +55,22 @@ const addsOntoAccumulator = (
 const isTextSeed = (seed: ESTree.Node): boolean =>
   seed.type === "TemplateLiteral" || (seed.type === "Literal" && typeof seed.value === "string");
 
+const isReduceCall = (node: ESTree.CallExpression): boolean =>
+  node.callee.type === "MemberExpression" &&
+  !node.callee.computed &&
+  isIdentifierNamed(node.callee.property, "reduce") &&
+  node.arguments.length === 2;
+
+const isInlineReducer = (
+  node: ESTree.Node | undefined,
+): node is ESTree.ArrowFunctionExpression | ESTree.Function =>
+  node?.type === "ArrowFunctionExpression" || node?.type === "FunctionExpression";
+
 const isHandRolledSum = (node: ESTree.CallExpression): boolean => {
-  const { callee } = node;
-  if (callee.type !== "MemberExpression" || callee.computed) return false;
-  if (callee.property.type !== "Identifier" || callee.property.name !== "reduce") return false;
-  if (node.arguments.length !== 2) return false;
+  if (!isReduceCall(node)) return false;
   const [reducer, seed] = node.arguments;
-  if (reducer === undefined || seed === undefined || isTextSeed(seed)) return false;
-  if (reducer.type !== "ArrowFunctionExpression" && reducer.type !== "FunctionExpression") {
-    return false;
-  }
-  return addsOntoAccumulator(reducer);
+  if (seed === undefined || isTextSeed(seed)) return false;
+  return isInlineReducer(reducer) && addsOntoAccumulator(reducer);
 };
 
 export const noHandRolledSumOrClamp = createDontReviewItRule({
