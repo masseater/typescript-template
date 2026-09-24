@@ -207,6 +207,12 @@ export type { NotificationKind } from "./notifications.ts";
 export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
 export type { GroupJoinPolicy } from "./group-join-policy.ts";
 export {
+  INQUIRY_AUTHOR_KIND,
+  InquiryAuthorKind,
+  inquiryAuthorKindLabels,
+  inquiryAuthorKinds,
+} from "./inquiry-author-kind.ts";
+export {
   INQUIRY_STATUS,
   InquiryStatus,
   inquiryStatusLabels,

@@ -1,4 +1,4 @@
-import { ROLE, inquiryStatusLabels } from "@repo/config";
+import { INQUIRY_AUTHOR_KIND, inquiryStatusLabels } from "@repo/config";
 
 import type { getMemberInquiry, listMemberInquiries } from "@repo/db";
 import type { Effect } from "effect";
@@ -24,7 +24,7 @@ function presentThread(thread: InquiryThread) {
       authorId: message.authorId,
       body: message.body,
       createdAt: message.createdAt,
-      fromOperator: message.authorKind === ROLE.administrator,
+      fromOperator: message.authorKind === INQUIRY_AUTHOR_KIND.admin,
       id: message.id,
     })),
     replyable: thread.replyable,

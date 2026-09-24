@@ -1,4 +1,4 @@
-import { INQUIRY_STATUS, ROLE, type InquiryStatus } from "@repo/config";
+import { INQUIRY_AUTHOR_KIND, INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
 import { renderedAt } from "@repo/ui/testing";
 import { DateTime } from "effect";
 import { describe, expect, it } from "vite-plus/test";
@@ -25,14 +25,14 @@ function thread(status: InquiryStatus, replyable: boolean): AdminInquiryDetail {
     messages: [
       {
         authorId: "admin-1",
-        authorKind: ROLE.administrator,
+        authorKind: INQUIRY_AUTHOR_KIND.admin,
         body: "確認します。",
         createdAt: sentAt,
         id: "m-1",
       },
       {
         authorId: "member-1",
-        authorKind: ROLE.member,
+        authorKind: INQUIRY_AUTHOR_KIND.member,
         body: "お願いします。",
         createdAt: sentAt,
         id: "m-2",
@@ -101,6 +101,12 @@ describe("inquiry thread", () => {
   it("marks the operator's messages", () => {
     expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
       '<li class="rounded-lg border border-border p-3 bg-muted">',
+    );
+  });
+
+  it("labels the member's messages", () => {
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open, true), [summary])).toContain(
+      '<p class="text-sm leading-normal font-medium">会員</p>',
     );
   });
 

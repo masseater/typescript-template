@@ -1,4 +1,11 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, InquiryStatus, maximumAdminPageSize } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  AUDIT_ACTION,
+  INQUIRY_AUTHOR_KIND,
+  InquiryStatus,
+  maximumAdminPageSize,
+  type InquiryAuthorKind,
+} from "@repo/config";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
@@ -15,7 +22,6 @@ import {
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import {
   auditEvent,
-  INQUIRY_AUTHOR_KIND,
   INQUIRY_STATUS,
   inquiry,
   inquiryMessage,
@@ -39,7 +45,7 @@ type InquirySummary = Readonly<{
 
 type InquiryMessage = Readonly<{
   authorId: string;
-  authorKind: "admin" | "member";
+  authorKind: InquiryAuthorKind;
   body: string;
   createdAt: Date;
   id: string;

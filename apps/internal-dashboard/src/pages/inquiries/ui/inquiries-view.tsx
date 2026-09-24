@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { inquiryAuthorKindLabels } from "@repo/config";
 import {
   Button,
   Field,
@@ -86,9 +86,7 @@ function InquiriesView({ lookup }: Readonly<{ lookup: InquiryLookup }>): ReactEl
           <ul className="flex flex-col gap-3">
             {selected.messages.map((message) => (
               <li key={message.id} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-medium">
-                  {message.authorKind === ROLE.administrator ? "運営" : "会員"}
-                </p>
+                <p className="text-sm font-medium">{inquiryAuthorKindLabels[message.authorKind]}</p>
                 <p className="whitespace-pre-wrap">{message.body}</p>
                 <p className="text-xs text-muted-foreground">
                   {formatWarekiDateTime(message.createdAt.getTime())}

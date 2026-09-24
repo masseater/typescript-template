@@ -1,4 +1,4 @@
-import { INQUIRY_STATUS, ROLE } from "@repo/config";
+import { INQUIRY_AUTHOR_KIND, INQUIRY_STATUS } from "@repo/config";
 import { renderedAt } from "@repo/ui/testing";
 import { DateTime } from "effect";
 import { describe, expect, it } from "vite-plus/test";
@@ -39,7 +39,7 @@ const answered = {
     messages: [
       {
         authorId: "admin-1",
-        authorKind: ROLE.administrator,
+        authorKind: INQUIRY_AUTHOR_KIND.admin,
         body: "確認します。",
         createdAt: openedAt,
         id: "message-1",
