@@ -206,8 +206,12 @@ export { NOTIFICATION_KIND, notificationKinds } from "./notifications.ts";
 export type { NotificationKind } from "./notifications.ts";
 export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
 export type { GroupJoinPolicy } from "./group-join-policy.ts";
-export { INQUIRY_STATUS, inquiryStatusLabels, inquiryStatuses } from "./inquiry-status.ts";
-export type { InquiryStatus } from "./inquiry-status.ts";
+export {
+  INQUIRY_STATUS,
+  InquiryStatus,
+  inquiryStatusLabels,
+  inquiryStatuses,
+} from "./inquiry-status.ts";
 export {
   AUDIT_ACTION,
   CLIENT_KIND,

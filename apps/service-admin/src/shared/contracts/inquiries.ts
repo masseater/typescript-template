@@ -1,4 +1,4 @@
-import { inquiryStatuses } from "@repo/config";
+import { InquiryStatus } from "@repo/config";
 import {
   Identifier,
   IdentifierQuery,
@@ -11,8 +11,6 @@ import { Schema } from "effect";
 const maximumReplyLength = 4000;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
-
-const InquiryStatus = Schema.Literals(inquiryStatuses);
 
 const InquiryListQuery = Schema.Struct({
   limit: pageNumber({ fallback: defaultPageSize, maximum: maximumPageSize, minimum: 1 }),

@@ -1,4 +1,4 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize } from "@repo/config";
+import { ADMIN_PERMISSION, AUDIT_ACTION, InquiryStatus, maximumAdminPageSize } from "@repo/config";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
@@ -14,16 +14,14 @@ import {
   INQUIRY_STATUS,
   inquiry,
   inquiryMessage,
-  inquiryStatuses,
   type AuditAction,
-  type InquiryStatus,
   user,
 } from "./schema.ts";
 
 export const InquiryPage = Schema.Struct({
   limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  status: Schema.optionalKey(Schema.Literals(inquiryStatuses)),
+  status: Schema.optionalKey(InquiryStatus),
 });
 
 type InquirySummary = Readonly<{

@@ -1,9 +1,8 @@
+import { InquiryStatus } from "@repo/config";
 import { Identifier, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";
-
-const InquiryStatus = Schema.String;
 
 const InquiryMessage = Schema.Struct({
   authorId: Schema.String,
