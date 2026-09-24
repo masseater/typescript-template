@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { HttpResponse } from "msw";
 
 import { mockServer, pagedCollection } from "./account-test-fixture.ts";
-import { verifiedAddresses } from "./email-lookup.ts";
+import { destinationAddresses } from "./email-lookup.ts";
 import { verificationSettings } from "./verification-settings.ts";
 
 const ADDRESS_PAGE_LIMIT = 50;
@@ -14,7 +14,7 @@ const access = {
 const addresses = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}/email/routing/addresses`;
 const mixedRows = `{"result":[{"email":"alerts@example.com","verified":"2026-01-01T00:00:00Z"},{"email":"pending@example.com","verified":null},{"email":null,"verified":null}],"result_info":{"per_page":50,"total_count":3}}`;
 
-it.effect("counts only the destination addresses Cloudflare has dated as verified", () =>
+it.effect("marks as verified only the destination addresses Cloudflare has dated", () =>
   Effect.gen(function* program() {
     yield* mockServer(
       pagedCollection(addresses, ADDRESS_PAGE_LIMIT, ({ request }) => {
@@ -24,7 +24,10 @@ it.effect("counts only the destination addresses Cloudflare has dated as verifie
         return new HttpResponse(mixedRows, { headers: { "content-type": "application/json" } });
       }),
     );
-    assert.deepStrictEqual(yield* verifiedAddresses(access), ["alerts@example.com"]);
+    assert.deepStrictEqual(yield* destinationAddresses(access), [
+      { email: "alerts@example.com", verified: true },
+      { email: "pending@example.com", verified: false },
+    ]);
   }).pipe(Effect.scoped),
 );
 
@@ -43,7 +46,7 @@ it.effect("asks for every page Cloudflare counted rather than the first one", ()
         });
       }),
     );
-    assert.lengthOf(yield* verifiedAddresses(access), rows.length);
+    assert.lengthOf(yield* destinationAddresses(access), rows.length);
   }).pipe(Effect.scoped),
 );
 
@@ -57,7 +60,7 @@ it.effect("refuses an address list whose pages do not add up to what Cloudflare 
         }),
       ),
     );
-    const failure = yield* verifiedAddresses(access).pipe(Effect.flip);
+    const failure = yield* destinationAddresses(access).pipe(Effect.flip);
     assert.deepStrictEqual(failure.keys, ["accounts/{}/email/routing/addresses", "truncated"]);
   }).pipe(Effect.scoped),
 );

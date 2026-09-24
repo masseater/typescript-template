@@ -27,9 +27,14 @@ import {
   workers,
 } from "./inspection-test-fixture.ts";
 
-it.effect("blocks when budget alert recipients are not verified destination addresses", () =>
+it.effect("blocks while a budget alert recipient waits for its verification link", () =>
   Effect.gen(function* program() {
-    yield* mockServer(...accountHandlers({ addresses: [], scripts: ["unrelated-worker"] }));
+    yield* mockServer(
+      ...accountHandlers({
+        addresses: config.budget.recipients.map((email) => ({ email })),
+        scripts: ["unrelated-worker"],
+      }),
+    );
     const inspection = yield* inspectAccount(access, config, emptyState());
     assert.deepStrictEqual(blocked(inspection), ["alertQuota"]);
     assert.deepInclude(inspection, {
@@ -43,6 +48,15 @@ it.effect("blocks when budget alert recipients are not verified destination addr
       workerDomains: "free",
       workerNames: "free",
     });
+  }).pipe(Effect.scoped),
+);
+
+it.effect("lets the email stack register budget alert recipients that are not destinations yet", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({ addresses: [], scripts: ["unrelated-worker"] }));
+    const inspection = yield* inspectAccount(access, config, emptyState());
+    assert.deepStrictEqual(blocked(inspection), []);
+    assert.strictEqual(inspection.alertQuota, "unregistered");
   }).pipe(Effect.scoped),
 );
 
