@@ -1,11 +1,15 @@
-import { Cause, Effect, Exit, Scope } from "effect";
+import { Cause, Effect, Exit, PlatformError, Scope } from "effect";
 import { attempt } from "es-toolkit";
 import { unlock } from "fs-native-extensions";
 
+import { nativeFailure } from "../host.ts";
+
 export type LockedFile = { readonly descriptor: number; readonly scope: Scope.Closeable };
 
-const asError = (squashed: unknown): Error =>
-  squashed instanceof Error ? squashed : new Error(String(squashed), { cause: squashed });
+const asError = (squashed: unknown): Error => {
+  if (squashed instanceof PlatformError.PlatformError) return nativeFailure(squashed);
+  return squashed instanceof Error ? squashed : new Error(String(squashed), { cause: squashed });
+};
 
 export const closeFailureOf = (locked: LockedFile): Effect.Effect<Error | null> =>
   Scope.close(locked.scope, Exit.void).pipe(
