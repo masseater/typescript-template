@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import {
   APPLICATION,
@@ -17,7 +15,7 @@ import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
-import { elysiaWorkerdJit } from "@repo/vite-config";
+import { elysiaWorkerdJit, paths } from "@repo/vite-config";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
@@ -41,7 +39,7 @@ export default defineProject({
         [jobsWorkflowClass]: "WorkflowEntrypoint",
         [mailRecorder]: "WorkerEntrypoint",
       },
-      main: fileURLToPath(new URL("./vitest.workers.main.ts", import.meta.url)),
+      main: Effect.runSync(paths.fromFileUrl(new URL("./vitest.workers.main.ts", import.meta.url))),
       miniflare: {
         bindings: {
           ALERT_FROM: "monitor@example.test",
@@ -81,10 +79,12 @@ export default defineProject({
     name: "workers",
     root,
     setupFiles: [
-      fileURLToPath(
-        new URL(
-          "./tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields-test-fixture.ts",
-          import.meta.url,
+      Effect.runSync(
+        paths.fromFileUrl(
+          new URL(
+            "./tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields-test-fixture.ts",
+            import.meta.url,
+          ),
         ),
       ),
     ],

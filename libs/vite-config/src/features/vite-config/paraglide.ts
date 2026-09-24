@@ -1,7 +1,6 @@
-import { fileURLToPath } from "node:url";
-
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { Effect } from "effect";
 
 import { paths } from "./host.ts";
 import { localizedApps, paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
@@ -25,7 +24,7 @@ const withoutInlangState = [
 const compileWorkspaceScript = paths
   .relative(
     repositoryRoot,
-    fileURLToPath(new URL("./compile-workspace-paraglide.ts", import.meta.url).href),
+    Effect.runSync(paths.fromFileUrl(new URL("./compile-workspace-paraglide.ts", import.meta.url))),
   )
   .replaceAll("\\", "/");
 
