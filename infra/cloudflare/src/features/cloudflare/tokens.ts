@@ -1,9 +1,9 @@
-import { Stack } from "alchemy";
 import { ApiToken } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
+import { prefixedStack } from "./prefixed-stack.ts";
 import { settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
+import { stackName } from "./stacks.ts";
 
 const flagshipWritePermission = {
   id: "521a41dc78f94eaba5e643528846cb7b",
@@ -22,9 +22,8 @@ const accountTokens = {
 
 type TokenResource = keyof typeof accountTokens;
 
-const stack = Stack(
-  stackName("tokens"),
-  stackOptions,
+const stack = prefixedStack(
+  "tokens",
   Effect.gen(function* tokens() {
     const config = yield* Effect.orDie(settings);
     const names = yield* Effect.forEach(

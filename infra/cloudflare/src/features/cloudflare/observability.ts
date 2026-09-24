@@ -1,14 +1,12 @@
-import { Stack } from "alchemy";
 import { Workers } from "alchemy/Cloudflare";
 import { Effect, Redacted } from "effect";
 
 import { traceDestination } from "./config.ts";
+import { prefixedStack } from "./prefixed-stack.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
 
-const stack = Stack(
-  stackName("observability"),
-  stackOptions,
+const stack = prefixedStack(
+  "observability",
   Effect.gen(function* observability() {
     const config = yield* Effect.orDie(settings);
     const destination = traceDestination(config);

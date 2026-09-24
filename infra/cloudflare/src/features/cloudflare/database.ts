@@ -1,17 +1,17 @@
 import { migrationsFolder } from "@repo/db/migrations";
-import { RemovalPolicy, Stack } from "alchemy";
+import { RemovalPolicy } from "alchemy";
 import { D1 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { databaseName } from "./database-lookup.ts";
+import { prefixedStack } from "./prefixed-stack.ts";
 import { settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
+import { stackName } from "./stacks.ts";
 
 const databaseResource = "Database";
 
-const stack = Stack(
-  stackName("database"),
-  stackOptions,
+const stack = prefixedStack(
+  "database",
   Effect.gen(function* database() {
     const config = yield* Effect.orDie(settings);
     const d1 = yield* D1.Database(databaseResource, {

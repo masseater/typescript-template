@@ -1,14 +1,12 @@
-import { Stack } from "alchemy";
 import { Zone } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { hstsSetting } from "./config.ts";
+import { prefixedStack } from "./prefixed-stack.ts";
 import { settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
 
-const stack = Stack(
-  stackName("zone"),
-  stackOptions,
+const stack = prefixedStack(
+  "zone",
   Effect.gen(function* zone() {
     const config = yield* Effect.orDie(settings);
     yield* Zone.Setting("AlwaysUseHttps", {

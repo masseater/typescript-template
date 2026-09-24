@@ -40,6 +40,8 @@ const googleAnalyticsMeasurementId = optional(
   Config.schema(GoogleAnalyticsMeasurementId, deploymentKey.googleAnalyticsMeasurementId),
 );
 
+const deploymentPrefix = Config.schema(Prefix, deploymentKey.prefix);
+
 const settings = Config.all({
   accountId: Config.schema(CloudflareId, deploymentKey.cloudflareAccountId),
   appDomain: Config.schema(Domain, deploymentKey.appDomain),
@@ -47,7 +49,7 @@ const settings = Config.all({
   googleAnalyticsMeasurementId,
   mailFrom: Config.schema(Email, deploymentKey.mailFrom),
   otlp: otlpDestination,
-  prefix: Config.schema(Prefix, deploymentKey.prefix),
+  prefix: deploymentPrefix,
   zoneId: Config.schema(CloudflareId, deploymentKey.cloudflareZoneId),
 }).pipe(
   Effect.flatMap(({ appDomain, ...config }) =>
@@ -102,4 +104,11 @@ const wikiPublishSettings = Config.all({
   ),
 );
 
-export { authSecret, otlpAuthorization, settings, stripeSandboxKey, wikiPublishSettings };
+export {
+  authSecret,
+  deploymentPrefix,
+  otlpAuthorization,
+  settings,
+  stripeSandboxKey,
+  wikiPublishSettings,
+};

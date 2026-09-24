@@ -1,12 +1,10 @@
 import { accountTokenRef, monitorArtifact, monitorProgram } from "@repo/infra-cloudflare/monitor";
-import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
+import { prefixedStack } from "@repo/infra-cloudflare/prefixed-stack";
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/monitor/workers";
-import { Stack } from "alchemy";
 import { Effect } from "effect";
 
-export default Stack(
-  stackName("budget-monitor"),
-  stackOptions,
+export default prefixedStack(
+  "budget-monitor",
   monitorProgram("budget", {
     artifact: monitorArtifact("budget-monitor"),
     className: budgetMonitorWorker.className,

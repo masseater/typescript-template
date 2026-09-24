@@ -1,5 +1,4 @@
 import { coreProgram } from "@repo/infra-cloudflare/core-program";
-import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
-import { Stack } from "alchemy";
+import { prefixedStack } from "@repo/infra-cloudflare/prefixed-stack";
 
-export default Stack(stackName("core"), stackOptions, coreProgram());
+export default prefixedStack("core", coreProgram());
