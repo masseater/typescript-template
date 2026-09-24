@@ -19,9 +19,9 @@ Disallow a catch clause whose body never carries the failure it bound out of the
 
 ## Violation
 
-A `catch` clause that binds a failure, does work in its body, and never carries that failure out of the clause. Every read of the bound name is walked outward: a read that reaches the clause boundary carries the failure, while one standing in the condition of an `if`, a loop, a conditional expression or a `switch` only steers control and does not.
+A `catch` clause that binds a failure and never carries it out of the clause, an empty body included. Every read of the bound name is walked outward: a read that reaches the clause boundary carries the failure, while one standing in the condition of an `if`, a loop, a conditional expression or a `switch` only steers control and does not.
 
-A clause whose body carries no work at all belongs to [no-empty-catch--throw-or-handle](./no-empty-catch--throw-or-handle.md), so the two never report the same clause.
+A clause that binds nothing belongs to [no-discarded-failure--receive-and-surface-it](./no-discarded-failure--receive-and-surface-it.md), so the two never report the same clause.
 
 ## Fix
 
@@ -30,6 +30,14 @@ Choose an ending that takes the failure with it: rethrow it, throw one that name
 <!-- BEGIN GENERATED examples -->
 
 Code this rule rejects.
+
+```ts
+// a catch clause whose body carries no statement is reported
+try {
+  run();
+} catch (failure) {
+}
+```
 
 ```ts
 // a catch clause that never names the failure again is reported

@@ -13,7 +13,6 @@ const WHOLE_SET = [
   "no-floating-promise--await-the-result",
   "no-blanket-suppression--name-and-record",
   "no-partial-rule-set--enable-the-whole-set",
-  "no-empty-catch--throw-or-handle",
   "no-silent-catch--rethrow-or-handle",
 ];
 

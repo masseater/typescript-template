@@ -45,10 +45,6 @@ describe("dont-review-it/no-silent-catch--rethrow-or-handle", () => {
         code: "try {\n  run();\n} catch (failure) {\n  console.error(failure);\n}",
       },
       {
-        name: "a catch clause carrying no statement is outside what this rule looks at",
-        code: "try {\n  run();\n} catch (failure) {}",
-      },
-      {
         name: "a catch clause that binds nothing is outside what this rule looks at",
         code: "try {\n  run();\n} catch {\n  retry();\n}",
       },
@@ -60,16 +56,24 @@ describe("dont-review-it/no-silent-catch--rethrow-or-handle", () => {
         name: "a failure named outside a catch clause is not this rule's subject",
         code: "const failure = new Error('reading the catalog failed');\nreport(failure);",
       },
-      {
-        name: "a body holding only a semicolon belongs to no-empty-catch--throw-or-handle",
-        code: "try {\n  run();\n} catch (failure) {\n  ;\n}",
-      },
-      {
-        name: "a body holding only an empty block belongs to no-empty-catch--throw-or-handle",
-        code: "try {\n  run();\n} catch (failure) {\n  {\n  }\n}",
-      },
     ],
     invalid: [
+      {
+        name: "a catch clause whose body carries no statement is reported",
+        documented: true,
+        code: "try {\n  run();\n} catch (failure) {\n}",
+        errors: [{ messageId: "silentCatch" }],
+      },
+      {
+        name: "a body holding only a semicolon is reported",
+        code: "try {\n  run();\n} catch (failure) {\n  ;\n}",
+        errors: [{ messageId: "silentCatch" }],
+      },
+      {
+        name: "a body holding only an empty block is reported",
+        code: "try {\n  run();\n} catch (failure) {\n  {\n  }\n}",
+        errors: [{ messageId: "silentCatch" }],
+      },
       {
         name: "a catch clause that never names the failure again is reported",
         documented: true,
