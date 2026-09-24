@@ -1,4 +1,4 @@
-import { APPLICATION, applications, type Application } from "@repo/config";
+import { applications, type Application } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -97,7 +97,7 @@ describe("appRun", () => {
         ...checkCode,
         ...workspaceCheckImports,
         "check:client": {
-          command: "quality-check-client",
+          command: "dont-review-it-client",
           env: [...telemetryEnv],
           input: [
             ...taskInput,
@@ -111,12 +111,12 @@ describe("appRun", () => {
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
         "check:react": {
-          command: "quality-check-react",
+          command: "dont-review-it-react",
           env: [...telemetryEnv],
           input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...inlangState],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
-        check: sliceBoundaries.check,
+        ...sliceBoundaries,
         build: {
           command: "vp build",
           env: [...telemetryEnv],
@@ -144,7 +144,14 @@ describe("appRun", () => {
         preview: { cache: false, command: "vp preview" },
         ...lifecycle({
           precommit: ["check:code"],
-          prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+          prepush: [
+            "check:effect",
+            "check:feature-sliced",
+            "check:thin-app-routes",
+            "check:imports",
+            "check:client",
+            "check:react",
+          ],
           prepr: ["build"],
           premerge: ["build", "check:dev"],
         }),
@@ -197,8 +204,21 @@ describe("sliceBoundaries", () => {
     sliceChecks,
   }) => {
     expect(sliceChecks).toStrictEqual({
-      check: {
-        command: "quality-check-feature-sliced && quality-check-thin-app-routes",
+      "check:feature-sliced": {
+        command: "dont-review-it-feature-sliced",
+        env: [...telemetryEnv],
+        input: [
+          ...taskInput,
+          { base: "workspace", pattern: "!.local" },
+          { base: "workspace", pattern: "!.local/**" },
+          ...localizedApps.map((app) => ({
+            base: "workspace",
+            pattern: `!apps/${app}/.paraglide/**`,
+          })),
+        ],
+      },
+      "check:thin-app-routes": {
+        command: "dont-review-it-thin-app-routes",
         env: [...telemetryEnv],
         input: [
           ...taskInput,
@@ -273,31 +293,7 @@ describe("appConfig", () => {
           }
           return [];
         });
-      return applications.map((app) =>
-        pluginNamesOf(appConfig(app)(serve).plugins ?? [], app).filter(
-          (pluginName) => pluginName !== "template-wiki-companion",
-        ),
-      );
-    })
-    .extend("wikiCompanionHosts", () => {
-      const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
-        plugins.flatMap((plugin): readonly string[] => {
-          if (Array.isArray(plugin)) {
-            return pluginNamesOf(plugin);
-          }
-          if (
-            typeof plugin === "object" &&
-            plugin !== null &&
-            "name" in plugin &&
-            typeof plugin.name === "string"
-          ) {
-            return [plugin.name];
-          }
-          return [];
-        });
-      return applications.filter((app) =>
-        pluginNamesOf(appConfig(app)(serve).plugins ?? []).includes("template-wiki-companion"),
-      );
+      return applications.map((app) => pluginNamesOf(appConfig(app)(serve).plugins ?? [], app));
     })
     .extend("adminPlugins", () => {
       const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
@@ -355,7 +351,9 @@ describe("appConfig", () => {
           }
           return [];
         });
-      const withMarker = pluginNamesOf(appConfig("service-admin", [marker])(serve).plugins ?? []);
+      const withMarker = pluginNamesOf(
+        appConfig("service-admin", { plugins: [marker] })(serve).plugins ?? [],
+      );
       return withMarker.toSpliced(withMarker.indexOf(marker.name), 1);
     });
 
@@ -365,10 +363,6 @@ describe("appConfig", () => {
       pluginNamesByApplication[0],
       pluginNamesByApplication[0],
     ]);
-  });
-
-  it("starts the wiki development server only beside its host", ({ wikiCompanionHosts }) => {
-    expect(wikiCompanionHosts).toStrictEqual([APPLICATION.wiki]);
   });
 
   it("inserts application plugins after the dev boundary", ({

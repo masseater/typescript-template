@@ -32,11 +32,17 @@ describe("steiger coverage", () => {
   it("runs the layer check in every FSD application", () => {
     expect.hasAssertions();
     const checks = buildTargets
-      .map((app) => `apps/${app}: ${commands(`apps/${app}`, "check").join(" ")}`)
+      .map(
+        (app) =>
+          `apps/${app}: ${[
+            ...commands(`apps/${app}`, "check:feature-sliced"),
+            ...commands(`apps/${app}`, "check:thin-app-routes"),
+          ].join(" ")}`,
+      )
       .toSorted();
     expect(checks).toStrictEqual(
       buildTargets
-        .map((app) => `apps/${app}: quality-check-feature-sliced && quality-check-thin-app-routes`)
+        .map((app) => `apps/${app}: dont-review-it-feature-sliced dont-review-it-thin-app-routes`)
         .toSorted(),
     );
   });
@@ -51,7 +57,7 @@ describe("modular coverage", () => {
     const checks = modularPackages.map(
       (directory) => `${directory}: ${commands(directory, "check:modular").join(" ")}`,
     );
-    expect(checks.every((line) => line.endsWith(": quality-check-modular"))).toBe(true);
+    expect(checks.every((line) => line.endsWith(": dont-review-it-modular"))).toBe(true);
     expect(modularPackages.length).toBeGreaterThan(0);
   });
 

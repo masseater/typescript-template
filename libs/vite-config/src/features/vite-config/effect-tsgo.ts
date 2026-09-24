@@ -60,7 +60,7 @@ const effectDiagnostics = (packageRoot: string): EffectDiagnosticsTask => ({
 
 const awaitingEffectDiagnostics = (packageRoot: string): EffectDiagnosticsTask => ({
   "check:effect": {
-    command: "check-effect-typecheck",
+    command: "dont-review-it-effect-typecheck",
     input: [
       ...effectTypecheckInputs(packageRoot),
       { base: "workspace" as const, pattern: workspacePath(baselinePath) },

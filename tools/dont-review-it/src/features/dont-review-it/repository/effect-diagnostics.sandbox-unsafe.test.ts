@@ -82,13 +82,22 @@ const workspace = (file: string): string => {
   return directory === "" ? "." : directory;
 };
 
-const namedTask = (config: unknown, name: string): unknown => {
+const configTasks = (config: unknown): unknown => {
   const resolved: unknown =
     typeof config === "function" ? Reflect.apply(config, undefined, [environment]) : config;
-  return field(field(field(resolved, "run"), "tasks"), name);
+  return field(field(resolved, "run"), "tasks");
 };
 
-const diagnosticsTask = (config: unknown): unknown => namedTask(config, "check:effect");
+const diagnosticsTask = (config: unknown): unknown => field(configTasks(config), "check:effect");
+
+const effectTasks = (config: unknown): readonly unknown[] => {
+  const tasks = configTasks(config);
+  return typeof tasks === "object" && tasks !== null
+    ? Object.entries(tasks)
+        .filter(([name]) => name === "check:effect" || name.startsWith("check:effect:"))
+        .map(([, task]: readonly [string, unknown]) => task)
+    : [];
+};
 
 const baselinedCommand = awaitingEffectDiagnostics(repositoryRoot)["check:effect"].command;
 
@@ -133,17 +142,19 @@ const effectCheckedProjects = [
   ...new Set(
     Object.entries(configs).flatMap(([file, config]) => {
       const packageDirectory = workspace(file);
-      return commandLines(diagnosticsTask(config)).flatMap((command) => {
-        const project = projectFlag(command);
-        if (project === undefined) {
-          return [];
-        }
-        return [
-          packageDirectory === "."
-            ? project
-            : posixPath.normalize(posixPath.join(packageDirectory, project)),
-        ];
-      });
+      return effectTasks(config)
+        .flatMap(commandLines)
+        .flatMap((command) => {
+          const project = projectFlag(command);
+          if (project === undefined) {
+            return [];
+          }
+          return [
+            packageDirectory === "."
+              ? project
+              : posixPath.normalize(posixPath.join(packageDirectory, project)),
+          ];
+        });
     }),
   ),
 ].toSorted();

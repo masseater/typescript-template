@@ -102,7 +102,14 @@ export default defineConfig({
         input: [...taskInput],
       },
       fallow: {
-        command: ["fallow", "fallow dead-code --config .fallowrc.production.json"],
+        command: "fallow",
+        env: [...telemetryEnv],
+        dependsOn: ["compile:paraglide"],
+        input: [...taskInput, "!.fallow/**"],
+        output: [{ auto: true }, "!.fallow/**"],
+      },
+      "fallow:production": {
+        command: "fallow dead-code --config .fallowrc.production.json",
         env: [...telemetryEnv],
         dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!.fallow/**"],
@@ -140,7 +147,7 @@ export default defineConfig({
       },
       ...lifecycle({
         precommit: ["check:text", "check:code"],
-        prepush: ["check:effect", "fallow", "check:canonical-literal-types"],
+        prepush: ["check:effect", "fallow", "fallow:production", "check:canonical-literal-types"],
         prepr: ["check:repository"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
