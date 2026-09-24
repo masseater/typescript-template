@@ -43,6 +43,10 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-single-use-local-type--inline-at-the-use-site](../tools/dont-review-it/docs/lint/no-single-use-local-type--inline-at-the-use-site.md) | Disallow a type declared at the top level of a file without being exported when the file references it at most once, so a name is given to a shape only where more than one place has to agree on it |
 | [no-unchecked-cast--parse-at-boundary](../tools/dont-review-it/docs/lint/no-unchecked-cast--parse-at-boundary.md) | Disallow handing a concrete type to a value the source declares as `any` or `unknown`, so every concrete type a value carries reached it through a step that read the value |
 
+## [.claude/skills/reviews/references/minimal-environment-variables.md](../.claude/skills/reviews/references/minimal-environment-variables.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/monitoring-logging-and-status-codes.md](../.claude/skills/reviews/references/monitoring-logging-and-status-codes.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
