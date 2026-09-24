@@ -2,6 +2,7 @@ import { definePlugin, type RuleMeta, type Visitor } from "vite-plus/lint/plugin
 
 import { RESPONSE_FACTORY_MEMBER } from "../lint/oxlint/lib/spec-syntax/host-object-constructions.ts";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
+import { appFrameSidebarVisitor } from "./app-frame-sidebar.ts";
 import { atomServerDataVisitor } from "./atom-server-data-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import {
@@ -259,6 +260,12 @@ const projectPlugin = definePlugin({
       create: annotationVisitor,
       meta: metadata(
         "Effect.annotateLogs / annotateCurrentSpan / withSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan / withSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
+      ),
+    },
+    "app-frame-sidebar": {
+      create: appFrameSidebarVisitor,
+      meta: metadata(
+        "サイドバーを自前で作れません。<aside> の中に <nav> を置く書き方と、sidebar モジュール（shadcn/ui の Sidebar など）の取り込みをやめ、@repo/ui の AppFrame に sections を渡してください。AppFrame のサイドバーは、画面幅が広いときにアイコンだけに畳めます。",
       ),
     },
     "atom-server-data": {
