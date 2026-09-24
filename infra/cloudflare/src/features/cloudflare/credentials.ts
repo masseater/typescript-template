@@ -1,16 +1,10 @@
-import { parseEnv } from "node:util";
-
 import { modeAllowsGroupOrOther } from "@repo/cli";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
-import { Effect, FileSystem, Option, Path, Schema } from "effect";
+import { ConfigProvider, Effect, FileSystem, Option, Path, Schema } from "effect";
 
 import { secretsFile } from "./deployment.ts";
 import { isNotFound, layer } from "./platform.ts";
 import { projectName } from "./project.ts";
-
-function declaredKeys(contents: string): ReadonlySet<string> {
-  return new Set(Object.keys(parseEnv(contents)));
-}
 
 class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("SecretsFileFailure", {
   code: Schema.Literals([
@@ -68,8 +62,13 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
     return yield* new SecretsFileFailure({ code: "secrets_file_readable_by_others", keys: [] });
   }
   const contents = yield* filesystem.readFileString(filename).pipe(Effect.mapError(unreadable));
-  const declared = declaredKeys(contents);
-  const absent = deploymentKeys.filter((key) => !declared.has(key));
+  const provider = ConfigProvider.fromDotEnvContents(contents, { preserveEmptyStrings: true });
+  const absent = yield* Effect.forEach(deploymentKeys, (key) =>
+    provider.load([key]).pipe(Effect.map((node) => (node?.value === undefined ? [key] : []))),
+  ).pipe(
+    Effect.map((keys) => keys.flat()),
+    Effect.mapError(unreadable),
+  );
   if (absent.length > 0) {
     return yield* new SecretsFileFailure({ code: "secrets_file_incomplete", keys: absent });
   }

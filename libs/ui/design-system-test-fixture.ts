@@ -1,8 +1,8 @@
-import { readFileSync, statSync } from "node:fs";
-import path from "node:path";
-
 import { repositoryFile } from "@repo/config/repository-root";
 import { project } from "@shadcn/lint";
+import { Effect, FileSystem, Path, type PlatformError } from "effect";
+
+type HostRead<A> = Effect.Effect<A, PlatformError.PlatformError, FileSystem.FileSystem | Path.Path>;
 
 const designTokens: Readonly<Record<string, string>> = {
   "--danger": "#b01d3a",
@@ -57,7 +57,7 @@ const designTokens: Readonly<Record<string, string>> = {
 const untouchedTokens = ["--spacing"] as const;
 
 const designMdPath = (): string => {
-  return path.resolve(import.meta.dirname, "../../DESIGN.md");
+  return repositoryFile("DESIGN.md");
 };
 
 const designMdColorSources: Readonly<Record<string, string>> = {
@@ -145,9 +145,12 @@ const typographyFamilies = (block: string): string[] => {
   return families;
 };
 
-const designMdSource = (): string => {
-  return readFileSync(designMdPath(), "utf-8");
-};
+const read = (file: string): HostRead<string> =>
+  Effect.flatMap(FileSystem.FileSystem, (filesystem) =>
+    filesystem.readFileString(repositoryFile(file)),
+  );
+
+const designMdSource = (): HostRead<string> => read(designMdPath());
 
 const designMdViolations = (markdown: string, css: string): string[] => {
   const block = frontmatterBlock(markdown);
@@ -309,19 +312,15 @@ const colorSchemeProbe = (css: string, scheme: ColorSchemeName): ColorSchemeProb
   };
 };
 
-const read = (file: string): string => {
-  return readFileSync(repositoryFile(file), "utf-8");
-};
-
 const designSystemProbe = "libs/ui/src/features/ui/shared/ui/button.tsx";
 
 const stylesheetPath = (): string => {
   return project.themeFileFor(designSystemProbe) ?? "";
 };
 
-const stylesheetSource = (): string => {
+const stylesheetSource = (): HostRead<string> => {
   const file = stylesheetPath();
-  return file === "" ? "" : read(file);
+  return file === "" ? Effect.succeed("") : read(file);
 };
 
 const indexedComponents = (): string[] => {
@@ -346,18 +345,22 @@ const partsDirectory = (): string => {
 
 const linkPartPattern = /^const (?<name>\w+) = createLink\(/gmu;
 
-const linkParts = (): string[] => {
-  const found: string[] = [];
-  for (const file of project.componentsFor(designSystemProbe).files.values()) {
-    for (const match of read(file).matchAll(linkPartPattern)) {
-      const { name } = match.groups ?? {};
-      if (name !== undefined) {
-        found.push(name);
+const linkParts = (): HostRead<string[]> =>
+  Effect.map(
+    Effect.forEach([...project.componentsFor(designSystemProbe).files.values()], read),
+    (sources) => {
+      const found: string[] = [];
+      for (const source of sources) {
+        for (const match of source.matchAll(linkPartPattern)) {
+          const { name } = match.groups ?? {};
+          if (name !== undefined) {
+            found.push(name);
+          }
+        }
       }
-    }
-  }
-  return found.toSorted();
-};
+      return found.toSorted();
+    },
+  );
 
 const appStylesheets: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/src/**/*.css",
@@ -382,36 +385,50 @@ const declaredSources = (css: string): string[] => {
   return found;
 };
 
-const scannedDirectories = (file: string, css: string): string[] => {
-  return declaredSources(css).map((directory) =>
-    path.normalize(path.join(path.dirname(file), directory)),
+const scannedDirectory = (
+  file: string,
+  directory: string,
+): Effect.Effect<string, never, Path.Path> =>
+  Effect.map(Path.Path, (paths) => paths.normalize(paths.join(paths.dirname(file), directory)));
+
+const scannedDirectories = (file: string, css: string): Effect.Effect<string[], never, Path.Path> =>
+  Effect.forEach(declaredSources(css), (directory) => scannedDirectory(file, directory));
+
+const isDirectory = (target: string): Effect.Effect<boolean, never, FileSystem.FileSystem> =>
+  Effect.flatMap(FileSystem.FileSystem, (filesystem) =>
+    filesystem.stat(repositoryFile(target)),
+  ).pipe(
+    Effect.map((info) => info.type === "Directory"),
+    Effect.orElseSucceed(() => false),
   );
-};
 
-const isDirectory = (target: string): boolean => {
-  try {
-    return statSync(repositoryFile(target)).isDirectory();
-  } catch {
-    return false;
-  }
-};
-
-const sourceViolations = (app: string, file: string, css: string): string[] => {
+const sourceViolations = (
+  app: string,
+  file: string,
+  css: string,
+): Effect.Effect<string[], never, FileSystem.FileSystem | Path.Path> => {
   const declared = declaredSources(css);
   if (declared.length === 0) {
-    return [`${file}: @source がありません。このアプリのクラスだけ生成されません。`];
+    return Effect.succeed([
+      `${file}: @source がありません。このアプリのクラスだけ生成されません。`,
+    ]);
   }
-  return declared.flatMap((directory) => {
-    const scanned = path.normalize(path.join(path.dirname(file), directory));
-    if (scanned !== `${app}/src` && !scanned.startsWith(`${app}/src/`)) {
-      return [
-        `${file}: @source "${directory}" は ${scanned} を走査しており、${app}/src の外です。`,
-      ];
-    }
-    return isDirectory(scanned)
-      ? []
-      : [`${file}: @source "${directory}" のディレクトリがありません。`];
-  });
+  return Effect.map(
+    Effect.forEach(declared, (directory) =>
+      Effect.gen(function* directoryViolations() {
+        const scanned = yield* scannedDirectory(file, directory);
+        if (scanned !== `${app}/src` && !scanned.startsWith(`${app}/src/`)) {
+          return [
+            `${file}: @source "${directory}" は ${scanned} を走査しており、${app}/src の外です。`,
+          ];
+        }
+        return (yield* isDirectory(scanned))
+          ? []
+          : [`${file}: @source "${directory}" のディレクトリがありません。`];
+      }),
+    ),
+    (found) => found.flat(),
+  );
 };
 
 const appFiles = (files: Readonly<Record<string, unknown>>, app: string): string[] => {
@@ -425,68 +442,70 @@ const appFiles = (files: Readonly<Record<string, unknown>>, app: string): string
   return matched;
 };
 
-const styledFiles = (app: string): string[] => {
-  const styled: string[] = [];
-  for (const file of appFiles(appModules, app)) {
-    if (file.endsWith(".tsx") && read(file).includes("className")) {
-      styled.push(file);
-    }
-  }
-  return styled;
-};
+const styledFiles = (app: string): HostRead<string[]> =>
+  Effect.filter(
+    appFiles(appModules, app).filter((file) => file.endsWith(".tsx")),
+    (file) => Effect.map(read(file), (source) => source.includes("className")),
+  );
 
-const coverageViolations = (app: string, scanned: readonly string[]): string[] => {
-  const violations: string[] = [];
-  for (const file of styledFiles(app)) {
-    let covered = false;
-    for (const directory of scanned) {
-      if (file === directory || file.startsWith(`${directory}/`)) {
-        covered = true;
-        break;
+const coverageViolations = (app: string, scanned: readonly string[]): HostRead<string[]> =>
+  Effect.map(styledFiles(app), (styled) => {
+    const violations: string[] = [];
+    for (const file of styled) {
+      let covered = false;
+      for (const directory of scanned) {
+        if (file === directory || file.startsWith(`${directory}/`)) {
+          covered = true;
+          break;
+        }
+      }
+      if (!covered) {
+        violations.push(
+          `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
+        );
       }
     }
-    if (!covered) {
-      violations.push(
-        `${file}: どの @source からも走査されていません。このファイルのクラスだけ生成されません。`,
-      );
-    }
-  }
-  return violations;
-};
-
-const linkViolations = (app: string, file: string): string[] => {
-  const link = `${file.slice(`${app}/src/`.length)}?url`;
-  for (const module of appFiles(appModules, app)) {
-    if (read(module).includes(link)) {
-      return [];
-    }
-  }
-  return [`${file}: ${app} のソースから ${link} で読み込まれていません。`];
-};
-
-const entryViolations = (app: string, entries: readonly string[]): string[] => {
-  const violations: string[] = [];
-  const scanned: string[] = [];
-  for (const file of entries) {
-    violations.push(...sourceViolations(app, file, read(file)), ...linkViolations(app, file));
-    scanned.push(...scannedDirectories(file, read(file)));
-  }
-  return [...violations, ...coverageViolations(app, scanned)];
-};
-
-const appStylesheetViolations = (apps: readonly string[]): string[] => {
-  return apps.flatMap((app) => {
-    const entries: string[] = [];
-    for (const file of appFiles(appStylesheets, app)) {
-      if (read(file).includes(partsImport)) {
-        entries.push(file);
-      }
-    }
-    return entries.length === 0
-      ? [`${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`]
-      : entryViolations(app, entries);
+    return violations;
   });
+
+const linkViolations = (app: string, file: string): HostRead<string[]> => {
+  const link = `${file.slice(`${app}/src/`.length)}?url`;
+  return Effect.map(Effect.forEach(appFiles(appModules, app), read), (sources) =>
+    sources.some((source) => source.includes(link))
+      ? []
+      : [`${file}: ${app} のソースから ${link} で読み込まれていません。`],
+  );
 };
+
+const entryViolations = (app: string, entries: readonly string[]): HostRead<string[]> =>
+  Effect.gen(function* entryViolations() {
+    const violations: string[] = [];
+    const scanned: string[] = [];
+    for (const file of entries) {
+      const css = yield* read(file);
+      violations.push(
+        ...(yield* sourceViolations(app, file, css)),
+        ...(yield* linkViolations(app, file)),
+      );
+      scanned.push(...(yield* scannedDirectories(file, css)));
+    }
+    return [...violations, ...(yield* coverageViolations(app, scanned))];
+  });
+
+const appStylesheetViolations = (apps: readonly string[]): HostRead<string[]> =>
+  Effect.map(
+    Effect.forEach(apps, (app) =>
+      Effect.gen(function* appViolations() {
+        const entries = yield* Effect.filter(appFiles(appStylesheets, app), (file) =>
+          Effect.map(read(file), (source) => source.includes(partsImport)),
+        );
+        return entries.length === 0
+          ? [`${app}: 部品を使うアプリは自分の CSS エントリで ${partsImport} を宣言してください。`]
+          : yield* entryViolations(app, entries);
+      }),
+    ),
+    (found) => found.flat(),
+  );
 
 const tokenViolations = (css: string): string[] => {
   const declared = declarations(css);
@@ -505,6 +524,7 @@ const tokenViolations = (css: string): string[] => {
   return [...drifted, ...redefined];
 };
 
+export type { HostRead };
 export {
   appStylesheetViolations,
   colorSchemeProbe,
@@ -519,6 +539,7 @@ export {
   linkParts,
   linkViolations,
   partsDirectory,
+  read,
   sourceViolations,
   stylesheetPath,
   stylesheetSource,

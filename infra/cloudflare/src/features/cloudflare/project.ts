@@ -1,12 +1,10 @@
-import { fileURLToPath } from "node:url";
-
 import { Effect, FileSystem, Schema } from "effect";
 
-import { layer } from "./platform.ts";
+import { fileUrlPath, layer } from "./platform.ts";
 
 const Name = Schema.String.check(Schema.isMinLength(1));
 const Manifest = Schema.fromJsonString(Schema.Struct({ name: Name }));
-const manifestFile = fileURLToPath(new URL("../../../../../package.json", import.meta.url));
+const manifestFile = fileUrlPath(new URL("../../../../../package.json", import.meta.url));
 
 const projectName = Effect.gen(function* readProjectName() {
   const filesystem = yield* FileSystem.FileSystem;

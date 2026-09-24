@@ -1,5 +1,3 @@
-import { styleText } from "node:util";
-
 import { sumBy } from "es-toolkit";
 
 import { counted, pluralized } from "./pluralized.ts";
@@ -10,15 +8,25 @@ const INDENT = "  ";
 
 type Palette = { readonly colored: boolean };
 
+const ANSI_STYLES = {
+  green: ["\u001B[32m", "\u001B[39m"],
+  red: ["\u001B[31m", "\u001B[39m"],
+  dim: ["\u001B[2m", "\u001B[22m"],
+} as const;
+
 const painted = ({
   color,
   text,
   palette,
 }: {
-  readonly color: "green" | "red" | "dim";
+  readonly color: keyof typeof ANSI_STYLES;
   readonly text: string;
   readonly palette: Palette;
-}): string => (palette.colored ? styleText(color, text, { validateStream: false }) : text);
+}): string => {
+  if (!palette.colored) return text;
+  const [open, close] = ANSI_STYLES[color];
+  return `${open}${text}${close}`;
+};
 
 const PASS_MARK = "✓";
 

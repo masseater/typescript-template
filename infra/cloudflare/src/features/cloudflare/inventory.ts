@@ -1,12 +1,10 @@
-import { env as processEnvironment } from "node:process";
-import { pathToFileURL } from "node:url";
-
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Stage, inMemoryState } from "alchemy";
 import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
 import { Effect, Predicate, References, Result, Schema } from "effect";
 
+import { path } from "./platform.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
 import { stackName, stackProviders } from "./stacks.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-settings.ts";
@@ -132,9 +130,7 @@ function declaredValue(value: unknown): unknown {
 }
 
 function applyVerificationEnvironment(): void {
-  for (const [name, value] of Object.entries(verificationEnvironment)) {
-    processEnvironment[name] = value;
-  }
+  Object.assign(process.env, verificationEnvironment);
 }
 
 const BINDING_IDENTITY_KEYS: ReadonlySet<string> = new Set(["name", "type"]);
@@ -261,9 +257,12 @@ function stackProgram(module: unknown): StackProgram | undefined {
 }
 
 const compileStack = Effect.fn("compileStack")(function* compileStack(stack: StackName) {
+  const location = yield* path
+    .toFileUrl(stackEntrypoint(stack))
+    .pipe(Effect.mapError((cause) => inventoryFailure("stack_module_invalid", stack, cause)));
   const module: unknown = yield* Effect.tryPromise({
     catch: (cause) => inventoryFailure("stack_module_invalid", stack, cause),
-    try: (): Promise<unknown> => import(pathToFileURL(stackEntrypoint(stack)).href),
+    try: (): Promise<unknown> => import(location.href),
   });
   const program = stackProgram(module);
   if (program === undefined) {

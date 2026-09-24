@@ -1,7 +1,6 @@
-import { parseEnv } from "node:util";
-
 import { deploymentKey, privateDeploymentKeys } from "@repo/observability/deployment-keys";
 import { isSecretFileName } from "@repo/vite-config/private-path";
+import { ConfigProvider, Effect } from "effect";
 
 interface DeploymentValue {
   readonly key: string;
@@ -13,12 +12,12 @@ const byKey = (left: DeploymentValue, right: DeploymentValue): number => {
 };
 
 const deploymentValues = (content: string): DeploymentValue[] => {
-  return Object.entries(parseEnv(content))
-    .flatMap(([key, value]) =>
-      typeof value === "string" && value !== "" && privateDeploymentKeys.includes(key)
-        ? [{ key, value }]
-        : [],
-    )
+  const provider = ConfigProvider.fromDotEnvContents(content);
+  return privateDeploymentKeys
+    .flatMap((key) => {
+      const value = Effect.runSync(provider.load([key]))?.value;
+      return value === undefined || value === "" ? [] : [{ key, value }];
+    })
     .toSorted(byKey);
 };
 

@@ -1,9 +1,7 @@
-import { fileURLToPath } from "node:url";
-
 import { APPLICATION, wikiWorker } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 
-import { path } from "./platform.ts";
+import { fileUrlPath, path } from "./platform.ts";
 
 import type { MonitorStack } from "./monitors.ts";
 import type { PackageStack, StackName } from "./stacks.ts";
@@ -23,13 +21,13 @@ const monitorEntrypoints = {
 } as const satisfies Readonly<Record<MonitorStack, string>>;
 
 const cloudflareEntrypoints = {
-  database: fileURLToPath(new URL("./database.ts", import.meta.url)),
-  email: fileURLToPath(new URL("./email.ts", import.meta.url)),
-  flagship: fileURLToPath(new URL("./flagship.ts", import.meta.url)),
-  observability: fileURLToPath(new URL("./observability.ts", import.meta.url)),
-  storage: fileURLToPath(new URL("./storage.ts", import.meta.url)),
-  tokens: fileURLToPath(new URL("./tokens.ts", import.meta.url)),
-  zone: fileURLToPath(new URL("./zone.ts", import.meta.url)),
+  database: fileUrlPath(new URL("./database.ts", import.meta.url)),
+  email: fileUrlPath(new URL("./email.ts", import.meta.url)),
+  flagship: fileUrlPath(new URL("./flagship.ts", import.meta.url)),
+  observability: fileUrlPath(new URL("./observability.ts", import.meta.url)),
+  storage: fileUrlPath(new URL("./storage.ts", import.meta.url)),
+  tokens: fileUrlPath(new URL("./tokens.ts", import.meta.url)),
+  zone: fileUrlPath(new URL("./zone.ts", import.meta.url)),
 } as const satisfies Readonly<Record<Exclude<StackName, PackageStack | MonitorStack>, string>>;
 
 const entrypoints = {

@@ -1,9 +1,8 @@
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { filePathOf } from "../platform/path.ts";
 import {
   sandboxUnsafeReasons,
   sandboxUnsafeTestPattern,
@@ -11,7 +10,7 @@ import {
 } from "./stryker-sandbox-test-fixture.ts";
 import configuration from "./stryker-test-fixture.ts";
 
-const qualityDirectory = fileURLToPath(new URL(".", import.meta.url));
+const qualityDirectory = filePathOf(new URL(".", import.meta.url));
 
 const REPOSITORY_DIRECTORY = "tools/dont-review-it/src/features/dont-review-it/repository";
 

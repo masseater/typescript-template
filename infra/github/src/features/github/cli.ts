@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { firstUserArgumentIndex, runCli } from "@repo/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
@@ -18,14 +16,14 @@ import {
   plannedStack,
   reportCause,
 } from "@repo/infra-cloudflare/operator";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, Path, Schema } from "effect";
 
 import { originRepository, repositorySlug } from "./repository.ts";
 
 import type { ProgressEvent } from "alchemy/Alchemist";
 
 const commandRejectedEvent = "github.command_rejected";
-const entrypoint = fileURLToPath(new URL("../../../alchemy.run.ts", import.meta.url));
+const entrypoint = new URL("../../../alchemy.run.ts", import.meta.url);
 
 class GitHubCommandFailure extends Schema.TaggedError<GitHubCommandFailure>()(
   "GitHubCommandFailure",
@@ -53,8 +51,9 @@ const reportProgress = (progress: ProgressEvent): Effect.Effect<void> =>
 const planRuleset = Effect.fn("planRuleset")(function* planRuleset(
   deployment: Readonly<{ envFile: string; stage: string }>,
 ) {
+  const paths = yield* Path.Path;
   const snapshot = yield* planDeployment({
-    entrypoint,
+    entrypoint: yield* paths.fromFileUrl(entrypoint),
     envFile: deployment.envFile,
     stage: deployment.stage,
   });

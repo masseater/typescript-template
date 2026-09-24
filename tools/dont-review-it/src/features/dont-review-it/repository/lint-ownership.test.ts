@@ -1,13 +1,14 @@
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
-import { Effect, FileSystem } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 const lintSource = await Effect.runPromise(
   Effect.gen(function* lintSource() {
     const filesystem = yield* FileSystem.FileSystem;
-    return yield* filesystem.readFileString(fileURLToPath(new URL("./lint.ts", import.meta.url)));
+    const paths = yield* Path.Path;
+    return yield* filesystem.readFileString(
+      yield* paths.fromFileUrl(new URL("./lint.ts", import.meta.url)),
+    );
   }).pipe(Effect.provide(NodeServices.layer)),
 );
 
