@@ -228,5 +228,14 @@ export {
   wikiWorker,
 } from "./wiki.ts";
 export type { BuildTarget, WikiWorker } from "./wiki.ts";
-export { readWikiPublishConfig, wikiPublishKey } from "./wiki-publish.ts";
+export {
+  GitHubInstallation,
+  gitHubApiOrigin,
+  gitHubRequestTimeout,
+  gitHubSuccessStatus,
+} from "./github-api.ts";
+export { signGitHubAppJwt } from "./github-app-jwt.ts";
+export type { GitHubAppKey } from "./github-app-jwt.ts";
+export { GitHubAppKeyInvalid } from "./github-app-key-invalid.ts";
+export { readWikiPublishConfig, wikiPublishKey, wikiPublishPermissions } from "./wiki-publish.ts";
 export type { WikiPublishConfig } from "./wiki-publish.ts";
