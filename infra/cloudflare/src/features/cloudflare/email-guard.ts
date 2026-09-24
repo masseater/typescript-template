@@ -4,10 +4,10 @@ import { recordsPresent } from "./account-lookup.ts";
 import { isUnreadable, readVerdict, unreadableVerdict } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
 import {
+  destinationAddresses,
   onboardingVerdict,
   senderVerdict,
   sendingRecordNames,
-  verifiedAddresses,
 } from "./email-lookup.ts";
 
 import type { StateService } from "alchemy/State";
@@ -33,14 +33,18 @@ const alertQuotaVerdict = Effect.fn("alertQuotaVerdict")(function* alertQuotaVer
   access: AccountAccess,
   recipients: readonly string[],
 ) {
-  const addresses = yield* verifiedAddresses(access).pipe(
+  const addresses = yield* destinationAddresses(access).pipe(
     Effect.catchTag("CloudflareFailure", unreadableVerdict),
   );
-  return readVerdict(addresses, (verified) =>
-    recipients.every((recipient) => verified.includes(recipient))
-      ? ("free" as const)
-      : ("counted" as const),
-  );
+  return readVerdict(addresses, (registered) => {
+    const states = recipients.map((recipient) =>
+      registered.find((address) => address.email === recipient),
+    );
+    if (states.some((address) => address !== undefined && !address.verified)) {
+      return "counted" as const;
+    }
+    return states.includes(undefined) ? ("unregistered" as const) : ("free" as const);
+  });
 });
 
 const emailVerdicts = Effect.fn("emailVerdicts")(function* emailVerdicts<Failure, Requirements>(
