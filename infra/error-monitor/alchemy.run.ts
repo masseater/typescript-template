@@ -1,12 +1,10 @@
 import { accountTokenRef, monitorArtifact, monitorProgram } from "@repo/infra-cloudflare/monitor";
-import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
+import { prefixedStack } from "@repo/infra-cloudflare/prefixed-stack";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/monitor/workers";
-import { Stack } from "alchemy";
 import { Effect } from "effect";
 
-export default Stack(
-  stackName("error-monitor"),
-  stackOptions,
+export default prefixedStack(
+  "error-monitor",
   monitorProgram("error", {
     artifact: monitorArtifact("error-monitor"),
     className: errorMonitorWorker.className,

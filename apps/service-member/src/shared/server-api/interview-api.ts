@@ -13,6 +13,7 @@ import {
   takeTurn,
 } from "#shared/interview/server.ts";
 
+import type { Stripe } from "#shared/billing/index.ts";
 import type { Interviewer } from "#shared/interview/server.ts";
 import type { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import type { AppServices } from "@repo/runtime";
@@ -71,7 +72,7 @@ const historyConsent = Effect.fn("interview.api.historyConsent")(function* histo
   return yield* respondHistoryConsent(user.id, accept);
 });
 
-function interviewApi(api: ApiRoutes<AppServices | Interviewer | ProfileLayoutAssembler>) {
+function interviewApi(api: ApiRoutes<AppServices | Interviewer | ProfileLayoutAssembler | Stripe>) {
   return createApi("")
     .get("/interview", ...api.route({ response: InterviewView }, open, failures))
     .post("/interview/turns", ...api.route({ response: InterviewView }, turn, failures))

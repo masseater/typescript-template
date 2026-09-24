@@ -104,6 +104,10 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-hardcoded-provider-id--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-provider-id--read-from-configuration.md) | Disallow text written out in the source at an identity argument of a client built from a provider package, so which account a deployment acts as is decided by its configuration rather than by the file that builds the client |
 | [no-plain-secret-environment-key--wrap-it-in-redacted](../tools/dont-review-it/docs/lint/no-plain-secret-environment-key--wrap-it-in-redacted.md) | Disallow declaring an environment key whose name marks it as a secret without wrapping its value in `Redacted`, so the value cannot reach a log, an error message or a trace as plain text |
 
+## [.claude/skills/reviews/references/simplify.md](../.claude/skills/reviews/references/simplify.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/test-design.md](../.claude/skills/reviews/references/test-design.md)
 
 | Rule | Description |

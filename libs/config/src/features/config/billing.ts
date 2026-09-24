@@ -47,6 +47,9 @@ export const WEBHOOK_DISPOSITION = {
 export const stripeAutomaticTax = true;
 export const stripeTrialPeriodDays = 14;
 
+export const aiMeterEventName = "ai_interview_turn";
+export const aiUsageUnitAmount = 3;
+
 export const priceIntervals = ["day", "week", "month", "year"] as const;
 export type PriceInterval = (typeof priceIntervals)[number];
 
@@ -65,5 +68,8 @@ export const stripeWebhookEvents = [
   "invoice.paid",
   "invoice.payment_failed",
   "invoice.updated",
+  "quote.accepted",
+  "quote.canceled",
+  "quote.finalized",
 ] as const;
 export type StripeWebhookEvent = (typeof stripeWebhookEvents)[number];

@@ -89,6 +89,7 @@ const userBindings: AppBindings<"service-member"> = {
       }),
   }),
   STRIPE_AUTOMATIC_TAX: "true",
+  STRIPE_METERED_PRICE_ID: "price_metered",
   STRIPE_PRICE_ID: "price_test",
   STRIPE_SECRET_KEY: "sk_test_secret_of_at_least_32_characters",
   STRIPE_TRIAL_PERIOD_DAYS: "14",

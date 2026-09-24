@@ -198,6 +198,7 @@ describe("an OTLP endpoint", () => {
 const stripeBindings = {
   APP_ORIGIN: "http://localhost:3001",
   STRIPE_AUTOMATIC_TAX: "false",
+  STRIPE_METERED_PRICE_ID: "price_metered",
   STRIPE_PRICE_ID: "price_placeholder",
   STRIPE_SECRET_KEY: "sk_test_placeholder",
   STRIPE_TRIAL_PERIOD_DAYS: "0",
@@ -220,6 +221,7 @@ describe("readStripeConfig", () => {
     it("is read as a test-mode configuration", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
         automaticTax: false,
+        meteredPriceId: "price_metered",
         mode: "test",
         priceId: "price_placeholder",
         secretKey: "sk_test_placeholder",
@@ -242,6 +244,7 @@ describe("readStripeConfig", () => {
     it("carries the trial length as a number", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
         automaticTax: true,
+        meteredPriceId: "price_metered",
         mode: "test",
         priceId: "price_placeholder",
         secretKey: "sk_test_placeholder",
@@ -270,6 +273,7 @@ describe("readStripeConfig", () => {
     it("is read as a live-mode configuration", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
         automaticTax: false,
+        meteredPriceId: "price_metered",
         mode: "live",
         priceId: "price_placeholder",
         secretKey: "rk_live_placeholder",

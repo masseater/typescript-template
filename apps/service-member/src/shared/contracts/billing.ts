@@ -33,6 +33,25 @@ const InvoiceView = Schema.Struct({
 
 const InvoiceList = Schema.Struct({ invoices: Schema.Array(InvoiceView) });
 
+const QuoteView = Schema.Struct({
+  amountTotal: Schema.Finite,
+  collectionMethod: Schema.String,
+  currency: Schema.String,
+  daysUntilDue: Schema.optional(Schema.Finite),
+  expiresAt: Schema.DateFromString,
+  status: Schema.String,
+  stripeQuoteId: Schema.String,
+});
+
+const QuoteList = Schema.Struct({ quotes: Schema.Array(QuoteView) });
+
+const UsageView = Schema.Struct({
+  events: Schema.Finite,
+  quantity: Schema.Finite,
+  since: Schema.DateFromString,
+  unreported: Schema.Finite,
+});
+
 const WebhookReceipt = Schema.Struct({ outcome: Schema.Literals(webhookOutcomes) });
 
 const checkoutReturns = ["cancel", "success"] as const;
@@ -58,6 +77,8 @@ export {
   InvoiceList,
   OfferView,
   PlanView,
+  QuoteList,
+  UsageView,
   WebhookReceipt,
   readCheckoutReturn,
 };

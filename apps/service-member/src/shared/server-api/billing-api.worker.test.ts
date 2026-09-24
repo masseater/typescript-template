@@ -24,7 +24,7 @@ import { DateTime, Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
-import { AgreementsView, InvoiceList } from "#shared/contracts/index.ts";
+import { AgreementsView, InvoiceList, QuoteList } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
 import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
@@ -35,6 +35,7 @@ type App = ReturnType<typeof billingApp>;
 const origin = origins[APPLICATION.user];
 const stripeApi = "https://api.stripe.com/v1";
 const priceId = "price_TestMonthly";
+const meteredPriceId = "price_TestMetered";
 const webhookSecret = "whsec_testsecret";
 const checkoutUrl = "https://checkout.stripe.com/c/pay/cs_test_session";
 const portalUrl = "https://billing.stripe.com/p/session/test_portal";
@@ -60,6 +61,7 @@ function billingApp() {
     APP_ORIGIN: origin,
     AUTH_SECRET: authTestSecret,
     STRIPE_AUTOMATIC_TAX: "true",
+    STRIPE_METERED_PRICE_ID: meteredPriceId,
     STRIPE_PRICE_ID: priceId,
     STRIPE_SECRET_KEY: "sk_test_placeholder",
     STRIPE_TRIAL_PERIOD_DAYS: String(trialPeriodDays),
@@ -239,7 +241,54 @@ function ledgerEvent(
   };
 }
 
+const quoteId = "qt_test_member";
+const quoteCustomerId = "cus_test_company";
+const quoteSubscriptionId = "sub_test_company";
+const quoteAmount = 120_000;
+const netDays = 30;
+
+function quoteEvent(
+  type: "quote.accepted" | "quote.canceled" | "quote.finalized",
+  event: Readonly<{
+    id: string;
+    memberId: string | undefined;
+    offsetSeconds: number;
+    status: string;
+  }>,
+): Record<string, unknown> {
+  const created = nowSeconds() + event.offsetSeconds;
+  return {
+    created,
+    data: {
+      object: {
+        amount_total: quoteAmount,
+        collection_method: "send_invoice",
+        currency: "jpy",
+        customer: quoteCustomerId,
+        expires_at: created + monthInSeconds,
+        id: quoteId,
+        invoice_settings: { days_until_due: netDays },
+        metadata: event.memberId === undefined ? {} : { member_id: event.memberId },
+        status: event.status,
+        subscription: type === "quote.accepted" ? quoteSubscriptionId : null,
+      },
+    },
+    id: event.id,
+    type,
+  };
+}
+
 const stripeHandlers = [
+  http.get(`${stripeApi}/subscriptions/${quoteSubscriptionId}`, () =>
+    HttpResponse.json({
+      cancel_at_period_end: false,
+      customer: quoteCustomerId,
+      id: quoteSubscriptionId,
+      items: { data: [{ current_period_end: nowSeconds() + monthInSeconds }] },
+      metadata: {},
+      status: "active",
+    }),
+  ),
   http.post(`${stripeApi}/checkout/sessions`, ({ request }) =>
     request.formData().then((form) => {
       checkoutForms.push(
@@ -389,6 +438,7 @@ describe("billing api", () => {
       expect(first).toMatchObject({
         "automatic_tax[enabled]": "true",
         customer_email: "member@example.com",
+        "line_items[1][price]": meteredPriceId,
         "subscription_data[trial_period_days]": String(trialPeriodDays),
         "subscription_data[trial_settings][end_behavior][missing_payment_method]": "cancel",
         "tax_id_collection[enabled]": "true",
@@ -572,6 +622,114 @@ describe("billing api", () => {
           },
         ],
       });
+    }));
+
+  it("turns an accepted sales quote into the member's paid plan, billed by invoice", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(
+          app,
+          quoteEvent("quote.finalized", {
+            id: "evt_quote_open",
+            memberId: id,
+            offsetSeconds: 1,
+            status: "open",
+          }),
+        );
+        const offered = yield* json(yield* call(app, client, "/billing/quotes"));
+        const beforeAcceptance = yield* call(app, client, "/members?page=1");
+        const accepted = yield* json(
+          yield* deliver(
+            app,
+            quoteEvent("quote.accepted", {
+              id: "evt_quote_accepted",
+              memberId: id,
+              offsetSeconds: 2,
+              status: "accepted",
+            }),
+          ),
+        );
+        const afterAcceptance = yield* call(app, client, "/members?page=1");
+        const plan = yield* json(yield* call(app, client, "/billing/plan"));
+        const settled = yield* Schema.decodeUnknownEffect(QuoteList)(
+          yield* json(yield* call(app, client, "/billing/quotes")),
+        );
+        return {
+          accepted,
+          afterAcceptance: afterAcceptance.status,
+          beforeAcceptance: beforeAcceptance.status,
+          offered,
+          plan,
+          settledStatuses: settled.quotes.map((quote) => quote.status),
+        };
+      }),
+    ).then((result) => {
+      expect(result.offered).toStrictEqual({
+        quotes: [
+          {
+            amountTotal: quoteAmount,
+            collectionMethod: "send_invoice",
+            currency: "jpy",
+            daysUntilDue: netDays,
+            expiresAt: expect.any(String),
+            status: "open",
+            stripeQuoteId: quoteId,
+          },
+        ],
+      });
+      expect(result.beforeAcceptance).toBe(httpStatus.paymentRequired);
+      expect(result.accepted).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.afterAcceptance).toBe(httpStatus.ok);
+      expect(result.plan).toMatchObject({ plan: PLAN.paid, status: SUBSCRIPTION_STATUS.active });
+      expect(result.settledStatuses).toStrictEqual(["accepted"]);
+    }));
+
+  it("records a canceled quote and ignores one that names no member", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        const unowned = yield* json(
+          yield* deliver(
+            app,
+            quoteEvent("quote.finalized", {
+              id: "evt_quote_unowned",
+              memberId: undefined,
+              offsetSeconds: 1,
+              status: "open",
+            }),
+          ),
+        );
+        yield* deliver(
+          app,
+          quoteEvent("quote.finalized", {
+            id: "evt_quote_open",
+            memberId: id,
+            offsetSeconds: 2,
+            status: "open",
+          }),
+        );
+        yield* deliver(
+          app,
+          quoteEvent("quote.canceled", {
+            id: "evt_quote_canceled",
+            memberId: id,
+            offsetSeconds: 3,
+            status: "canceled",
+          }),
+        );
+        const listed = yield* Schema.decodeUnknownEffect(QuoteList)(
+          yield* json(yield* call(app, client, "/billing/quotes")),
+        );
+        return { statuses: listed.quotes.map((quote) => quote.status), unowned };
+      }),
+    ).then((result) => {
+      expect(result.unowned).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.ignored });
+      expect(result.statuses).toStrictEqual(["canceled"]);
     }));
 
   it("adds up every credit note on an invoice instead of keeping only the last one", ({ auth }) =>

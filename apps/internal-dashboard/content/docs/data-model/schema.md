@@ -38,6 +38,13 @@ erDiagram
     text summary "nullable"
     text version UK
   }
+  ai_usage_event {
+    text identifier PK
+    text member_id FK
+    integer occurred_at
+    integer quantity
+    integer reported_at "nullable"
+  }
   apikey {
     text config_id
     integer created_at
@@ -113,6 +120,18 @@ erDiagram
     text origin_key UK
     text status
     text stripe_invoice_id PK
+    integer updated_at
+  }
+  customer_quote {
+    integer amount_total
+    text collection_method
+    text currency
+    integer days_until_due "nullable"
+    integer expires_at
+    text member_id FK
+    text status
+    text stripe_quote_id PK
+    text stripe_subscription_id "nullable"
     integer updated_at
   }
   direct_message {
@@ -520,10 +539,12 @@ erDiagram
   agreement_version ||--o{ agreement_acceptance : "version_id"
   user |o--o{ agreement_version : "created_by"
   user |o--o{ agreement_version : "published_by"
+  user ||--o{ ai_usage_event : "member_id"
   board_thread ||--o{ board_post : "thread_id"
   conversation ||--o{ conversation_participant : "conversation_id"
   user |o--o{ conversation_participant : "member_id"
   user ||--o{ customer_invoice : "member_id"
+  user ||--o{ customer_quote : "member_id"
   conversation ||--o{ direct_message : "conversation_id"
   user |o--o{ direct_message : "sender_id"
   user ||--o{ follow : "followee_id"

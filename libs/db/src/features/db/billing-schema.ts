@@ -70,4 +70,43 @@ const customerInvoice = sqliteTable(
   ],
 );
 
-export { customerInvoice, planSubscription, stripeEvent };
+const aiUsageEvent = sqliteTable(
+  "ai_usage_event",
+  {
+    identifier: text("identifier").notNull(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
+    quantity: integer("quantity").notNull(),
+    reportedAt: integer("reported_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.identifier] }),
+    index("ai_usage_event_member_occurred_idx").on(table.memberId, table.occurredAt),
+  ],
+);
+
+const customerQuote = sqliteTable(
+  "customer_quote",
+  {
+    amountTotal: integer("amount_total").notNull(),
+    collectionMethod: text("collection_method").notNull(),
+    currency: text("currency").notNull(),
+    daysUntilDue: integer("days_until_due"),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    status: text("status").notNull(),
+    stripeQuoteId: text("stripe_quote_id").notNull(),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.stripeQuoteId] }),
+    index("customer_quote_member_id_idx").on(table.memberId),
+  ],
+);
+
+export { aiUsageEvent, customerInvoice, customerQuote, planSubscription, stripeEvent };
