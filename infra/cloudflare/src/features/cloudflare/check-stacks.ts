@@ -10,6 +10,7 @@ import {
   jobsQueueBinding,
   jobsWorkflowBinding,
   jobsWorkflowClass,
+  stripeApiVersion,
   stripeWebhookEvents,
   userInboxBinding,
   userInboxClassName,
@@ -176,6 +177,7 @@ function billingResources(app: Application): Readonly<Record<string, ResourceInv
       adopt: false,
       bindings: [],
       declared: {
+        apiVersion: stripeApiVersion,
         enabledEvents: [...stripeWebhookEvents],
         url: `${origins[app]}${apiRoot}/billing/webhook`,
       },

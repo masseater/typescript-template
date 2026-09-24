@@ -65,6 +65,7 @@
     "dependency-cruiser": "18.3.1",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
+    "fs-native-extensions": "catalog:",
     "jsonc-parser": "3.3.1",
     "oxc-parser": "0.149.0",
     "oxfmt": "0.70.0",
