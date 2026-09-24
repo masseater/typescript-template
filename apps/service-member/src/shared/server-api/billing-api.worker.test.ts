@@ -765,6 +765,29 @@ describe("billing api", () => {
       expect(listed.invoices.map((invoice) => invoice.amountCredited)).toStrictEqual([250]);
     }));
 
+  it("ignores a credit note and a refund for an invoice the ledger never recorded", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const credited = yield* json(
+          yield* deliver(
+            app,
+            ledgerEvent("credit_note.created", { amount: 100, id: "evt_credit", offsetSeconds: 1 }),
+          ),
+        );
+        const refunded = yield* json(
+          yield* deliver(
+            app,
+            ledgerEvent("charge.refunded", { amount: 100, id: "evt_refund", offsetSeconds: 2 }),
+          ),
+        );
+        return [credited, refunded];
+      }),
+    ).then((outcomes) => {
+      expect(outcomes).toStrictEqual([{ outcome: "ignored" }, { outcome: "ignored" }]);
+    }));
+
   it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", ({
     auth,
   }) =>
