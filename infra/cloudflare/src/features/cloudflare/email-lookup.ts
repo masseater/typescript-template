@@ -32,7 +32,7 @@ function sendingRecordNames(config: SharedConfig): readonly string[] {
   return [`cf-bounce.${domain}`, `cf-bounce._domainkey.${domain}`, `_dmarc.${domain}`];
 }
 
-const verifiedAddresses = Effect.fn("verifiedAddresses")(function* verifiedAddresses(
+const destinationAddresses = Effect.fn("destinationAddresses")(function* destinationAddresses(
   access: AccountAccess,
 ) {
   const pages = yield* readPages(
@@ -45,8 +45,8 @@ const verifiedAddresses = Effect.fn("verifiedAddresses")(function* verifiedAddre
   );
   return pages.flatMap((page) =>
     page.result.flatMap((address) =>
-      typeof address.verified === "string" && typeof address.email === "string"
-        ? [address.email]
+      typeof address.email === "string"
+        ? [{ email: address.email, verified: typeof address.verified === "string" }]
         : [],
     ),
   );
@@ -112,4 +112,4 @@ const senderVerdict = Effect.fn("senderVerdict")(function* senderVerdict(
   return domain.endsWith(`.${zone}`) ? ("nested_subdomain" as const) : ("outside_zone" as const);
 });
 
-export { onboardingVerdict, senderVerdict, sendingRecordNames, verifiedAddresses };
+export { onboardingVerdict, senderVerdict, sendingRecordNames, destinationAddresses };
