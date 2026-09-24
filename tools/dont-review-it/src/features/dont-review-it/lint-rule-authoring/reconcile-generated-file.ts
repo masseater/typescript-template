@@ -22,7 +22,7 @@ export const staleGeneratedFile = ({
 }): string =>
   `\`${file}\` must not fall behind ${behind}. Regenerate it with \`${REGENERATE_COMMAND}\`.`;
 
-type ReconciledProblems = Effect.Effect<
+export type ReconciledProblems = Effect.Effect<
   readonly LintRuleProblem[],
   PlatformError.PlatformError,
   FileSystem.FileSystem

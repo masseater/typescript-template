@@ -1,8 +1,7 @@
 import { readStorage } from "@repo/config/storage";
-import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
-import { StorageFailed, storageUnavailable } from "./storage-failed.ts";
+import { StorageFailed, storageAttempt, storageUnavailable } from "./storage-failed.ts";
 
 import type { R2Bucket, ReadableStream as BucketStream } from "@cloudflare/workers-types";
 import type { ConfigurationInvalid } from "@repo/config";
@@ -24,19 +23,30 @@ type FileStoreShape = {
     file: Readonly<{ body: ReadableStream; contentType: string | undefined }>,
   ) => Effect.Effect<void, StorageFailed>;
   readonly remove: (fieldNames: readonly string[]) => Effect.Effect<void, StorageFailed>;
+  readonly removePrefix: (prefix: string) => Effect.Effect<void, StorageFailed>;
 };
-type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
+type Bucket = Pick<R2Bucket, "delete" | "get" | "list" | "put">;
 const isBucketStream = (candidate: unknown): candidate is BucketStream =>
   candidate instanceof ReadableStream;
-const attempt = <Value>(
-  operation: string,
-  run: () => Promise<Value>,
-): Effect.Effect<Value, StorageFailed> => {
-  return Effect.tryPromise({
-    catch: (cause) => new StorageFailed({ cause, reason: "operation_failed" }),
-    try: run,
-  }).pipe(withSpan(`storage.files.${operation}`));
-};
+const attempt = storageAttempt("files");
+const uploadOptions = (
+  contentType: string | undefined,
+): { readonly httpMetadata: { readonly contentType: string } } | undefined =>
+  contentType === undefined ? undefined : { httpMetadata: { contentType } };
+const removeListed = (
+  bucket: Bucket,
+  listing: Readonly<{ prefix: string; cursor?: string }>,
+): Effect.Effect<void, StorageFailed> =>
+  Effect.gen(function* removeListedPage() {
+    const listed = yield* attempt("list", () => bucket.list(listing));
+    const fieldNames = listed.objects.map((stored) => stored.key);
+    if (fieldNames.length > 0) {
+      yield* attempt("delete", () => bucket.delete(fieldNames));
+    }
+    if (listed.truncated) {
+      yield* removeListed(bucket, { cursor: listed.cursor, prefix: listing.prefix });
+    }
+  });
 const storeOf = (bucket: Bucket): FileStoreShape => {
   return {
     get: (fieldName) =>
@@ -64,33 +74,21 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
         ),
       ),
     put: (fieldName, file) =>
-      attempt("put", () =>
-        bucket.put(
-          fieldName,
-          file.bytes,
-          file.contentType === undefined
-            ? undefined
-            : { httpMetadata: { contentType: file.contentType } },
-        ),
-      ),
+      attempt("put", () => bucket.put(fieldName, file.bytes, uploadOptions(file.contentType))),
     putStream: (fieldName, file) => {
       const { body } = file;
       return isBucketStream(body)
-        ? attempt("put", () =>
-            bucket.put(
-              fieldName,
-              body,
-              file.contentType === undefined
-                ? undefined
-                : { httpMetadata: { contentType: file.contentType } },
-            ),
-          )
+        ? attempt("put", () => bucket.put(fieldName, body, uploadOptions(file.contentType)))
         : Effect.fail(new StorageFailed({ reason: "operation_failed" }));
     },
     remove: (fieldNames) =>
       fieldNames.length === 0
         ? Effect.void
         : attempt("delete", () => bucket.delete([...fieldNames])),
+    removePrefix: (prefix) =>
+      prefix.length === 0
+        ? Effect.fail(new StorageFailed({ reason: "operation_failed" }))
+        : removeListed(bucket, { prefix }),
   };
 };
 const unavailableStore: FileStoreShape = {
@@ -99,6 +97,7 @@ const unavailableStore: FileStoreShape = {
   put: () => storageUnavailable,
   putStream: () => storageUnavailable,
   remove: () => storageUnavailable,
+  removePrefix: () => storageUnavailable,
 };
 class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runtime/FileStore") {
   public static layer(bucket: Bucket | undefined): Layer.Layer<FileStore> {
@@ -112,4 +111,4 @@ class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runt
   }
 }
 export { FileStore };
-export type { StoredFile, StreamedFile };
+export type { Bucket, StoredFile, StreamedFile };

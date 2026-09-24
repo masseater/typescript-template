@@ -1,38 +1,17 @@
-import { jobEntriesOf, stepsOf } from "../steps.ts";
+import { entriesNamedInJobsAndSteps } from "../steps.ts";
 import {
-  entryOf,
   lineOf,
   scalarText,
   trailingComment,
   type WorkflowDocument,
 } from "../workflow-document.ts";
 
-import type { Pair } from "yaml";
 import type { RepositoryProblem } from "../../problem.ts";
 import type { WorkflowChecksConfig } from "../config.ts";
 
 const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 
 const CARRIES_ITS_OWN_COMMIT = ["./", "docker://"];
-
-const referenceEntries = ({
-  document,
-  config,
-}: {
-  readonly document: WorkflowDocument;
-  readonly config: WorkflowChecksConfig;
-}): readonly Pair[] => {
-  const jobs = jobEntriesOf({ document, config });
-  const holders = [
-    ...jobs.map((job) => job.value),
-    ...jobs.flatMap((job) => stepsOf({ job: job.value, config })),
-  ];
-
-  return holders.flatMap((holder) => {
-    const referenceEntry = entryOf(holder, config.usesKey);
-    return referenceEntry === null ? [] : [referenceEntry];
-  });
-};
 
 const REFERENCE_SEPARATOR = "@";
 
@@ -48,7 +27,7 @@ export const unpinnedActionRefs = ({
   readonly document: WorkflowDocument;
   readonly config: WorkflowChecksConfig;
 }): readonly RepositoryProblem[] =>
-  referenceEntries({ document, config }).flatMap((actionEntry) => {
+  entriesNamedInJobsAndSteps({ document, config, key: config.usesKey }).flatMap((actionEntry) => {
     const reference = scalarText(actionEntry.value);
     if (reference === null) return [];
     if (CARRIES_ITS_OWN_COMMIT.some((prefix) => reference.startsWith(prefix))) return [];

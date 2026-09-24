@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { forbidItExtend } from "./forbid-it-extend--use-test-extend.ts";
 
 describe("dont-review-it/forbid-it-extend--use-test-extend", () => {

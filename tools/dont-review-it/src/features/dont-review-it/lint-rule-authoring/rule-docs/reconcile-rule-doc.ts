@@ -9,7 +9,7 @@ import {
   type LintRuleWorkspace,
   type LintRuleWorkspaceFailure,
 } from "../rule-index/lint-rule-workspaces.ts";
-import { workspaceRulesOf } from "../rule-index/workspace-rules.ts";
+import { rulesAcross } from "../rule-index/workspace-rules.ts";
 import {
   FRONTMATTER_DESCRIPTION_PATTERN,
   GENERATED_REGIONS,
@@ -238,12 +238,7 @@ export const lintRuleDocProblems = ({
 }): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
   Effect.gen(function* lintRuleDocProblems() {
     const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
-    const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
-      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
-        Effect.map(({ rules }) => rules.map((rule) => ({ workspace, rule }))),
-      ),
-    );
-    const rules = workspaceRules.flat();
+    const rules = yield* rulesAcross({ repositoryRoot, workspaces });
     const problems = yield* Effect.forEach(rules, ({ workspace, rule }) =>
       ruleDocProblems({ repositoryRoot, workspace, rule, write }),
     );

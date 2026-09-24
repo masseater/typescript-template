@@ -62,3 +62,4 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
 };
 
 export { monitorWorker };
+export type { MonitorHandler };

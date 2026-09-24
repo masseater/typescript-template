@@ -97,3 +97,4 @@ export {
   identifierPattern,
   wireErrorType,
 };
+export type { ErrorAttributes, ErrorType };

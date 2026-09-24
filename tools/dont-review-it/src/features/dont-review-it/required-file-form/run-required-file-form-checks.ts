@@ -1,6 +1,7 @@
 import { Effect, type FileSystem, type PlatformError } from "effect";
 
 import { agentInstructionLinksIn } from "./agent-instruction-links.ts";
+import { agentInstructionPathsIn } from "./agent-instruction-paths.ts";
 import { foreignToolConfigsIn } from "./foreign-tool-configs.ts";
 import { packageRootsIn } from "./package-roots.ts";
 
@@ -24,7 +25,12 @@ export const runRequiredFileFormChecks = ({
           packageRoot,
           config,
         });
-        return [...foreignConfigs, ...linkProblems];
+        const pathProblems = yield* agentInstructionPathsIn({
+          repositoryRoot,
+          packageRoot,
+          config,
+        });
+        return [...foreignConfigs, ...linkProblems, ...pathProblems];
       }),
     );
     return { problems: problems.flat(), scanned: packageRoots.length };

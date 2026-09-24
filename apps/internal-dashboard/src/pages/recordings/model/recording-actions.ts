@@ -6,17 +6,9 @@ import {
   retryRecording,
 } from "#pages/recordings/api/recordings.ts";
 
-const useConfirmingDelete = localState(false);
+import type { RecordingActions } from "./recording-state.ts";
 
-interface RecordingActions {
-  readonly blocked: boolean;
-  readonly confirmingDelete: boolean;
-  readonly error: string | undefined;
-  readonly handleAssign: (label: number, personId: string | null) => void;
-  readonly handleConfirmDelete: () => void;
-  readonly handleDeleteOpenChange: (open: boolean) => void;
-  readonly handleRetry: () => void;
-}
+const useConfirmingDelete = localState(false);
 
 function useRecordingActions(
   recordingId: string,

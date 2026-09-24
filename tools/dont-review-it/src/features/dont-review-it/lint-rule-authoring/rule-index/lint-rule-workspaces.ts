@@ -97,3 +97,4 @@ export const lintRuleWorkspacesIn = (
       .filter((workspace) => workspace.ruleDirectories.length > 0)
       .toSorted((left, right) => left.workspaceDir.localeCompare(right.workspaceDir));
   });
+export type { WorkspaceDefinitionUnparsable };

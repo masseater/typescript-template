@@ -13,7 +13,7 @@ const useSession = (): {
   return {
     error: session.error?.message,
     loading: session.isPending,
-    session: session.data,
+    session: session.data ?? undefined,
   };
 };
 

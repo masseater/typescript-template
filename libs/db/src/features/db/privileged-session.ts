@@ -131,3 +131,4 @@ const liveStaff = (database: DrizzleDatabase, check: LiveCheck<StaffPermission>)
   });
 
 export { liveAdmin, liveStaff, requireAdmin, requireStaff };
+export type { LiveCheck };

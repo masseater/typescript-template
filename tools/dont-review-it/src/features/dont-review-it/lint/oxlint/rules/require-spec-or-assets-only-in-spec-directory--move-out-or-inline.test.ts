@@ -2,7 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../platform/path.ts";
 import { requireSpecOrAssetsOnlyInSpecDirectory } from "./require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts";
 

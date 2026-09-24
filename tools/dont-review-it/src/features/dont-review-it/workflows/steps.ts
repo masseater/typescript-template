@@ -43,6 +43,26 @@ export const entriesNamedInSteps = ({
     }),
   );
 
+export const entriesNamedInJobsAndSteps = ({
+  document,
+  config,
+  key,
+}: {
+  readonly document: WorkflowDocument;
+  readonly config: WorkflowChecksConfig;
+  readonly key: string;
+}): readonly Pair[] => {
+  const jobs = jobEntriesOf({ document, config });
+  const holders = [
+    ...jobs.map((job) => job.value),
+    ...jobs.flatMap((job) => stepsOf({ job: job.value, config })),
+  ];
+  return holders.flatMap((holder) => {
+    const listed = entryOf(holder, key);
+    return listed === null ? [] : [listed];
+  });
+};
+
 export const triggersOf = ({
   document,
   config,

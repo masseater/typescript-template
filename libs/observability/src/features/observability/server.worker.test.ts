@@ -2,9 +2,9 @@ import { Effect, Layer, Option, Schema, Tracer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
+import { recordingSink } from "./recording-sink-test-fixture.ts";
 import { RequestEntropy } from "./request-span.ts";
 import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
-import { recordingSink } from "./testing.ts";
 
 const fixedNow = 1_800_000_000_000;
 

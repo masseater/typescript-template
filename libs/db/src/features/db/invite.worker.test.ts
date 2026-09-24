@@ -3,11 +3,11 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { inviteAdmin } from "./admin.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { acceptInvite, issueInvite, previewInvite } from "./invite.ts";
-import { addSession, addUser, auditActionsOf } from "./records-fixture.ts";
+import { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
 import { findUser } from "./security.ts";
 import { inviteStaff } from "./staff.ts";
-import { TestDatabase } from "./testing.ts";
 
 const ownerSession = Effect.fn("ownerSession")(function* ownerSession() {
   yield* addUser({ role: ROLE.administrator, userId: "owner" });

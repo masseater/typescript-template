@@ -1,7 +1,7 @@
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { httpStatus } from "@repo/config";
 import { APIError } from "better-auth/api";
-import { verifyJwsAccessToken } from "better-auth/oauth2";
+import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
 import { APIError as ChallengeError } from "better-call";
 import { Effect, Option, Schema } from "effect";
 
@@ -56,7 +56,32 @@ const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
   Schema.Record(Schema.String, Schema.Unknown),
 ]);
 const Jwks = Schema.Struct({ keys: Schema.mutable(Schema.Array(Jwk)) });
+
+const mcpUnauthorized = (reason: string): APIError =>
+  new APIError("UNAUTHORIZED", { message: reason });
+
+const grantedScopesOf = (scope: unknown): ReadonlySet<string> =>
+  new Set(typeof scope === "string" ? scope.split(" ") : []);
+
+type McpTokenSubject = Readonly<{ sid: unknown; sub: string | undefined }>;
+type McpResourcePolicy<Actor, Failure, Requirements> = Readonly<{
+  actorOf: (
+    subject: McpTokenSubject,
+    granted: ReadonlySet<string>,
+  ) => Effect.Effect<Actor | Response, Failure, Requirements>;
+  challengeScopes: readonly string[];
+  scopeError: (granted: ReadonlySet<string>) => Option.Option<unknown>;
+}>;
+const tokenRejection = <Actor, Failure, Requirements>(
+  presented: Readonly<{ cnf: unknown; scope: unknown }>,
+  policy: McpResourcePolicy<Actor, Failure, Requirements>,
+): Option.Option<unknown> =>
+  presented.cnf === undefined
+    ? policy.scopeError(grantedScopesOf(presented.scope))
+    : Option.some(mcpUnauthorized("SENDER_CONSTRAINED_TOKEN_UNSUPPORTED"));
+
 type ResourceAuth = Readonly<Pick<BetterAuthInstance, "handler">>;
+
 const publishedJwks = (
   issuer: ResourceAuth,
   origin: string,
@@ -82,8 +107,6 @@ const publishedJwks = (
     );
   });
 
-const mcpUnauthorized = (reason: string): APIError =>
-  new APIError("UNAUTHORIZED", { message: reason });
 const verifiedClaims = (
   issuer: ResourceAuth,
   presented: Readonly<{ origin: string; token: string }>,
@@ -100,26 +123,6 @@ const verifiedClaims = (
         },
       }),
   });
-
-const grantedScopesOf = (scope: unknown): ReadonlySet<string> =>
-  new Set(typeof scope === "string" ? scope.split(" ") : []);
-
-type McpTokenSubject = Readonly<{ sid: unknown; sub: string | undefined }>;
-type McpResourcePolicy<Actor, Failure, Requirements> = Readonly<{
-  actorOf: (
-    subject: McpTokenSubject,
-    granted: ReadonlySet<string>,
-  ) => Effect.Effect<Actor | Response, Failure, Requirements>;
-  challengeScopes: readonly string[];
-  scopeError: (granted: ReadonlySet<string>) => Option.Option<unknown>;
-}>;
-const tokenRejection = <Actor, Failure, Requirements>(
-  presented: Readonly<{ cnf: unknown; scope: unknown }>,
-  policy: McpResourcePolicy<Actor, Failure, Requirements>,
-): Option.Option<unknown> =>
-  presented.cnf === undefined
-    ? policy.scopeError(grantedScopesOf(presented.scope))
-    : Option.some(mcpUnauthorized("SENDER_CONSTRAINED_TOKEN_UNSUPPORTED"));
 
 const authorizedActor = <Actor, Failure, Requirements>(
   issuer: ResourceAuth,
@@ -161,5 +164,13 @@ const mcpAuthorizer = <Actor, Failure, Requirements>(
     return yield* authorizedActor(instance, { policy, resource, token: token.value });
   });
 
-export { mcpAuthorizer, mcpJsonRpcError, mcpUnauthorized };
+const insufficientScopeError = (
+  requiredScopes: readonly string[],
+  granted: ReadonlySet<string>,
+): Option.Option<unknown> => {
+  const missing = requiredScopes.filter((required) => !granted.has(required));
+  return missing.length > 0 ? Option.some(createInsufficientScopeError(missing)) : Option.none();
+};
+
+export { insufficientScopeError, mcpAuthorizer, mcpJsonRpcError, mcpUnauthorized };
 export type { McpResourcePolicy, McpTokenSubject };

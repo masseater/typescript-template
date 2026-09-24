@@ -1,0 +1,100 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "ignorePatterns": ["**/routeTree.gen.ts", "**/mockServiceWorker.js"],
+  "ignoreDependencies": [
+    "@effect/tsgo",
+    "@scalar/api-reference",
+    "@shadcn/lint",
+    "@storybook/addon-mcp",
+    "@stryker-mutator/vitest-runner",
+    "@tanstack/intent",
+    "agent-browser",
+    "jiti",
+    "oxc-transform-react",
+    "playwright",
+    "portless",
+    "steiger",
+    "zod"
+  ],
+  "usedClassMembers": [
+    "fetch",
+    "webSocketMessage",
+    {
+      "extends": "WorkerEntrypoint",
+      "members": ["*"]
+    }
+  ],
+  "ignoreDependencyOverrides": [
+    {
+      "package": "valibot"
+    },
+    {
+      "package": "zod-validation-error"
+    }
+  ],
+  "rules": {
+    "boundary-violation": "off",
+    "policy-violation": "off",
+    "unused-dev-dependencies": "error",
+    "unused-dependency-overrides": "error"
+  },
+  "duplicates": {
+    "ignore": ["**/vite.config.ts"],
+    "threshold": 0.0001
+  },
+  "dynamicallyLoaded": [
+    "**/src/shared/server-api/server-app.ts",
+    "**/src/features/*/verify/cli.ts",
+    "**/*-stub.mjs"
+  ],
+  "framework": [
+    {
+      "name": "alchemy",
+      "enablers": ["alchemy"],
+      "entryPoints": ["alchemy.run.ts", "src/features/*/worker.ts"],
+      "entryPointRole": "runtime"
+    },
+    {
+      "name": "tanstack-start",
+      "enablers": ["@tanstack/react-start"],
+      "entryPoints": ["src/app/{router,server,start}.{ts,tsx}", "src/app/routes/**/*.{ts,tsx}"],
+      "entryPointRole": "runtime"
+    },
+    {
+      "name": "vitest-config-variants",
+      "enablers": ["vite-plus"],
+      "configPatterns": ["vitest.*.config.ts"],
+      "entryPoints": ["vitest.*.main.ts"]
+    },
+    {
+      "name": "storybook-directory",
+      "enablers": ["storybook"],
+      "configPatterns": ["storybook/main.ts"]
+    },
+    {
+      "name": "dependency-cruiser-config",
+      "enablers": ["dependency-cruiser"],
+      "configPatterns": ["dependency-cruiser.ts"]
+    },
+    {
+      "name": "react-doctor",
+      "enablers": ["react-doctor"],
+      "configPatterns": ["doctor.config.ts"]
+    },
+    {
+      "name": "k6",
+      "enablers": ["@types/k6"],
+      "entryPoints": ["scenarios/*.ts"],
+      "entryPointRole": "runtime"
+    }
+  ],
+  "ignoreExports": [
+    {
+      "file": "**/*",
+      "exports": ["default"]
+    }
+  ],
+  "typeAware": {
+    "enabled": true
+  }
+}

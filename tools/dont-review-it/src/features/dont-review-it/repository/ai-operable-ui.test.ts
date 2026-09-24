@@ -14,7 +14,7 @@ import {
   unnamedButtonsInMarkup,
   unnamedControlViolations,
   urlHoldsScreenState,
-} from "./ai-operable-ui.ts";
+} from "./ai-operable-ui-test-fixture.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 const shippedModules: Readonly<Record<string, unknown>> = import.meta.glob(

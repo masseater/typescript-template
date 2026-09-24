@@ -2,13 +2,13 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { type WorkspaceManifest } from "./dependencies.ts";
+import { type WorkspaceManifest } from "./dependencies-test-fixture.ts";
 import {
   moduleSpecifiers,
   repositorySingleConsumerFindings,
   singleConsumerFindings,
   type SourceText,
-} from "./single-consumer.ts";
+} from "./single-consumer-test-fixture.ts";
 
 const workspace = (
   file: string,

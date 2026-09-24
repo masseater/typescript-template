@@ -1,18 +1,10 @@
 import { useSessionUser } from "@repo/auth-ui";
 import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
-import {
-  NavigationLink,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@repo/ui";
+import { LoadingRow, NavigationLink, Table, TableBody } from "@repo/ui";
 import { createColumnHelper, metaHelper, tableFeatures, useTable } from "@tanstack/react-table";
 
 import { accountStateLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
-import { LoadingRow } from "./loading-row.tsx";
+import { FlexTableHeader, FlexTableRows } from "#shared/ui/flex-table.tsx";
 import { UserRowActions } from "./user-row-actions.tsx";
 
 import type { ListedUser } from "#pages/users/model/user-list.ts";
@@ -90,30 +82,12 @@ function UsersTable({
   });
   return (
     <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
+      <FlexTableHeader table={table} />
       <TableBody>
         {users === undefined ? (
           <LoadingRow columnCount={table.getAllLeafColumns().length} />
         ) : (
-          table.getRowModel().rows.map((userRow) => (
-            <TableRow key={userRow.id}>
-              {userRow.getAllCells().map((userCell) => (
-                <TableCell key={userCell.id}>
-                  <table.FlexRender cell={userCell} />
-                </TableCell>
-              ))}
-            </TableRow>
-          ))
+          <FlexTableRows table={table} />
         )}
       </TableBody>
     </Table>

@@ -66,3 +66,4 @@ export const readWorkspaceManifests = ({
     );
     return manifests.flat();
   });
+export type { ManifestUnparsable };

@@ -92,53 +92,78 @@ function entropyDataEnd(bytes: Uint8Array, start: number): number {
   return bytes.byteLength;
 }
 
+interface JpegSegment {
+  readonly end: number;
+  readonly final: boolean;
+  readonly kept: boolean;
+  readonly scan: boolean;
+}
+
+function jpegSegmentEnd(bytes: Uint8Array, position: number): number | undefined {
+  const lengthOffset = position + jpegLengthOffset;
+  const high = bytes[lengthOffset];
+  const low = bytes[lengthOffset + 1];
+  if (high === undefined || low === undefined) {
+    return undefined;
+  }
+  const segmentEnd = lengthOffset + ((high << 8) | low);
+  if (segmentEnd > bytes.byteLength || segmentEnd < position + jpegSegmentHeaderLength) {
+    return undefined;
+  }
+  return segmentEnd;
+}
+
+function lengthedJpegSegment(
+  bytes: Uint8Array,
+  position: number,
+  marker: number,
+): JpegSegment | undefined {
+  const segmentEnd = jpegSegmentEnd(bytes, position);
+  if (segmentEnd === undefined) {
+    return undefined;
+  }
+  if (marker === jpegStartOfScan) {
+    return { end: entropyDataEnd(bytes, segmentEnd), final: false, kept: true, scan: true };
+  }
+  const payload = bytes.subarray(position + jpegSegmentHeaderLength, segmentEnd);
+  return { end: segmentEnd, final: false, kept: keepsJpegSegment(marker, payload), scan: false };
+}
+
+function jpegSegmentAt(bytes: Uint8Array, position: number): JpegSegment | undefined {
+  const marker = bytes[position + 1];
+  if (bytes[position] !== jpegMarkerPrefix || marker === undefined) {
+    return undefined;
+  }
+  if (marker === jpegMarkerPrefix) {
+    return { end: position + 1, final: false, kept: false, scan: false };
+  }
+  const markerEnd = position + jpegMarkerLength;
+  if (marker === jpegEndOfImage) {
+    return { end: markerEnd, final: true, kept: true, scan: false };
+  }
+  if (isStandaloneJpegMarker(marker)) {
+    return { end: markerEnd, final: false, kept: true, scan: false };
+  }
+  return lengthedJpegSegment(bytes, position, marker);
+}
+
 function sanitizeJpeg(bytes: Uint8Array): Uint8Array<ArrayBuffer> | undefined {
   const kept: Uint8Array[] = [bytes.subarray(0, jpegMarkerLength)];
   let position = jpegMarkerLength;
   let scanned = false;
   while (position < bytes.byteLength) {
-    if (bytes[position] !== jpegMarkerPrefix) {
+    const segment = jpegSegmentAt(bytes, position);
+    if (segment === undefined) {
       return undefined;
     }
-    const marker = bytes[position + 1];
-    if (marker === undefined) {
-      return undefined;
+    if (segment.kept) {
+      kept.push(bytes.subarray(position, segment.end));
     }
-    if (marker === jpegMarkerPrefix) {
-      position += 1;
-      continue;
-    }
-    if (marker === jpegEndOfImage) {
-      kept.push(bytes.subarray(position, position + jpegMarkerLength));
+    if (segment.final) {
       return scanned ? concat(kept) : undefined;
     }
-    if (isStandaloneJpegMarker(marker)) {
-      kept.push(bytes.subarray(position, position + jpegMarkerLength));
-      position += jpegMarkerLength;
-      continue;
-    }
-    const lengthOffset = position + jpegLengthOffset;
-    const high = bytes[lengthOffset];
-    const low = bytes[lengthOffset + 1];
-    if (high === undefined || low === undefined) {
-      return undefined;
-    }
-    const segmentEnd = lengthOffset + ((high << 8) | low);
-    if (segmentEnd > bytes.byteLength || segmentEnd < position + jpegSegmentHeaderLength) {
-      return undefined;
-    }
-    const payload = bytes.subarray(position + jpegSegmentHeaderLength, segmentEnd);
-    if (marker === jpegStartOfScan) {
-      scanned = true;
-      const dataEnd = entropyDataEnd(bytes, segmentEnd);
-      kept.push(bytes.subarray(position, dataEnd));
-      position = dataEnd;
-      continue;
-    }
-    if (keepsJpegSegment(marker, payload)) {
-      kept.push(bytes.subarray(position, segmentEnd));
-    }
-    position = segmentEnd;
+    scanned ||= segment.scan;
+    position = segment.end;
   }
   return undefined;
 }

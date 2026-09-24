@@ -79,6 +79,30 @@ describe("FileStore", () => {
     });
   });
 
+  describe("files removed by prefix", () => {
+    const it = test.extend("prefixRemoval", () =>
+      Effect.runPromise(
+        Effect.gen(function* prefixRemovalProgram() {
+          const store = yield* FileStore;
+          const folder = `files/${crypto.randomUUID()}`;
+          const fieldNames = [`${folder}/a.bin`, `${folder}/nested/b.bin`, `${folder}-other/c.bin`];
+          yield* Effect.forEach(fieldNames, (fieldName) =>
+            store.put(fieldName, { bytes: new Uint8Array([1]), contentType: undefined }),
+          );
+          yield* store.removePrefix(`${folder}/`);
+          const remaining = yield* Effect.forEach(fieldNames, (fieldName) =>
+            store.get(fieldName).pipe(Effect.map((stored) => stored !== undefined)),
+          );
+          yield* store.remove(fieldNames);
+          return remaining;
+        }).pipe(Effect.provide(FileStore.fromEnvironment(env))),
+      ));
+
+    it("removes only the files under that prefix", ({ prefixRemoval }) => {
+      expect(prefixRemoval).toStrictEqual([false, false, true]);
+    });
+  });
+
   describe("an environment without the file binding", () => {
     const it = test.extend("startupFailure", () =>
       Effect.runPromise(

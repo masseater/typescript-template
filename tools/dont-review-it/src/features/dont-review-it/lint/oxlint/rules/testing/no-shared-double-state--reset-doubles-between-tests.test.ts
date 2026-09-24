@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noSharedDoubleState } from "./no-shared-double-state--reset-doubles-between-tests.ts";
 
 const RESET_AND_RESTORED = "{ mockReset: true, restoreMocks: true }";

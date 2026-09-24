@@ -53,3 +53,4 @@ export const runLintRuleAuthoring = (
   request: LintRuleAuthoringCheck,
 ): Effect.Effect<CliResult, never, FileSystem.FileSystem> =>
   check(request).pipe(Effect.catch((failure) => Effect.succeed(misuseOf(failure))));
+export type { LintRuleAuthoringCheck };

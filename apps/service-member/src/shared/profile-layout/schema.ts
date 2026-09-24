@@ -35,7 +35,9 @@ const ProfileLayout = Schema.Struct({
   blocks: Schema.Array(ProfileBlock).check(Schema.isNonEmpty()),
 });
 
+type ProfileBlockKind = typeof BlockKind.Type;
+
 type ProfileLayoutData = typeof ProfileLayout.Type;
 
 export { profileBlock, ProfileLayout };
-export type { ProfileLayoutData };
+export type { ProfileBlockKind, ProfileLayoutData };

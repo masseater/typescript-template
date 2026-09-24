@@ -32,4 +32,13 @@ function denied(path: string, signedIn: boolean): Response {
   });
 }
 
-export { denied, sessionPresence };
+function decideAccess(
+  path: string,
+  current: Option.Option<{ readonly strong: boolean }>,
+): Option.Option<Response> {
+  const allowed = Option.isSome(current) && (current.value.strong || path === "/security");
+  return allowed ? Option.none() : Option.some(denied(path, Option.isSome(current)));
+}
+
+export { decideAccess, denied, sessionPresence };
+export type { SessionDenial };

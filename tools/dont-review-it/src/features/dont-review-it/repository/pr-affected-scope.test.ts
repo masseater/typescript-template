@@ -6,7 +6,7 @@ import {
   shardDirectories,
   type WorkspacePackage,
 } from "./pr-affected-scope.ts";
-import { workspaceDirectories } from "./tasks.ts";
+import { workspaceDirectories } from "./tasks-test-fixture.ts";
 import { prCheckShardCount } from "./test-runtime.ts";
 
 const packages: readonly WorkspacePackage[] = [

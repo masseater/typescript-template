@@ -111,4 +111,4 @@ const uninstall = (appKey: AppKey, installationId: number): Effect.Effect<void, 
   );
 
 export { awaitInstallation, ensureInstallation, installationUrl, ownedRepository, uninstall };
-export type { InstallationWait };
+export type { AppKey, InstallationTarget, InstallationWait };

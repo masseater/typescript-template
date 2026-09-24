@@ -11,9 +11,9 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { filePathOf, path } from "../platform/path.ts";
 import { posixPath } from "../platform/path.ts";
-import { field } from "./dependencies.ts";
+import { field } from "./dependencies-test-fixture.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { commands, configuredDirectories, reachable } from "./tasks.ts";
+import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 
 const camelRule = (name: string): string =>

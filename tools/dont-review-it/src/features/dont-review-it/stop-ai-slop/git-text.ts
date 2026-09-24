@@ -10,7 +10,7 @@ export class GitCommandFailed extends Schema.TaggedError<GitCommandFailed>()("Gi
   cause: Schema.optional(Schema.Defect()),
 }) {}
 
-export class GitEnvironment extends Context.Service<
+class GitEnvironment extends Context.Service<
   GitEnvironment,
   {
     readonly executable: string;
@@ -153,3 +153,4 @@ export const runGitText = (
         }),
     }),
   );
+export type { GitCommand, GitEnvironment };

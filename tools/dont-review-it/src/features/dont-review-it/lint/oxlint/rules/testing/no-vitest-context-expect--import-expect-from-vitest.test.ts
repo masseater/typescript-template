@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noVitestContextExpect } from "./no-vitest-context-expect--import-expect-from-vitest.ts";
 
 describe("dont-review-it/no-vitest-context-expect--import-expect-from-vitest", () => {

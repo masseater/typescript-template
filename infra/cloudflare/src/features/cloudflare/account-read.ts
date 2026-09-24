@@ -1,10 +1,10 @@
 import { httpStatus } from "@repo/config";
-import { Duration, Effect, Predicate, Schema, SchemaIssue } from "effect";
+import { schemaMismatches } from "@repo/config/schema-mismatches";
+import { Duration, Effect, Predicate, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 import { CloudflareFailure } from "./config.ts";
 
-import type { StandardSchema } from "effect";
 import type { Record } from "effect";
 import type { HttpClientResponse } from "effect/unstable/http";
 
@@ -12,7 +12,6 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const MISSING_REASON = `status_${httpStatus.notFound}`;
 const DECODE_REASON = "decode_failed";
 const UNDECLARED_MEDIA_TYPE = "media_type_undeclared";
-const WHOLE_BODY = "$";
 
 const IdentifiedResults = Schema.Struct({
   result: Schema.Array(Schema.Struct({ id: Schema.String })),
@@ -104,19 +103,6 @@ function readVerdict<Value, Verdict>(
   return isUnreadable(read) ? read : decide(read);
 }
 
-const issueFormatter = SchemaIssue.makeFormatterStandardSchemaV1({
-  leafHook: (issue) => issue._tag,
-});
-
-function mismatches(failure: StandardSchema.StandardSchemaV1.FailureResult): readonly string[] {
-  return failure.issues.map((issue) => {
-    const path = (issue.path ?? [])
-      .map((key) => (typeof key === "object" ? String(key.key) : String(key)))
-      .join(".");
-    return `${path === "" ? WHOLE_BODY : path}:${issue.message}`;
-  });
-}
-
 function mediaType(response: HttpClientResponse.HttpClientResponse): string {
   const declared = response.headers["content-type"]?.split(";", 1)[0]?.trim();
   return declared === undefined || declared === "" ? UNDECLARED_MEDIA_TYPE : declared;
@@ -187,9 +173,7 @@ const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
   body: unknown,
 ) {
   return yield* Schema.decodeUnknownEffect(shape)(body).pipe(
-    Effect.mapError((error) =>
-      unreadable(source, DECODE_REASON, mismatches(issueFormatter(error.issue))),
-    ),
+    Effect.mapError((error) => unreadable(source, DECODE_REASON, schemaMismatches(error.issue))),
   );
 });
 
@@ -286,7 +270,6 @@ export {
   readList,
   readPages,
   readRequired,
-  readResource,
   readVerdict,
   requestReason,
   unreadableState,

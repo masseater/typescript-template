@@ -94,7 +94,7 @@ Web サービスの立ち上げと継続的な開発において、次の課題�
 ### 開発と品質の確認
 
 - タスクと確認: ビルド、型チェック、lint、テスト、使われていないコードの検出、ミューテーションテストを 1 つのツールから実行する。
-  - 使っているもの: [Vite+](https://viteplus.dev/)、[Knip](https://knip.dev/)、[Stryker](https://stryker-mutator.io/)
+  - 使っているもの: [Vite+](https://viteplus.dev/)、[fallow](https://github.com/fallow-rs/fallow)、[Stryker](https://stryker-mutator.io/)
   - 詳しくは: [Vite+](/tech-stack/vite-plus)
 - 構造の機械的な確認: 層の分離、依存の向き、秘匿値の混入などを、独自の lint とリポジトリのチェックで止める。
   - 使っているもの: [Oxlint](https://oxc.rs/docs/guide/usage/linter)、[dependency-cruiser](https://github.com/sverweij/dependency-cruiser)、[Feature-Sliced Design](https://fsd.how/)

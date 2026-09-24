@@ -55,7 +55,7 @@ export type BodyDeclaration = {
   readonly nodeCount: number;
 };
 
-type ReferencingDeclaration = BodyDeclaration & { readonly references: readonly string[] };
+export type ReferencingDeclaration = BodyDeclaration & { readonly references: readonly string[] };
 
 const declarationFrom = ({
   source,

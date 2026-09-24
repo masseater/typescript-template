@@ -22,7 +22,7 @@ const parentsOf = (repositoryRoot: string) =>
       .map((line) => line.slice(PARENT_PREFIX.length)),
   );
 
-export type ComparisonEnvironment = Readonly<{
+type ComparisonEnvironment = Readonly<{
   repository: string | undefined;
   api: GitHubApi | null;
 }>;

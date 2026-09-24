@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported, reportedRules } from "./lint-harness.ts";
+import { reported, reportedRules } from "./lint-harness-test-fixture.ts";
 
 const rawD1Operations = [
   ["global-type", 'export const load = (db: D1Database) => db.prepare("SELECT 1");'],
@@ -154,7 +154,7 @@ const rawD1OutsideAdapter = [
 ] as const;
 
 const rawD1Adapters = [
-  ["libs/db/src/features/db/testing.ts"],
+  ["libs/db/src/features/db/database-test-fixture.ts"],
   ["libs/db-local/src/features/db-local/testing-node.ts"],
 ] as const;
 

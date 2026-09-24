@@ -4,8 +4,9 @@ import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { directoryEntries } from "../platform/directory-entries.ts";
-import { reported } from "./lint-harness.ts";
-import { commands, workspaceDirectories } from "./tasks.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
+import { isPublicApiIndex } from "./modular-budgets.ts";
+import { commands, workspaceDirectories } from "./tasks-test-fixture.ts";
 
 const source = "export const value = 1;\n";
 
@@ -79,7 +80,7 @@ describe("modular coverage", () => {
               return Effect.map(
                 filesystem.readDirectory(paths.join(featuresRoot, slice.name)),
                 (names) =>
-                  names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))
+                  names.some(isPublicApiIndex)
                     ? []
                     : [`${directory}/src/features/${slice.name}/index.ts`],
               );

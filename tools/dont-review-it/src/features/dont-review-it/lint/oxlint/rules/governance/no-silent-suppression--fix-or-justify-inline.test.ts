@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noSilentSuppression } from "./no-silent-suppression--fix-or-justify-inline.ts";
 
 const GUARDED_RULE = "no-duplicate-exported-type--reuse-authoritative-type";

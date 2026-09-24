@@ -2,9 +2,9 @@ import { APPLICATION, ROLE, STAFF_PERMISSION } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { addSession, addUser, auditActionsOf } from "./records-fixture.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
+import { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
 import { inviteStaff, listStaff, removeStaff, setStaffPermission } from "./staff.ts";
-import { TestDatabase } from "./testing.ts";
 
 const signInAs = Effect.fn("signInAs")(function* signInAs(
   permission: (typeof STAFF_PERMISSION)[keyof typeof STAFF_PERMISSION],

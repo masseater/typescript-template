@@ -7,7 +7,7 @@ import { generatedFileProblems, staleGeneratedFile } from "../reconcile-generate
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
 import { lintRuleWorkspacesIn, type LintRuleWorkspaceFailure } from "./lint-rule-workspaces.ts";
 import { renderGuidelineIndex, type GroundedLintRule } from "./render-guideline-index.ts";
-import { workspaceRulesOf } from "./workspace-rules.ts";
+import { rulesAcross } from "./workspace-rules.ts";
 
 import type { LintRuleCheckReport } from "../lint-rule-problem.ts";
 
@@ -38,14 +38,10 @@ export const guidelineIndexProblems = ({
 }): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
   Effect.gen(function* guidelineIndexProblems() {
     const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
-    const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
-      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
-        Effect.map(({ rules }) =>
-          rules.map((rule) => ({ rule, workspaceDir: workspace.workspaceDir })),
-        ),
-      ),
-    );
-    const grounded: readonly GroundedLintRule[] = workspaceRules.flat();
+    const grounded: readonly GroundedLintRule[] = (yield* rulesAcross({
+      repositoryRoot,
+      workspaces,
+    })).map(({ rule, workspace }) => ({ rule, workspaceDir: workspace.workspaceDir }));
     const normativeDocuments = yield* normativeDocumentsIn({
       repositoryRoot,
       places: yield* normativeDocumentPlacesIn(repositoryRoot),

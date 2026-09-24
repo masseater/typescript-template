@@ -184,19 +184,27 @@ const declaredFixtureParts = (
   return factory === null ? heldValueParts(written, source) : factoryParts(factory, source);
 };
 
+const isWrittenElement = (
+  element: ESTree.ArrayExpression["elements"][number] | undefined,
+): element is ESTree.Expression =>
+  element !== undefined && element !== null && element.type !== "SpreadElement";
+
+const isWrittenRuleOptions = (
+  ruleOptions: ESTree.ArrayExpression["elements"][number],
+): ruleOptions is ESTree.Expression =>
+  isWrittenElement(ruleOptions) && unwrapSubject(ruleOptions).type === "ObjectExpression";
+
 const scopedFixtureParts = (
   written: ESTree.ArrayExpression,
   source: FixtureSource,
 ): FixtureParts | null => {
   const [declared, ruleOptions, ...rivals] = written.elements;
-  if (rivals.length !== 0) return null;
-  if (declared === undefined || declared === null || declared.type === "SpreadElement") return null;
+  if (rivals.length !== 0 || !isWrittenElement(declared)) return null;
 
   const fixture = declaredFixtureParts(declared, source);
   if (fixture === null) return null;
   if (ruleOptions === undefined) return fixture;
-  if (ruleOptions === null || ruleOptions.type === "SpreadElement") return null;
-  if (unwrapSubject(ruleOptions).type !== "ObjectExpression") return null;
+  if (!isWrittenRuleOptions(ruleOptions)) return null;
 
   return { ...fixture, written: `${source.textOf(ruleOptions)}, ${fixture.written}` };
 };

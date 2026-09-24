@@ -1,8 +1,8 @@
-import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 
 import { useReplyForm } from "#pages/messages/model/reply-form.ts";
 import { maximumMessageBodyLength } from "#shared/contracts/index.ts";
+import { ReplyBodyForm } from "#shared/ui/index.ts";
 
 import type { ReactElement } from "react";
 function ReplyForm({
@@ -16,26 +16,12 @@ function ReplyForm({
   }
   const form = useReplyForm(conversationId, showSent);
   return (
-    <form onSubmit={form.handleSubmit} aria-busy={form.pending}>
-      <FormColumn>
-        <Field
-          multiline
-          label="メッセージ"
-          name="body"
-          maxLength={maximumMessageBodyLength}
-          value={form.body}
-          onValueChange={form.handleBodyChange}
-        />
-        <div>
-          <Button type="submit" variant="primary" disabled={form.blocked}>
-            送信する
-          </Button>
-        </div>
-        {form.error !== undefined && (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
-        )}
-      </FormColumn>
-    </form>
+    <ReplyBodyForm
+      form={form}
+      label="メッセージ"
+      maxLength={maximumMessageBodyLength}
+      submitLabel="送信する"
+    />
   );
 }
 export { ReplyForm };

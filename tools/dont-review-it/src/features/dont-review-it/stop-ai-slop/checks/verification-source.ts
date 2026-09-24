@@ -359,3 +359,4 @@ export const valueExportsIn = ({
         : [];
     }),
   );
+export type { ExportAbsenceVerification, FileAbsenceVerification };

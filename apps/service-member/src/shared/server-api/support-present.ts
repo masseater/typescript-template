@@ -32,3 +32,4 @@ function presentThread(thread: InquiryThread) {
 }
 
 export { presentSummary, presentThread };
+export type { InquiryThread, ListedInquiry };

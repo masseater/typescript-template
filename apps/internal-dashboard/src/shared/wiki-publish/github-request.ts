@@ -76,3 +76,4 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
   }).pipe(withSpan("wiki.publish.github", { attributes: { step: call.step } }));
 
 export { gitHubRequest };
+export type { GitHubCall };

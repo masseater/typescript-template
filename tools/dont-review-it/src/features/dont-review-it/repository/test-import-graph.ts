@@ -1,7 +1,8 @@
 import { aliasChecker, aliasVisitor } from "./alias-visitor.ts";
 import {
-  fixtureOrTestFile,
   reportViolation,
+  runtimeImportVisitor,
+  testCallVisitor,
   type LintContext,
   type Node,
   type NodeOf,
@@ -109,16 +110,7 @@ const isOutOfGraph = (origin: Origin): boolean => {
 const moduleVisitor = (inspection: LintContext, checkSource: SourceCheck): Visitor => {
   const checkAlias = aliasChecker(inspection, isOutOfGraph);
   return {
-    ExportAllDeclaration(node: Node): void {
-      if (node.type === "ExportAllDeclaration") {
-        checkSource(node.source);
-      }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type === "ExportNamedDeclaration" && node.source) {
-        checkSource(node.source);
-      }
-    },
+    ...runtimeImportVisitor(checkSource),
     ImportDeclaration(node: Node): void {
       if (node.type !== "ImportDeclaration") {
         return;
@@ -126,11 +118,6 @@ const moduleVisitor = (inspection: LintContext, checkSource: SourceCheck): Visit
       checkSource(node.source);
       for (const specifier of node.specifiers) {
         checkAlias(specifier.local);
-      }
-    },
-    ImportExpression(node: Node): void {
-      if (node.type === "ImportExpression") {
-        checkSource(node.source);
       }
     },
   };
@@ -194,38 +181,21 @@ const underMktemp = (inspection: LintContext, node: Node): boolean => {
   return false;
 };
 
-const gitEnvironmentVisitor = (inspection: LintContext): Visitor => {
-  if (!fixtureOrTestFile.test(inspection.filename.replaceAll("\\", "/"))) {
-    return {};
-  }
-  return {
-    CallExpression(node: Node): void {
-      if (node.type !== "CallExpression" || !startsGit(inspection, node)) {
-        return;
-      }
-      if (!node.arguments.some((argument) => declaresEnvironment(inspection, argument))) {
-        reportViolation(inspection, node);
-      }
-    },
-  };
-};
-
-const tempDirectoryVisitor = (inspection: LintContext): Visitor => {
-  if (!fixtureOrTestFile.test(inspection.filename.replaceAll("\\", "/"))) {
-    return {};
-  }
-  return {
-    CallExpression(node: Node): void {
-      if (
-        node.type !== "CallExpression" ||
-        !calledFrom(inspection, node, osModules, tmpdirNames) ||
-        underMktemp(inspection, node)
-      ) {
-        return;
-      }
+const gitEnvironmentVisitor = (inspection: LintContext): Visitor =>
+  testCallVisitor(inspection, (node) => {
+    if (
+      startsGit(inspection, node) &&
+      !node.arguments.some((argument) => declaresEnvironment(inspection, argument))
+    ) {
       reportViolation(inspection, node);
-    },
-  };
-};
+    }
+  });
+
+const tempDirectoryVisitor = (inspection: LintContext): Visitor =>
+  testCallVisitor(inspection, (node) => {
+    if (calledFrom(inspection, node, osModules, tmpdirNames) && !underMktemp(inspection, node)) {
+      reportViolation(inspection, node);
+    }
+  });
 
 export { gitEnvironmentVisitor, tempDirectoryVisitor, testImportGraphVisitor };

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-const { parseArgs } = process.getBuiltinModule("util");
-
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, reportFailed, runCli, runCommand } from "@repo/cli";
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
 import { TraceId } from "@repo/observability";
-import { Clock, Console, DateTime, Effect, Schema } from "effect";
+import { Cause, Clock, Console, DateTime, Effect, Option, Schema } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
 
+import { layer } from "../platform.ts";
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";
 
@@ -18,6 +18,9 @@ const commands = ["logs", "traces", "trace", "request", "exported"] as const;
 const minutesPerDay = 1440;
 const maxQueryLimit = 500;
 const millisecondsPerMinute = 60_000;
+const defaultLimit = "100";
+const defaultMinutes = "15";
+const defaultApp = `${applicationOrigins[APPLICATION.user]}/`;
 
 const QueryLimit = Schema.Int.check(Schema.isBetween({ maximum: maxQueryLimit, minimum: 1 }));
 const QueryMinutes = Schema.Int.check(Schema.isBetween({ maximum: minutesPerDay, minimum: 1 }));
@@ -33,18 +36,11 @@ const QueryInput = Schema.Struct({
 
 type Query = typeof QueryInput.Type;
 
-const { values, positionals } = parseArgs({
-  allowPositionals: true,
-  options: {
-    app: { default: `${applicationOrigins[APPLICATION.user]}/`, type: "string" },
-    help: { default: false, type: "boolean" },
-    level: { type: "string" },
-    limit: { default: "100", type: "string" },
-    minutes: { default: "15", type: "string" },
-    "request-id": { type: "string" },
-    "trace-id": { type: "string" },
-  },
-});
+type QueryScope = {
+  readonly app: string;
+  readonly input: Query;
+  readonly since: number;
+};
 
 function argumentsInvalid(): QueryFailure {
   return new QueryFailure({ reason: "arguments_invalid" });
@@ -54,7 +50,7 @@ function required(value: string | undefined): Effect.Effect<string, QueryFailure
   return value === undefined ? Effect.fail(argumentsInvalid()) : Effect.succeed(value);
 }
 
-function queryLogs(app: string, input: Query, since: number): Effect.Effect<unknown, unknown> {
+function queryLogs({ app, input, since }: QueryScope): Effect.Effect<unknown, unknown> {
   const levelFilter = input.level === undefined ? "" : " AND level = ?";
   const params =
     input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
@@ -65,58 +61,51 @@ function queryLogs(app: string, input: Query, since: number): Effect.Effect<unkn
   ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
 }
 
-function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
-  return Effect.gen(function* runQueryProgram() {
-    const since = (yield* Clock.currentTimeMillis) - input.minutes * millisecondsPerMinute;
-    if (input.command === "request") {
-      return yield* required(input.requestId).pipe(
-        Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
-      );
-    }
-    if (input.command === "exported") {
-      return yield* required(input.traceId).pipe(
-        Effect.flatMap((traceId) =>
-          exportedTelemetry(
-            { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
-            traceId,
-            input.minutes,
-          ),
+const commandQueries: Readonly<
+  Record<Query["command"], (scope: QueryScope) => Effect.Effect<unknown, unknown>>
+> = {
+  exported: ({ input }) =>
+    required(input.traceId).pipe(
+      Effect.flatMap((traceId) =>
+        exportedTelemetry(
+          { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
+          traceId,
+          input.minutes,
         ),
-      );
-    }
-    if (input.command === "trace") {
-      return yield* required(input.traceId).pipe(
-        Effect.flatMap((traceId) =>
-          queryExplorer(
-            app,
-            "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
-            [traceId],
-          ),
+      ),
+    ),
+  logs: queryLogs,
+  request: ({ app, input }) =>
+    required(input.requestId).pipe(Effect.flatMap((requestId) => requestTelemetry(app, requestId))),
+  trace: ({ app, input }) =>
+    required(input.traceId).pipe(
+      Effect.flatMap((traceId) =>
+        queryExplorer(
+          app,
+          "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+          [traceId],
         ),
-      );
-    }
-    if (input.command === "traces") {
-      return yield* queryExplorer(
-        app,
-        "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
-        [since, input.limit],
-      );
-    }
-    return yield* queryLogs(app, input, since);
-  });
-}
+      ),
+    ),
+  traces: ({ app, input, since }) =>
+    queryExplorer(
+      app,
+      "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
+      [since, input.limit],
+    ),
+};
 
-const help = Console.log(
-  JSON.stringify({
-    commands,
-    flags: ["--app", "--minutes", "--limit", "--level", "--request-id", "--trace-id"],
-    readOnly: true,
-    sources: {
-      default: "Cloudflare Local Explorer of the running app",
-      exported: "OTLP receiver of infra/local",
-    },
-  }),
-);
+function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
+  return Clock.currentTimeMillis.pipe(
+    Effect.flatMap((now) =>
+      commandQueries[input.command]({
+        app,
+        input,
+        since: now - input.minutes * millisecondsPerMinute,
+      }),
+    ),
+  );
+}
 
 const remediation = {
   explorer:
@@ -125,19 +114,41 @@ const remediation = {
     "Start the OTLP receiver with `vp run --filter @repo/local up` and check that --trace-id and --minutes cover the exported trace.",
 } as const;
 
-const query = Effect.fn("query")(function* query() {
+function queryFailure(
+  cause: Cause.Cause<unknown>,
+  command: string | undefined,
+): Readonly<Record<string, unknown>> {
+  return causeRecord("observability.query_failed", {
+    cause,
+    fields: {
+      remediation: command === "exported" ? remediation.exported : remediation.explorer,
+    },
+  });
+}
+
+interface QueryArguments {
+  readonly app: string;
+  readonly level: Option.Option<string>;
+  readonly limit: string;
+  readonly minutes: string;
+  readonly positionals: readonly string[];
+  readonly requestId: Option.Option<string>;
+  readonly traceId: Option.Option<string>;
+}
+
+const query = Effect.fn("query")(function* query(parsed: QueryArguments) {
   const input = yield* Schema.decodeUnknownEffect(QueryInput)({
-    command: positionals[0],
-    level: values.level,
-    limit: Number(values.limit),
-    minutes: Number(values.minutes),
-    requestId: values["request-id"],
-    traceId: values["trace-id"],
+    command: parsed.positionals[0],
+    level: Option.getOrUndefined(parsed.level),
+    limit: Number(parsed.limit),
+    minutes: Number(parsed.minutes),
+    requestId: Option.getOrUndefined(parsed.requestId),
+    traceId: Option.getOrUndefined(parsed.traceId),
   }).pipe(Effect.mapError(argumentsInvalid));
-  if (positionals.length !== 1) {
+  if (parsed.positionals.length !== 1) {
     return yield* argumentsInvalid();
   }
-  const data = yield* runQuery(values.app, input);
+  const data = yield* runQuery(parsed.app, input);
   const observedAt = DateTime.formatIso(yield* DateTime.now);
   yield* Console.log(
     yield* Schema.encodeEffect(
@@ -159,11 +170,51 @@ const query = Effect.fn("query")(function* query() {
   return data;
 });
 
-runCli(values.help ? help : query(), (cause) =>
-  causeRecord("observability.query_failed", {
-    cause,
-    fields: {
-      remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
-    },
-  }),
+const observeCommand = Command.make(
+  "observe",
+  {
+    app: Flag.String("app").pipe(
+      Flag.withDefault(defaultApp),
+      Flag.withDescription(
+        `Origin of the running local app whose Local Explorer is queried, default ${defaultApp}`,
+      ),
+    ),
+    level: Flag.String("level").pipe(Flag.optional, Flag.withDescription("Log level filter")),
+    limit: Flag.String("limit").pipe(
+      Flag.withDefault(defaultLimit),
+      Flag.withDescription(`Row limit from 1 to ${maxQueryLimit}, default ${defaultLimit}`),
+    ),
+    minutes: Flag.String("minutes").pipe(
+      Flag.withDefault(defaultMinutes),
+      Flag.withDescription(
+        `Look-back window in minutes from 1 to ${minutesPerDay}, default ${defaultMinutes}`,
+      ),
+    ),
+    positionals: Argument.variadic(Argument.String("command")).pipe(
+      Argument.withDescription(commands.join(" | ")),
+    ),
+    requestId: Flag.String("request-id").pipe(
+      Flag.optional,
+      Flag.withDescription("Request id for the request command"),
+    ),
+    traceId: Flag.String("trace-id").pipe(
+      Flag.optional,
+      Flag.withDescription("Trace id for the trace and exported commands"),
+    ),
+  },
+  (parsed) =>
+    query(parsed).pipe(
+      Effect.catchCauseIf(
+        (cause) => !Cause.hasInterruptsOnly(cause),
+        (cause) => reportFailed(queryFailure(cause, parsed.positionals[0])),
+      ),
+    ),
+).pipe(
+  Command.withDescription(
+    "Read-only queries against the Cloudflare Local Explorer of the running app; exported reads the OTLP receiver of infra/local",
+  ),
+  runCommand({ version: "0.0.0" }),
+  Effect.provide(layer),
 );
+
+runCli(observeCommand, (cause) => queryFailure(cause, undefined));

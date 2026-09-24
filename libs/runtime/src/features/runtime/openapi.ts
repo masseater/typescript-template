@@ -183,4 +183,4 @@ const referencePage = (audience: Application): Response =>
   );
 
 export { docsPath, hidden, openApiDocument, referencePage, routeDetail };
-export type { Guard, RouteDetail, RouteSpec };
+export type { Guard, QueryContract, RouteDetail, RouteSpec };

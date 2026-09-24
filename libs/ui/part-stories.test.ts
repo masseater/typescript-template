@@ -1,15 +1,16 @@
 import { NodeServices } from "@effect/platform-node";
+import { it } from "@effect/vitest";
 import { Effect } from "effect";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
-import { partsDirectory } from "./design-system.ts";
+import { partsDirectory } from "./design-system-test-fixture.ts";
 import {
   a11yRelaxations,
   storybookEndpointViolations,
   storylessParts,
   vendoredWorkerViolations,
-} from "./part-stories.ts";
-import { field } from "./record-field.ts";
+} from "./part-stories-test-fixture.ts";
+import { field } from "./record-field-test-fixture.ts";
 
 const previews: Readonly<Record<string, unknown>> = import.meta.glob("./storybook/preview.tsx", {
   eager: true,
@@ -37,22 +38,6 @@ const storybookProjects = (): unknown[] => {
   return Array.isArray(projects) ? projects : [];
 };
 
-const [
-  storylessPartsReport,
-  storylessComponentsReport,
-  relaxations,
-  endpointReport,
-  vendoredWorkerReport,
-] = await Effect.runPromise(
-  Effect.all([
-    storylessParts(partsDirectory()),
-    storylessParts("libs/ui/src/features/ui"),
-    a11yRelaxations(),
-    storybookEndpointViolations(String(origins["../config/src/features/config/applications.ts"])),
-    vendoredWorkerViolations(),
-  ]).pipe(Effect.provide(NodeServices.layer)),
-);
-
 const acceptedA11yViolations = [
   {
     file: "libs/ui/src/features/ui/shared/ui/select-field.stories.tsx",
@@ -72,15 +57,19 @@ describe("part stories", () => {
     expect(partsDirectory()).toMatch(/libs\/ui\/src\/features\/ui\/shared\/ui$/u);
   });
 
-  it("keeps a story next to every part", () => {
-    expect.hasAssertions();
-    expect(storylessPartsReport).toStrictEqual([]);
-  });
+  it.effect("keeps a story next to every part", () =>
+    Effect.gen(function* partsWithoutStories() {
+      const report = yield* storylessParts(partsDirectory());
+      expect(report).toStrictEqual([]);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("reports a directory whose components have no stories", () => {
-    expect.hasAssertions();
-    expect(storylessComponentsReport).not.toStrictEqual([]);
-  });
+  it.effect("reports a directory whose components have no stories", () =>
+    Effect.gen(function* componentsWithoutStories() {
+      const report = yield* storylessParts("libs/ui/src/features/ui");
+      expect(report).not.toStrictEqual([]);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
   it("runs the stories as a test project of this repository", () => {
     expect.hasAssertions();
@@ -93,18 +82,26 @@ describe("part stories", () => {
     expect(field(parameters, "a11y")).toStrictEqual({ test: "error" });
   });
 
-  it("lets a story off only for the rules listed here", () => {
-    expect.hasAssertions();
-    expect(relaxations).toStrictEqual(acceptedA11yViolations);
-  });
+  it.effect("lets a story off only for the rules listed here", () =>
+    Effect.gen(function* storyRelaxations() {
+      const report = yield* a11yRelaxations();
+      expect(report).toStrictEqual(acceptedA11yViolations);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("points the agent configuration at the port this repository owns", () => {
-    expect.hasAssertions();
-    expect(endpointReport).toStrictEqual([]);
-  });
+  it.effect("points the agent configuration at the port this repository owns", () =>
+    Effect.gen(function* agentEndpoint() {
+      const report = yield* storybookEndpointViolations(
+        String(origins["../config/src/features/config/applications.ts"]),
+      );
+      expect(report).toStrictEqual([]);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 
-  it("keeps the storybook service worker on the installed msw version", () => {
-    expect.hasAssertions();
-    expect(vendoredWorkerReport).toStrictEqual([]);
-  });
+  it.effect("keeps the storybook service worker on the installed msw version", () =>
+    Effect.gen(function* vendoredWorker() {
+      const report = yield* vendoredWorkerViolations();
+      expect(report).toStrictEqual([]);
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
 });

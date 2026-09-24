@@ -4,60 +4,22 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, FileSystem, Path } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
-import { isAppRouteModule } from "./thin-app-routes.ts";
+import { collectSourceFiles } from "./source-files.ts";
+import { containsJsx, isAppRouteModule } from "./thin-app-routes.ts";
+
+import type { TreeScan } from "../platform/directory-entries.ts";
 
 const violation =
   "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。";
 
-const collectFiles = (directory: string): TreeScan<readonly string[]> =>
-  Effect.gen(function* listRouteFiles() {
-    const paths = yield* Path.Path;
-    const entries = yield* directoryEntries(directory);
-    const nested = yield* Effect.forEach(
-      entries,
-      (entry): TreeScan<readonly string[]> => {
-        const entryPath = paths.join(directory, entry.name);
-        if (entry.kind === "directory") {
-          return collectFiles(entryPath);
-        }
-        if (entry.kind === "file" && /\.[cm]?[jt]sx?$/u.test(entry.name)) {
-          return Effect.succeed([entryPath]);
-        }
-        return Effect.succeed([]);
-      },
-      { concurrency: "unbounded" },
-    );
-    return nested.flat();
-  });
-
-const hasJsx = (source: string, file: string): boolean => {
-  const { program } = parseSync(file, source, { lang: file.endsWith("x") ? "tsx" : "ts" });
-  const stack: unknown[] = [program];
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (typeof node !== "object" || node === null) {
-      continue;
-    }
-    if ("type" in node && (node.type === "JSXElement" || node.type === "JSXFragment")) {
-      return true;
-    }
-    for (const value of Object.values(node)) {
-      if (Array.isArray(value)) {
-        stack.push(...value);
-      } else {
-        stack.push(value);
-      }
-    }
-  }
-  return false;
-};
+const hasJsx = (source: string, file: string): boolean =>
+  containsJsx(parseSync(file, source, { lang: file.endsWith("x") ? "tsx" : "ts" }).program);
 
 const checkRoutes = (routesRoot: string): TreeScan<readonly string[]> =>
   Effect.gen(function* scan() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
-    const files = yield* collectFiles(routesRoot);
+    const files = yield* collectSourceFiles(routesRoot);
     const findings = yield* Effect.forEach(
       files,
       (file) =>

@@ -442,15 +442,17 @@ const softPresetRules = Object.fromEntries(
 );
 
 const nodeBuiltinBoundaryFiles = [
-  "**/vite.config.ts",
   "infra/cloudflare/src/features/cloudflare/deployment.ts",
   "libs/config/src/features/config/local-database-path.test.ts",
   "libs/config/src/features/config/process-environment.test.ts",
   "libs/telemetry/src/features/telemetry/telemetry.test.ts",
   "libs/vite-config/src/features/vite-config/cloudflare-workers-loader.ts",
   "libs/vite-config/src/features/vite-config/elysia-aot.ts",
+  "tools/dev/src/features/dev/ci-runner.test.ts",
+  "tools/dev/src/features/dev/ci-runner.ts",
   "tools/dev/src/features/dev/dev-start.ts",
   "tools/dev/src/features/dev/local-environment.ts",
+  "tools/dev/src/features/dev/observe/source-maps.ts",
   "tools/dont-review-it/src/features/dont-review-it/configs/git-excludes/git-exclude-patterns.test.ts",
   "tools/dont-review-it/src/features/dont-review-it/configs/git-excludes/git-exclude-patterns.ts",
   "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/canonical-values/catalog-build-lock.ts",
@@ -482,6 +484,30 @@ const nodeBuiltinBoundaryFiles = [
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages: readonly string[] = [];
+
+const builtinLoaderFiles = [
+  "tools/ai-native/src/features/ai-native/host-descriptors.ts",
+  "tools/ai-native/src/features/ai-native/host.ts",
+  "tools/ai-native/src/features/ai-native/node-file-stream.ts",
+  "tools/ai-native/src/features/ai-native/node-spawn.ts",
+  "tools/ai-native/src/features/ai-native/spool/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/log-destination.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/run-spool.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/strip-escapes.test.ts",
+  "tools/ai-native/src/features/ai-native/spool/strip-escapes.ts",
+  "tools/ai-native/src/features/ai-native/sync-base/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/sync-base/hook.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/run-command.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/run-throttle.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/slots.test.ts",
+  "tools/ai-native/src/features/ai-native/throttle/wait-for-slot.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/cli.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/create-worktree.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/hook.test.ts",
+  "tools/ai-native/src/features/ai-native/worktree-home/remove-worktree.test.ts",
+];
 
 const templateWorkspaces = [
   "apps/**",
@@ -635,6 +661,7 @@ const lintOptions = {
                 from: "package",
                 name: [
                   "Codec",
+                  "Command",
                   "Deferred",
                   "Duration",
                   "Effect",
@@ -704,7 +731,6 @@ const lintOptions = {
         "libs/db/src/features/db/identity-schema.ts",
         "infra/budget-monitor/src/features/budget-monitor/decision.ts",
         "infra/error-monitor/src/features/error-monitor/telemetry.ts",
-        "libs/observability/src/features/observability/server-testing.ts",
         "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
       ],
       rules: {
@@ -724,7 +750,7 @@ const lintOptions = {
       files: [
         "libs/monitor/src/features/monitor/monitor-base.ts",
         "libs/monitor/src/features/monitor/monitor-worker.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
@@ -762,7 +788,7 @@ const lintOptions = {
     },
     {
       files: [
-        "libs/db/src/features/db/records-fixture.ts",
+        "libs/db/src/features/db/records-test-fixture.ts",
         "libs/runtime/src/features/runtime/jobs.ts",
       ],
       rules: {
@@ -817,7 +843,7 @@ const lintOptions = {
         "libs/db/src/features/db/remote-operations.ts",
         "libs/observability/src/features/observability/annotations.ts",
         "libs/observability/src/features/observability/request.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
@@ -955,10 +981,10 @@ const lintOptions = {
       files: [
         "libs/auth/src/features/auth/auth-request.ts",
         "libs/auth/src/features/auth/auth-test-fixture.ts",
-        "libs/auth/src/features/auth/browser-client.ts",
-        "libs/auth/src/features/auth/email-change.ts",
+        "libs/auth/src/features/auth/browser-client-test-fixture.ts",
+        "libs/auth/src/features/auth/email-change-test-fixture.ts",
         "libs/auth/src/features/auth/email-change.worker.test.ts",
-        "libs/auth/src/features/auth/wiki-oauth-fixture.ts",
+        "libs/auth/src/features/auth/wiki-oauth-test-fixture.ts",
       ],
       rules: {
         "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
@@ -967,7 +993,7 @@ const lintOptions = {
     {
       files: [
         "libs/auth/src/features/auth/auth-request.ts",
-        "libs/auth/src/features/auth/browser-client.ts",
+        "libs/auth/src/features/auth/browser-client-test-fixture.ts",
         "libs/auth/src/features/auth/session.ts",
         "libs/auth/src/features/auth/session-token.ts",
       ],
@@ -1015,8 +1041,8 @@ const lintOptions = {
     },
     {
       files: [
-        "libs/db/src/features/db/testing.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/db/src/features/db/database-test-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "dont-review-it/no-explanatory-comment--delete-or-move-to-commit-message":
@@ -1047,9 +1073,7 @@ const lintOptions = {
     },
     {
       files: [
-        "infra/cloudflare/src/features/cloudflare/unix-permission-bits.ts",
-        "tools/dev/src/features/dev/unix-permission-bits.ts",
-        "apps/service-member/src/shared/photo/image-fixture.ts",
+        "apps/service-member/src/shared/photo/image-test-fixture.ts",
         "apps/service-member/src/shared/photo/image.ts",
       ],
       rules: {
@@ -1061,15 +1085,26 @@ const lintOptions = {
       rules: softPresetRules,
     },
     {
+      files: softPresetPackages,
+      rules: { "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }] },
+    },
+    {
       files: nodeBuiltinBoundaryFiles,
       rules: {
         "import/no-nodejs-modules": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: builtinLoaderFiles,
+      rules: {
+        "project/process-boundary": LINT_SEVERITY.OFF,
       },
     },
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
     "import/no-nodejs-modules": LINT_SEVERITY.ERROR,
+    "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }],
     "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
       LINT_SEVERITY.ERROR,
       { branches: 50, functions: 50, lines: 50, statements: 50 },
@@ -1079,12 +1114,11 @@ const lintOptions = {
       {
         toolRequiredFileNames: [
           "alchemy.run.ts",
-          "cold-start-fixture.ts",
+          "cold-start-test-fixture.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
-          "knip.ts",
           "main.ts",
-          "monitor-fixture.ts",
+          "monitor-test-fixture.ts",
           "plugin.ts",
           "preview.tsx",
           "server.ts",
@@ -1150,55 +1184,10 @@ const lintOptions = {
   },
 } satisfies Parameters<typeof dontReviewItPreset.lint>[0];
 
-const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
-  {},
-  lintOptions.rules,
-  ...lintOptions.overrides
-    .filter((override) => override.files?.includes("libs/**") === true)
-    .map((override) => override.rules ?? {}),
-);
-
-const builtInPlugins: ReadonlySet<string> = new Set([
-  "eslint",
-  "import",
-  "jest",
-  "jsdoc",
-  "jsx-a11y",
-  "nextjs",
-  "node",
-  "oxc",
-  "promise",
-  "react",
-  "react-perf",
-  "typescript",
-  "unicorn",
-  "vitest",
-  "vue",
-]);
-
-const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
-  return overrides.flatMap((override, index) => {
-    const plugins = override.plugins;
-    if (plugins === undefined) {
-      return [];
-    }
-    const enabled = new Set<string>(plugins);
-    return Object.keys(override.rules ?? {}).flatMap((rule) => {
-      const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
-      if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {
-        return [];
-      }
-      return [`overrides[${String(index)}] ${rule} needs plugins to include ${plugin}`];
-    });
-  });
-};
-
 export {
   awaitingPresetPackages,
   softPresetPackages,
-  configuredLintRules,
   generatedFiles,
   lintOptions,
-  overridePluginMismatches,
   templateWorkspaces,
 };

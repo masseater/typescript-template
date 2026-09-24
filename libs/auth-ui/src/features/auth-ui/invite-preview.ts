@@ -66,4 +66,4 @@ const previewInvitation = (endpoint: string, token: string): Promise<Invitation>
   Effect.runPromise(loadInvitation(endpoint, token));
 
 export { previewInvitation, readFailureMessage };
-export type { Invitation };
+export type { Invitation, ServedInvitation };

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { forbidUnresolvableModuleSpecifier } from "./forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.ts";
 
 const GROUNDED_EXCEPTION = {

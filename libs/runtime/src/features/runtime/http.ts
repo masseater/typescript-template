@@ -433,5 +433,18 @@ export {
   readSearchParams,
   siteRoutes,
 };
-export type { ApiRoutes, Decodable, ElysiaContext, SiteRoutes };
+export type {
+  ApiRoutes,
+  Decodable,
+  ElysiaContext,
+  ElysiaHandler,
+  ElysiaStreamContext,
+  EventStream,
+  Failed,
+  FailedEvent,
+  Handler,
+  InputHandler,
+  ServerSentEvent,
+  SiteRoutes,
+};
 export type { Failure, FailureTable } from "./failures.ts";

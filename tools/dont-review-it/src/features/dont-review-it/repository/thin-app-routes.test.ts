@@ -1,7 +1,8 @@
+import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
-import { isAppRouteModule } from "./thin-app-routes.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
+import { containsJsx, isAppRouteModule } from "./thin-app-routes.ts";
 
 const jsx = "export const Page = () => <div />;\n";
 const plain = "export const Route = {};\n";
@@ -46,5 +47,15 @@ describe("thin app route coverage", () => {
   ] as const)("classifies %s as app route subject %s", ([name, subject]) => {
     expect.hasAssertions();
     expect(isAppRouteModule(name)).toBe(subject);
+  });
+
+  it.for([
+    ["export const Page = () => <div />;", true],
+    ["export const Page = () => <></>;", true],
+    ['export const Route = createFileRoute("/")({ component: () => <HomePage /> });', true],
+    ['export const Route = createFileRoute("/")({ component: HomePage });', false],
+  ] as const)("finds JSX in %s: %s", ([code, expected]) => {
+    expect.hasAssertions();
+    expect(containsJsx(parseSync("route.tsx", code).program)).toBe(expected);
   });
 });

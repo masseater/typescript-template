@@ -1,7 +1,7 @@
 import { ROLE, memberRetentionDays } from "@repo/config";
-import { logAt } from "@repo/observability";
+import { logAt, logCause } from "@repo/observability";
 import { and, desc, eq, gt, inArray, isNull, lte, type SQL } from "drizzle-orm";
-import { DateTime, Effect, Schema } from "effect";
+import { DateTime, Effect, Schema, type Cause } from "effect";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { query } from "./database.ts";
@@ -322,7 +322,9 @@ const restoreWithdrawn = Effect.fn("restoreWithdrawnMember")(function* restoreWi
   );
 });
 
-const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
+const pendingWithdrawal = Effect.fn("pendingWithdrawal")(function* pendingWithdrawal(
+  memberId: string,
+) {
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const email = yield* recoverableEmail(memberId);
   const [pending] = yield* query((database) =>
@@ -337,6 +339,11 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
   if (pending === undefined) {
     return yield* new RecoveryExpired();
   }
+  return pending;
+});
+
+const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
+  const pending = yield* pendingWithdrawal(memberId);
   const snapshot = yield* decodeSnapshot(pending.withdrawn);
   const restoredAt = DateTime.toDate(yield* DateTime.now);
   yield* restoreWithdrawn(memberId, { restoredAt, snapshot, withdrawn: pending.withdrawn });
@@ -344,26 +351,13 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
 });
 
 const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(memberId: string) {
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
-  const email = yield* recoverableEmail(memberId);
-  const [pending] = yield* query((database) =>
-    database
-      .select({ memberId: withdrawnMember.memberId })
-      .from(withdrawnMember)
-      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
-      .where(pendingRecovery(email, checkedAt))
-      .orderBy(desc(withdrawnMember.withdrawnAt))
-      .limit(1),
-  );
-  if (pending === undefined) {
-    return yield* new RecoveryExpired();
-  }
+  const pending = yield* pendingWithdrawal(memberId);
   const declinedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .update(leaveRequest)
       .set({ recoveryDeclinedAt: declinedAt })
-      .where(eq(leaveRequest.memberId, pending.memberId)),
+      .where(eq(leaveRequest.memberId, pending.withdrawn.memberId)),
   );
   return { declinedAt };
 });
@@ -419,39 +413,72 @@ const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithd
   return purgeAt;
 });
 
-const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
+type PhotoRemover<Failure, Requirements> = (
   memberId: string,
-  leave: Readonly<{ immediate: boolean }>,
+) => Effect.Effect<void, Failure, Requirements>;
+
+const photoPurgeFailed =
+  (memberId: string): ((cause: Cause.Cause<unknown>) => Effect.Effect<void>) =>
+  (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
+    logCause({ attributes: { memberId }, cause, eventName: "member_leave.photo_purge_failed" });
+
+const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember<Failure, Requirements>(
+  memberId: string,
+  leave: Readonly<{ immediate: boolean; removePhotos: PhotoRemover<Failure, Requirements> }>,
 ) {
   const member = yield* withdrawableMember(memberId);
-  yield* revokeUserSessions(memberId);
   if (leave.immediate) {
+    yield* leave.removePhotos(memberId);
+    yield* revokeUserSessions(memberId);
     yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
     return { immediate: true as const };
   }
+  yield* revokeUserSessions(memberId);
   const purgeAt = yield* retainWithdrawn(member);
+  yield* leave
+    .removePhotos(memberId)
+    .pipe(Effect.tapCause(photoPurgeFailed(memberId)), Effect.ignore);
   return { immediate: false as const, purgeAt };
 });
 
+const releasePhotos = <Failure, Requirements>(
+  memberIds: readonly string[],
+  removePhotos: PhotoRemover<Failure, Requirements>,
+): Effect.Effect<readonly string[], never, Requirements> =>
+  Effect.forEach(memberIds, (memberId) =>
+    removePhotos(memberId).pipe(
+      Effect.as(memberId),
+      Effect.tapCause(photoPurgeFailed(memberId)),
+      Effect.orElseSucceed(() => undefined),
+    ),
+  ).pipe(Effect.map((released) => released.filter((memberId) => memberId !== undefined)));
+
 const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
-  function* purgeExpiredWithdrawnMembers(checkedAt: Date) {
+  function* purgeExpiredWithdrawnMembers<Failure, Requirements>(
+    checkedAt: Date,
+    removePhotos: PhotoRemover<Failure, Requirements>,
+  ) {
     const expired = yield* query((database) =>
       database
         .select({ memberId: leaveRequest.memberId })
         .from(leaveRequest)
         .where(and(lte(leaveRequest.purgeAt, checkedAt), isNull(leaveRequest.restoredAt))),
     );
-    const memberIds = expired.map((expiredLeave) => expiredLeave.memberId);
-    if (memberIds.length === 0) {
-      return { count: 0, memberIds: [] as readonly string[] };
+    const expiredIds = expired.map((expiredLeave) => expiredLeave.memberId);
+    const memberIds = yield* releasePhotos(expiredIds, removePhotos);
+    if (memberIds.length > 0) {
+      yield* query((database) =>
+        database.batch([
+          database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
+          database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
+        ]),
+      );
     }
-    yield* query((database) =>
-      database.batch([
-        database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
-        database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
-      ]),
-    );
-    return { count: memberIds.length, memberIds };
+    const released = new Set(memberIds);
+    return {
+      memberIds,
+      retainedMemberIds: expiredIds.filter((memberId) => !released.has(memberId)),
+    };
   },
 );
 

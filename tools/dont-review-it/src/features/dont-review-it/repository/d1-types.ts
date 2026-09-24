@@ -214,4 +214,4 @@ const d1Type = (
 };
 
 export { d1Property, d1Type, followPath, prefixPath };
-export type { D1Reference };
+export type { D1Kind, D1Reference };

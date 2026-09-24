@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { buildCatalog } from "../../lib/canonical-values/catalog.ts";
 import { fingerprintValues } from "../../lib/canonical-values/fingerprint.ts";

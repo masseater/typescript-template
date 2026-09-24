@@ -91,3 +91,4 @@ const renderDiagram = (chart: string): RenderedDiagram => {
 };
 
 export { renderDiagram };
+export type { RenderedDiagram };

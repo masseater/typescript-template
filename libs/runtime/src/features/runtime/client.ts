@@ -89,3 +89,4 @@ export {
   decodeJson,
   failureMessage,
 };
+export type { ApiReply };

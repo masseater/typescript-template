@@ -13,11 +13,11 @@ import { DateTime, Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { dashboardStaff } from "./dashboard-staff.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { query } from "./database.ts";
 import { bucketFor, refreshMetricSnapshots } from "./metric-snapshot.ts";
-import { addUser, recordedAt } from "./records-fixture.ts";
+import { addUser, recordedAt } from "./records-test-fixture.ts";
 import { auditEvent, metricSnapshot, session } from "./schema.ts";
-import { TestDatabase } from "./testing.ts";
 
 const seedMembers = Effect.gen(function* seedMembersProgram() {
   yield* addUser({ userId: "member-a" });
