@@ -1,5 +1,5 @@
-import { subscriptionStatuses } from "@repo/config";
-import { sql } from "drizzle-orm";
+import { stripeCollectionMethods, subscriptionStatuses } from "@repo/config";
+import { sql, type SQL } from "drizzle-orm";
 import {
   check,
   index,
@@ -11,6 +11,9 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { user } from "./identity-schema.ts";
+
+const vocabularyList = (vocabulary: readonly string[]): SQL =>
+  sql.raw(`(${vocabulary.map((word) => `'${word}'`).join(", ")})`);
 
 const planSubscription = sqliteTable(
   "plan_subscription",
@@ -33,7 +36,7 @@ const planSubscription = sqliteTable(
     uniqueIndex("plan_subscription_stripe_subscription_id_unique").on(table.stripeSubscriptionId),
     check(
       "plan_subscription_status",
-      sql`${table.status} IN ('active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'paused', 'trialing', 'unpaid')`,
+      sql`${table.status} IN ${vocabularyList(subscriptionStatuses)}`,
     ),
   ],
 );
@@ -91,7 +94,7 @@ const customerQuote = sqliteTable(
   "customer_quote",
   {
     amountTotal: integer("amount_total").notNull(),
-    collectionMethod: text("collection_method").notNull(),
+    collectionMethod: text("collection_method", { enum: stripeCollectionMethods }).notNull(),
     currency: text("currency").notNull(),
     daysUntilDue: integer("days_until_due"),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
@@ -105,6 +108,10 @@ const customerQuote = sqliteTable(
   },
   (table) => [
     primaryKey({ columns: [table.stripeQuoteId] }),
+    check(
+      "customer_quote_collection_method",
+      sql`${table.collectionMethod} IN ${vocabularyList(stripeCollectionMethods)}`,
+    ),
     index("customer_quote_member_id_idx").on(table.memberId),
   ],
 );

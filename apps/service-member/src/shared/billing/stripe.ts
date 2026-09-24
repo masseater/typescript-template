@@ -3,6 +3,7 @@ import {
   invoiceDueDays,
   priceIntervals,
   readStripeConfig,
+  STRIPE_COLLECTION_METHOD,
   stripeApiVersion,
   stripeTrialPeriodDays,
 } from "@repo/config";
@@ -179,7 +180,7 @@ function invoiceForm(input: InvoiceInput): URLSearchParams {
   return new URLSearchParams({
     "automatic_tax[enabled]": "true",
     auto_advance: "true",
-    collection_method: "send_invoice",
+    collection_method: STRIPE_COLLECTION_METHOD.sendInvoice,
     customer: input.customerId,
     days_until_due: String(invoiceDueDays),
     "metadata[member_id]": input.memberId,
@@ -245,7 +246,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
       send(
         `/subscriptions/${subscriptionId}`,
         new URLSearchParams({
-          collection_method: "send_invoice",
+          collection_method: STRIPE_COLLECTION_METHOD.sendInvoice,
           days_until_due: String(invoiceDueDays),
         }),
       ).pipe(Effect.asVoid),
