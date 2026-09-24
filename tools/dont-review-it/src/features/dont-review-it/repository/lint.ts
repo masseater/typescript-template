@@ -486,30 +486,6 @@ const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.p
 
 const awaitingPresetPackages: readonly string[] = [];
 
-const builtinLoaderFiles = [
-  "tools/ai-native/src/features/ai-native/host-descriptors.ts",
-  "tools/ai-native/src/features/ai-native/host.ts",
-  "tools/ai-native/src/features/ai-native/node-file-stream.ts",
-  "tools/ai-native/src/features/ai-native/node-spawn.ts",
-  "tools/ai-native/src/features/ai-native/spool/cli.test.ts",
-  "tools/ai-native/src/features/ai-native/spool/log-destination.test.ts",
-  "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
-  "tools/ai-native/src/features/ai-native/spool/run-spool.test.ts",
-  "tools/ai-native/src/features/ai-native/spool/strip-escapes.test.ts",
-  "tools/ai-native/src/features/ai-native/spool/strip-escapes.ts",
-  "tools/ai-native/src/features/ai-native/sync-base/cli.test.ts",
-  "tools/ai-native/src/features/ai-native/sync-base/hook.test.ts",
-  "tools/ai-native/src/features/ai-native/throttle/cli.test.ts",
-  "tools/ai-native/src/features/ai-native/throttle/run-command.test.ts",
-  "tools/ai-native/src/features/ai-native/throttle/run-throttle.test.ts",
-  "tools/ai-native/src/features/ai-native/throttle/slots.test.ts",
-  "tools/ai-native/src/features/ai-native/throttle/wait-for-slot.test.ts",
-  "tools/ai-native/src/features/ai-native/worktree-home/cli.test.ts",
-  "tools/ai-native/src/features/ai-native/worktree-home/create-worktree.test.ts",
-  "tools/ai-native/src/features/ai-native/worktree-home/hook.test.ts",
-  "tools/ai-native/src/features/ai-native/worktree-home/remove-worktree.test.ts",
-];
-
 const templateWorkspaces = [
   "apps/**",
   "libs/**",
@@ -1093,12 +1069,6 @@ const lintOptions = {
       files: nodeBuiltinBoundaryFiles,
       rules: {
         "import/no-nodejs-modules": LINT_SEVERITY.OFF,
-      },
-    },
-    {
-      files: builtinLoaderFiles,
-      rules: {
-        "project/process-boundary": LINT_SEVERITY.OFF,
       },
     },
   ],
