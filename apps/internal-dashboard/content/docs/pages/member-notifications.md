@@ -5,7 +5,7 @@ description: 未読の出来事を一覧し、会話・スレッド・プロフ�
 
 パス: `/notifications`。[会員の枠](/pages/member-layout#会員の枠) に入り、タブ「通知」から開く。
 
-実体は [会員のつながり](/data-model/member-graph) の Notification と、メッセージ・掲示板・問い合わせからの出来事である。メールで送るかは [設定](/pages/member-settings) が持つ。
+実体は [会員のつながり](/data-model/member-graph) の Notification と、メッセージ・掲示板・問い合わせからの出来事である。
 
 ## 構成
 

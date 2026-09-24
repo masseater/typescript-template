@@ -12,7 +12,7 @@ export const noMultiBindingDeclaration = createDontReviewItRule({
     docs: {
       description:
         "Disallow a declaration statement that introduces more than one binding, so every binding has a statement of its own to be read, moved and deleted at",
-      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
+      relatedGuidelines: ["AGENTS.md"],
     },
     messages: {
       multiBindingDeclaration:

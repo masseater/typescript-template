@@ -21,4 +21,4 @@ npx codemod react/19/replace-string-ref --target .
 npx codemod react/19/replace-reactdom-render --target .
 ```
 
-`useState` を消す codemod は走らせない。置き先は Effect Atom、TanStack Form、TanStack Query、`useAction` であり、codemod はその判断をしない。
+`useState` を消す codemod は実行しない。置き先は Effect Atom、TanStack Form、TanStack Query、`useAction` であり、codemod はその判断をしない。

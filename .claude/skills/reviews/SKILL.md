@@ -5,27 +5,21 @@ description: このリポジトリのコードレビュー指針。作業を完�
 
 以下のファイルを順番に読み込み、それぞれの観点でレビューする。この時ファイルやワークスペース単位で担当を区切るのではなく、必ず観点を元にリポジトリ全体を横断してレビューすること。単一ファイルをちょっと変更すれば良いのではなく、リポジトリ全体のコード品質を向上させることが目的である。
 
-1. `./references/principles.md`
-2. `./references/review-findings.md`
-3. `./references/writing-code.md`
-4. `./references/tests.md`
-5. `./references/documents.md`
-6. `./references/enforcement.md`
-7. `./references/placement-and-tools.md`
-8. `./references/infrastructure.md`
-9. `./references/observability.md`
-10. `./references/secrets-and-permissions.md`
-11. `./references/frontend.md`
-12. `./references/ci-efficiency.md`
-13. `./references/colocation.md`
-14. `./references/domain-authority.md`
-15. `./references/config-cleanup.md`
-16. `./references/simplify.md`
-17. `./references/remove-useless-tests.md`
-18. `./references/no-silent-fallback.md`
-19. `./references/agents-md.md`
-20. `./references/verification-bypass.md`
-21. `./references/shared-code-and-abstractions.md`
+1. `./references/ownership-and-duplication.md`
+2. `./references/review-findings-and-fix-completion.md`
+3. `./references/io-boundaries-and-types.md`
+4. `./references/failure-handling-and-fallbacks.md`
+5. `./references/names-and-vocabularies.md`
+6. `./references/package-and-command-surfaces.md`
+7. `./references/test-design.md`
+8. `./references/normative-documents.md`
+9. `./references/verification-and-automation.md`
+10. `./references/workspace-placement-and-tooling.md`
+11. `./references/infrastructure-resources-and-apply.md`
+12. `./references/monitoring-logging-and-status-codes.md`
+13. `./references/secrets-and-permissions.md`
+14. `./references/frontend-components-and-state.md`
+15. `./references/shared-code-and-abstractions.md`
 
 以下は、その修正を行わないことを正当化する理由として認めない。かかる時間は度外視し、リポジトリ全体を俯瞰して、コード品質を向上させるための改善点を見つけることに全力を注ぐこと。
 

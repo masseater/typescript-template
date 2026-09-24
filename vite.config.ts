@@ -35,6 +35,7 @@ const rootOwnedPaths = [
   ".gitignore",
   ".mcp.json",
   ".mergify.yml",
+  ".textlint-ai-words.json",
   ".textlintrc.json",
   ".vite-hooks",
   "AGENTS.md",
@@ -129,10 +130,11 @@ export default defineConfig({
         dependsOn: ["compile:paraglide"],
       },
       "check:text": {
-        command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+        command: 'textlint "**/*.md"',
         input: [
           ...taskInput,
-          { base: "workspace", pattern: "apps/internal-dashboard/content/docs/**/*.md" },
+          { base: "workspace", pattern: "**/*.md" },
+          { base: "workspace", pattern: ".textlint-ai-words.json" },
           { base: "workspace", pattern: ".textlintrc.json" },
         ],
       },
