@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-
 import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
 import {
   cloudflareNewCapExceptions,
@@ -8,6 +6,7 @@ import {
 
 import { dontReviewItPreset } from "../configs/preset.ts";
 import { LINT_SEVERITY } from "../lint-rule-authoring/index.ts";
+import { filePathOf } from "../platform/path.ts";
 import {
   linkComponents,
   linkWrapperFiles,
@@ -476,7 +475,7 @@ const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages, ...uiQualityInspectionFiles],
   jsPlugins: [
-    { name: "project", specifier: fileURLToPath(new URL("./plugin.ts", import.meta.url)) },
+    { name: "project", specifier: filePathOf(new URL("./plugin.ts", import.meta.url)) },
     { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
     "@shadcn/lint",
   ],
