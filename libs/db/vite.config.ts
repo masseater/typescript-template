@@ -7,6 +7,7 @@ import {
   checkCode,
   modularBoundaries,
   workspaceCheckImports,
+  telemetryEnv,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -19,6 +20,7 @@ export default defineConfig({
       ...modularBoundaries,
       check: {
         command: "drizzle-kit check",
+        env: [...telemetryEnv],
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
