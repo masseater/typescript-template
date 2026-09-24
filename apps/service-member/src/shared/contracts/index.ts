@@ -9,6 +9,7 @@ export {
 export {
   CHECKOUT_RETURN,
   HostedPage,
+  InvoiceList,
   OfferView,
   PlanView,
   WebhookReceipt,

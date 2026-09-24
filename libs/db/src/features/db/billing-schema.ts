@@ -1,6 +1,14 @@
 import { subscriptionStatuses } from "@repo/config";
 import { sql } from "drizzle-orm";
-import { check, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  check,
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 import { user } from "./identity-schema.ts";
 
@@ -36,4 +44,30 @@ const stripeEvent = sqliteTable("stripe_event", {
   type: text("type").notNull(),
 });
 
-export { planSubscription, stripeEvent };
+const customerInvoice = sqliteTable(
+  "customer_invoice",
+  {
+    amountCredited: integer("amount_credited").notNull().default(0),
+    amountDue: integer("amount_due").notNull(),
+    amountPaid: integer("amount_paid").notNull().default(0),
+    amountRefunded: integer("amount_refunded").notNull().default(0),
+    amountRemaining: integer("amount_remaining").notNull(),
+    currency: text("currency").notNull(),
+    hostedInvoiceUrl: text("hosted_invoice_url"),
+    issuedAt: integer("issued_at", { mode: "timestamp_ms" }).notNull(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    originKey: text("origin_key").notNull(),
+    status: text("status").notNull(),
+    stripeInvoiceId: text("stripe_invoice_id").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.stripeInvoiceId] }),
+    uniqueIndex("customer_invoice_origin_key_unique").on(table.originKey),
+    index("customer_invoice_member_id_idx").on(table.memberId),
+  ],
+);
+
+export { customerInvoice, planSubscription, stripeEvent };

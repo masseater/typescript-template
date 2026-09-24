@@ -24,7 +24,7 @@ import { DateTime, Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
-import { AgreementsView } from "#shared/contracts/index.ts";
+import { AgreementsView, InvoiceList } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
 import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
@@ -41,7 +41,11 @@ const portalUrl = "https://billing.stripe.com/p/session/test_portal";
 const customerId = "cus_test_member";
 const subscriptionId = "sub_test_member";
 const trialPeriodDays = 14;
+const invoiceId = "in_test_member";
+const invoiceAmount = 980;
+const hostedInvoiceUrl = "https://invoice.stripe.com/i/test_invoice";
 const checkoutForms: URLSearchParams[] = [];
+const invoiceKeys: string[] = [];
 const millisecondsPerSecond = 1000;
 const monthInSeconds = 30 * 24 * 60 * 60;
 const hexRadix = 16;
@@ -188,15 +192,49 @@ function subscriptionEvent(
   };
 }
 
+type InvoiceSnapshot = Readonly<{ paid: number; remaining: number; status: string }>;
+
+const openInvoice: InvoiceSnapshot = { paid: 0, remaining: invoiceAmount, status: "open" };
+const paidInvoice: InvoiceSnapshot = { paid: invoiceAmount, remaining: 0, status: "paid" };
+
 function invoiceEvent(
-  type: "invoice.paid" | "invoice.payment_failed",
-  id: string,
-  offsetSeconds: number,
+  type: "invoice.finalized" | "invoice.paid" | "invoice.payment_failed" | "invoice.updated",
+  event: Readonly<{ id: string; offsetSeconds: number; snapshot: InvoiceSnapshot }>,
 ): Record<string, unknown> {
   return {
-    created: nowSeconds() + offsetSeconds,
-    data: { object: { subscription: subscriptionId } },
-    id,
+    created: nowSeconds() + event.offsetSeconds,
+    data: {
+      object: {
+        amount_due: invoiceAmount,
+        amount_paid: event.snapshot.paid,
+        amount_remaining: event.snapshot.remaining,
+        currency: "jpy",
+        customer: customerId,
+        hosted_invoice_url: hostedInvoiceUrl,
+        id: invoiceId,
+        metadata: {},
+        status: event.snapshot.status,
+        subscription: subscriptionId,
+      },
+    },
+    id: event.id,
+    type,
+  };
+}
+
+function ledgerEvent(
+  type: "charge.refunded" | "credit_note.created",
+  event: Readonly<{ amount: number; id: string; offsetSeconds: number }>,
+): Record<string, unknown> {
+  return {
+    created: nowSeconds() + event.offsetSeconds,
+    data: {
+      object:
+        type === "credit_note.created"
+          ? { amount: event.amount, invoice: invoiceId }
+          : { amount_refunded: event.amount, invoice: invoiceId },
+    },
+    id: event.id,
     type,
   };
 }
@@ -223,11 +261,42 @@ const stripeHandlers = [
           : HttpResponse.json({ error: { message: "unknown customer" } }, { status: 400 }),
       ),
   ),
+  http.post(`${stripeApi}/invoiceitems`, ({ request }) =>
+    request.formData().then((form) => {
+      invoiceKeys.push(String(request.headers.get("idempotency-key")));
+      return form.get("customer") === customerId
+        ? HttpResponse.json({ id: "ii_test_member" })
+        : HttpResponse.json({ error: { message: "unknown customer" } }, { status: 400 });
+    }),
+  ),
+  http.post(`${stripeApi}/invoices`, ({ request }) =>
+    request.formData().then((form) => {
+      invoiceKeys.push(String(request.headers.get("idempotency-key")));
+      return form.get("collection_method") === "send_invoice"
+        ? HttpResponse.json({
+            amount_due: invoiceAmount,
+            amount_remaining: invoiceAmount,
+            currency: "jpy",
+            id: invoiceId,
+            status: "draft",
+          })
+        : HttpResponse.json({ error: { message: "unexpected invoice form" } }, { status: 400 });
+    }),
+  ),
+  http.post(`${stripeApi}/subscriptions/${subscriptionId}`, ({ request }) =>
+    request
+      .formData()
+      .then((form) =>
+        form.get("collection_method") === "send_invoice"
+          ? HttpResponse.json({ id: subscriptionId })
+          : HttpResponse.json({ error: { message: "unexpected switch" } }, { status: 400 }),
+      ),
+  ),
   http.get(`${stripeApi}/prices/${priceId}`, () =>
     HttpResponse.json({
       currency: "jpy",
       recurring: { interval: "month", interval_count: 1 },
-      unit_amount: 980,
+      unit_amount: invoiceAmount,
     }),
   ),
 ];
@@ -342,12 +411,26 @@ describe("billing api", () => {
         const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
         const failed = yield* json(
-          yield* deliver(app, invoiceEvent("invoice.payment_failed", "evt_unpaid", 1)),
+          yield* deliver(
+            app,
+            invoiceEvent("invoice.payment_failed", {
+              id: "evt_unpaid",
+              offsetSeconds: 1,
+              snapshot: openInvoice,
+            }),
+          ),
         );
         const lapsed = yield* call(app, client, "/members?page=1");
         const lapsedPlan = yield* json(yield* call(app, client, "/billing/plan"));
         const settled = yield* json(
-          yield* deliver(app, invoiceEvent("invoice.paid", "evt_settled", 2)),
+          yield* deliver(
+            app,
+            invoiceEvent("invoice.paid", {
+              id: "evt_settled",
+              offsetSeconds: 2,
+              snapshot: paidInvoice,
+            }),
+          ),
         );
         const restored = yield* call(app, client, "/members?page=1");
         const restoredPlan = yield* json(yield* call(app, client, "/billing/plan"));
@@ -370,6 +453,160 @@ describe("billing api", () => {
         plan: PLAN.paid,
         status: SUBSCRIPTION_STATUS.active,
       });
+    }));
+
+  it("issues one invoice per switch to invoice payment, keyed so a repeat never bills twice", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        invoiceKeys.length = 0;
+        const first = yield* json(yield* call(app, client, "/billing/invoice-payment", {}));
+        const repeated = yield* json(yield* call(app, client, "/billing/invoice-payment", {}));
+        const listed = yield* json(yield* call(app, client, "/billing/invoices"));
+        return { first, keys: [...invoiceKeys], listed, repeated };
+      }),
+    ).then((result) => {
+      expect(result.first).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.repeated).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.duplicate });
+      expect(result.keys).toStrictEqual([
+        `subscription-switch:${subscriptionId}:item`,
+        `subscription-switch:${subscriptionId}:invoice`,
+      ]);
+      expect(result.listed).toStrictEqual({
+        invoices: [
+          {
+            amountCredited: 0,
+            amountDue: invoiceAmount,
+            amountPaid: 0,
+            amountRefunded: 0,
+            amountRemaining: invoiceAmount,
+            currency: "jpy",
+            issuedAt: expect.any(String),
+            status: "draft",
+            stripeInvoiceId: invoiceId,
+          },
+        ],
+      });
+    }));
+
+  it("keeps the ledger on Stripe's own figures through a credit note, payment and refund", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        yield* deliver(
+          app,
+          invoiceEvent("invoice.finalized", {
+            id: "evt_finalized",
+            offsetSeconds: 1,
+            snapshot: openInvoice,
+          }),
+        );
+        yield* deliver(
+          app,
+          ledgerEvent("credit_note.created", { amount: 200, id: "evt_credit", offsetSeconds: 4 }),
+        );
+        yield* deliver(
+          app,
+          invoiceEvent("invoice.updated", {
+            id: "evt_credited",
+            offsetSeconds: 3,
+            snapshot: { paid: 0, remaining: invoiceAmount - 200, status: "open" },
+          }),
+        );
+        const creditedInvoices = yield* json(yield* call(app, client, "/billing/invoices"));
+        yield* deliver(
+          app,
+          invoiceEvent("invoice.paid", {
+            id: "evt_paid",
+            offsetSeconds: 5,
+            snapshot: { paid: invoiceAmount - 200, remaining: 0, status: "paid" },
+          }),
+        );
+        yield* deliver(
+          app,
+          ledgerEvent("charge.refunded", { amount: 300, id: "evt_refund", offsetSeconds: 6 }),
+        );
+        const settledInvoices = yield* json(yield* call(app, client, "/billing/invoices"));
+        return { creditedInvoices, settledInvoices };
+      }),
+    ).then((result) => {
+      expect(result.creditedInvoices).toStrictEqual({
+        invoices: [
+          {
+            amountCredited: 200,
+            amountDue: invoiceAmount,
+            amountPaid: 0,
+            amountRefunded: 0,
+            amountRemaining: invoiceAmount - 200,
+            currency: "jpy",
+            hostedInvoiceUrl,
+            issuedAt: expect.any(String),
+            status: "open",
+            stripeInvoiceId: invoiceId,
+          },
+        ],
+      });
+      expect(result.settledInvoices).toStrictEqual({
+        invoices: [
+          {
+            amountCredited: 200,
+            amountDue: invoiceAmount,
+            amountPaid: invoiceAmount - 200,
+            amountRefunded: 300,
+            amountRemaining: 0,
+            currency: "jpy",
+            hostedInvoiceUrl,
+            issuedAt: expect.any(String),
+            status: "paid",
+            stripeInvoiceId: invoiceId,
+          },
+        ],
+      });
+    }));
+
+  it("adds up every credit note on an invoice instead of keeping only the last one", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        yield* deliver(
+          app,
+          invoiceEvent("invoice.finalized", {
+            id: "evt_finalized",
+            offsetSeconds: 1,
+            snapshot: openInvoice,
+          }),
+        );
+        yield* deliver(
+          app,
+          ledgerEvent("credit_note.created", { amount: 100, id: "evt_credit_1", offsetSeconds: 2 }),
+        );
+        yield* deliver(
+          app,
+          ledgerEvent("credit_note.created", { amount: 150, id: "evt_credit_2", offsetSeconds: 3 }),
+        );
+        yield* deliver(
+          app,
+          ledgerEvent("credit_note.created", { amount: 150, id: "evt_credit_2", offsetSeconds: 3 }),
+        );
+        return yield* Schema.decodeUnknownEffect(InvoiceList)(
+          yield* json(yield* call(app, client, "/billing/invoices")),
+        );
+      }),
+    ).then((listed) => {
+      expect(listed.invoices.map((invoice) => invoice.amountCredited)).toStrictEqual([250]);
     }));
 
   it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", ({
