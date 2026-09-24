@@ -33,10 +33,6 @@ import { noReassign } from "./lint/oxlint/rules/mutation-and-failure/no-reassign
 import { noReceiverMutation } from "./lint/oxlint/rules/mutation-and-failure/no-receiver-mutation--derive-new-value.ts";
 import { noSilentCatch } from "./lint/oxlint/rules/mutation-and-failure/no-silent-catch--rethrow-or-handle.ts";
 import { requireQueryOptionsInApiSegment } from "./lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts";
-import { noBarrelImport } from "./lint/oxlint/rules/no-barrel-import--import-from-the-owning-module.ts";
-import { noBarrelModule } from "./lint/oxlint/rules/no-barrel-module--declare-in-the-owning-module.ts";
-import { noMixedPackageSurface } from "./lint/oxlint/rules/no-mixed-package-surface--declare-one-surface.ts";
-import { requireSpecOrAssetsOnlyInSpecDirectory } from "./lint/oxlint/rules/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts";
 import { createNoDuplicateValueDeclaration } from "./lint/oxlint/rules/single-ownership/no-duplicate-value-declaration--reuse-authoritative-value.ts";
 import { createNoDuplicatedBody } from "./lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.ts";
 import { createNoLocalFiniteValueSet } from "./lint/oxlint/rules/single-ownership/no-local-finite-value-set--use-or-register-canonical-values.ts";
@@ -181,8 +177,6 @@ const plugin: Plugin = {
     [forbidWeakMatcher.name]: forbidWeakMatcher,
     [noAmbiguousVariableName.name]: noAmbiguousVariableName,
     [noArrayMutation.name]: noArrayMutation,
-    [noBarrelImport.name]: noBarrelImport,
-    [noBarrelModule.name]: noBarrelModule,
     [noBlanketSuppression.name]: noBlanketSuppression,
     [noCittyParentRun.name]: noCittyParentRun,
     [noClassAsMutableCell.name]: noClassAsMutableCell,
@@ -226,7 +220,6 @@ const plugin: Plugin = {
     [noLocalFileSystemMock.name]: noLocalFileSystemMock,
     [noLocalFiniteValueSet.name]: noLocalFiniteValueSet,
     [noLoggedAndContinuedFailure.name]: noLoggedAndContinuedFailure,
-    [noMixedPackageSurface.name]: noMixedPackageSurface,
     [noModuleScopeMockConfig.name]: noModuleScopeMockConfig,
     [noModuleScopeMutableState.name]: noModuleScopeMutableState,
     [noMultiBindingDeclaration.name]: noMultiBindingDeclaration,
@@ -273,7 +266,6 @@ const plugin: Plugin = {
     [requireSpecDirectoryOutsideCoverage.name]: requireSpecDirectoryOutsideCoverage,
     [requireSpecFileForAssets.name]: requireSpecFileForAssets,
     [requireSpecLintCoverage.name]: requireSpecLintCoverage,
-    [requireSpecOrAssetsOnlyInSpecDirectory.name]: requireSpecOrAssetsOnlyInSpecDirectory,
     [requireStandardIoSnapshot.name]: requireStandardIoSnapshot,
     [requireTestAssetsConstants.name]: requireTestAssetsConstants,
     [requireTestBlockForSpecFile.name]: requireTestBlockForSpecFile,
