@@ -243,10 +243,12 @@ const problemsInSourceFile = (input: {
 const problemsInGroup = (input: {
   readonly candidates: readonly ScannedFile[];
   readonly catalog: CanonicalValuesCatalog;
+  readonly documentRegistry: ts.DocumentRegistry;
   readonly repositoryRoot: string;
 }): readonly RepositoryProblem[] => {
   const rootNames = input.candidates.map((candidate) => candidate.absolutePath);
   const program = createCanonicalValuesTypeScriptProgram({
+    documentRegistry: input.documentRegistry,
     repositoryRoot: input.repositoryRoot,
     rootNames,
     searchDirectory: path.dirname(rootNames[0] as string),
@@ -293,12 +295,14 @@ export const runCanonicalLiteralTypeChecks = (input: {
   const candidatesByConfig = Object.values(
     groupBy(candidates, (candidate) => configKeyFor({ candidate, repositoryRoot })),
   );
+  const documentRegistry = ts.createDocumentRegistry();
   return {
     problems: measureStage("canonical-literal-types.analysis", () =>
       candidatesByConfig.flatMap((candidatesInGroup) =>
         problemsInGroup({
           candidates: candidatesInGroup,
           catalog: input.catalog,
+          documentRegistry,
           repositoryRoot,
         }),
       ),

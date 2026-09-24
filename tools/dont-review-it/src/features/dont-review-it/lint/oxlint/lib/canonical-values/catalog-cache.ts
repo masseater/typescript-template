@@ -24,7 +24,7 @@ const CACHE_FILE_SEGMENTS: readonly string[] = [
   "canonical-values.json",
 ];
 
-const cacheFilePath = (repositoryRoot: string): string =>
+export const cacheFilePath = (repositoryRoot: string): string =>
   path.join(repositoryRoot, ...CACHE_FILE_SEGMENTS);
 
 const usableCacheAt = (filePath: string): unknown => {

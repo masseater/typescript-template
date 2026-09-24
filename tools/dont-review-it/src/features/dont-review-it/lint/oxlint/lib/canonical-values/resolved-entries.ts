@@ -252,6 +252,7 @@ const problemFor = (declaration: CanonicalValuesDeclarationSite): CanonicalValue
 
 const resolveGroup = (input: {
   readonly declarations: readonly CanonicalValuesDeclarationSite[];
+  readonly documentRegistry: ts.DocumentRegistry;
   readonly publicSourceFiles: readonly string[];
   readonly repositoryRoot: string;
 }): {
@@ -260,6 +261,7 @@ const resolveGroup = (input: {
 } => {
   const first = input.declarations[0] as CanonicalValuesDeclarationSite;
   const program = createCanonicalValuesTypeScriptProgram({
+    documentRegistry: input.documentRegistry,
     repositoryRoot: input.repositoryRoot,
     rootNames: [
       ...input.declarations.map((declaration) => declaration.absolutePath),
@@ -301,8 +303,9 @@ export const resolveCanonicalValuesEntries = (input: {
       configurationKey(declaration, input.repositoryRoot),
     ),
   );
+  const documentRegistry = ts.createDocumentRegistry();
   const resolvedGroups = configurationGroups.map((declarations) =>
-    resolveGroup({ ...input, declarations, publicSourceFiles }),
+    resolveGroup({ ...input, declarations, documentRegistry, publicSourceFiles }),
   );
   return {
     entries: resolvedGroups.flatMap((resolution) => resolution.entries),

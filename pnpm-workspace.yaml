@@ -70,6 +70,7 @@ catalog:
   drizzle-orm: 1.0.0-rc.5-ab785fc
   effect: 4.0.0-rc.117
   es-toolkit: 1.52.0
+  fs-native-extensions: 1.5.0
   lucide-react: 1.47.0
   miniflare: 5.20260917.0-alpha
   msw: 2.15.0
