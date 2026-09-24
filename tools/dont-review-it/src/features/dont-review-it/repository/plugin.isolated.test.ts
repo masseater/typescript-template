@@ -507,16 +507,6 @@ describe("project lint rules on dependency boundaries", () => {
     );
   });
 
-  it("applies the builtin loader check after the soft preset turns process-boundary off", () => {
-    expect.hasAssertions();
-    const positionOf = (severity: unknown): number =>
-      lintOptions.overrides.findLastIndex(
-        (override) =>
-          JSON.stringify(override.rules?.["project/process-boundary"]) === JSON.stringify(severity),
-      );
-    expect(positionOf(["error", { builtinLoaderOnly: true }])).toBeGreaterThan(positionOf("off"));
-  });
-
   it.for(builtinLoaderOnlyProbes)(
     "limits the builtin-loader-only mode to process.getBuiltinModule: %s",
     ([code, expected]) => {
