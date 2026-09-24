@@ -1,67 +1,89 @@
+import { Effect, Exit, Scope, type FileSystem } from "effect";
+import { attempt } from "es-toolkit";
 import { once } from "es-toolkit/function";
 import { tryLock } from "fs-native-extensions";
 
-import { closeDescriptor, openDescriptor } from "../host-descriptors.ts";
-import { randomHex, writeFileString } from "../host.ts";
-import { closeFileDescriptorAfterFailure, releaseFileLock } from "./release-file-lock.ts";
+import { filesystem, onDisk, randomHex, writeFileString } from "../host.ts";
+import {
+  closeFailureOf,
+  closeFileDescriptorAfterFailure,
+  releaseFileLock,
+  type LockedFile,
+} from "./release-file-lock.ts";
 
-const lockedDescriptor = (lockPath: string): number | null => {
-  const descriptor = openDescriptor(lockPath);
-  const acquired = (() => {
-    try {
-      return tryLock(descriptor);
-    } catch (lockFailure) {
-      return closeFileDescriptorAfterFailure({
-        descriptor,
-        precedingFailure: lockFailure,
-      });
+const descriptorOf = (file: FileSystem.File): number | undefined =>
+  "fd" in file && typeof file.fd === "number" ? file.fd : undefined;
+
+const openLockFile = (lockPath: string): Effect.Effect<LockedFile, Error> =>
+  Effect.gen(function* openInOwnScope() {
+    const scope = yield* Scope.make();
+    const file = yield* onDisk(filesystem.open(lockPath, { flag: "r+" })).pipe(
+      Scope.provide(scope),
+      Effect.tapError(() => Scope.close(scope, Exit.void)),
+    );
+    const descriptor = descriptorOf(file);
+    if (descriptor === undefined) {
+      yield* Scope.close(scope, Exit.void);
+      return yield* Effect.die(
+        new Error(
+          `the file opened at ${lockPath} exposes no numeric fd, and fs-native-extensions can only lock a descriptor`,
+        ),
+      );
     }
-  })();
-  if (!acquired) {
-    closeDescriptor(descriptor);
-    return null;
-  }
-  return descriptor;
-};
+    return { descriptor, scope };
+  });
 
-const releaseDescriptor = (descriptor: number): void => {
-  releaseFileLock(descriptor);
-};
+const lockedFile = (lockPath: string): Effect.Effect<LockedFile | null, Error> =>
+  Effect.gen(function* takeLock() {
+    const locked = yield* openLockFile(lockPath);
+    const [lockFailure, acquired] = attempt<boolean, Error>(() => tryLock(locked.descriptor));
+    if (lockFailure !== null) {
+      return yield* closeFileDescriptorAfterFailure({ locked, precedingFailure: lockFailure });
+    }
+    if (!acquired) {
+      const closeFailure = yield* closeFailureOf(locked);
+      return closeFailure === null ? null : yield* Effect.fail(closeFailure);
+    }
+    return locked;
+  });
 
 const releaseAfterGenerationFailure = (input: {
-  descriptor: number;
-  generationWriteFailure: unknown;
-}): never => {
-  try {
-    releaseDescriptor(input.descriptor);
-  } catch (releaseFailure) {
-    throw new AggregateError(
-      [input.generationWriteFailure, releaseFailure],
-      `Could not record a generation or release file descriptor ${input.descriptor}`,
-    );
-  }
-  throw input.generationWriteFailure;
-};
+  locked: LockedFile;
+  generationWriteFailure: Error;
+}): Effect.Effect<never, Error> =>
+  releaseFileLock(input.locked).pipe(
+    Effect.matchEffect({
+      onFailure: (releaseFailure) =>
+        Effect.fail(
+          new AggregateError(
+            [input.generationWriteFailure, releaseFailure],
+            `Could not record a generation or release file descriptor ${input.locked.descriptor}`,
+          ),
+        ),
+      onSuccess: () => Effect.fail(input.generationWriteFailure),
+    }),
+  );
 
-const recordGeneration = (markerPath: string, descriptor: number): void => {
-  try {
-    writeFileString({ location: markerPath, written: randomHex(16) });
-  } catch (generationWriteFailure) {
-    releaseAfterGenerationFailure({ descriptor, generationWriteFailure });
-  }
-};
+const recordGeneration = (markerPath: string, locked: LockedFile): Effect.Effect<void, Error> =>
+  writeFileString({ location: markerPath, written: randomHex(16) }).pipe(
+    Effect.matchEffect({
+      onFailure: (generationWriteFailure) =>
+        releaseAfterGenerationFailure({ locked, generationWriteFailure }),
+      onSuccess: () => Effect.void,
+    }),
+  );
+
+const holdOf = (locked: LockedFile): { release: () => Promise<void> } => ({
+  release: once(() => Effect.runPromise(releaseFileLock(locked))),
+});
 
 export const tryAcquireFileLock = (input: {
   lockPath: string;
   markerPath: string;
-}): { release: () => Promise<void> } | null => {
-  const descriptor = lockedDescriptor(input.lockPath);
-  if (descriptor === null) return null;
-  recordGeneration(input.markerPath, descriptor);
-  return {
-    release: once(() => {
-      releaseDescriptor(descriptor);
-      return Promise.resolve();
-    }),
-  };
-};
+}): Effect.Effect<{ release: () => Promise<void> } | null, Error> =>
+  lockedFile(input.lockPath).pipe(
+    Effect.tap((locked) =>
+      locked === null ? Effect.void : recordGeneration(input.markerPath, locked),
+    ),
+    Effect.map((locked) => (locked === null ? null : holdOf(locked))),
+  );

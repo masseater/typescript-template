@@ -27,11 +27,6 @@ const exemptFiles = ruleOverrides
   .filter((override) => override.rules[RULE] === LINT_SEVERITY.OFF)
   .flatMap((override) => override.files);
 
-const loaderExemptFiles = overridesOf(LOADER_RULE)
-  .filter((override) => override.rules[LOADER_RULE] === LINT_SEVERITY.OFF)
-  .flatMap((override) => override.files)
-  .filter((file) => !file.includes("*"));
-
 const nodeImport = 'import { env } from "node:process";\n\nexport { env };\n';
 
 const builtinLoader = 'export const url = process.getBuiltinModule("node:url");\n';
@@ -142,6 +137,7 @@ layer(NodeServices.layer)("the node builtin import guard", (it) => {
       const probeFiles = [
         "knip.ts",
         "tools/ai-native-telemetry/src/features/ai-native-telemetry/probe.ts",
+        "tools/ai-native/src/features/ai-native/probe.ts",
         "tools/dev/src/features/dev/probe.ts",
         "vite.config.ts",
       ];
@@ -162,17 +158,6 @@ layer(NodeServices.layer)("the node builtin import guard", (it) => {
           "vite.config.ts": processOutput,
         }),
       ).toStrictEqual(["libs/config/src/features/config/probe.ts"]);
-    }),
-  );
-
-  it.effect("stays quiet for the files still loading builtins at runtime", () =>
-    Effect.gen(function* quietForLoaderExempted() {
-      expect(loaderExemptFiles).not.toStrictEqual([]);
-      expect(
-        yield* loaderReports(
-          Object.fromEntries(loaderExemptFiles.map((probeFile) => [probeFile, builtinLoader])),
-        ),
-      ).toStrictEqual([]);
     }),
   );
 });

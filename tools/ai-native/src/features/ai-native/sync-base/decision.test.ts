@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { decisionOf } from "./decision.ts";
@@ -9,11 +10,13 @@ const behindPrJson =
 describe("decisionOf", () => {
   describe("a Stop event over a pull request behind its base", () => {
     const it = test.extend("theDecisionForStop", () =>
-      decisionOf({
-        cwd: "/repo",
-        hookEventName: "Stop",
-        run: () => ({ status: 0, stdout: behindPrJson }),
-      }));
+      Effect.runSync(
+        decisionOf({
+          cwd: "/repo",
+          hookEventName: "Stop",
+          run: () => Effect.succeed({ status: 0, stdout: behindPrJson }),
+        }),
+      ));
 
     it("asks Claude to catch up through Stop additionalContext", ({ theDecisionForStop }) => {
       expect(theDecisionForStop).toStrictEqual({
@@ -34,11 +37,13 @@ describe("decisionOf", () => {
 
   describe("a UserPromptSubmit event over a pull request behind its base", () => {
     const it = test.extend("theDecisionForUserPromptSubmit", () =>
-      decisionOf({
-        cwd: "/repo",
-        hookEventName: "UserPromptSubmit",
-        run: () => ({ status: 0, stdout: behindPrJson }),
-      }));
+      Effect.runSync(
+        decisionOf({
+          cwd: "/repo",
+          hookEventName: "UserPromptSubmit",
+          run: () => Effect.succeed({ status: 0, stdout: behindPrJson }),
+        }),
+      ));
 
     it("asks Claude to catch up through UserPromptSubmit additionalContext", ({
       theDecisionForUserPromptSubmit,
@@ -61,11 +66,13 @@ describe("decisionOf", () => {
 
   describe("a SessionStart event over a pull request behind its base", () => {
     const it = test.extend("theDecisionForSessionStart", () =>
-      decisionOf({
-        cwd: "/repo",
-        hookEventName: "SessionStart",
-        run: () => ({ status: 0, stdout: behindPrJson }),
-      }));
+      Effect.runSync(
+        decisionOf({
+          cwd: "/repo",
+          hookEventName: "SessionStart",
+          run: () => Effect.succeed({ status: 0, stdout: behindPrJson }),
+        }),
+      ));
 
     it("asks Claude to catch up through SessionStart additionalContext", ({
       theDecisionForSessionStart,
@@ -89,28 +96,35 @@ describe("decisionOf", () => {
   describe("events and pull request states that need no instruction", () => {
     const it = test
       .extend("theDecisionForAnUnknownEvent", () =>
-        decisionOf({
-          cwd: "/repo",
-          hookEventName: "PreToolUse",
-          run: () => ({ status: 0, stdout: behindPrJson }),
-        }))
+        Effect.runSync(
+          decisionOf({
+            cwd: "/repo",
+            hookEventName: "PreToolUse",
+            run: () => Effect.succeed({ status: 0, stdout: behindPrJson }),
+          }),
+        ))
       .extend("theDecisionWhenGhFindsNoPullRequest", () =>
-        decisionOf({
-          cwd: "/repo",
-          hookEventName: "Stop",
-          run: () => ({ status: 1, stdout: "" }),
-        }),
+        Effect.runSync(
+          decisionOf({
+            cwd: "/repo",
+            hookEventName: "Stop",
+            run: () => Effect.succeed({ status: 1, stdout: "" }),
+          }),
+        ),
       )
       .extend("theDecisionWhenTheHeadIsClean", () =>
-        decisionOf({
-          cwd: "/repo",
-          hookEventName: "Stop",
-          run: () => ({
-            status: 0,
-            stdout:
-              '{"baseRefName":"main","mergeStateStatus":"CLEAN","number":15,"url":"https://example.com/15"}',
+        Effect.runSync(
+          decisionOf({
+            cwd: "/repo",
+            hookEventName: "Stop",
+            run: () =>
+              Effect.succeed({
+                status: 0,
+                stdout:
+                  '{"baseRefName":"main","mergeStateStatus":"CLEAN","number":15,"url":"https://example.com/15"}',
+              }),
           }),
-        }),
+        ),
       );
 
     it("says nothing for an event this hook does not own", ({ theDecisionForAnUnknownEvent }) => {

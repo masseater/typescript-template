@@ -1,25 +1,4 @@
-import { Data, Effect, Stream } from "effect";
-
-import { waitEmitterEvent } from "../emitter-wait.ts";
-
-const duplexStreamApi = process.getBuiltinModule("stream") as {
-  readonly Duplex: {
-    from: (factory: (source: AsyncIterable<Buffer>) => AsyncIterable<Buffer>) => DuplexStream;
-  };
-  readonly PassThrough: new () => PassThroughStream;
-};
-
-type DuplexStream = {
-  end: () => void;
-  on?: (event: string, listener: (part: Buffer | Error) => void) => unknown;
-  once: (event: string, listener: () => void) => unknown;
-  pipe: (destination: unknown, options?: { end?: boolean }) => DuplexStream;
-  resume?: () => void;
-  unpipe?: (destination: unknown) => unknown;
-  write: (part: Buffer) => boolean;
-};
-
-type PassThroughStream = DuplexStream & AsyncIterable<Buffer>;
+import { Stream } from "effect";
 
 const ESC = 0x1b;
 const BEL = 0x07;
@@ -88,83 +67,28 @@ const stringEscape: StripState = {
     byte === 0x5c || byte === BEL ? { state: ground, emitted: "" } : escapeLead.consume(byte),
 };
 
-const consumeBytes = (startingState: StripState, bytes: Buffer): StripStep =>
-  bytes.reduce<StripStep>(
+const consumeBytes = (
+  startingState: StripState,
+  bytes: Uint8Array,
+): readonly [StripState, readonly Uint8Array[]] => {
+  const consumed = bytes.reduce<StripStep>(
     (accumulated, byte) => {
       const step = accumulated.state.consume(byte);
       return { state: step.state, emitted: accumulated.emitted + step.emitted };
     },
     { state: startingState, emitted: "" },
   );
+  return [consumed.state, consumed.emitted === "" ? [] : [Buffer.from(consumed.emitted, "latin1")]];
+};
 
-const writeChunk = (destination: PassThroughStream, part: Buffer): Promise<void> =>
-  destination.write(part) ? Promise.resolve() : waitEmitterEvent(destination, "drain");
+const stripArrival = (
+  stripMachine: StripState,
+  arrival: Uint8Array,
+): readonly [StripState, readonly Uint8Array[]] =>
+  stripMachine === ground && !arrival.includes(ESC)
+    ? [stripMachine, arrival.length === 0 ? [] : [arrival]]
+    : consumeBytes(stripMachine, arrival);
 
-const writeStrippedArrival = (input: {
-  readonly arrival: Buffer;
-  readonly destination: PassThroughStream;
-  readonly stripMachine: StripState;
-}): Effect.Effect<StripState> =>
-  input.stripMachine === ground && !input.arrival.includes(ESC)
-    ? Effect.promise(() => writeChunk(input.destination, input.arrival)).pipe(
-        Effect.as(input.stripMachine),
-      )
-    : Effect.gen(function* writeConsumed() {
-        const consumed = consumeBytes(input.stripMachine, input.arrival);
-        if (consumed.emitted !== "") {
-          yield* Effect.promise(() =>
-            writeChunk(input.destination, Buffer.from(consumed.emitted, "latin1")),
-          );
-        }
-        return consumed.state;
-      });
-
-class StripSourceFailed extends Data.TaggedError("StripSourceFailed")<{
-  readonly cause: unknown;
-}> {}
-
-const stripUntilExhausted = (
-  source: AsyncIterable<Buffer>,
-  destination: PassThroughStream,
-): Promise<void> =>
-  Effect.runPromise(
-    Stream.fromAsyncIterable(source, (cause) => new StripSourceFailed({ cause })).pipe(
-      Stream.runFoldEffect(
-        () => ground,
-        (stripMachine, arrival) => writeStrippedArrival({ arrival, destination, stripMachine }),
-      ),
-      Effect.asVoid,
-      Effect.ensuring(
-        Effect.sync(() => {
-          destination.end();
-        }),
-      ),
-    ),
-  );
-
-const pullStripped = (
-  inner: AsyncIterator<Buffer>,
-  stripping: Promise<void>,
-): Promise<IteratorResult<Buffer>> =>
-  Effect.runPromise(
-    Effect.gen(function* takeStripped() {
-      const pulled = yield* Effect.promise(() => inner.next());
-      if (pulled.done === true) {
-        yield* Effect.promise(() => stripping);
-      }
-      return pulled;
-    }),
-  );
-
-export const createEscapeStripper = (): DuplexStream =>
-  duplexStreamApi.Duplex.from((source: AsyncIterable<Buffer>) => ({
-    [Symbol.asyncIterator]: (): AsyncIterator<Buffer> => {
-      const stripped = new duplexStreamApi.PassThrough();
-      const stripping = stripUntilExhausted(source, stripped);
-      const inner = stripped[Symbol.asyncIterator]();
-      return {
-        next: (): Promise<IteratorResult<Buffer>> => pullStripped(inner, stripping),
-      };
-    },
-  }));
-export type { DuplexStream };
+export const stripEscapes = <E, R>(
+  source: Stream.Stream<Uint8Array, E, R>,
+): Stream.Stream<Uint8Array, E, R> => Stream.mapAccum(source, () => ground, stripArrival);
