@@ -1062,6 +1062,10 @@ const lintOptions = {
       rules: softPresetRules,
     },
     {
+      files: softPresetPackages,
+      rules: { "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }] },
+    },
+    {
       files: nodeBuiltinBoundaryFiles,
       rules: {
         "import/no-nodejs-modules": LINT_SEVERITY.OFF,
