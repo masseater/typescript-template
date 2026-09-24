@@ -1,5 +1,3 @@
-import process from "node:process";
-
 const processEnvironment = process.env;
 
 const optionalSetting = (variable: string): string | undefined => {
