@@ -105,9 +105,9 @@ const telemetry = startTelemetry("my-command");
 For Vitest, hand the shipped entry to `experimental.openTelemetry.sdkPath` as an absolute path — the option is resolved against Vitest's `root`, which is the package directory, not the repository root:
 
 ```ts
-import { fileURLToPath } from "node:url";
+import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
 
-const sdkPath = fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk"));
+const sdkPath = sdkFilePath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk"));
 ```
 
 ## Common Mistakes

@@ -21,10 +21,13 @@ const CountMismatch = Schema.Struct({
 });
 const isCountMismatch = Schema.is(CountMismatch);
 
-const reportCount = (
-  ruleName: RuleName,
-  probe: { readonly code: string; readonly filename: string },
-): number => {
+type Probe = {
+  readonly code: string;
+  readonly filename: string;
+  readonly options?: NonNullable<RuleTester.ValidTestCase["options"]>;
+};
+
+const reportCount = (ruleName: RuleName, probe: Probe): number => {
   const rule = plugin.rules[ruleName];
   if (rule === undefined) {
     throw new Error(`Unknown rule ${ruleName}`);
@@ -40,10 +43,7 @@ const reportCount = (
   }
 };
 
-const reported = (
-  ruleName: RuleName,
-  probe: { readonly code: string; readonly filename: string },
-): boolean => {
+const reported = (ruleName: RuleName, probe: Probe): boolean => {
   return reportCount(ruleName, probe) > 0;
 };
 
@@ -52,4 +52,4 @@ const reportedRules = (probe: { readonly code: string; readonly filename: string
 };
 
 export { reportCount, reported, reportedRules, ruleNames };
-export type { RuleName };
+export type { Probe, RuleName };
