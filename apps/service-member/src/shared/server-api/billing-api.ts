@@ -1,6 +1,14 @@
 import { verifySession } from "@repo/auth";
-import { PLAN, httpStatus } from "@repo/config";
-import { PaidPlanRequired, findSubscription, planOf } from "@repo/db";
+import { PLAN, WEBHOOK_DISPOSITION, httpStatus } from "@repo/config";
+import {
+  PaidPlanRequired,
+  findInvoiceOfOrigin,
+  findSubscription,
+  listMemberInvoices,
+  outstandingAmount,
+  planOf,
+  recordIssuedInvoice,
+} from "@repo/db";
 import { sessionFailures } from "@repo/runtime/account";
 import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect, Schema } from "effect";
@@ -9,6 +17,7 @@ import { PaidAlready, Stripe, handleStripeEvent, paidFailures } from "#shared/bi
 import {
   CHECKOUT_RETURN,
   HostedPage,
+  InvoiceList,
   OfferView,
   PlanView,
   WebhookReceipt,
@@ -17,6 +26,7 @@ import {
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 const Empty = Schema.Struct({});
+const invoiceDescription = "継続プラン";
 const unreadable = {
   message: "通知を読み取れませんでした。",
   status: httpStatus.badRequest,
@@ -81,6 +91,60 @@ const portal = Effect.fn("billing.api.portal")(function* portal(request: Request
     url,
   };
 });
+const invoices = Effect.fn("billing.api.invoices")(function* invoices(request: Request) {
+  const { user } = yield* verifySession(request.headers);
+  const issued = yield* listMemberInvoices(user.id);
+  return {
+    invoices: issued.map((invoice) => ({
+      amountDue: invoice.amountDue,
+      currency: invoice.currency,
+      issuedAt: invoice.issuedAt,
+      outstanding: outstandingAmount(invoice),
+      status: invoice.status,
+      stripeInvoiceId: invoice.stripeInvoiceId,
+      ...(invoice.hostedInvoiceUrl === undefined
+        ? {}
+        : { hostedInvoiceUrl: invoice.hostedInvoiceUrl }),
+    })),
+  };
+});
+
+const payByInvoice = Effect.fn("billing.api.payByInvoice")(function* payByInvoice(
+  request: Request,
+) {
+  const { user } = yield* verifySession(request.headers);
+  yield* readJsonBody(Empty, request);
+  const subscription = yield* findSubscription(user.id);
+  if (subscription === undefined) {
+    return yield* new PaidPlanRequired();
+  }
+  const stripe = yield* Stripe;
+  yield* stripe.payByInvoice(subscription.stripeSubscriptionId);
+  const originKey = `subscription-switch:${subscription.stripeSubscriptionId}`;
+  const alreadyIssued = yield* findInvoiceOfOrigin(originKey);
+  if (alreadyIssued !== undefined) {
+    return { outcome: WEBHOOK_DISPOSITION.duplicate };
+  }
+  const offer = yield* stripe.offer;
+  const issued = yield* stripe.createInvoice({
+    amount: offer.unitAmount,
+    currency: offer.currency,
+    customerId: subscription.stripeCustomerId,
+    description: invoiceDescription,
+    memberId: user.id,
+    originKey,
+  });
+  yield* recordIssuedInvoice({
+    amountDue: issued.amountDue,
+    currency: issued.currency,
+    memberId: user.id,
+    originKey,
+    status: issued.status,
+    stripeInvoiceId: issued.stripeInvoiceId,
+  });
+  return { outcome: WEBHOOK_DISPOSITION.applied };
+});
+
 const webhook = Effect.fn("billing.api.webhook")(function* webhook(request: Request) {
   const payload = yield* Effect.promise(() => request.text());
   const event = yield* (yield* Stripe).readEvent(payload, request.headers.get("stripe-signature"));
@@ -94,6 +158,11 @@ function billingApi(api: ApiRoutes<AppServices | Stripe>) {
     .get("/billing/offer", ...api.route({ response: OfferView }, offer, failures))
     .post("/billing/checkout", ...api.route({ response: HostedPage }, checkout, failures))
     .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
+    .get("/billing/invoices", ...api.route({ response: InvoiceList }, invoices, failures))
+    .post(
+      "/billing/invoice-payment",
+      ...api.route({ response: WebhookReceipt }, payByInvoice, failures),
+    )
     .post("/billing/webhook", ...api.route({ response: WebhookReceipt }, webhook, failures));
 }
 export { billingApi };

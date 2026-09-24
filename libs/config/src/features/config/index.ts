@@ -68,9 +68,12 @@ export {
   memberApiKeyReadPermissions,
 } from "./member-api-key.ts";
 export {
+  INVOICE_STATUS,
   PLAN,
   SUBSCRIPTION_STATUS,
   WEBHOOK_DISPOSITION,
+  invoiceDueDays,
+  invoiceStatuses,
   paidStatuses,
   plans,
   priceIntervals,
@@ -83,6 +86,7 @@ export {
   webhookOutcomes,
 } from "./billing.ts";
 export type {
+  InvoiceStatus,
   Plan,
   PriceInterval,
   StripeWebhookEvent,

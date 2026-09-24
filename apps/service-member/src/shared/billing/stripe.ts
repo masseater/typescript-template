@@ -1,4 +1,10 @@
-import { priceIntervals, readStripeConfig, stripeApiVersion } from "@repo/config";
+import {
+  invoiceDueDays,
+  invoiceStatuses,
+  priceIntervals,
+  readStripeConfig,
+  stripeApiVersion,
+} from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Redirect } from "@repo/runtime/contracts";
 import { Context, Effect, Layer, Schema } from "effect";
@@ -7,7 +13,12 @@ import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 import { StripeFailure } from "./stripe-failure.ts";
 import { verifyStripeSignature } from "./stripe-signature.ts";
 
-import type { ConfigurationInvalid, PriceInterval, StripeConfig } from "@repo/config";
+import type {
+  ConfigurationInvalid,
+  InvoiceStatus,
+  PriceInterval,
+  StripeConfig,
+} from "@repo/config";
 import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
@@ -39,6 +50,22 @@ interface Offer {
   readonly unitAmount: number;
 }
 
+const IssuedInvoiceBody = Schema.Struct({
+  amount_due: Schema.Finite,
+  currency: Schema.String,
+  hosted_invoice_url: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  id: Schema.String,
+  status: Schema.Literals(invoiceStatuses),
+});
+
+interface IssuedInvoice {
+  readonly amountDue: number;
+  readonly currency: string;
+  readonly hostedInvoiceUrl: string | undefined;
+  readonly status: InvoiceStatus;
+  readonly stripeInvoiceId: string;
+}
+
 interface CheckoutInput {
   readonly cancelUrl: string;
   readonly customer: Readonly<{ email: string } | { id: string }>;
@@ -51,10 +78,21 @@ interface PortalInput {
   readonly returnUrl: string;
 }
 
+interface InvoiceInput {
+  readonly amount: number;
+  readonly currency: string;
+  readonly customerId: string;
+  readonly description: string;
+  readonly memberId: string;
+  readonly originKey: string;
+}
+
 interface StripeShape {
   readonly createCheckoutSession: (input: CheckoutInput) => Effect.Effect<string, StripeFailure>;
+  readonly createInvoice: (input: InvoiceInput) => Effect.Effect<IssuedInvoice, StripeFailure>;
   readonly createPortalSession: (input: PortalInput) => Effect.Effect<string, StripeFailure>;
   readonly offer: Effect.Effect<Offer, StripeFailure>;
+  readonly payByInvoice: (subscriptionId: string) => Effect.Effect<void, StripeFailure>;
   readonly readEvent: (
     payload: string,
     signature: string | null,
@@ -75,6 +113,7 @@ function request(
   secretKey: string,
   path: string,
   form: URLSearchParams | undefined,
+  idempotencyKey: string | undefined,
 ): Effect.Effect<unknown, StripeFailure> {
   return Effect.tryPromise({
     catch: (cause) => new StripeFailure({ cause, reason: "request_failed" }),
@@ -84,12 +123,8 @@ function request(
         headers: {
           authorization: `Bearer ${secretKey}`,
           "stripe-version": stripeApiVersion,
-          ...(form === undefined
-            ? {}
-            : {
-                "content-type": "application/x-www-form-urlencoded",
-                "idempotency-key": crypto.randomUUID(),
-              }),
+          ...(form === undefined ? {} : { "content-type": "application/x-www-form-urlencoded" }),
+          ...(idempotencyKey === undefined ? {} : { "idempotency-key": idempotencyKey }),
         },
         method: form === undefined ? "GET" : "POST",
       }),
@@ -133,6 +168,38 @@ function trialFields(config: StripeConfig): Record<string, string> {
       };
 }
 
+function asIssuedInvoice(invoice: typeof IssuedInvoiceBody.Type): IssuedInvoice {
+  return {
+    amountDue: invoice.amount_due,
+    currency: invoice.currency,
+    hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+    status: invoice.status,
+    stripeInvoiceId: invoice.id,
+  };
+}
+
+function invoiceItemForm(input: InvoiceInput): URLSearchParams {
+  return new URLSearchParams({
+    amount: String(input.amount),
+    currency: input.currency,
+    customer: input.customerId,
+    description: input.description,
+  });
+}
+
+function invoiceForm(config: StripeConfig, input: InvoiceInput): URLSearchParams {
+  return new URLSearchParams({
+    auto_advance: "true",
+    collection_method: "send_invoice",
+    customer: input.customerId,
+    days_until_due: String(invoiceDueDays),
+    "metadata[member_id]": input.memberId,
+    "metadata[origin_key]": input.originKey,
+    pending_invoice_items_behavior: "include",
+    ...(config.automaticTax ? { "automatic_tax[enabled]": "true" } : {}),
+  });
+}
+
 function checkoutForm(config: StripeConfig, input: CheckoutInput): URLSearchParams {
   const customerFields =
     "id" in input.customer
@@ -154,14 +221,34 @@ function checkoutForm(config: StripeConfig, input: CheckoutInput): URLSearchPara
 }
 
 function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeShape {
-  const send = (path: string, form?: URLSearchParams): Effect.Effect<unknown, StripeFailure> =>
-    request(fetchImpl, config.secretKey, path, form);
+  const send = (
+    path: string,
+    form?: URLSearchParams,
+    idempotencyKey?: string,
+  ): Effect.Effect<unknown, StripeFailure> =>
+    request(fetchImpl, config.secretKey, path, form, idempotencyKey);
   return {
     createCheckoutSession: (input) =>
       send("/checkout/sessions", checkoutForm(config, input)).pipe(
         Effect.flatMap((body) => decodeStripe(Redirect, body)),
         Effect.map((session) => session.url),
       ),
+    createInvoice: (input) =>
+      send("/invoiceitems", invoiceItemForm(input), `${input.originKey}:item`).pipe(
+        Effect.flatMap(() =>
+          send("/invoices", invoiceForm(config, input), `${input.originKey}:invoice`),
+        ),
+        Effect.flatMap((body) => decodeStripe(IssuedInvoiceBody, body)),
+        Effect.map(asIssuedInvoice),
+      ),
+    payByInvoice: (subscriptionId) =>
+      send(
+        `/subscriptions/${subscriptionId}`,
+        new URLSearchParams({
+          collection_method: "send_invoice",
+          days_until_due: String(invoiceDueDays),
+        }),
+      ).pipe(Effect.asVoid),
     createPortalSession: (input) =>
       send(
         "/billing_portal/sessions",

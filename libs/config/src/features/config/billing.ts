@@ -52,11 +52,27 @@ export type PriceInterval = (typeof priceIntervals)[number];
 
 export const stripeApiVersion = "2026-08-26.dahlia";
 
+/** @canonical-values config.invoice-status */
+export const invoiceStatuses = ["draft", "open", "paid", "uncollectible", "void"] as const;
+export type InvoiceStatus = (typeof invoiceStatuses)[number];
+export const INVOICE_STATUS = {
+  draft: invoiceStatuses[0],
+  open: invoiceStatuses[1],
+  paid: invoiceStatuses[2],
+  uncollectible: invoiceStatuses[3],
+  void: invoiceStatuses[4],
+} as const satisfies Record<string, InvoiceStatus>;
+
+export const invoiceDueDays = 30;
+
 export const stripeWebhookEvents = [
+  "charge.refunded",
   "checkout.session.completed",
+  "credit_note.created",
   "customer.subscription.created",
   "customer.subscription.deleted",
   "customer.subscription.updated",
+  "invoice.finalized",
   "invoice.paid",
   "invoice.payment_failed",
 ] as const;

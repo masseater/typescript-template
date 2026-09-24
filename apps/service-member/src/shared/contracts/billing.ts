@@ -1,4 +1,10 @@
-import { plans, priceIntervals, subscriptionStatuses, webhookOutcomes } from "@repo/config";
+import {
+  invoiceStatuses,
+  plans,
+  priceIntervals,
+  subscriptionStatuses,
+  webhookOutcomes,
+} from "@repo/config";
 import { Redirect } from "@repo/runtime/contracts";
 import { Option, Schema } from "effect";
 
@@ -17,6 +23,18 @@ const OfferView = Schema.Struct({
 });
 
 const HostedPage = Redirect;
+
+const InvoiceView = Schema.Struct({
+  amountDue: Schema.Finite,
+  currency: Schema.String,
+  hostedInvoiceUrl: Schema.optional(Schema.String),
+  issuedAt: Schema.DateFromString,
+  outstanding: Schema.Finite,
+  status: Schema.Literals(invoiceStatuses),
+  stripeInvoiceId: Schema.String,
+});
+
+const InvoiceList = Schema.Struct({ invoices: Schema.Array(InvoiceView) });
 
 const WebhookReceipt = Schema.Struct({ outcome: Schema.Literals(webhookOutcomes) });
 
@@ -37,4 +55,12 @@ function readCheckoutReturn(raw: unknown): typeof CheckoutReturnSearch.Type {
   return Option.getOrElse(decodeCheckoutReturn(raw), () => ({}));
 }
 
-export { CHECKOUT_RETURN, HostedPage, OfferView, PlanView, WebhookReceipt, readCheckoutReturn };
+export {
+  CHECKOUT_RETURN,
+  HostedPage,
+  InvoiceList,
+  OfferView,
+  PlanView,
+  WebhookReceipt,
+  readCheckoutReturn,
+};
