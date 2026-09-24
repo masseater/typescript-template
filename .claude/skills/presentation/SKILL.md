@@ -1,6 +1,6 @@
 ---
 name: presentation
-description: プレゼン資料（登壇、社内説明、提案、勉強会、デモ）を作る・直すときに読む。要件、構成、台本、スライドの順に組み立て、スライドは構成から作る。出力形式（HTML、pptx など）を問わず使う。
+description: プレゼン資料（登壇、社内説明、提案、勉強会、デモ）を作る・直すときに使う。要件、構成、台本、スライドの順に組み立て、スライドは構成から作る。出力形式（HTML、pptx など）を問わず使う。
 license: MIT
 metadata:
   upstream: https://github.com/vicky-tiq/skill-presentation-build
