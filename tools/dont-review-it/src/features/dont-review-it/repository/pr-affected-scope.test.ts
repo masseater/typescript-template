@@ -112,6 +112,21 @@ describe("hook filters", () => {
     ]);
   });
 
+  it("runs only the root when the changed files outside the workspaces are text the root checks", () => {
+    expect(
+      hookFilters(
+        [".claude/skills/reviews/SKILL.md", "AGENTS.md", ".textlint-ai-words.json"],
+        packages,
+      ),
+    ).toStrictEqual(["-w"]);
+    expect(
+      hookFilters(
+        [".claude/skills/reviews/SKILL.md", "libs/ui/src/features/ui/button.tsx"],
+        packages,
+      ),
+    ).toStrictEqual(["-w", "--filter", "@repo/ui", "--filter", "@repo/service-member"]);
+  });
+
   it("walks every workspace when a changed file is outside the workspaces", () => {
     expect(
       hookFilters(["libs/cli/src/features/cli/cli.ts", ".vite-hooks/pre-push"], packages),
