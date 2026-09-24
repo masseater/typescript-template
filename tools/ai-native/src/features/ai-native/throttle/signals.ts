@@ -18,11 +18,18 @@ const raiseSignal = (signal: NodeJS.Signals): void => {
 
 export const makeWaitingInterruptHandler = (input: {
   entryPath: string;
-  removeEntry: (entryPath: string) => void;
+  removeEntry: (entryPath: string) => Effect.Effect<void, Error>;
 }): ((signal: NodeJS.Signals) => void) => {
   return (signal) => {
-    input.removeEntry(input.entryPath);
-    raiseSignal(signal);
+    Effect.runFork(
+      input.removeEntry(input.entryPath).pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            raiseSignal(signal);
+          }),
+        ),
+      ),
+    );
   };
 };
 
@@ -70,11 +77,16 @@ export const makeHeldInterrupt = (dependencies: {
 
 export const makeRunningInterruptHandler = (dependencies: {
   childPid: number;
-  signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Error | null;
+  signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Effect.Effect<Error | null>;
   reportFailure: (failure: Error) => void;
 }): ((signal: NodeJS.Signals) => void) => {
   return (signal) => {
-    const failure = dependencies.signalTree({ pid: dependencies.childPid, signal });
-    if (failure !== null) dependencies.reportFailure(failure);
+    Effect.runFork(
+      dependencies.signalTree({ pid: dependencies.childPid, signal }).pipe(
+        Effect.map((failure) => {
+          if (failure !== null) dependencies.reportFailure(failure);
+        }),
+      ),
+    );
   };
 };

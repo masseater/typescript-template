@@ -64,7 +64,7 @@ Open the named file with an editor or a file-reading tool. A second run with a f
 MST_THROTTLE_LIMIT=3 throttle --timeout 1800 -- spool -- vp run guard:all
 ```
 
-The limit is shared by every `throttle` on this host and namespace, and it defaults to 1. Non-integer values, zero, and negatives fall back to that default rather than failing. When every slot is held the wrapper joins a wait queue and reports its position on stderr; `--timeout` stops the whole process tree, with SIGTERM then SIGKILL on POSIX and `taskkill /T /F` on Windows, and `0` never interrupts.
+The limit is shared by every `throttle` on this host and namespace, and it defaults to 1. Non-integer values, zero, and negatives fall back to that default rather than failing. When every slot is held the wrapper joins a wait queue and reports its position on stderr; `--timeout` stops the whole process tree, with SIGTERM then SIGKILL on POSIX and `taskkill /T /F` on Windows, and `0` never interrupts the command itself. When the command exits, `throttle` ends the rest of its process group, SIGTERM first and then SIGKILL after the grace period, before it gives the slot back, so a background process the command started does not outlive it.
 
 ### Refuse the commands that read a slice
 
@@ -240,7 +240,8 @@ throttle                     exit 0 the child succeeded; 1 the child failed, was
                              killed, could not start, ran past --timeout, or a slot
                              could not be acquired or released; 2 throttle misused
 MST_THROTTLE_LIMIT           slots shared per host and namespace; default 1
---timeout <seconds>          stops the child's whole process tree; 0 never does
+--timeout <seconds>          stops the child's whole process tree; 0 never stops the child
+                             itself, and the rest of its group ends when it exits
 
 spool                        exit: the child's own code (128+signal when signalled),
                              127 when the child cannot start, 1 when recording fails,

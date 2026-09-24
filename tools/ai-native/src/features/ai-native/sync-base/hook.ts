@@ -1,4 +1,5 @@
 import { defineHook } from "cc-hooks-ts";
+import { Effect } from "effect";
 
 import { decisionOf } from "./decision.ts";
 
@@ -10,14 +11,17 @@ export const hook: ReturnType<
     Stop: true,
     UserPromptSubmit: true,
   },
-  run: (hookContext) => {
-    const decision = decisionOf({
-      cwd: hookContext.input.cwd,
-      hookEventName: hookContext.input.hook_event_name,
-    });
-    if (decision === undefined) {
-      return hookContext.success({});
-    }
-    return hookContext.json(decision as Parameters<(typeof hookContext)["json"]>[0]);
-  },
+  run: (hookContext) =>
+    Effect.runPromise(
+      decisionOf({
+        cwd: hookContext.input.cwd,
+        hookEventName: hookContext.input.hook_event_name,
+      }).pipe(
+        Effect.map((decision) =>
+          decision === undefined
+            ? hookContext.success({})
+            : hookContext.json(decision as Parameters<(typeof hookContext)["json"]>[0]),
+        ),
+      ),
+    ),
 });

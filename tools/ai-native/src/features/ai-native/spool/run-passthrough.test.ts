@@ -2,7 +2,7 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { isPassthroughSignalled, runPassthrough } from "./run-passthrough.ts";
+import { isPassthroughSignalled, passThrough } from "./run-passthrough.ts";
 
 const NODE = process.execPath;
 
@@ -50,26 +50,26 @@ describe("isPassthroughSignalled", () => {
   });
 });
 
-describe("runPassthrough", () => {
+describe("passThrough", () => {
   describe("a command exiting with a code of its own", () => {
     const it = standardIoTest
       .extend("theCodeOfAPassedThroughRun", () =>
-        runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          monotonicNow: () => 0,
-        }),
+        Effect.runPromise(
+          passThrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
+            stdout: process.stdout,
+            stderr: process.stderr,
+            monotonicNow: () => 0,
+          }),
+        ),
       )
       .extend("theSummaryOfAPassedThroughRun", ({ stdout }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            yield* Effect.promise(() =>
-              runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                monotonicNow: () => 0,
-              }),
-            );
+            yield* passThrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              monotonicNow: () => 0,
+            });
             return stdout.text();
           }),
         ),
@@ -89,22 +89,22 @@ describe("runPassthrough", () => {
   describe("a command that cannot be started at all", () => {
     const it = standardIoTest
       .extend("theCodeOfAPassedThroughMissingExecutable", () =>
-        runPassthrough([MISSING_EXECUTABLE], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          monotonicNow: () => 0,
-        }),
+        Effect.runPromise(
+          passThrough([MISSING_EXECUTABLE], {
+            stdout: process.stdout,
+            stderr: process.stderr,
+            monotonicNow: () => 0,
+          }),
+        ),
       )
       .extend("theStderrOfAPassedThroughMissingExecutable", ({ stderr }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            yield* Effect.promise(() =>
-              runPassthrough([MISSING_EXECUTABLE], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                monotonicNow: () => 0,
-              }),
-            );
+            yield* passThrough([MISSING_EXECUTABLE], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              monotonicNow: () => 0,
+            });
             return stderr.text();
           }),
         ),
@@ -112,13 +112,11 @@ describe("runPassthrough", () => {
       .extend("theStdoutOfAPassedThroughMissingExecutable", ({ stdout }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            yield* Effect.promise(() =>
-              runPassthrough([MISSING_EXECUTABLE], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                monotonicNow: () => 0,
-              }),
-            );
+            yield* passThrough([MISSING_EXECUTABLE], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              monotonicNow: () => 0,
+            });
             return stdout.text();
           }),
         ),
@@ -150,13 +148,11 @@ describe("runPassthrough", () => {
       Effect.runPromise(
         Effect.gen(function* () {
           const ticks = [0, 59_999].values();
-          yield* Effect.promise(() =>
-            runPassthrough([NODE, "-e", SILENT_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              monotonicNow: () => ticks.next().value ?? 0,
-            }),
-          );
+          yield* passThrough([NODE, "-e", SILENT_SCRIPT], {
+            stdout: process.stdout,
+            stderr: process.stderr,
+            monotonicNow: () => ticks.next().value ?? 0,
+          });
           return stdout.text();
         }),
       ),

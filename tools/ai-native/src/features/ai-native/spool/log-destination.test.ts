@@ -1,36 +1,37 @@
-import { DateTime } from "effect";
+import { DateTime, Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { joinPath, makeDirectory, removePath, writeFileString } from "../host.ts";
+import { filesystem, joinPath, makeDirectory, removePath, writeFileString } from "../host.ts";
 import { commandIdOf, defaultSpoolRoot, timestampOf } from "./log-destination.ts";
-
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly mkdtempSync: (prefix: string) => string;
-};
-const nodeOs = process.getBuiltinModule("os") as {
-  readonly tmpdir: () => string;
-};
 
 describe("defaultSpoolRoot", () => {
   describe("a start directory nested under an ancestor carrying a package manifest", () => {
-    const markedAncestorDirectory = nodeFs.mkdtempSync(
-      joinPath(nodeOs.tmpdir(), "log-destination-marked-ancestor-"),
-    );
-
-    const it = test.extend("spoolRootOfTheNestedStart", ({}, { onCleanup }) => {
-      const start = joinPath(markedAncestorDirectory, "a", "b");
-      makeDirectory(start);
-      onCleanup(() => {
-        removePath(markedAncestorDirectory);
-      });
-      writeFileString({
-        location: joinPath(markedAncestorDirectory, "package.json"),
-        written: "{}",
-      });
-      return defaultSpoolRoot(start);
-    });
+    const it = test
+      .extend("markedAncestorDirectory", ({}, { onCleanup }) => {
+        const madeDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "log-destination-marked-ancestor-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => madeDirectory).pipe(Effect.flatMap(removePath))),
+        );
+        return madeDirectory;
+      })
+      .extend("spoolRootOfTheNestedStart", ({ markedAncestorDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const start = joinPath(markedAncestorDirectory, "a", "b");
+            yield* makeDirectory(start);
+            yield* writeFileString({
+              location: joinPath(markedAncestorDirectory, "package.json"),
+              written: "{}",
+            });
+            return yield* defaultSpoolRoot(start);
+          }),
+        ),
+      );
 
     it("puts the spool beside the manifest that ancestor carries", ({
+      markedAncestorDirectory,
       spoolRootOfTheNestedStart,
     }) => {
       expect(spoolRootOfTheNestedStart).toBe(joinPath(markedAncestorDirectory, ".spool"));
@@ -38,28 +39,66 @@ describe("defaultSpoolRoot", () => {
   });
 
   describe("a start directory with no package manifest above it", () => {
-    const unmarkedStartDirectory = nodeFs.mkdtempSync(
-      joinPath(nodeOs.tmpdir(), "log-destination-unmarked-start-"),
-    );
+    const it = test
+      .extend("unmarkedStartDirectory", ({}, { onCleanup }) => {
+        const madeDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "log-destination-unmarked-start-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => madeDirectory).pipe(Effect.flatMap(removePath))),
+        );
+        return madeDirectory;
+      })
+      .extend("spoolRootOfTheUnmarkedStart", ({ unmarkedStartDirectory }) =>
+        Effect.runPromise(defaultSpoolRoot(unmarkedStartDirectory)),
+      );
 
-    const it = test.extend("spoolRootOfTheUnmarkedStart", ({}, { onCleanup }) => {
-      makeDirectory(unmarkedStartDirectory);
-      onCleanup(() => {
-        removePath(unmarkedStartDirectory);
-      });
-      return defaultSpoolRoot(unmarkedStartDirectory);
-    });
-
-    it("puts the spool beside the start directory itself", ({ spoolRootOfTheUnmarkedStart }) => {
+    it("puts the spool beside the start directory itself", ({
+      spoolRootOfTheUnmarkedStart,
+      unmarkedStartDirectory,
+    }) => {
       expect(spoolRootOfTheUnmarkedStart).toBe(joinPath(unmarkedStartDirectory, ".spool"));
     });
   });
 
   describe("a search handed no start directory", () => {
-    const it = test.extend("spoolRootOfTheImplicitStart", () => defaultSpoolRoot());
+    const it = test.extend("spoolRootOfTheImplicitStart", () =>
+      Effect.runPromise(defaultSpoolRoot()));
 
     it("begins the search at the working directory", ({ spoolRootOfTheImplicitStart }) => {
       expect(spoolRootOfTheImplicitStart).toBe(joinPath(process.cwd(), ".spool"));
+    });
+  });
+
+  describe("a start directory whose manifest cannot be looked up", () => {
+    const it = test
+      .extend("fileInPlaceOfADirectory", ({}, { onCleanup }) => {
+        const madeDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "log-destination-unreadable-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => madeDirectory).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            const plainFile = joinPath(yield* Effect.promise(() => madeDirectory), "plain");
+            yield* writeFileString({ location: plainFile, written: "" });
+            return plainFile;
+          }),
+        );
+      })
+      .extend("theCodeOfTheLookupFailure", ({ fileInPlaceOfADirectory }) =>
+        Effect.runPromise(
+          Effect.flip(defaultSpoolRoot(joinPath(fileInPlaceOfADirectory, "a"))).pipe(
+            Effect.map((lookupFailure) =>
+              "code" in lookupFailure ? lookupFailure.code : undefined,
+            ),
+          ),
+        ),
+      );
+
+    it("fails with the error the file system raised", ({ theCodeOfTheLookupFailure }) => {
+      expect(theCodeOfTheLookupFailure).toBe("ENOTDIR");
     });
   });
 });

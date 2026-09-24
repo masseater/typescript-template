@@ -1,16 +1,21 @@
+import { Effect } from "effect";
+
 import { fileExists, joinPath, parentPath, resolvePath } from "../host.ts";
 
-const findSpoolRoot = (currentDir: string, fallbackDir: string): string => {
-  if (fileExists(joinPath(currentDir, "package.json"))) {
-    return joinPath(currentDir, ".spool");
-  }
-  const parent = parentPath(currentDir);
-  return parent === currentDir
-    ? joinPath(fallbackDir, ".spool")
-    : findSpoolRoot(parent, fallbackDir);
-};
+const findSpoolRoot = (currentDir: string, fallbackDir: string): Effect.Effect<string, Error> =>
+  fileExists(joinPath(currentDir, "package.json")).pipe(
+    Effect.flatMap((manifestFound) => {
+      if (manifestFound) {
+        return Effect.succeed(joinPath(currentDir, ".spool"));
+      }
+      const parent = parentPath(currentDir);
+      return parent === currentDir
+        ? Effect.succeed(joinPath(fallbackDir, ".spool"))
+        : findSpoolRoot(parent, fallbackDir);
+    }),
+  );
 
-export const defaultSpoolRoot = (startDir: string = process.cwd()): string =>
+export const defaultSpoolRoot = (startDir: string = process.cwd()): Effect.Effect<string, Error> =>
   findSpoolRoot(resolvePath(startDir), resolvePath(startDir));
 
 export const timestampOf = (stampedInstant: Date): string =>
