@@ -10,6 +10,7 @@ import { serveMcp } from "./mcp.ts";
 import { recordingsApi } from "./recordings-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { staffApi } from "./staff-api.ts";
+import { wikiEditApi } from "./wiki-edit-api.ts";
 
 const api = apiRoutes(runtime, reporting);
 
@@ -22,7 +23,8 @@ const wikiApi = createApi("")
       .use(flagsApi(api))
       .use(inquiryApi(api))
       .use(dashboardApi(api))
-      .use(recordingsApi(api)),
+      .use(recordingsApi(api))
+      .use(wikiEditApi(api)),
   )
   .all("/mcp", ...api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));

@@ -153,6 +153,12 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
   }
   return workerAppConfig({ env, loaded, scalars });
 });
+const readAppStorage = (
+  env: unknown,
+  audience: Application,
+): ReturnType<typeof readStorage> | ReturnType<typeof readOptionalStorage> =>
+  grants(audience, "storage") ? readStorage(env) : readOptionalStorage(env);
+
 const appLayer = (asked: {
   readonly env: unknown;
   readonly audience: Exclude<Application, "internal-dashboard">;
@@ -162,9 +168,7 @@ const appLayer = (asked: {
     readWorkerConfig(asked.env).pipe(
       Effect.flatMap((config) =>
         Effect.gen(function* withStorage() {
-          const storage = grants(asked.audience, "storage")
-            ? yield* readStorage(asked.env)
-            : yield* readOptionalStorage(asked.env);
+          const storage = yield* readAppStorage(asked.env, asked.audience);
           return configuredAppLayer({
             appConfig: config,
             audience: asked.audience,
@@ -176,5 +180,5 @@ const appLayer = (asked: {
     ),
   );
 };
-export { appLayer, readWorkerConfig };
+export { appLayer, readAppStorage, readWorkerConfig };
 export type { WorkerModel };

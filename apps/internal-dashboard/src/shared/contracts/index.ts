@@ -27,6 +27,16 @@ export {
   maximumRecordingTitleLength,
 } from "./recordings.ts";
 export {
+  WikiDraftDiscard,
+  WikiDraftSave,
+  WikiDraftSaved,
+  WikiImageUpload,
+  WikiImageUploaded,
+  WikiSource,
+  WikiSourceQuery,
+  wikiImageTypes,
+} from "./wiki-edit.ts";
+export {
   StaffInvitation,
   StaffInvited,
   StaffList,

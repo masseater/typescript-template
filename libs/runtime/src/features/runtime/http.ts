@@ -101,9 +101,14 @@ function decodeInput<Contract extends Decodable>(
 function readJsonBody<Contract extends Decodable>(
   schema: Contract,
   request: Request,
+  limit?: number,
 ): Effect.Effect<Contract["Type"], RequestRejected | InputInvalid, AppOrigin> {
   return Effect.gen(function* readJsonBodyProgram() {
-    const input = yield* readJson({ expectedOrigin: yield* AppOrigin, incoming: request });
+    const input = yield* readJson({
+      expectedOrigin: yield* AppOrigin,
+      incoming: request,
+      ...(limit === undefined ? {} : { limit }),
+    });
     return yield* decodeInput(schema, input);
   });
 }
