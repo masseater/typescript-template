@@ -21,6 +21,7 @@ description: このリポジトリのコードレビュー指針。作業を完�
 14. `./references/frontend-components-and-state.md`
 15. `./references/forbid-excessive-code-sharing.md`
 16. `./references/minimal-environment-variables.md`
+17. `./references/simplify.md`
 
 以下は、その修正をしないことを正当化する理由として認めない。かかる時間は度外視し、リポジトリ全体を俯瞰して、コード品質を向上させるための改善点を見つけることに全力を注ぐこと。
 
