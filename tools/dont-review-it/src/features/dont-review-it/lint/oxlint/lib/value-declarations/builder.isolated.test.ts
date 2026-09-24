@@ -1,6 +1,3 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync } from "node:fs";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
@@ -256,9 +253,14 @@ layer(NodeServices.layer)("loadRepositoryValueDeclarationIndex", (it) => {
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", "a.ts"), SEED);
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", REMOVED_FILE_NAME), SEED);
+      const listedSources = yield* Effect.promise(() =>
+        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
+          "../canonical-values/source-files.ts",
+        ),
+      );
       // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still there by the time it is read is settled inside the boundary this spec replaces, and both the listing and the read happen inside one synchronous call
       vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(REMOVED_FILE_NAME) ? null : readFileSync(path, "utf8"),
+        path.endsWith(REMOVED_FILE_NAME) ? null : listedSources.readTextFile(path),
       );
       return loadRepositoryValueDeclarationIndex({ repositoryRoot });
     });

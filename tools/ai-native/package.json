@@ -45,7 +45,7 @@
     "cc-hooks-ts": "2.1.251",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
-    "fs-native-extensions": "1.5.0",
+    "fs-native-extensions": "catalog:",
     "shell-quote": "catalog:"
   },
   "devDependencies": {

@@ -1,6 +1,3 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync, statSync } from "node:fs";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema } from "effect";
@@ -24,6 +21,13 @@ const presentFile = Effect.gen(function* presentFile() {
   return { presentPath, root };
 });
 
+const statRefusalAt = (targetPath: string) =>
+  Effect.gen(function* statRefusalAt() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const failure = yield* Effect.flip(filesystem.stat(targetPath));
+    return failure.reason.cause;
+  });
+
 const raisedBy = (thrown: unknown): unknown => {
   const [failure] = attempt<unknown, unknown>(() =>
     readUnlessMissing(() => {
@@ -37,8 +41,10 @@ layer(NodeServices.layer)("readUnlessMissing", (it) => {
   describe("a read that succeeds", () => {
     it.effect("hands back what it read", () =>
       Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
         const { presentPath } = yield* presentFile;
-        expect(readUnlessMissing(() => readFileSync(presentPath, "utf8"))).toBe("written");
+        const presentText = yield* filesystem.readFileString(presentPath);
+        expect(readUnlessMissing(() => presentText)).toBe("written");
       }),
     );
   });
@@ -48,7 +54,12 @@ layer(NodeServices.layer)("readUnlessMissing", (it) => {
       Effect.gen(function* program() {
         const paths = yield* Path.Path;
         const { root } = yield* presentFile;
-        expect(readUnlessMissing(() => statSync(paths.join(root, "absent.txt")))).toBe(null);
+        const refusal = yield* statRefusalAt(paths.join(root, "absent.txt"));
+        expect(
+          readUnlessMissing(() => {
+            throw refusal;
+          }),
+        ).toBe(null);
       }),
     );
   });
@@ -58,7 +69,12 @@ layer(NodeServices.layer)("readUnlessMissing", (it) => {
       Effect.gen(function* program() {
         const paths = yield* Path.Path;
         const { presentPath } = yield* presentFile;
-        expect(readUnlessMissing(() => statSync(paths.join(presentPath, "below.txt")))).toBe(null);
+        const refusal = yield* statRefusalAt(paths.join(presentPath, "below.txt"));
+        expect(
+          readUnlessMissing(() => {
+            throw refusal;
+          }),
+        ).toBe(null);
       }),
     );
   });

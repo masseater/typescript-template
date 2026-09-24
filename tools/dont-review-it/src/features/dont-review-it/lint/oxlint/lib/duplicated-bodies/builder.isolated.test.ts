@@ -1,6 +1,3 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync } from "node:fs";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
@@ -99,9 +96,14 @@ layer(NodeServices.layer)("buildRepositoryBodyIndex", (it) => {
         paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
         TWICE,
       );
+      const listedSources = yield* Effect.promise(() =>
+        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
+          "../canonical-values/source-files.ts",
+        ),
+      );
       // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still readable is settled by the file system between the listing and the read, and that window is inside the boundary this spec replaces
       vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(VANISHED_FILE_NAME) ? null : readFileSync(path, "utf8"),
+        path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
       );
       return Array.from(buildRepositoryBodyIndex({ repositoryRoot }).bodiesByPath.keys());
     });

@@ -43,14 +43,14 @@ const serializeBaseline = (baseline: TypecheckBaseline): string => {
 
 const portableBaseline = (
   baseline: TypecheckBaseline,
-  repositoryRootPath: string,
+  roots: readonly string[],
 ): TypecheckBaseline => ({
   version: 1,
   workspaces: Object.fromEntries(
     Object.entries(baseline.workspaces).map(([workspace, countedDiagnostics]) => [
       workspace,
       countedDiagnostics.map((diagnostic) => ({
-        ...portableDiagnostic(diagnostic, repositoryRootPath),
+        ...portableDiagnostic(diagnostic, roots),
         count: diagnostic.count,
       })),
     ]),

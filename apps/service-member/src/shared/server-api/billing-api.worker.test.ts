@@ -13,6 +13,7 @@ import {
   SUBSCRIPTION_STATUS,
   WEBHOOK_DISPOSITION,
   httpStatus,
+  stripeApiVersion,
 } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
@@ -188,7 +189,9 @@ const stripeHandlers = [
     request
       .formData()
       .then((form) =>
-        form.get("mode") === "subscription" && form.get("line_items[0][price]") === priceId
+        request.headers.get("stripe-version") === stripeApiVersion &&
+        form.get("mode") === "subscription" &&
+        form.get("line_items[0][price]") === priceId
           ? HttpResponse.json({ url: checkoutUrl })
           : HttpResponse.json({ error: { message: "unexpected checkout form" } }, { status: 400 }),
       ),
