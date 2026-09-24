@@ -1,4 +1,4 @@
-import { stripeWebhookEvents } from "@repo/config";
+import { stripeApiVersion, stripeWebhookEvents } from "@repo/config";
 import { apiRoot } from "@repo/runtime/http";
 import * as Output from "alchemy/Output";
 import * as Stripe from "alchemy/Stripe";
@@ -21,6 +21,7 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
     unitAmount: 500,
   });
   const webhook = yield* Stripe.WebhookEndpoint("BillingWebhook", {
+    apiVersion: stripeApiVersion,
     enabledEvents: [...stripeWebhookEvents],
     url: `${origin}${apiRoot}/billing/webhook`,
   });
