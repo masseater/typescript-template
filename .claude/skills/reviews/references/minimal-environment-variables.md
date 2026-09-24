@@ -6,28 +6,38 @@
 - 次を環境変数として数える。Node で動くツール・CI・Alchemy の宣言が読む `process.env`、CI が GitHub Environments の secret と variable から渡す値、Worker が `env` で受け取る `vars` と `secret`、ローカルでそれらを渡す `.dev.vars`。
 - Worker の `env` に載る D1・R2・KV・Queues・Durable Objects・他 Worker の binding は、型の付いた依存であり環境変数に数えない。
 
-## 環境変数に置くもの
+## 環境変数に置くのは、環境ごとに実際に値が変わるものだけ
 
-次のどれかに当たる値だけを環境変数にする。
+同じコードを動かす環境（ローカル・staging・production・CI）を並べ、環境ごとに入る値が実際に違うものだけを環境変数にする。
 
-- 同じコードを動かす環境（ローカル・staging・production・CI）ごとに値が変わり、ビルドの時点では決まらない接続先や識別子（ドメイン、アカウント ID、外部サービスのエンドポイント）。
-- リポジトリに置けない秘密の値（API キー、署名鍵）。
-- デプロイの時点でしか決まらない値（リリースの識別子）。
+置く例:
 
-## 環境変数に置かないもの
+- `APP_ORIGIN`: ローカルは `http://localhost:3000`、staging は `https://staging.example.com`、production は `https://example.com`。
+- `CLOUDFLARE_ACCOUNT_ID`・`CLOUDFLARE_ZONE_ID`: 環境ごとに別のアカウントとゾーンを使う。
+- `EMAIL_FROM`・`OPS_EMAIL`: 送信元のドメインと、アラートを受ける宛先が環境ごとに違う。
+- `STRIPE_API_KEY`: ローカルと staging は sandbox の `sk_test_`、production は `sk_live_`。
+- `AUTH_SECRET`: 環境ごとに別の値を発行する。秘密の値は、環境をまたいで同じ値を使い回さないことでこの条件に当たる。
+- `APP_RELEASE`: デプロイごとにコミットが違う。
+- `OTLP_ENDPOINT`: 送り先がある環境にだけ入れ、無い環境では未設定にする。
 
-- 振る舞いを切り替える真偽値や列挙（`*_ENABLED`、`*_MODE`、`DEBUG`）。機能の出し分けは feature flag にする。送り先があれば動く機能は送り先の値の有無で決め、別に有効化のキーを足さない。
-- どの環境でも同じ値になる定数・上限・タイムアウト・既定値。コードの定数にする。
-- 他のキーから導ける値（ドメインから組み立てられるオリジンなど）。元のキーだけを渡し、導く処理を 1 か所に置く。
-- binding で渡せる依存。D1 の ID や R2 のバケット名を環境変数で渡して自前で接続しない。
-- Alchemy が作るリソースの ID・URL・秘密（Stripe の price ID や webhook の secret など）を人が転記したもの。宣言の出力を binding や `vars` に直接つなぐ。
-- テストのためだけに振る舞いを変えるキー。
+## 環境で変わらない値は環境変数に置かない
+
+置かない例と、代わりの置き場所:
+
+- `OTLP_ENABLED=true` を `OTLP_ENDPOINT` と並べる。送り先の値の有無で送るかを決め、有効化のキーを足さない。
+- `APP_ENV=production` や `NODE_ENV` を読んで `if` で分岐する。分岐で変えたい中身（接続先、送り先、秘密）そのものをキーにする。環境名で振る舞いを分けない。
+- `FEATURE_NEW_CHECKOUT=true` のような機能の出し分け。feature flag にする。
+- `SESSION_TTL_SECONDS=86400`・`MAX_UPLOAD_MB=10`・`RETRY_COUNT=3`・`PAGE_SIZE=20`・`DEFAULT_LOCALE=ja`・`CURRENCY=JPY`。どの環境でも同じ値なのでコードの定数にする。
+- `ADMIN_ORIGIN=https://admin.example.com` を `APP_DOMAIN=example.com` と並べる。ドメインだけを渡し、オリジンを組み立てる処理を 1 か所に置く。
+- `DATABASE_ID`・`BUCKET_NAME`・`CORE_URL` を渡して自前で接続する。D1・R2・サービスの binding にする。
+- Stripe のダッシュボードから `STRIPE_PRICE_ID`・`STRIPE_WEBHOOK_SECRET` を書き写す。product・price・webhook を Alchemy で作り、宣言の出力を binding や `vars` に直接つなぐ。
+- `MOCK_PAYMENTS=true`・`SKIP_EMAIL=true` のようにテストのためだけに振る舞いを変えるキー。テストでは実際の依存を使い、外部 HTTP は MSW で差し替える。
 
 ## 足す前に問う
 
 新しいキーを足す変更では、次のすべてに答えられないなら足さない。
 
-- 環境ごとに実際に違う値を 2 つ以上挙げられるか。挙げられないなら定数にする。
+- ローカル・staging・production・CI それぞれに入る値を書き出せるか。すべて同じなら定数にする。
 - 既存のキー、Alchemy の出力、binding のどれからも得られないか。
 - 値を入れる主体と手順が決まっているか。人が入れる値なら、どこに誰が入れるかを挙げられるか。
 - Worker の `env` の型、`.dev.vars` の生成、CI が渡すキーの一覧と欠けたときのチェック、Alchemy の宣言のうち、そのキーが通る場所すべてに同じ変更で載っているか。
