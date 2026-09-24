@@ -24,7 +24,7 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   describe("a repository without a manifest", () => {
     it.effect("names the document every repository is read through, and no place", () =>
       Effect.gen(function* program() {
-        const places = normativeDocumentPlacesIn(yield* repositoryWithManifest(null));
+        const places = yield* normativeDocumentPlacesIn(yield* repositoryWithManifest(null));
         expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
       }),
     );
@@ -33,8 +33,19 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   describe("a manifest that is not an object", () => {
     it.effect("reads it as no declaration", () =>
       Effect.gen(function* program() {
-        const places = normativeDocumentPlacesIn(yield* repositoryWithManifest("[]"));
+        const places = yield* normativeDocumentPlacesIn(yield* repositoryWithManifest("[]"));
         expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
+      }),
+    );
+  });
+
+  describe("a manifest that is not JSON", () => {
+    it.effect("fails as a manifest that could not be decoded", () =>
+      Effect.gen(function* program() {
+        const failure = yield* Effect.flip(
+          normativeDocumentPlacesIn(yield* repositoryWithManifest("{")),
+        );
+        expect(failure._tag).toBe("SchemaError");
       }),
     );
   });
@@ -42,7 +53,7 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   describe("a manifest declaring nothing about its norms", () => {
     it.effect("reads it as no declaration", () =>
       Effect.gen(function* program() {
-        const places = normativeDocumentPlacesIn(
+        const places = yield* normativeDocumentPlacesIn(
           yield* repositoryWithManifest(yield* encodeJson({ name: "probe" })),
         );
         expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
@@ -53,7 +64,7 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   describe("a declaration naming both the document and the places", () => {
     it.effect("takes both from the declaration", () =>
       Effect.gen(function* program() {
-        const places = normativeDocumentPlacesIn(
+        const places = yield* normativeDocumentPlacesIn(
           yield* repositoryWithManifest(
             yield* encodeJson({
               normativeDocuments: { fileName: "CONVENTIONS.md", directories: ["docs/norms"] },
@@ -68,7 +79,7 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   describe("a declaration whose fields are of the wrong shape", () => {
     it.effect("falls back to what a repository without a declaration gets", () =>
       Effect.gen(function* program() {
-        const places = normativeDocumentPlacesIn(
+        const places = yield* normativeDocumentPlacesIn(
           yield* repositoryWithManifest(
             yield* encodeJson({ normativeDocuments: { fileName: 7, directories: "docs/norms" } }),
           ),
@@ -81,7 +92,7 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   describe("a declaration listing something that is not a path", () => {
     it.effect("keeps the paths and drops the rest", () =>
       Effect.gen(function* program() {
-        const places = normativeDocumentPlacesIn(
+        const places = yield* normativeDocumentPlacesIn(
           yield* repositoryWithManifest(
             yield* encodeJson({ normativeDocuments: { directories: ["docs/norms", 7] } }),
           ),
@@ -118,7 +129,7 @@ layer(NodeServices.layer)("normativeDocumentsIn", (it) => {
         paths.join(root, "docs/norms/tests.md"),
         paths.join(root, "docs/norms/linked.md"),
       );
-      return normativeDocumentsIn({
+      return yield* normativeDocumentsIn({
         repositoryRoot: root,
         places: { fileName: "AGENTS.md", directories: ["docs/norms"] },
         workspaceDirectories: ["packages/example"],
@@ -139,7 +150,7 @@ layer(NodeServices.layer)("normativeDocumentsIn", (it) => {
   describe("a place the repository does not hold", () => {
     it.effect("finds nothing", () =>
       Effect.gen(function* program() {
-        const documents = normativeDocumentsIn({
+        const documents = yield* normativeDocumentsIn({
           repositoryRoot: yield* repositoryWithManifest(null),
           places: { fileName: "AGENTS.md", directories: ["docs/norms"] },
           workspaceDirectories: [],

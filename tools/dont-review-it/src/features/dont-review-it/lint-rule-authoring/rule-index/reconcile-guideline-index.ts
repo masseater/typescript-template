@@ -46,9 +46,9 @@ export const guidelineIndexProblems = ({
       ),
     );
     const grounded: readonly GroundedLintRule[] = workspaceRules.flat();
-    const normativeDocuments = normativeDocumentsIn({
+    const normativeDocuments = yield* normativeDocumentsIn({
       repositoryRoot,
-      places: normativeDocumentPlacesIn(repositoryRoot),
+      places: yield* normativeDocumentPlacesIn(repositoryRoot),
       workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),
     });
     if (normativeDocuments.length === 0) {
