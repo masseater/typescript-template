@@ -3,11 +3,11 @@ title: ビジネス面のチェックリスト
 description: コードの外側で、知らないと後から困る決めごとを場面ごとに並べる
 ---
 
-テンプレートはコードと運用の仕組みを持ちますが、計測、集客、請求、法令、信頼のような事業の決めごとは持ちません。ここにあるのは、詳しい人がいないと存在に気づかず、後から困る項目です。[場面ごとにやること](/checklists) の場面に合わせて時間の順に並べ、各項目に何が起きるかと、テンプレートにすでにあるものと、決めた結果を書く場所を書きます。書く場所の多くは [事業の決めごと](/decisions/business) と [運用の決めごと](/decisions/operations) の節です。
+テンプレートはコードと運用の仕組みを持ちますが、計測、集客、請求、法令、信頼のような事業の決めごとは持ちません。ここにあるのは、詳しい人がいないと存在に気づかず、後から困る項目です。[場面ごとにやること](/checklists) の場面に合わせて時間の順に並べています。各項目には、何が起きるか、テンプレートにすでにあるもの、決めた結果を書く場所があります。書く場所の多くは [事業の決めごと](/decisions/business) と [運用の決めごと](/decisions/operations) の節です。
 
 - 例のリンクは代表例です。推奨ではありません。
 - 法令の項目は概要です。該当するかどうかは公式の資料と専門家で確かめます。
-- セッションリプレイと行動分析は [このテンプレートは何か](/getting-started/what-is-this) の「含まれていないもの」、決済代行業者は [最初の一歩](/getting-started/first-steps) にあります。
+- セッションリプレイと行動分析は [このテンプレートは何か](/getting-started/what-is-this) の「含まれていないもの」、決済代行業者は [使い始める手順](/getting-started/first-steps) にあります。
 
 ## 案が出たとき
 
@@ -118,7 +118,7 @@ description: コードの外側で、知らないと後から困る決めごと�
 
 場面: [リリースするとき](/checklists/release)
 
-- 検索エンジン向けの設定: sitemap.xml、robots.txt、canonical、構造化データを用意します。無いと検索に載らないか、重複として扱われます。公開の前に外す検索エンジン向けの設定は [最初の一歩](/getting-started/first-steps) にあります。例: [Google 検索セントラル](https://developers.google.com/search/docs)、[schema.org](https://schema.org/)
+- 検索エンジン向けの設定: sitemap.xml、robots.txt、canonical、構造化データを用意します。無いと検索に載らないか、重複として扱われます。公開の前に外す検索エンジン向けの設定は [使い始める手順](/getting-started/first-steps) にあります。例: [Google 検索セントラル](https://developers.google.com/search/docs)、[schema.org](https://schema.org/)
   - 書く場所: `libs/runtime/src/features/runtime/responses.ts`
 - 検索エンジンの管理ツール: 検索での表示回数、インデックスの状況、手動の対策の通知を受け取ります。例: [Google Search Console](https://search.google.com/search-console/about)、[Bing Webmaster Tools](https://www.bing.com/webmasters/)
   - 書く場所: [事業の決めごと](/decisions/business#ドメインとアカウント)
