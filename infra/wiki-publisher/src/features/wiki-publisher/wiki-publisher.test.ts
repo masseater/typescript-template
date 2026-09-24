@@ -5,7 +5,7 @@ import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { productionEnvironment, wikiPublisherApp } from "./wiki-publisher.ts";
+import { productionEnvironment, wikiPublisherApp } from "./index.ts";
 
 describe("wikiPublisherApp", () => {
   const it = test.extend("publisherApp", () =>
