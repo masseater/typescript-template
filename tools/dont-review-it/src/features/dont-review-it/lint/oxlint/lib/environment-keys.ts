@@ -10,18 +10,12 @@ import { staticMemberOf } from "./static-member.ts";
 
 import type { ESTree, Visitor } from "@oxlint/plugins";
 
-type EnvironmentKeyPlace = "schema" | "config" | "read";
-
-type EnvironmentKeyOccurrence = {
-  readonly place: EnvironmentKeyPlace;
+export type EnvironmentKeyOccurrence = {
+  readonly place: "schema" | "config" | "read";
   readonly name: string | null;
   readonly node: ESTree.Node;
   readonly declaration: ESTree.Expression | null;
 };
-
-type OccurrenceListener = (occurrence: EnvironmentKeyOccurrence) => void;
-
-type EnvironmentKeyVisitor = Visitor & { readonly Program: (node: ESTree.Program) => void };
 
 const WORKER_MODULE = "cloudflare:workers";
 
@@ -290,7 +284,9 @@ const destructuredReads = (
     return [{ place: "read", name, node: property, declaration: null }];
   });
 
-export const environmentKeyVisitor = (onOccurrence: OccurrenceListener): EnvironmentKeyVisitor => {
+export const environmentKeyVisitor = (
+  onOccurrence: (occurrence: EnvironmentKeyOccurrence) => void,
+) => {
   const tracking: SourceTracking = {
     workerEnv: { exportedName: WORKER_ENV_EXPORT, binding: newBinding() },
     workerClasses: new Set<string>(),
@@ -336,5 +332,5 @@ export const environmentKeyVisitor = (onOccurrence: OccurrenceListener): Environ
         onOccurrence(occurrence);
       }
     },
-  };
+  } satisfies Visitor;
 };

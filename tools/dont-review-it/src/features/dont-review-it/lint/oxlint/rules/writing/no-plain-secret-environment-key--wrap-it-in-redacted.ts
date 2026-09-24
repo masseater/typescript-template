@@ -35,6 +35,25 @@ const namespaceMemberOf = (
   return { namespace: member.object.name, member: member.name };
 };
 
+const firstArgumentOf = (call: ESTree.CallExpression): ESTree.Expression | null => {
+  const [first] = call.arguments;
+  return first === undefined || first.type === "SpreadElement" ? null : first;
+};
+
+const isRedactedSchemaCall = (call: ESTree.CallExpression): boolean => {
+  const called = namespaceMemberOf(call.callee);
+  return called?.namespace === "Schema" && called.member.startsWith(REDACTED_SCHEMA_PREFIX);
+};
+
+const innerSchemaOf = (call: ESTree.CallExpression): ESTree.Expression | null => {
+  const called = namespaceMemberOf(call.callee);
+  if (called?.namespace === "Schema" && SCHEMA_WRAPPERS.has(called.member)) {
+    return firstArgumentOf(call);
+  }
+  const refined = staticMemberOf(call.callee);
+  return refined !== null && SCHEMA_REFINEMENTS.has(refined.name) ? refined.object : null;
+};
+
 const isRedactedSchema = (
   schema: ESTree.Expression,
   definitions: LocalDefinitions,
@@ -46,24 +65,9 @@ const isRedactedSchema = (
     return isRedactedSchema(defined, definitions, new Set([...visited, schema.name]));
   }
   if (schema.type !== "CallExpression") return false;
-  const called = namespaceMemberOf(schema.callee);
-  if (called?.namespace === "Schema" && called.member.startsWith(REDACTED_SCHEMA_PREFIX)) {
-    return true;
-  }
-  const [first] = schema.arguments;
-  if (called?.namespace === "Schema" && SCHEMA_WRAPPERS.has(called.member)) {
-    return (
-      first !== undefined &&
-      first.type !== "SpreadElement" &&
-      isRedactedSchema(first, definitions, visited)
-    );
-  }
-  const refined = staticMemberOf(schema.callee);
-  return (
-    refined !== null &&
-    SCHEMA_REFINEMENTS.has(refined.name) &&
-    isRedactedSchema(refined.object, definitions, visited)
-  );
+  if (isRedactedSchemaCall(schema)) return true;
+  const inner = innerSchemaOf(schema);
+  return inner !== null && isRedactedSchema(inner, definitions, visited);
 };
 
 const mapsToRedacted = (argument: ESTree.Expression | ESTree.SpreadElement): boolean => {
@@ -76,22 +80,19 @@ const mapsToRedacted = (argument: ESTree.Expression | ESTree.SpreadElement): boo
   return made?.namespace === "Redacted" && made.member === REDACTED_MAKE;
 };
 
-const isRedactedConfig = (read: ESTree.CallExpression, definitions: LocalDefinitions): boolean => {
-  const called = namespaceMemberOf(read.callee);
-  if (called !== null && REDACTED_CONFIG_READERS.has(called.member)) return true;
-  const [schema] = read.arguments;
-  if (
-    called?.member === "schema" &&
-    schema !== undefined &&
-    schema.type !== "SpreadElement" &&
-    isRedactedSchema(schema, definitions, new Set())
-  ) {
-    return true;
-  }
+const isPipedToRedacted = (read: ESTree.CallExpression): boolean => {
   const { parent } = read;
   if (parent.type !== "MemberExpression" || parent.object !== read) return false;
   const piped = parent.parent;
   return piped.type === "CallExpression" && piped.arguments.some(mapsToRedacted);
+};
+
+const isRedactedConfig = (read: ESTree.CallExpression, definitions: LocalDefinitions): boolean => {
+  const called = namespaceMemberOf(read.callee);
+  if (called !== null && REDACTED_CONFIG_READERS.has(called.member)) return true;
+  const schema = called?.member === "schema" ? firstArgumentOf(read) : null;
+  if (schema !== null && isRedactedSchema(schema, definitions, new Set())) return true;
+  return isPipedToRedacted(read);
 };
 
 const localDefinitionsOf = (program: ESTree.Program): LocalDefinitions =>
