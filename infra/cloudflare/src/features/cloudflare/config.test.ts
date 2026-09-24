@@ -11,7 +11,7 @@ import {
   workerObservability,
 } from "./config.ts";
 import { stackNames } from "./stacks.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 import type {
   Ai,
@@ -23,8 +23,17 @@ import type {
   SendEmail,
   Service,
 } from "@cloudflare/workers-types";
-import type { Flagship } from "alchemy/Cloudflare";
-import type { AppBindings } from "./bindings.ts";
+import type { Application, CapabilityOf } from "@repo/config";
+import type { Assets, Flagship, InferEnv } from "alchemy/Cloudflare";
+import type { CapabilityEnv, SharedEnv, UnionToIntersection } from "./bindings.ts";
+
+type AppBindings<App extends Application> = InferEnv<
+  SharedEnv &
+    ([CapabilityOf<App>] extends [never]
+      ? unknown
+      : UnionToIntersection<CapabilityEnv[CapabilityOf<App>]>) &
+    Readonly<{ ASSETS: Assets }>
+>;
 
 const release = "0".repeat(16);
 const settings = verificationSettings;
@@ -79,8 +88,10 @@ const userBindings: AppBindings<"service-member"> = {
         status: (): Promise<{ status: string }> => Promise.resolve({ status: "complete" }),
       }),
   }),
+  STRIPE_AUTOMATIC_TAX: "true",
   STRIPE_PRICE_ID: "price_test",
   STRIPE_SECRET_KEY: "sk_test_secret_of_at_least_32_characters",
+  STRIPE_TRIAL_PERIOD_DAYS: "14",
   STRIPE_WEBHOOK_SECRET: "whsec_test_secret_of_at_least_32_ch",
   USER_INBOX: binding<DurableObjectNamespace>({
     get: (): undefined => undefined,

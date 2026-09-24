@@ -2,11 +2,13 @@ import {
   JobPayload,
   jobsQueueBinding,
   jobsWorkflowBinding,
+  readJobs,
   type JobResult,
   type JobsBindings,
+  webCrypto,
 } from "@repo/config";
 import { WorkflowEntrypoint } from "cloudflare:workers";
-import { Crypto, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { JobLookupFailed } from "./job-lookup-failed.ts";
 import { JobNotFound } from "./job-not-found.ts";
@@ -64,19 +66,18 @@ const consumeJobs = (batch: Readonly<MessageBatch>, env: JobsBindings): Promise<
       }
     }),
   );
-const jobsCrypto = Crypto.make({
-  digest: (algorithmName, digestInput) =>
-    Effect.tryPromise(() => crypto.subtle.digest(algorithmName, Uint8Array.from(digestInput))).pipe(
-      Effect.map((digestBytes) => new Uint8Array(digestBytes)),
-      Effect.orDie,
-    ),
-  randomBytes: (byteCount) => crypto.getRandomValues(new Uint8Array(byteCount)),
-});
+const consumeJobBatch = (batch: Readonly<MessageBatch>, environment: unknown): Promise<void> =>
+  Effect.runPromise(
+    Effect.gen(function* consumeBatch() {
+      const jobs = yield* readJobs(environment);
+      yield* Effect.promise(() => consumeJobs(batch, jobs));
+    }).pipe(Effect.orDie),
+  );
 const enqueueJob = Effect.fn("jobs.enqueue")(function* enqueueJob(
   env: JobsBindings,
   ownerId: string,
 ) {
-  const jobId = yield* jobsCrypto.randomUUIDv4.pipe(Effect.orDie);
+  const jobId = yield* webCrypto.randomUUIDv4.pipe(Effect.orDie);
   const packet = { jobId, ownerId };
   yield* Effect.promise(() => env[jobsQueueBinding].send(packet));
   return packet;
@@ -94,4 +95,4 @@ const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
   });
   return yield* Effect.promise(() => runtimeInstance.status());
 });
-export { Process, consumeJobs, enqueueJob, jobStatus };
+export { Process, consumeJobBatch, consumeJobs, enqueueJob, jobStatus };

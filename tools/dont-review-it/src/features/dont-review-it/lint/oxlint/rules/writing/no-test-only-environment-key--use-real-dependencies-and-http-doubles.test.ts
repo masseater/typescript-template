@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noTestOnlyEnvironmentKey } from "./no-test-only-environment-key--use-real-dependencies-and-http-doubles.ts";
 
 describe("dont-review-it/no-test-only-environment-key--use-real-dependencies-and-http-doubles", () => {

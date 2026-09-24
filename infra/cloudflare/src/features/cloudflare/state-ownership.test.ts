@@ -4,7 +4,7 @@ import { Effect } from "effect";
 
 import { stackName } from "./stacks.ts";
 import { recordedDatabaseIds, recordedWorkerNames } from "./state-ownership.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
 

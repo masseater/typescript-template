@@ -6,6 +6,7 @@ import {
 import type { CanonicalValuesRepositoryProblem as CanonicalValuesProblem } from "./builder.ts";
 import type { CanonicalValuesEntry } from "./catalog.ts";
 import type { CanonicalValue } from "./fingerprint.ts";
+import type { CanonicalValuesSourceProblem } from "./resolved-entries.ts";
 
 const invalidReason = (reason: InvalidCanonicalDeclarationReason): string => {
   const descriptions: Readonly<Record<InvalidCanonicalDeclarationReason, string>> = {
@@ -29,10 +30,8 @@ const invalidReason = (reason: InvalidCanonicalDeclarationReason): string => {
   return descriptions[reason];
 };
 
-const problemMessage = (problem: CanonicalValuesProblem): string => {
+const sourceProblemMessage = (problem: CanonicalValuesSourceProblem): string => {
   switch (problem.kind) {
-    case "unsafe-symbolic-link":
-      return "A symbolic link in the repository source walk must resolve to a readable target inside the repository. Replace the broken or external link with a repository-owned source path.";
     case "retired-annotation-tag":
       return `The retired annotation tag ${problem.tag} must not stay in the source, because opting a value set out of the canonical vocabulary is no longer possible. Delete the tag, and declare the concept it belonged to so every use derives from that declaration.`;
     case "canonical-rule-suppression":
@@ -47,9 +46,15 @@ const problemMessage = (problem: CanonicalValuesProblem): string => {
       return `${problem.conceptId} is annotated in a non-production source. Move the canonical owner into production source, or delete the annotation.`;
     case "vocabulary-without-values":
       return `A canonical values annotation must sit on a variable whose resolved type exposes only finite string, number, boolean, or null values for ${problem.conceptId}. Make the binding expose that literal domain, or delete the annotation.`;
-    case "duplicate-concept":
-      return `A concept must be declared in one place. ${problem.conceptId} is already declared at ${problem.declaredFilePath}:${problem.declaredLine}. Delete one of the two declarations, and derive from the one that stays.`;
   }
+};
+
+const problemMessage = (problem: CanonicalValuesProblem): string => {
+  if (problem.kind === "unsafe-symbolic-link")
+    return "A symbolic link in the repository source walk must resolve to a readable target inside the repository. Replace the broken or external link with a repository-owned source path.";
+  if (problem.kind === "duplicate-concept")
+    return `A concept must be declared in one place. ${problem.conceptId} is already declared at ${problem.declaredFilePath}:${problem.declaredLine}. Delete one of the two declarations, and derive from the one that stays.`;
+  return sourceProblemMessage(problem);
 };
 
 export const formatCanonicalValuesProblem = (problem: CanonicalValuesProblem): string => {

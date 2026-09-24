@@ -3,7 +3,7 @@ import { query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import { AuthApps, authTest, registerVerified, runWith, signInAs } from "./testing.ts";
+import { AuthApps, authTest, registerVerified, runWith, signInAs } from "./index-test-fixture.ts";
 
 const { apikey, user } = schema;
 

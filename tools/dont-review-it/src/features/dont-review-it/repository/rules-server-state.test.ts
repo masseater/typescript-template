@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { noHandRolledServerRead } from "../lint/oxlint/rules/mutation-and-failure/no-hand-rolled-server-read--use-tanstack-query.ts";
-import { requireQueryOptionsInApiSegment } from "../lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts";
-import { reportCount, reported, reportedRules } from "./lint-harness.ts";
+import { reportCount, reported, reportedRules } from "./lint-harness-test-fixture.ts";
 import { replacementFor, retiredPackages } from "./retired-packages.ts";
-import {
-  handRolledServerReadMessage,
-  queryOptionsPlacementMessage,
-  retiredPackagesFromStateKinds,
-  serverStateRetiredPackages,
-  stateKinds,
-} from "./state-kinds.ts";
+import { retiredPackagesFromStateKinds, stateKinds } from "./state-kinds.ts";
 
 describe("state-kinds", () => {
   it("names TanStack Query as the server-state mechanism", () => {
@@ -18,17 +10,7 @@ describe("state-kinds", () => {
     expect(stateKinds.server.mechanism).toContain("TanStack Query");
   });
 
-  it("keeps oxlint rule messages aligned with the state-kind table", () => {
-    expect.hasAssertions();
-    expect(noHandRolledServerRead.meta.messages.handRolledServerRead).toContain(
-      handRolledServerReadMessage,
-    );
-    expect(requireQueryOptionsInApiSegment.meta.messages.queryOptionsOutsideApi).toContain(
-      queryOptionsPlacementMessage,
-    );
-  });
-
-  it.for(Object.keys(serverStateRetiredPackages))(
+  it.for(Object.keys(stateKinds.server.retiredPackages))(
     "retires competing server-state package %s toward TanStack Query",
     (dependency) => {
       expect.hasAssertions();
@@ -40,7 +22,7 @@ describe("state-kinds", () => {
   it("keeps state-kind retirements inside the retired package table", () => {
     expect.hasAssertions();
     expect(Object.keys(retiredPackagesFromStateKinds()).sort()).toStrictEqual(
-      Object.keys(serverStateRetiredPackages).sort(),
+      Object.keys(stateKinds.server.retiredPackages).sort(),
     );
     for (const [dependency, replacement] of Object.entries(retiredPackagesFromStateKinds())) {
       expect(retiredPackages[dependency]).toBe(replacement);

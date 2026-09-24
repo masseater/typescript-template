@@ -29,6 +29,12 @@
         "count": 1
       },
       {
+        "file": "src/features/db/database-test-fixture.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 3
+      },
+      {
         "file": "src/features/db/interview.worker.test.ts",
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
@@ -57,12 +63,6 @@
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 3
-      },
-      {
-        "file": "src/features/db/testing.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 3
       }
     ],
     "libs/observability": [
@@ -82,12 +82,6 @@
         "file": "src/features/observability/request.ts",
         "code": "TS377042",
         "message": "This code uses `instanceof` with an Effect Schema type. `Schema.is` is the schema-aware runtime check for this case. effect(instanceOfSchema)",
-        "count": 1
-      },
-      {
-        "file": "src/features/observability/server-testing.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 1
       },
       {

@@ -122,6 +122,7 @@ export {
   findSubscription,
   isPaidMember,
   markPaymentFailed,
+  markPaymentSettled,
   memberOfCustomer,
   planOf,
   recordSubscription,
@@ -171,3 +172,4 @@ export {
   markWikiDraftPublished,
   saveWikiDraft,
 } from "./wiki-draft.ts";
+export { countRows } from "./count-rows.ts";

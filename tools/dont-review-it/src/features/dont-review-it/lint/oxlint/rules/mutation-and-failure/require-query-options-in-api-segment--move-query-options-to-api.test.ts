@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { requireQueryOptionsInApiSegment } from "./require-query-options-in-api-segment--move-query-options-to-api.ts";
 
 describe("dont-review-it/require-query-options-in-api-segment--move-query-options-to-api", () => {

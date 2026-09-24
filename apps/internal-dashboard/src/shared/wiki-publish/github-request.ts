@@ -1,14 +1,15 @@
-import { httpStatus } from "@repo/config";
+import {
+  gitHubApiOrigin,
+  gitHubRequestTimeout,
+  gitHubSuccessStatus,
+  httpStatus,
+} from "@repo/config";
 import { withSpan } from "@repo/observability";
-import { Duration, Effect, Redacted, Schema } from "effect";
+import { Effect, Redacted, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import { WikiPublishFailed } from "./wiki-publish-failed.ts";
 import { WikiPublishUnreachable } from "./wiki-publish-unreachable.ts";
-
-const gitHubApi = "https://api.github.com";
-const successStatus = { first: 200, last: 299 } as const;
-const requestTimeout = Duration.seconds(10);
 
 const GitHubError = Schema.Struct({
   documentation_url: Schema.optionalKey(Schema.String),
@@ -30,7 +31,7 @@ const send = (call: GitHubCall) => {
     "User-Agent": "wiki-publisher",
     "X-GitHub-Api-Version": "2022-11-28",
   };
-  const url = `${gitHubApi}${call.path}`;
+  const url = `${gitHubApiOrigin}${call.path}`;
   return call.method === "GET"
     ? HttpClient.get(url, { headers })
     : Effect.flatMap(HttpBody.json(call.body ?? {}), (body) =>
@@ -44,7 +45,7 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
 ): Effect.Effect<Decoded["Type"], WikiPublishFailed | WikiPublishUnreachable> =>
   Effect.gen(function* callGitHub() {
     const response = yield* send(call).pipe(
-      Effect.timeout(requestTimeout),
+      Effect.timeout(gitHubRequestTimeout),
       Effect.provide(FetchHttpClient.layer),
       Effect.provideService(FetchHttpClient.Fetch, globalThis.fetch),
       Effect.mapError((cause) => new WikiPublishUnreachable({ cause, step: call.step })),
@@ -57,7 +58,7 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
     }
     const refused = (message: string): WikiPublishFailed =>
       new WikiPublishFailed({ message, status: response.status, step: call.step });
-    if (response.status < successStatus.first || response.status > successStatus.last) {
+    if (response.status < gitHubSuccessStatus.first || response.status > gitHubSuccessStatus.last) {
       const answer = yield* HttpClientResponse.schemaBodyJson(GitHubError)(response).pipe(
         Effect.orElseSucceed((): typeof GitHubError.Type => ({
           message: "GitHub gave no message",
@@ -75,3 +76,4 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
   }).pipe(withSpan("wiki.publish.github", { attributes: { step: call.step } }));
 
 export { gitHubRequest };
+export type { GitHubCall };

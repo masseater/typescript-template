@@ -1,19 +1,12 @@
-import {
-  Button,
-  ButtonAnchor,
-  ConfirmDialog,
-  Field,
-  Page,
-  localState,
-  useAction,
-  useOptionalString,
-} from "@repo/ui";
+import { ConfirmDialog, Field, Page, localState, useAction, useOptionalString } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 import { Effect, Option } from "effect";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
 import { discardDraft, publishDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
+import { draftProgress } from "#pages/wiki-edit/model/draft-progress.ts";
 import { wikiPageHref, writeWikiDocument } from "#shared/wiki-document/index.ts";
+import { DraftActions } from "./draft-actions.tsx";
 import { DraftStatus } from "./draft-status.tsx";
 import { EditorToolbar } from "./editor-toolbar.tsx";
 import { wikiEditorComponents, wikiEditorPlugins } from "./wiki-editor-plugins.ts";
@@ -39,9 +32,7 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
   const [confirmingDiscard, setConfirmingDiscard] = useConfirmingDiscard();
   const title = Option.getOrElse(titleInput, () => document.title);
   const description = Option.getOrElse(descriptionInput, () => document.description);
-  const version = source.draft?.version ?? 0;
-  const publishable = source.publishable && version > 0;
-  const busy = saving.blocked || publishing.blocked;
+  const { publishable, publishedUrl, version } = draftProgress(source);
 
   const save = (): Promise<void> =>
     Effect.runPromise(writeWikiDocument({ description, title, value: editor.children }))
@@ -85,48 +76,26 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
             className="min-h-96 max-w-none rounded-md border border-border bg-card p-4 outline-none focus-visible:focus-indicator-outer"
           />
         </Plate>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            action={() => {
-              saving.run(save);
-            }}
-            disabled={busy}
-            type="button"
-            variant={publishable ? "secondary" : "primary"}
-          >
-            下書きを保存
-          </Button>
-          {publishable ? (
-            <Button
-              action={() => {
-                publishing.run(publish);
-              }}
-              disabled={busy}
-              type="button"
-              variant="primary"
-            >
-              保存した下書きを公開
-            </Button>
-          ) : null}
-          {version === 0 ? null : (
-            <Button
-              disabled={discarding.blocked || busy}
-              onClick={() => {
-                setConfirmingDiscard(true);
-              }}
-              type="button"
-              variant="danger"
-            >
-              下書きを捨てる
-            </Button>
-          )}
-          <ButtonAnchor href={wikiPageHref(source.path)} variant="secondary">
-            ページに戻る
-          </ButtonAnchor>
-        </div>
+        <DraftActions
+          backHref={wikiPageHref(source.path)}
+          discarding={discarding}
+          onDiscard={() => {
+            setConfirmingDiscard(true);
+          }}
+          onPublish={() => {
+            publishing.run(publish);
+          }}
+          onSave={() => {
+            saving.run(save);
+          }}
+          publishable={publishable}
+          publishing={publishing}
+          saving={saving}
+          version={version}
+        />
         <DraftStatus
           failures={[saving.error, publishing.error, discarding.error]}
-          publishedUrl={source.draft?.publishedUrl ?? null}
+          publishedUrl={publishedUrl}
           version={version}
         />
       </div>

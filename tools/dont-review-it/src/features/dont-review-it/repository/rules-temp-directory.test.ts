@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
 
-const fixtureFile = "tools/dont-review-it/src/features/dont-review-it/repository/probe-fixture.ts";
+const fixtureFile =
+  "tools/dont-review-it/src/features/dont-review-it/repository/probe-test-fixture.ts";
 const testFile = "tools/dont-review-it/src/features/dont-review-it/repository/probe.test.ts";
 const productionFile = "tools/dont-review-it/src/features/dont-review-it/repository/probe.ts";
 

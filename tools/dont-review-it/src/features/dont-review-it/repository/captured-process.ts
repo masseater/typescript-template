@@ -31,3 +31,4 @@ const capturedProcess = (
   );
 
 export { capturedProcess };
+export type { CapturedProcess };

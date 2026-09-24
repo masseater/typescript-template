@@ -124,6 +124,19 @@ const clearOf = (point: Point, direction: Direction, shape: Box): number => {
   return Math.max(PORT, ...exits);
 };
 
+const turnCost = ({
+  arrivalIndex,
+  arrives,
+  heading,
+  moveIndex,
+}: Readonly<{
+  arrivalIndex: number;
+  arrives: boolean;
+  heading: number;
+  moveIndex: number;
+}>): number =>
+  (moveIndex === heading ? 0 : BEND_COST) + (arrives && moveIndex !== arrivalIndex ? BEND_COST : 0);
+
 const routeAround = (request: RouteRequest): readonly Point[] => {
   const orthogonal = (direction: Direction): boolean =>
     directions.some((candidate) => candidate.x === direction.x && candidate.y === direction.y);
@@ -216,14 +229,16 @@ const routeAround = (request: RouteRequest): readonly Point[] => {
         return;
       }
       const nextState = key(nextX, nextY, moveIndex);
-      const arrivalTurn =
-        nextX === goalX && nextY === goalY && moveIndex !== arrivalIndex ? BEND_COST : 0;
       const nextCost =
         current.cost +
         Math.hypot(there.x - here.x, there.y - here.y) +
-        (moveIndex === direction ? 0 : BEND_COST) +
-        crossings(segment, request.crossable) * CROSSING_COST +
-        arrivalTurn;
+        turnCost({
+          arrives: nextX === goalX && nextY === goalY,
+          arrivalIndex,
+          heading: direction,
+          moveIndex,
+        }) +
+        crossings(segment, request.crossable) * CROSSING_COST;
       if (nextCost < (cost.get(nextState) ?? Number.POSITIVE_INFINITY)) {
         cost.set(nextState, nextCost);
         cameFrom.set(nextState, current.state);
@@ -245,4 +260,4 @@ const routeAround = (request: RouteRequest): readonly Point[] => {
 };
 
 export { routeAround };
-export type { Direction };
+export type { Direction, RouteRequest };

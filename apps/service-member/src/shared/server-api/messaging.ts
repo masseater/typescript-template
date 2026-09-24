@@ -127,6 +127,81 @@ function shownMessage(
   };
 }
 
+const memberships = (viewerId: string) =>
+  query((database) =>
+    database
+      .select({ conversationId: conversationParticipant.conversationId })
+      .from(conversationParticipant)
+      .where(eq(conversationParticipant.memberId, viewerId)),
+  );
+
+const conversationKindOf = Effect.fn("conversationKindOf")(function* conversationKindOf(
+  conversationId: string,
+) {
+  const [thread] = yield* query((database) =>
+    database
+      .select({ kind: conversation.kind })
+      .from(conversation)
+      .where(eq(conversation.id, conversationId))
+      .limit(1),
+  );
+  if (thread === undefined) {
+    return yield* new MessagingConversationNotFound();
+  }
+  return thread.kind;
+});
+
+const requireConversationKind = Effect.fn("requireConversationKind")(
+  function* requireConversationKind(
+    conversationId: string,
+    kind: typeof directConversationKind | typeof groupConversationKind,
+  ) {
+    const [thread] = yield* query((database) =>
+      database
+        .select({ id: conversation.id })
+        .from(conversation)
+        .where(and(eq(conversation.id, conversationId), eq(conversation.kind, kind)))
+        .limit(1),
+    );
+    if (thread === undefined) {
+      return yield* new MessagingConversationNotFound();
+    }
+  },
+);
+
+const threadPage = Effect.fn("threadPage")(function* threadPage(
+  viewerId: string,
+  conversationId: string,
+  page: OffsetPage,
+  hideBlocked: boolean,
+) {
+  const messages = yield* query((database) =>
+    database
+      .select({
+        body: directMessage.body,
+        createdAt: directMessage.createdAt,
+        id: directMessage.id,
+        senderId: directMessage.senderId,
+        senderName: directMessage.senderName,
+      })
+      .from(directMessage)
+      .where(visibleInThread(viewerId, conversationId, hideBlocked))
+      .orderBy(directMessage.createdAt, directMessage.id)
+      .limit(page.limit)
+      .offset(page.offset),
+  );
+  const [total] = yield* query((database) =>
+    database
+      .select({ count: count() })
+      .from(directMessage)
+      .where(visibleInThread(viewerId, conversationId, hideBlocked)),
+  );
+  return {
+    messages: messages.map((message) => shownMessage(viewerId, message)),
+    total: total?.count ?? 0,
+  };
+});
+
 const requireGroupParticipant = Effect.fn("requireGroupParticipant")(
   function* requireGroupParticipant(viewerId: string, conversationId: string) {
     if (!(yield* canReadGroupConversation(viewerId, conversationId))) {
@@ -252,14 +327,8 @@ const listGroupConversations = Effect.fn("listGroupConversations")(function* lis
   page: OffsetPage,
 ) {
   yield* requireMessagingMember(viewerId);
-  const memberships = yield* query((database) =>
-    database
-      .select({ conversationId: conversationParticipant.conversationId })
-      .from(conversationParticipant)
-      .where(eq(conversationParticipant.memberId, viewerId)),
-  );
   const summaries: ConversationSummary[] = [];
-  for (const membership of memberships) {
+  for (const membership of yield* memberships(viewerId)) {
     const [thread] = yield* query((database) =>
       database
         .select({
@@ -312,48 +381,15 @@ const findGroupConversation = Effect.fn("findGroupConversation")(function* findG
   yield* requireMessagingMember(viewerId);
   yield* requireGroupParticipant(viewerId, conversationId);
   const target = yield* groupTargetOf(conversationId);
-  const [thread] = yield* query((database) =>
-    database
-      .select({ id: conversation.id })
-      .from(conversation)
-      .where(and(eq(conversation.id, conversationId), eq(conversation.kind, groupConversationKind)))
-      .limit(1),
-  );
-  if (thread === undefined) {
-    return yield* new MessagingConversationNotFound();
-  }
-  const messages = yield* query((database) =>
-    database
-      .select({
-        body: directMessage.body,
-        createdAt: directMessage.createdAt,
-        id: directMessage.id,
-        senderId: directMessage.senderId,
-        senderName: directMessage.senderName,
-      })
-      .from(directMessage)
-      .where(visibleInThread(viewerId, conversationId, true))
-      .orderBy(directMessage.createdAt, directMessage.id)
-      .limit(page.limit)
-      .offset(page.offset),
-  );
-  const [total] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(directMessage)
-      .where(visibleInThread(viewerId, conversationId, true)),
-  );
+  yield* requireConversationKind(conversationId, groupConversationKind);
+  const thread = yield* threadPage(viewerId, conversationId, page, true);
   const conversationView: ConversationView = {
     group: target.group,
     id: conversationId,
     kind: groupConversationKind,
-    total: total?.count ?? 0,
+    total: thread.total,
   };
-  return {
-    conversation: conversationView,
-    messages: messages.map((message) => shownMessage(viewerId, message)),
-    total: total?.count ?? 0,
-  };
+  return { conversation: conversationView, ...thread };
 });
 
 const insertMessage = Effect.fn("insertMessage")(function* insertMessage(
@@ -393,16 +429,7 @@ const sendGroupMessage = Effect.fn("sendGroupMessage")(function* sendGroupMessag
   if (!(yield* maySendGroupMessage(senderId, conversationId))) {
     return yield* new MessagingConversationNotFound();
   }
-  const [thread] = yield* query((database) =>
-    database
-      .select({ id: conversation.id })
-      .from(conversation)
-      .where(and(eq(conversation.id, conversationId), eq(conversation.kind, groupConversationKind)))
-      .limit(1),
-  );
-  if (thread === undefined) {
-    return yield* new MessagingConversationNotFound();
-  }
+  yield* requireConversationKind(conversationId, groupConversationKind);
   return yield* insertMessage(sender.id, sender.name, conversationId, body);
 });
 
@@ -484,50 +511,15 @@ const findDirectConversation = Effect.fn("findDirectConversation")(function* fin
   yield* requireMessagingMember(viewerId);
   yield* requireParticipant(viewerId, conversationId);
   const peer = yield* peerOf(viewerId, conversationId);
-  const [thread] = yield* query((database) =>
-    database
-      .select({ id: conversation.id })
-      .from(conversation)
-      .where(
-        and(eq(conversation.id, conversationId), eq(conversation.kind, directConversationKind)),
-      )
-      .limit(1),
-  );
-  if (thread === undefined) {
-    return yield* new MessagingConversationNotFound();
-  }
-  const messages = yield* query((database) =>
-    database
-      .select({
-        body: directMessage.body,
-        createdAt: directMessage.createdAt,
-        id: directMessage.id,
-        senderId: directMessage.senderId,
-        senderName: directMessage.senderName,
-      })
-      .from(directMessage)
-      .where(eq(directMessage.conversationId, conversationId))
-      .orderBy(directMessage.createdAt, directMessage.id)
-      .limit(page.limit)
-      .offset(page.offset),
-  );
-  const [total] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(directMessage)
-      .where(eq(directMessage.conversationId, conversationId)),
-  );
+  yield* requireConversationKind(conversationId, directConversationKind);
+  const thread = yield* threadPage(viewerId, conversationId, page, false);
   const conversationView: DirectConversationView = {
     id: conversationId,
     kind: directConversationKind,
     peer,
-    total: total?.count ?? 0,
+    total: thread.total,
   };
-  return {
-    conversation: conversationView,
-    messages: messages.map((message) => shownMessage(viewerId, message)),
-    total: total?.count ?? 0,
-  };
+  return { conversation: conversationView, ...thread };
 });
 
 const findConversation = Effect.fn("findConversation")(function* findConversation(
@@ -535,17 +527,7 @@ const findConversation = Effect.fn("findConversation")(function* findConversatio
   conversationId: string,
   page: OffsetPage,
 ) {
-  const [thread] = yield* query((database) =>
-    database
-      .select({ kind: conversation.kind })
-      .from(conversation)
-      .where(eq(conversation.id, conversationId))
-      .limit(1),
-  );
-  if (thread === undefined) {
-    return yield* new MessagingConversationNotFound();
-  }
-  if (thread.kind === directConversationKind) {
+  if ((yield* conversationKindOf(conversationId)) === directConversationKind) {
     return yield* findDirectConversation(viewerId, conversationId, page);
   }
   return yield* findGroupConversation(viewerId, conversationId, page);
@@ -619,34 +601,13 @@ const sendDirectMessage = Effect.fn("sendDirectMessage")(function* sendDirectMes
   if (!peer.withdrawn && peer.id !== null && (yield* pairBlocked(senderId, peer.id))) {
     return yield* new MessagingConversationNotFound();
   }
-  const [thread] = yield* query((database) =>
-    database
-      .select({ id: conversation.id })
-      .from(conversation)
-      .where(
-        and(eq(conversation.id, conversationId), eq(conversation.kind, directConversationKind)),
-      )
-      .limit(1),
-  );
-  if (thread === undefined) {
-    return yield* new MessagingConversationNotFound();
-  }
+  yield* requireConversationKind(conversationId, directConversationKind);
   return yield* insertMessage(sender.id, sender.name, conversationId, body);
 });
 
 const sendConversationMessage = Effect.fn("sendConversationMessage")(
   function* sendConversationMessage(senderId: string, conversationId: string, body: string) {
-    const [thread] = yield* query((database) =>
-      database
-        .select({ kind: conversation.kind })
-        .from(conversation)
-        .where(eq(conversation.id, conversationId))
-        .limit(1),
-    );
-    if (thread === undefined) {
-      return yield* new MessagingConversationNotFound();
-    }
-    if (thread.kind === directConversationKind) {
+    if ((yield* conversationKindOf(conversationId)) === directConversationKind) {
       return yield* sendDirectMessage(senderId, conversationId, body);
     }
     return yield* sendGroupMessage(senderId, conversationId, body);
@@ -670,17 +631,7 @@ const markConversationRead = Effect.fn("markConversationRead")(function* markCon
   conversationId: string,
 ) {
   yield* requireMessagingMember(viewerId);
-  const [thread] = yield* query((database) =>
-    database
-      .select({ kind: conversation.kind })
-      .from(conversation)
-      .where(eq(conversation.id, conversationId))
-      .limit(1),
-  );
-  if (thread === undefined) {
-    return yield* new MessagingConversationNotFound();
-  }
-  if (thread.kind === directConversationKind) {
+  if ((yield* conversationKindOf(conversationId)) === directConversationKind) {
     yield* requireParticipant(viewerId, conversationId);
   } else {
     yield* requireGroupParticipant(viewerId, conversationId);
@@ -703,14 +654,8 @@ const totalUnreadCount = Effect.fn("totalUnreadCount")(function* totalUnreadCoun
   viewerId: string,
 ) {
   yield* requireMessagingMember(viewerId);
-  const memberships = yield* query((database) =>
-    database
-      .select({ conversationId: conversationParticipant.conversationId })
-      .from(conversationParticipant)
-      .where(eq(conversationParticipant.memberId, viewerId)),
-  );
   let unread = 0;
-  for (const membership of memberships) {
+  for (const membership of yield* memberships(viewerId)) {
     const [thread] = yield* query((database) =>
       database
         .select({ id: conversation.id, kind: conversation.kind })

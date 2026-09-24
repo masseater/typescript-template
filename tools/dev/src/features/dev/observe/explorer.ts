@@ -143,3 +143,4 @@ const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetr
 });
 
 export { explorerOrigin, queryExplorer, requestTelemetry, withEvent };
+export type { ExplorerFailure, LogEvent, LogRow, Row };

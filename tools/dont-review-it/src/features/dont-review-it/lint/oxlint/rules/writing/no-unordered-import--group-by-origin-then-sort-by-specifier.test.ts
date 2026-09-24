@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noUnorderedImport } from "./no-unordered-import--group-by-origin-then-sort-by-specifier.ts";
 
 describe("dont-review-it/no-unordered-import--group-by-origin-then-sort-by-specifier", () => {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { NodeServices } from "@effect/platform-node";
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, runCli, runCommand } from "@repo/cli";
 import { ROLE } from "@repo/config";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
@@ -28,7 +28,7 @@ const verifyCommand = Command.make(
       Effect.flatMap((report) => Console.log(JSON.stringify(report))),
     );
   }),
-).pipe(Command.run({ version: "0.0.0" }), Effect.provide(NodeServices.layer));
+).pipe(runCommand({ version: "0.0.0" }), Effect.provide(NodeServices.layer));
 
 runCli(verifyCommand, (cause) =>
   causeRecord("verify.failed", {

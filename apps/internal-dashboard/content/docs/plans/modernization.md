@@ -140,7 +140,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | --- | --- | --- | --- |
 | ★5 | Vitest browser mode と Playwright | 実ブラウザでテストと E2E を実行します | 一部。Storybook のコンポーネントのテストだけが実ブラウザで実行され、アプリ全体の E2E は残っています |
 | ★5 | MSW | 外部 HTTP だけを置き換えます | 導入済み |
-| ★5 | knip | 使われていない export や依存を検出します | 導入済み |
+| ★5 | fallow | 使われていない export や依存、循環依存、重複、複雑すぎる関数を検出します | 導入済み |
 | ★4 | Effect の OTLP 出力 | Effect のスパンとログを OpenTelemetry で送ります | 導入済み |
 | ★4 | Renovate と pnpm の `minimumReleaseAge` | 依存を更新し、公開直後のパッケージは取り込みません | 導入済み |
 | ★3 | Scalar | OpenAPI から API ドキュメントの画面を作ります | 未着手 |

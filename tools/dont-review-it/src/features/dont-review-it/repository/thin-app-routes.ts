@@ -10,6 +10,16 @@ const isAppRouteModule = (inspected: string): boolean => {
   return routeFile.test(normalized) && !exemptBasename.test(normalized);
 };
 
+const containsJsx = (node: unknown): boolean => {
+  if (typeof node !== "object" || node === null) {
+    return false;
+  }
+  if ("type" in node && (node.type === "JSXElement" || node.type === "JSXFragment")) {
+    return true;
+  }
+  return Object.values(node).some((child) => containsJsx(child));
+};
+
 const thinAppRoutesVisitor = (inspection: LintContext): Visitor => {
   if (!isAppRouteModule(filename(inspection))) {
     return {};
@@ -24,4 +34,4 @@ const thinAppRoutesVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
-export { isAppRouteModule, thinAppRoutesVisitor };
+export { containsJsx, isAppRouteModule, thinAppRoutesVisitor };

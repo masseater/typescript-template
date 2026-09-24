@@ -118,4 +118,4 @@ export {
   readValue,
   readable,
 };
-export type { FieldName, ReplyForm, SheetData };
+export type { FieldDefinition, FieldName, ReplyForm, SheetData };

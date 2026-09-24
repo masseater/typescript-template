@@ -30,3 +30,4 @@ const makeRpcClient = <Rpcs extends Rpc.Any>(
 > => RpcClient.make(rpcContract).pipe(Effect.provide(bindingProtocol(core)));
 
 export { makeRpcClient };
+export type { BindingFetcher };

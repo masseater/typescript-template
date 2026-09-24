@@ -52,3 +52,4 @@ export const nodesOfType = <T extends ESTree.Node["type"]>(
   root: ESTree.Node,
   nodeType: T,
 ): readonly NodeOfType<T>[] => nodeVisitsOfType(root, nodeType).map((visit) => visit.node);
+export type { NodeOfType, TypedNodeVisit };

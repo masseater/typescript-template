@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noHandmadeStandardIoDouble } from "./no-handmade-standard-io-double--use-standard-io-test.ts";
 
 describe("dont-review-it/no-handmade-standard-io-double--use-standard-io-test", () => {

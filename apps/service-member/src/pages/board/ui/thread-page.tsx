@@ -1,5 +1,6 @@
 import { Heading, PageNavigation } from "@repo/ui";
 
+import { lastPage } from "#shared/ui/index.ts";
 import { PostItem } from "./post-item.tsx";
 import { ReplyForm } from "./reply-form.tsx";
 import { ThreadBody } from "./thread-body.tsx";
@@ -7,18 +8,13 @@ import { ThreadPageLink } from "./thread-page-link.tsx";
 
 import type { Thread } from "#pages/board/api/board.ts";
 import type { ThreadSearch } from "#pages/board/model/board-search.ts";
-import type { PageTarget } from "@repo/ui";
 import type { ReactElement } from "react";
 
 function ThreadPage({
   search,
   thread,
 }: Readonly<{ search: ThreadSearch; thread: Thread }>): ReactElement {
-  const current = search.page ?? 1;
-  const last = Math.max(1, Math.ceil(thread.total / thread.pageSize));
-  function pageLink(target: PageTarget): ReactElement {
-    return <ThreadPageLink target={target} threadId={thread.thread.id} />;
-  }
+  const threadId = thread.thread.id;
   return (
     <ThreadBody>
       <Heading as="h1" size="page">
@@ -30,11 +26,12 @@ function ThreadPage({
           <PostItem key={post.id} post={post} />
         ))}
       </ul>
-      <PageNavigation current={current} last={last} renderLink={pageLink} />
-      <ReplyForm
-        threadId={thread.thread.id}
-        lastPage={Math.ceil((thread.total + 1) / thread.pageSize)}
+      <PageNavigation
+        current={search.page ?? 1}
+        last={lastPage(thread.total, thread.pageSize)}
+        renderLink={(target) => <ThreadPageLink target={target} threadId={threadId} />}
       />
+      <ReplyForm threadId={threadId} lastPage={lastPage(thread.total + 1, thread.pageSize)} />
     </ThreadBody>
   );
 }

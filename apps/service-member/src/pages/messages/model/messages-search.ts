@@ -1,6 +1,7 @@
+import { laterPage } from "@repo/config/paging";
 import { Option, Schema } from "effect";
 
-import { laterPage, maximumMemberPage } from "#shared/contracts/index.ts";
+import { maximumMemberPage } from "#shared/contracts/index.ts";
 
 const MessagesSearchParams = Schema.Struct({
   newGroup: Schema.optionalKey(Schema.Literal(true)),

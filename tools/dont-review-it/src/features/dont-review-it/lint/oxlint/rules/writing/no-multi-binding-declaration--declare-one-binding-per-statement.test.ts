@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noMultiBindingDeclaration } from "./no-multi-binding-declaration--declare-one-binding-per-statement.ts";
 
 describe("dont-review-it/no-multi-binding-declaration--declare-one-binding-per-statement", () => {

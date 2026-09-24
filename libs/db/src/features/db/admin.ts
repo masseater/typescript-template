@@ -9,12 +9,13 @@ import {
   type AdminPermission,
 } from "@repo/config/identity";
 import { maximumAdminPageSize } from "@repo/config/paging";
-import { and, count, desc, eq, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, or, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { containsKeyword } from "./contains-keyword.ts";
-import { query } from "./database.ts";
+import { countRows } from "./count-rows.ts";
+import { query, type DrizzleDatabase } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
@@ -74,23 +75,21 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   yield* requireAdmin(sessionId);
   const checkedAt = DateTime.toDate(yield* DateTime.now);
 
+  const matching = (database: DrizzleDatabase): SQL | undefined =>
+    and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page));
+
   const users = yield* query((database) =>
     database
       .select(memberColumns)
       .from(user)
-      .where(and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page)))
+      .where(matching(database))
       .orderBy(desc(user.createdAt), user.id)
       .limit(page.limit)
       .offset(page.offset),
   );
 
-  const [matching] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(user)
-      .where(and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page))),
-  );
-  return { total: matching?.count ?? 0, users };
+  const matchingCount = yield* countRows(user, matching);
+  return { total: matchingCount, users };
 });
 
 const adminActor = (
@@ -110,6 +109,31 @@ const adminEntry = (
   channel: targeting.channel,
   targetId: targeting.targetId,
 });
+
+const ownerAudited = (
+  database: DrizzleDatabase,
+  {
+    actor,
+    sessionId,
+    targeting,
+    updatedAt,
+  }: Readonly<{
+    actor: Readonly<{ user: Readonly<{ id: string }> }>;
+    sessionId: string;
+    targeting: Readonly<{ action: AuditEntry["action"]; channel: AuditChannel; targetId: string }>;
+    updatedAt: Date;
+  }>,
+): Readonly<{ audit: ReturnType<DrizzleDatabase["run"]>; live: SQL }> => {
+  const live = liveAdmin(database, {
+    checkedAt: updatedAt,
+    required: ADMIN_PERMISSION.owner,
+    sessionId,
+  });
+  const audit = database.run(
+    auditWhenTargeted(database, { actorIsLive: live, entry: adminEntry(actor, targeting) }),
+  );
+  return { audit, live };
+};
 
 export const getMember = Effect.fn("getMember")(function* getMember(
   sessionId: string,
@@ -262,21 +286,12 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const [, changedAdmins] = yield* query((database) => {
-      const live = liveAdmin(database, {
-        checkedAt: updatedAt,
-        required: ADMIN_PERMISSION.owner,
+      const { audit, live } = ownerAudited(database, {
+        actor,
         sessionId,
+        targeting: { action: AUDIT_ACTION.adminPermissionChanged, channel, targetId: adminId },
+        updatedAt,
       });
-      const audit = database.run(
-        auditWhenTargeted(database, {
-          actorIsLive: live,
-          entry: adminEntry(actor, {
-            action: AUDIT_ACTION.adminPermissionChanged,
-            channel,
-            targetId: adminId,
-          }),
-        }),
-      );
       const transition = database
         .update(user)
         .set({ permission, updatedAt })
@@ -305,24 +320,19 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
   }
   const updatedAt = DateTime.toDate(yield* DateTime.now);
   const [, changedAdmins] = yield* query((database) => {
-    const live = liveAdmin(database, {
-      checkedAt: updatedAt,
-      required: ADMIN_PERMISSION.owner,
+    const { audit, live } = ownerAudited(database, {
+      actor,
       sessionId,
+      targeting: {
+        action:
+          accountState === ACCOUNT_STATE.suspended
+            ? AUDIT_ACTION.adminDisabled
+            : AUDIT_ACTION.adminEnabled,
+        channel,
+        targetId: adminId,
+      },
+      updatedAt,
     });
-    const audit = database.run(
-      auditWhenTargeted(database, {
-        actorIsLive: live,
-        entry: adminEntry(actor, {
-          action:
-            accountState === ACCOUNT_STATE.suspended
-              ? AUDIT_ACTION.adminDisabled
-              : AUDIT_ACTION.adminEnabled,
-          channel,
-          targetId: adminId,
-        }),
-      }),
-    );
     const transition = database
       .update(user)
       .set({ accountState, updatedAt })

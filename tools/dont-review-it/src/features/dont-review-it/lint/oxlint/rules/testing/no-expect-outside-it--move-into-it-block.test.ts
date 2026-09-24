@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noExpectOutsideIt } from "./no-expect-outside-it--move-into-it-block.ts";
 
 const STORY_FILE = "src/button.stories.tsx";

@@ -146,21 +146,28 @@ const declaredStatementOf = (statement: AstFields): AstFields =>
     ? (astFieldsOf(statement.declaration) ?? statement)
     : statement;
 
-const boundConstantsIn = (
+export const constBindingsIn = (
   statement: AstFields,
-  known: ReadonlyMap<string, string>,
-): readonly (readonly [string, string])[] => {
+): readonly { readonly named: AstFields; readonly bound: AstFields }[] => {
   const declared = declaredStatementOf(statement);
   if (nodeTypeOf(declared) !== "VariableDeclaration" || declared.kind !== "const") return [];
 
   return listedFieldsOf(declared.declarations).flatMap((declarator) => {
     const named = astFieldsOf(declarator.id);
     const bound = astFieldsOf(declarator.init);
-    if (named === null || bound === null || nodeTypeOf(named) !== "Identifier") return [];
+    return named === null || bound === null ? [] : [{ bound, named }];
+  });
+};
+
+const boundConstantsIn = (
+  statement: AstFields,
+  known: ReadonlyMap<string, string>,
+): readonly (readonly [string, string])[] =>
+  constBindingsIn(statement).flatMap(({ named, bound }) => {
+    if (nodeTypeOf(named) !== "Identifier") return [];
     const spelling = staticSpecifierOf(bound, known);
     return spelling === null ? [] : [[String(named.name), spelling] as const];
   });
-};
 
 export const constantSpecifiersIn = (writtenBody: unknown): ReadonlyMap<string, string> =>
   listedFieldsOf(writtenBody).reduce<ReadonlyMap<string, string>>(

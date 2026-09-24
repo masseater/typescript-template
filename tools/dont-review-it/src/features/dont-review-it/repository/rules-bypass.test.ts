@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
 
 const mockBypasses = [
   ["import-alias", 'import { vi as tools } from "vitest"; tools.mock("owned");'],

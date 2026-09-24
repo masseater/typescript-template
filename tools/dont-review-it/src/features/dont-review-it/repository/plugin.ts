@@ -2,6 +2,7 @@ import { definePlugin, type RuleMeta, type Visitor } from "vite-plus/lint/plugin
 
 import { RESPONSE_FACTORY_MEMBER } from "../lint/oxlint/lib/spec-syntax/host-object-constructions.ts";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
+import { appFrameSidebarVisitor } from "./app-frame-sidebar.ts";
 import { atomServerDataVisitor } from "./atom-server-data-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
 import {
@@ -261,6 +262,12 @@ const projectPlugin = definePlugin({
         "Effect.annotateLogs / annotateCurrentSpan / withSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan / withSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
       ),
     },
+    "app-frame-sidebar": {
+      create: appFrameSidebarVisitor,
+      meta: metadata(
+        "サイドバーを自前で作れません。<aside> の中に <nav> を置く書き方と、sidebar モジュール（shadcn/ui の Sidebar など）の取り込みをやめ、@repo/ui の AppFrame に sections を渡してください。AppFrame のサイドバーは、画面幅が広いときにアイコンだけに畳めます。",
+      ),
+    },
     "atom-server-data": {
       create: atomServerDataVisitor,
       meta: metadata(`${atomHeldServerDataMessage} ${serverCacheApiMessage}`),
@@ -369,9 +376,18 @@ const projectPlugin = definePlugin({
     },
     "process-boundary": {
       create: processBoundaryVisitor,
-      meta: metadata(
-        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console か @repo/cli の cliStdout / cliStderr、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.stdout・process.stderr・NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、process.exitCode を参照できるのはそれと ${exitCodeImplementation} だけです。`,
-      ),
+      meta: {
+        ...metadata(
+          `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console か @repo/cli の cliStdout / cliStderr、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.stdout・process.stderr・NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、process.exitCode を参照できるのはそれと ${exitCodeImplementation} だけです。process.getBuiltinModule はどこでも使えません。import/no-nodejs-modules を迂回するので、Effect の FileSystem・Path・ChildProcess などを使い、それで表せないファイルだけ node:* を import して lint 設定の nodeBuiltinBoundaryFiles に名前を載せてください。`,
+        ),
+        schema: [
+          {
+            additionalProperties: false,
+            properties: { builtinLoaderOnly: { type: "boolean" } },
+            type: "object",
+          },
+        ],
+      },
     },
     "react-legacy": {
       create: reactLegacyVisitor,

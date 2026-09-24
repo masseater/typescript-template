@@ -52,6 +52,14 @@ export const isFixtureBuilderCall = (call: ESTree.CallExpression): boolean => {
   return !(receiver.type === "Identifier" && receiver.name === CUSTOM_MATCHER_RECEIVER);
 };
 
+export const fixtureBuilderBaseOf = (initializer: ESTree.Expression): ESTree.Expression | null => {
+  const written = unwrapSubject(initializer);
+  if (written.type !== "CallExpression" || !isFixtureBuilderCall(written)) return null;
+
+  const callee = unwrapSubject(written.callee);
+  return callee.type === "MemberExpression" ? callee.object : null;
+};
+
 const FIXTURE_FORMS = ["builder", "object"] as const;
 
 export type FixtureDeclaration = {

@@ -4,10 +4,11 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { commands } from "./tasks.ts";
+import { commands } from "./tasks-test-fixture.ts";
 import {
   isolatedNodeTestSuffix,
   isolatedNodeTests,
+  prCheckRootShard,
   prCheckShardCount,
   unitTestShardCount,
 } from "./test-runtime.ts";
@@ -82,7 +83,7 @@ describe("vitest isolation and sharding", () => {
     const shards = Array.from({ length: prCheckShardCount }, (_unused, index) => index + 1);
     expect(workflow).toMatch(
       new RegExp(
-        String.raw`^ {2}check-shard:\n(?: {4}.+\n)* {8}shard: \[${shards.join(", ")}\]\n`,
+        String.raw`^ {2}check-shard:\n(?: {4}.+\n)* {8}shard: \[${[prCheckRootShard, ...shards].join(", ")}\]\n`,
         "mu",
       ),
     );

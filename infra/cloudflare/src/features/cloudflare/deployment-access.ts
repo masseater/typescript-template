@@ -1,10 +1,11 @@
+import { runCli } from "@repo/cli";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { State as StateRoute } from "alchemy/Alchemist";
 import { Config, Effect, Redacted } from "effect";
 
 import { verifiedSecrets } from "./credentials.ts";
 import { ENVIRONMENT_FILE_VARIABLE } from "./deployment.ts";
-import { withVerifiedSecrets } from "./secrets.ts";
+import { causeRecord, reportCause, withVerifiedSecrets } from "./secrets.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
 
 import type { SharedConfig } from "./config.ts";
@@ -76,4 +77,24 @@ function stateStore(secrets: DeploymentSecrets): ReturnType<typeof StateRoute.st
   return StateRoute.store({ backend: "cloudflare", envFile: secrets.filename });
 }
 
-export { deploymentAccess, stateStore };
+type DeploymentAccess = Effect.Success<ReturnType<typeof deploymentAccess>>;
+
+function runDeploymentCommand<Input, InputFailure, CommandFailure>(
+  event: string,
+  input: Effect.Effect<Input, InputFailure>,
+  command: (input: Input, deployment: DeploymentAccess) => Effect.Effect<unknown, CommandFailure>,
+): void {
+  runCli(
+    Effect.gen(function* program() {
+      const given = yield* input;
+      const deployment = yield* deploymentAccess();
+      yield* command(given, deployment).pipe(
+        Effect.catchCause((cause) => reportCause(event, cause, deployment.confidential)),
+      );
+    }),
+    (cause) => causeRecord(event, cause),
+  );
+}
+
+export { deploymentAccess, runDeploymentCommand, stateStore };
+export type { DeploymentAccess };

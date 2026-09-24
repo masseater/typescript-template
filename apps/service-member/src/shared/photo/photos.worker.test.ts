@@ -8,12 +8,11 @@ import {
 } from "@repo/config";
 import { photoKeysOf, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { FileStore } from "@repo/runtime";
 import { AppOrigin } from "@repo/runtime/http";
-import { env } from "cloudflare:workers";
+import { testFileStore } from "@repo/runtime/testing";
 import { Effect, Layer, DateTime } from "effect";
 
-import { containsExifMarker, jpegWithExif, pngWithText } from "./image-fixture.ts";
+import { containsExifMarker, jpegWithExif, pngWithText } from "./image-test-fixture.ts";
 import { PhotoStore } from "./photo-store.ts";
 import { readPhoto, removePhoto, uploadPhoto, withdrawWithPhotos } from "./photos.ts";
 import { readPhotoUpload } from "./upload.ts";
@@ -27,7 +26,7 @@ const origin = "http://localhost:3001";
 
 const services = Layer.mergeAll(
   TestDatabase,
-  PhotoStore.fromFileStore().pipe(Layer.provide(Layer.orDie(FileStore.fromEnvironment(env)))),
+  PhotoStore.fromFileStore().pipe(Layer.provide(testFileStore)),
   Layer.succeed(AppOrigin, origin),
 );
 

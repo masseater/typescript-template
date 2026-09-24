@@ -7,6 +7,7 @@ const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
 const unitTestShardCount = 4;
 const prCheckShardCount = 4;
+const prCheckRootShard = "root";
 const nodeRuntimePackages = [
   "msw/node",
   "miniflare",
@@ -38,6 +39,7 @@ export {
   isolatedNodeTestSuffix,
   isolatedNodeTests,
   nodeRuntimePackages,
+  prCheckRootShard,
   prCheckShardCount,
   runsInWorkerRuntime,
   testPattern,

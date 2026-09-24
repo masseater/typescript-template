@@ -1,7 +1,7 @@
 import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { maximumContactMessageLength, maximumContactNameLength } from "#shared/contracts/index.ts";
-import { fieldError } from "#shared/forms/index.ts";
+import { EmailField, NameField, fieldError } from "#shared/forms/index.ts";
 
 import type { useContactForm } from "#pages/public/contact/model/contact-form.ts";
 import type { FormEvent, ReactElement } from "react";
@@ -20,30 +20,10 @@ function ContactFormFields({
       <FormColumn>
         <form.Field name="name">
           {(field) => (
-            <Field
-              label="お名前"
-              name="name"
-              autoComplete="name"
-              maxLength={maximumContactNameLength}
-              value={field.state.value}
-              onValueChange={field.handleChange}
-              error={fieldError(field.state.meta.errors)}
-            />
+            <NameField field={field} label="お名前" maxLength={maximumContactNameLength} />
           )}
         </form.Field>
-        <form.Field name="email">
-          {(field) => (
-            <Field
-              label="メールアドレス"
-              name="email"
-              type="email"
-              autoComplete="username"
-              value={field.state.value}
-              onValueChange={field.handleChange}
-              error={fieldError(field.state.meta.errors)}
-            />
-          )}
-        </form.Field>
+        <form.Field name="email">{(field) => <EmailField field={field} />}</form.Field>
         <form.Field name="message">
           {(field) => (
             <Field

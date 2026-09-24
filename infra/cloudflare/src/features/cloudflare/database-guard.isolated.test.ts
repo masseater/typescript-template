@@ -3,12 +3,12 @@ import { InMemoryService } from "alchemy/State";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
-import { mockServer } from "./account-fixture.ts";
 import { STATE_STORE_SOURCE } from "./account-read.ts";
+import { mockServer } from "./account-test-fixture.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { describeCause, describeFailure } from "./secrets.ts";
 import { stackName } from "./stacks.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 import type { StateService } from "alchemy/State";
 import type { CreatedResourceState } from "alchemy/State/ResourceState";

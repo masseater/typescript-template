@@ -7,12 +7,13 @@ import {
   ROLE,
   type ReportStatus,
 } from "@repo/config";
-import { count, desc, eq, type SQL } from "drizzle-orm";
+import { desc, eq, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 
 import { auditWhenTargeted } from "./audit.ts";
 import { clockDate } from "./clock-date.ts";
+import { countRows } from "./count-rows.ts";
 import { query } from "./database.ts";
 import { user } from "./identity-schema.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
@@ -23,6 +24,16 @@ import { TrustTargetUnavailable } from "./trust-target-unavailable.ts";
 
 const targetUser = alias(user, "report_target");
 const reporterUser = alias(user, "report_reporter");
+
+const reportTarget = Effect.fn("reportTarget")(function* reportTarget(reportId: string) {
+  return yield* query((database) =>
+    database
+      .select({ targetMemberId: memberReport.targetMemberId })
+      .from(memberReport)
+      .where(eq(memberReport.id, reportId))
+      .limit(1),
+  );
+});
 
 const matchesStatus = (reportStatus: ReportStatus | undefined): SQL | undefined =>
   reportStatus === undefined ? undefined : eq(memberReport.status, reportStatus);
@@ -50,9 +61,7 @@ const listReports = Effect.fn("listReports")(function* listReports(
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [matching] = yield* query((database) =>
-    database.select({ count: count() }).from(memberReport).where(matchesStatus(page.status)),
-  );
+  const matchingCount = yield* countRows(memberReport, () => matchesStatus(page.status));
   return {
     reports: listedReports.map((listedReport) => ({
       createdAt: listedReport.createdAt.getTime(),
@@ -62,7 +71,7 @@ const listReports = Effect.fn("listReports")(function* listReports(
       status: listedReport.status,
       targetName: listedReport.targetName,
     })),
-    total: matching?.count ?? 0,
+    total: matchingCount,
   };
 });
 
@@ -147,13 +156,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
   readonly suspended: boolean;
 }) {
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const [report] = yield* query((database) =>
-    database
-      .select({ targetMemberId: memberReport.targetMemberId })
-      .from(memberReport)
-      .where(eq(memberReport.id, reportId))
-      .limit(1),
-  );
+  const [report] = yield* reportTarget(reportId);
   const targetId = report?.targetMemberId;
   if (targetId === undefined || targetId === null) {
     return yield* new TrustTargetUnavailable();
@@ -209,13 +212,7 @@ const warnTarget = Effect.fn("warnTarget")(function* warnTarget(
   reportId: string,
 ) {
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const [report] = yield* query((database) =>
-    database
-      .select({ targetMemberId: memberReport.targetMemberId })
-      .from(memberReport)
-      .where(eq(memberReport.id, reportId))
-      .limit(1),
-  );
+  const [report] = yield* reportTarget(reportId);
   if (report === undefined) {
     return yield* new TrustSubjectNotFound();
   }

@@ -13,11 +13,11 @@ const uiSharedPartFiles = ["libs/ui/src/features/ui/shared/ui/**"];
 
 const uiQualityInspectionFiles = [
   "libs/ui/design-system.test.ts",
-  "libs/ui/design-system.ts",
-  "libs/ui/hover-colors.ts",
+  "libs/ui/design-system-test-fixture.ts",
+  "libs/ui/hover-colors-test-fixture.ts",
   "libs/ui/part-stories.test.ts",
-  "libs/ui/part-stories.ts",
-  "libs/ui/record-field.ts",
+  "libs/ui/part-stories-test-fixture.ts",
+  "libs/ui/record-field-test-fixture.ts",
 ];
 
 const linkComponents = [

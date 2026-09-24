@@ -6,7 +6,7 @@ import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { sessionApi } from "./account.ts";
-import { fixtureOrigin, testClockRuntime } from "./app-fixture.ts";
+import { fixtureOrigin, testClockRuntime } from "./app-test-fixture.ts";
 import { apiRoot, apiRoutes, createApi, elysiaServer } from "./http.ts";
 
 describe("the health route", () => {

@@ -1,8 +1,7 @@
 import { readStorage } from "@repo/config/storage";
-import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
-import { StorageFailed, storageUnavailable } from "./storage-failed.ts";
+import { type StorageFailed, storageAttempt, storageUnavailable } from "./storage-failed.ts";
 
 import type { KVNamespace } from "@cloudflare/workers-types";
 import type { ConfigurationInvalid } from "@repo/config";
@@ -29,15 +28,7 @@ type ReadCacheShape = {
   ) => Effect.Effect<string, Failure | StorageFailed>;
 };
 type Namespace = Pick<KVNamespace, "delete" | "get" | "put">;
-const attempt = <Value>(
-  operation: string,
-  run: () => Promise<Value>,
-): Effect.Effect<Value, StorageFailed> => {
-  return Effect.tryPromise({
-    catch: (cause) => new StorageFailed({ cause, reason: "operation_failed" }),
-    try: run,
-  }).pipe(withSpan(`storage.cache.${operation}`));
-};
+const attempt = storageAttempt("cache");
 const cacheOf = (namespace: Namespace): ReadCacheShape => {
   const get = (fieldName: string): Effect.Effect<string | undefined, StorageFailed> =>
     attempt("get", async () => {
@@ -103,3 +94,4 @@ class ReadCache extends Context.Service<ReadCache, ReadCacheShape>()("@repo/runt
   }
 }
 export { ReadCache };
+export type { Namespace };

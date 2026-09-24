@@ -1,7 +1,7 @@
-import { searchValidator } from "@repo/ui";
+import { SearchKeyword, laterPage, searchNormalizer } from "@repo/config/paging";
 import { Schema } from "effect";
 
-import { SearchKeyword, laterPage, maximumMemberPage } from "#shared/contracts/index.ts";
+import { maximumMemberPage } from "#shared/contracts/index.ts";
 
 const UsersSearchParams = Schema.Struct({
   keyword: Schema.optionalKey(SearchKeyword),
@@ -10,14 +10,8 @@ const UsersSearchParams = Schema.Struct({
 
 type UsersSearch = typeof UsersSearchParams.Type;
 
-class InvalidUsersSearch extends Schema.TaggedError<InvalidUsersSearch>()(
-  "InvalidUsersSearch",
-  {},
-) {}
-
 const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
+const normalizeUsersSearch = searchNormalizer(UsersSearchParams);
 
-const normalizeUsersSearch = searchValidator(decodeUsersSearch, () => new InvalidUsersSearch());
-
-export { InvalidUsersSearch, decodeUsersSearch, normalizeUsersSearch };
+export { decodeUsersSearch, normalizeUsersSearch };
 export type { UsersSearch };

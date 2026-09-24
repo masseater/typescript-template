@@ -6,7 +6,7 @@ import { parse } from "yaml";
 
 import { directoryEntries, filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
 import { filePathOf } from "../platform/path.ts";
-import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
+import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks-test-fixture.ts";
 import {
   commands,
   configuredDirectories,
@@ -19,7 +19,7 @@ import {
   uncachedGateTasks,
   workspaceDirectories,
   workspaceNames,
-} from "./tasks.ts";
+} from "./tasks-test-fixture.ts";
 import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob(
@@ -357,10 +357,10 @@ describe("lifecycle contents", () => {
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
     expect(dependencies(".", "precommit")).toContain("check:text");
-    expect(commands(".", "check:text")).toStrictEqual(['textlint "**/*.md"']);
+    expect(commands(".", "check:text")).toStrictEqual(["dont-review-it-text"]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toStrictEqual(
-      expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
+      expect.arrayContaining(["check:effect", "fallow", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
     expect(

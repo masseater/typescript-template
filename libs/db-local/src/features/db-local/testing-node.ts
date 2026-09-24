@@ -217,3 +217,4 @@ const deployMigrations = Effect.fn("deployMigrations")(function* deployMigration
 });
 
 export { EmptyTestDatabase, TestBinding, deployMigrations, executeD1RawBatch, runStatement };
+export type { RawStatementSuccess };

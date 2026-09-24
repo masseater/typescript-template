@@ -126,4 +126,4 @@ const createRequestGuard =
     );
 
 export { createRequestGuard, resolvePath };
-export type { RequestGuard };
+export type { BoundaryRoots, RequestGuard };

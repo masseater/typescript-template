@@ -158,4 +158,4 @@ export {
   running,
   socket,
 };
-export type { App, Credentials };
+export type { App, Credentials, RouteName, RunOptions };

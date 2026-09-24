@@ -94,4 +94,4 @@ const spawnChildSync = (
 };
 
 export { spawnChild, spawnChildSync };
-export type { SpawnedChild };
+export type { ChildStream, NodeChild, SpawnedChild, SpawnLaunch };

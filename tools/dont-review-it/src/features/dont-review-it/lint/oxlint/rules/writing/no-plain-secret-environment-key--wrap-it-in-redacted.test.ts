@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noPlainSecretEnvironmentKey } from "./no-plain-secret-environment-key--wrap-it-in-redacted.ts";
 
 describe("dont-review-it/no-plain-secret-environment-key--wrap-it-in-redacted", () => {

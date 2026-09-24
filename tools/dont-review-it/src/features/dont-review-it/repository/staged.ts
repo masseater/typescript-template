@@ -4,9 +4,10 @@ import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process"
 import { capturedProcess } from "./captured-process.ts";
 import {
   contentRules,
+  leaks,
   PREFIX_KEY,
+  prefixScan,
   privateFile,
-  wordPattern,
   type DeploymentValue,
   type PrefixScan,
 } from "./secrets.ts";
@@ -129,10 +130,36 @@ const prefixScanForIndex = Effect.fn("prefixScanForIndex")(function* prefixScanF
     return "word" as const satisfies PrefixScan;
   }
   const contents = yield* Effect.forEach(files, (filename) => showCached(root, filename));
-  return contents.some((content) => wordPattern(prefix).test(content))
-    ? ("separated" as const satisfies PrefixScan)
-    : ("word" as const satisfies PrefixScan);
+  return prefixScan(environmentValues, contents);
 });
+
+type Hit = readonly [filename: string, rule: string];
+
+type IndexHit = {
+  readonly filename: string;
+  readonly rules: readonly string[];
+};
+
+const deploymentValueHits = (
+  introduced: ReadonlyMap<string, string>,
+  environmentValues: readonly DeploymentValue[],
+  scan: PrefixScan,
+): readonly Hit[] =>
+  environmentValues.flatMap((entry) =>
+    [...introduced]
+      .filter(([, content]) => leaks(content, entry, scan))
+      .map(([filename]): Hit => [filename, `deployment-value:${entry.key}`]),
+  );
+
+const groupedHits = (hits: readonly Hit[]): readonly IndexHit[] => {
+  const rulesByFile = new Map<string, Set<string>>();
+  for (const [filename, rule] of hits) {
+    rulesByFile.set(filename, (rulesByFile.get(filename) ?? new Set<string>()).add(rule));
+  }
+  return [...rulesByFile]
+    .map(([filename, rules]) => ({ filename, rules: [...rules].toSorted() }))
+    .toSorted((left, right) => left.filename.localeCompare(right.filename));
+};
 
 const indexSecretHits = Effect.fn("indexSecretHits")(function* indexSecretHits(
   root: string,
@@ -141,56 +168,18 @@ const indexSecretHits = Effect.fn("indexSecretHits")(function* indexSecretHits(
   yield* refuseUnmerged(root);
   const scan = yield* prefixScanForIndex(root, environmentValues);
   const cached = yield* listCachedFiles(root);
-  const hits = new Map<string, string[]>();
-
-  const add = (filename: string, rule: string): void => {
-    const existing = hits.get(filename) ?? [];
-    if (!existing.includes(rule)) {
-      hits.set(filename, [...existing, rule]);
-    }
-  };
-
-  for (const filename of cached) {
-    if (privateFile(filename)) {
-      add(filename, "private-file");
-    }
-  }
-
-  for (const [rule, pattern] of Object.entries(contentRules)) {
-    const matched = yield* filesMatchingPerl(root, pattern.source);
-    for (const filename of matched) {
-      add(filename, rule);
-    }
-  }
-
+  const contentHits = yield* Effect.forEach(Object.entries(contentRules), ([rule, pattern]) =>
+    Effect.map(filesMatchingPerl(root, pattern.source), (files) =>
+      files.map((filename): Hit => [filename, rule]),
+    ),
+  );
   const introduced = yield* addedText(root);
-  for (const entry of environmentValues) {
-    if (entry.key === PREFIX_KEY) {
-      const pattern =
-        scan === "word"
-          ? wordPattern(entry.value)
-          : new RegExp(
-              `(?<![0-9A-Za-z_-])${entry.value.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}(?=[-/])`,
-              "u",
-            );
-      for (const [filename, content] of introduced) {
-        if (pattern.test(content)) {
-          add(filename, `deployment-value:${entry.key}`);
-        }
-      }
-      continue;
-    }
-    for (const [filename, content] of introduced) {
-      if (content.includes(entry.value)) {
-        add(filename, `deployment-value:${entry.key}`);
-      }
-    }
-  }
-
   return {
-    hits: [...hits.entries()]
-      .map(([filename, rules]) => ({ filename, rules: rules.toSorted() }))
-      .toSorted((left, right) => left.filename.localeCompare(right.filename)),
+    hits: groupedHits([
+      ...cached.filter(privateFile).map((filename): Hit => [filename, "private-file"]),
+      ...contentHits.flat(),
+      ...deploymentValueHits(introduced, environmentValues, scan),
+    ]),
     scan,
   };
 });

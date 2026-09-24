@@ -4,7 +4,7 @@ import { comparisonFrom, type RepositoryComparison } from "./repository-comparis
 
 import type { ComparedFile, GitHubApi } from "./github-request.ts";
 
-export type GitHubPullRequestComparison = Readonly<{
+type GitHubPullRequestComparison = Readonly<{
   repositoryRoot: string;
   repository: string;
   baseRevision: string;

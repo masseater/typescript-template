@@ -10,6 +10,8 @@ const wikiPublishKey = {
 
 const wikiPublishKeys = Object.values(wikiPublishKey);
 
+const wikiPublishPermissions = { contents: "write", pull_requests: "write" } as const;
+
 const GitHubAppId = Schema.String.check(Schema.isPattern(/^[1-9][0-9]{0,15}$/u));
 const GitHubRepository = Schema.String.check(
   Schema.isPattern(/^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/u),
@@ -59,5 +61,5 @@ const readWikiPublishConfig = Effect.fn("readWikiPublishConfig")(function* readW
   } satisfies WikiPublishConfig;
 });
 
-export { readWikiPublishConfig, wikiPublishKey };
+export { readWikiPublishConfig, wikiPublishKey, wikiPublishPermissions };
 export type { WikiPublishConfig };

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noEnvironmentNameBranch } from "./no-environment-name-branch--list-the-values-per-stage.ts";
 
 describe("dont-review-it/no-environment-name-branch--list-the-values-per-stage", () => {

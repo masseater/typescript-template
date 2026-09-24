@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { markFailed, runCli } from "@repo/cli";
+import { markFailed } from "@repo/cli";
 import { Console, Effect } from "effect";
 
 import {
@@ -8,16 +8,14 @@ import {
   preflightAccount,
   preflightBlocked,
 } from "./account-inspection.ts";
-import { layer } from "./alchemist.ts";
-import { deploymentAccess, stateStore } from "./deployment-access.ts";
+import { alchemistLayer } from "./alchemist.ts";
+import { runDeploymentCommand, stateStore } from "./deployment-access.ts";
 import { encodeJson } from "./platform.ts";
-import { causeRecord, reportCause } from "./secrets.ts";
 
 const EVENT = "account.rejected";
 
-runCli(
-  Effect.gen(function* program() {
-    const { access, confidential, config, secrets } = yield* deploymentAccess();
+runDeploymentCommand(EVENT, Effect.void, (_input, { access, config, secrets }) =>
+  Effect.gen(function* checkedAccount() {
     const preflight = yield* preflightAccount(access);
     const unready = preflightBlocked(preflight);
     if (unready.length > 0) {
@@ -45,11 +43,6 @@ runCli(
       if (refused.length > 0) {
         yield* markFailed;
       }
-    }).pipe(
-      Effect.provide(layer()),
-      Effect.scoped,
-      Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
-    );
+    }).pipe(Effect.provide(alchemistLayer()), Effect.scoped);
   }),
-  (cause) => causeRecord(EVENT, cause),
 );

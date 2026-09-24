@@ -3,6 +3,7 @@ import { uniq } from "es-toolkit";
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { resolveBinding, type ScopeLookup } from "../../lib/resolved-bindings.ts";
+import { assertionEntryCallOf, firstArgumentOf } from "../../lib/spec-syntax/assertion-entries.ts";
 import { syntaxShapeOf } from "../../lib/spec-syntax/expression-shape.ts";
 import {
   fixtureDeclarationsOf,
@@ -10,10 +11,6 @@ import {
   type FixtureDeclaration,
   type FixtureDependency,
 } from "../../lib/spec-syntax/fixture-declarations.ts";
-import {
-  ASSERTION_CHAIN_MODIFIERS,
-  DERIVED_ASSERTION_RECEIVERS,
-} from "../../lib/spec-syntax/matcher-vocabulary.ts";
 import { isSpecFile, specFileSuffixesFrom } from "../../lib/spec-syntax/spec-files.ts";
 import { staticMemberName } from "../../lib/spec-syntax/static-names.ts";
 import {
@@ -25,42 +22,12 @@ import {
 
 import type { ESTree, Variable } from "@oxlint/plugins";
 
-const ASSERTION_RECEIVER = "expect";
-
-const isAssertionReceiver = (call: ESTree.CallExpression): boolean => {
-  const callee = unwrapSubject(call.callee);
-  if (callee.type === "Identifier") return callee.name === ASSERTION_RECEIVER;
-  if (callee.type !== "MemberExpression") return false;
-
-  const member = staticMemberName(callee);
-  if (member === null || !DERIVED_ASSERTION_RECEIVERS.has(member)) return false;
-
-  const receiver = unwrapSubject(callee.object);
-  return receiver.type === "Identifier" && receiver.name === ASSERTION_RECEIVER;
-};
-
-const assertionRootOf = (node: ESTree.Expression): ESTree.CallExpression | null => {
-  const written = unwrapSubject(node);
-  if (written.type === "CallExpression") return isAssertionReceiver(written) ? written : null;
-  if (written.type !== "MemberExpression") return null;
-
-  const member = staticMemberName(written);
-  if (member === null || !ASSERTION_CHAIN_MODIFIERS.has(member)) return null;
-  return assertionRootOf(written.object);
-};
-
-const firstValueOf = (call: ESTree.CallExpression): ESTree.Expression | null => {
-  const [handed] = call.arguments;
-  if (handed === undefined || handed.type === "SpreadElement") return null;
-  return handed;
-};
-
 const assertedSubjectOf = (call: ESTree.CallExpression): ESTree.IdentifierReference | null => {
   const callee = unwrapSubject(call.callee);
   if (callee.type !== "MemberExpression" || staticMemberName(callee) === null) return null;
 
-  const root = assertionRootOf(callee.object);
-  const handed = root === null ? null : firstValueOf(root);
+  const root = assertionEntryCallOf(callee.object);
+  const handed = root === null ? null : firstArgumentOf(root);
   const subject = handed === null ? null : unwrapSubject(handed);
   return subject?.type === "Identifier" ? subject : null;
 };
@@ -72,7 +39,7 @@ type MirrorCandidate = {
 
 const candidateOf = (call: ESTree.CallExpression): MirrorCandidate | null => {
   const subject = assertedSubjectOf(call);
-  const expectedExpression = subject === null ? null : firstValueOf(call);
+  const expectedExpression = subject === null ? null : firstArgumentOf(call);
   return subject === null || expectedExpression === null ? null : { subject, expectedExpression };
 };
 

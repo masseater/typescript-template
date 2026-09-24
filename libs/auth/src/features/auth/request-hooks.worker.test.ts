@@ -18,7 +18,7 @@ import {
   signInAgainAfterTotp,
   signInAs,
   startAuthorization,
-} from "./testing.ts";
+} from "./index-test-fixture.ts";
 
 describe("request hooks", () => {
   describe("an administrator session opened before TOTP enrollment", () => {

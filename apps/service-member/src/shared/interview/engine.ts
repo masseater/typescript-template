@@ -220,3 +220,4 @@ export {
   save,
   spoken,
 };
+export type { Asking, Settled };

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noSpecFileHelperFunction } from "./no-spec-file-helper-function--inline-or-use-fixture.ts";
 
 const SPEC_FILENAME = "report.test.ts";

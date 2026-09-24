@@ -2,7 +2,7 @@ import { Heading } from "@repo/ui";
 
 import { clockOf, speakerName } from "#pages/recordings/model/recording-labels.ts";
 
-import type { RecordingDetail } from "#pages/recordings/api/recordings.ts";
+import type { RecordingDetail } from "#pages/recordings/model/recording-state.ts";
 import type { ReactElement } from "react";
 
 function TranscriptSection({ recording }: Readonly<{ recording: RecordingDetail }>): ReactElement {

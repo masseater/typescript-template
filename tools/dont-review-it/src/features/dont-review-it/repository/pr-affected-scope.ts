@@ -110,4 +110,4 @@ const hookFilters = (
 };
 
 export { affectedTests, hookFilters, shardDirectories };
-export type { WorkspacePackage };
+export type { AffectedTests, WorkspacePackage };

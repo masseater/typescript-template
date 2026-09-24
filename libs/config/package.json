@@ -11,7 +11,9 @@
     "./process-environment": "./src/features/config/process-environment.ts",
     "./storage": "./src/features/config/storage.ts",
     "./worker": "./src/features/config/worker.ts",
-    "./identity": "./src/features/config/identity.ts"
+    "./identity": "./src/features/config/identity.ts",
+    "./schema-mismatches": "./src/features/config/schema-mismatches.ts",
+    "./testing": "./src/features/config/github-app-key-test-fixture.ts"
   },
   "dependencies": {
     "effect": "catalog:"

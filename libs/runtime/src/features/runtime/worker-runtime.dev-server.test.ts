@@ -3,7 +3,7 @@ import { Effect, Exit, Fiber, Scope } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 import { unstable_dev } from "wrangler";
 
-import { coldStartFixturePath } from "./cold-start-fixture.ts";
+import { coldStartFixturePath } from "./cold-start-test-fixture.ts";
 
 describe("a worker whose runtime is still building its layer", () => {
   const it = test.extend("concurrentAnswers", ({}, { onCleanup }) =>

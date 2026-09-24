@@ -33,7 +33,7 @@ const heldWorkspaceOf = (asked: {
     : workspaceDirectoryOf({ repositoryRoot, packageDirectory });
 };
 
-export type CoverageReconciliation = {
+type CoverageReconciliation = {
   readonly repositoryRoot: string;
   readonly declarations: CoverageDeclarations;
   readonly unscannedDirectoryNames: ReadonlySet<string>;

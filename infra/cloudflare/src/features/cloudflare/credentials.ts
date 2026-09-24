@@ -84,13 +84,7 @@ function verifiedSecrets(): Effect.Effect<
   }).pipe(Effect.provide(layer));
 }
 
-function verifySecretsFileProvided(
-  filename: string,
-): Effect.Effect<{ readonly contents: string; readonly filename: string }, SecretsFileFailure> {
-  return verifySecretsFile(filename).pipe(Effect.provide(layer));
-}
-
 type DeploymentSecrets = Readonly<Effect.Success<ReturnType<typeof verifiedSecrets>>>;
 
-export { verifiedSecrets, verifySecretsFileProvided as verifySecretsFile };
-export type { DeploymentSecrets };
+export { verifiedSecrets };
+export type { DeploymentSecrets, SecretsFileFailure };

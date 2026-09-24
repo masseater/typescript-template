@@ -108,3 +108,4 @@ const wikiCompanion = (roots: WikiRoots): Plugin => {
 };
 
 export { wikiCompanion, wikiDevServices, wikiDevWorkerName, wikiHmrPath };
+export type { WikiRoots };

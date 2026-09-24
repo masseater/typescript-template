@@ -10,7 +10,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { overwriteGetLocale } from "#paraglide/runtime.js";
-import { HomeFeed, presentFeed } from "./home-feed.tsx";
+import { HomeFeed, homeState, presentFeed } from "./home-feed.tsx";
 
 import type { HomeEntry } from "./home-feed.tsx";
 
@@ -90,5 +90,20 @@ describe("home feed", () => {
   it("shows a spinner only while the feed is loading", () => {
     expect.hasAssertions();
     expect(rendered({ status: "pending" })).toContain('data-slot="spinner"');
+  });
+
+  it("settles the feed state with a failure first, then loading, then emptiness", () => {
+    expect.hasAssertions();
+    expect(homeState("取得できませんでした。", [first], false)).toStrictEqual({
+      message: "取得できませんでした。",
+      status: "failure",
+    });
+    expect(homeState(undefined, [first], true)).toStrictEqual({ status: "pending" });
+    expect(homeState(undefined, undefined, false)).toStrictEqual({ status: "pending" });
+    expect(homeState(undefined, [], false)).toStrictEqual({ status: "empty" });
+    expect(homeState(undefined, [first], false)).toStrictEqual({
+      entries: [first],
+      status: "ready",
+    });
   });
 });

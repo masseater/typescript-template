@@ -8,7 +8,7 @@ import {
   rootOnlyDependencyViolations,
   rootOnlyPackages,
   workspaceManifests,
-} from "./dependencies.ts";
+} from "./dependencies-test-fixture.ts";
 
 describe("application package boundaries", () => {
   it.for(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])(

@@ -205,19 +205,10 @@ const importTypeName = (qualifier: ESTree.TSImportType["qualifier"]): string | n
   return qualifier.type === "Identifier" ? qualifier.name : qualifier.right.name;
 };
 
-const keyofDiagnostics = (
+const keyofImportDiagnostics = (
   input: AnalysisInput,
-  typeAnnotation: ESTree.TSType,
+  operandType: ESTree.TSType,
 ): readonly LocalFiniteValueDiagnostic[] => {
-  const unwrapped = unwrapType(typeAnnotation);
-  if (unwrapped.type !== "TSTypeOperator" || unwrapped.operator !== "keyof") return [];
-  const operandType = unwrapType(unwrapped.typeAnnotation);
-  if (operandType.type === "TSTypeReference" && operandType.typeName.type === "Identifier") {
-    const position = localFiniteIdentifierPosition(input, operandType.typeName);
-    return position?.kind === "values"
-      ? []
-      : diagnosticsForPosition(input, { onlyWhenOwned: false, position });
-  }
   if (operandType.type !== "TSImportType" || typeof operandType.source.value !== "string")
     return [];
   const importedName = importTypeName(operandType.qualifier);
@@ -229,6 +220,27 @@ const keyofDiagnostics = (
     node: operandType,
     specifier: operandType.source.value,
   });
+};
+
+const keyofOperandDiagnostics = (
+  input: AnalysisInput,
+  operandType: ESTree.TSType,
+): readonly LocalFiniteValueDiagnostic[] => {
+  if (operandType.type !== "TSTypeReference" || operandType.typeName.type !== "Identifier")
+    return keyofImportDiagnostics(input, operandType);
+  const position = localFiniteIdentifierPosition(input, operandType.typeName);
+  return position?.kind === "values"
+    ? []
+    : diagnosticsForPosition(input, { onlyWhenOwned: false, position });
+};
+
+const keyofDiagnostics = (
+  input: AnalysisInput,
+  typeAnnotation: ESTree.TSType,
+): readonly LocalFiniteValueDiagnostic[] => {
+  const unwrapped = unwrapType(typeAnnotation);
+  if (unwrapped.type !== "TSTypeOperator" || unwrapped.operator !== "keyof") return [];
+  return keyofOperandDiagnostics(input, unwrapType(unwrapped.typeAnnotation));
 };
 
 const typeAliasDiagnostics = (

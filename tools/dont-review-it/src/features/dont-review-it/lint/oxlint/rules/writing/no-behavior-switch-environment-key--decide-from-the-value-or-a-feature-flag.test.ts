@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noBehaviorSwitchEnvironmentKey } from "./no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag.ts";
 
 describe("dont-review-it/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag", () => {
