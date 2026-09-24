@@ -79,7 +79,6 @@ export {
   priceIntervals,
   recoverableStatuses,
   stripeApiVersion,
-  stripeAutomaticTax,
   stripeTrialPeriodDays,
   stripeWebhookEvents,
   subscriptionStatuses,

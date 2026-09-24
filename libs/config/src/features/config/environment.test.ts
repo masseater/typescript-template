@@ -178,11 +178,9 @@ describe("an OTLP switch beside an endpoint", () => {
 
 const stripeBindings = {
   APP_ORIGIN: "http://localhost:3001",
-  STRIPE_AUTOMATIC_TAX: "false",
   STRIPE_METERED_PRICE_ID: "price_metered",
   STRIPE_PRICE_ID: "price_placeholder",
   STRIPE_SECRET_KEY: "sk_test_placeholder",
-  STRIPE_TRIAL_PERIOD_DAYS: "0",
   STRIPE_WEBHOOK_SECRET: "whsec_placeholder",
 };
 
@@ -193,35 +191,10 @@ describe("readStripeConfig", () => {
 
     it("is read as a test-mode configuration", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
-        automaticTax: false,
         meteredPriceId: "price_metered",
         mode: "test",
         priceId: "price_placeholder",
         secretKey: "sk_test_placeholder",
-        trialPeriodDays: 0,
-        webhookSecret: "whsec_placeholder",
-      });
-    });
-  });
-
-  describe("automatic tax and a trial length", () => {
-    const it = test.extend("stripeConfig", () =>
-      Effect.runPromise(
-        readStripeConfig({
-          ...stripeBindings,
-          STRIPE_AUTOMATIC_TAX: "true",
-          STRIPE_TRIAL_PERIOD_DAYS: "14",
-        }),
-      ));
-
-    it("carries the trial length as a number", ({ stripeConfig }) => {
-      expect(stripeConfig).toStrictEqual({
-        automaticTax: true,
-        meteredPriceId: "price_metered",
-        mode: "test",
-        priceId: "price_placeholder",
-        secretKey: "sk_test_placeholder",
-        trialPeriodDays: 14,
         webhookSecret: "whsec_placeholder",
       });
     });
@@ -239,12 +212,10 @@ describe("readStripeConfig", () => {
 
     it("is read as a live-mode configuration", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
-        automaticTax: false,
         meteredPriceId: "price_metered",
         mode: "live",
         priceId: "price_placeholder",
         secretKey: "rk_live_placeholder",
-        trialPeriodDays: 0,
         webhookSecret: "whsec_placeholder",
       });
     });
@@ -255,11 +226,6 @@ describe("readStripeConfig", () => {
       "a live key on a local origin",
       { STRIPE_SECRET_KEY: "sk_live_placeholder" },
       "Stripe live keys are restricted to deployed origins",
-    ],
-    [
-      "a trial longer than Stripe allows",
-      { STRIPE_TRIAL_PERIOD_DAYS: "731" },
-      'Expected 0 for no trial, or up to 730 days\n  at ["STRIPE_TRIAL_PERIOD_DAYS"]',
     ],
     [
       "a secret key without a mode",
@@ -291,7 +257,7 @@ describe("readStripeConfig", () => {
 
     it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
       expect(refusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_AUTOMATIC_TAX"]' }),
+        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_METERED_PRICE_ID"]' }),
       );
     });
   });
