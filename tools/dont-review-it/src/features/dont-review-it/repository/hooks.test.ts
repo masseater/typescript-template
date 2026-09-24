@@ -365,7 +365,12 @@ describe("lifecycle contents", () => {
     expect(commands(".", "check:text")).toStrictEqual(["dont-review-it-text"]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toStrictEqual(
-      expect.arrayContaining(["check:effect", "fallow", "check:canonical-literal-types"]),
+      expect.arrayContaining([
+        "check:effect",
+        "fallow",
+        "fallow:production",
+        "check:canonical-literal-types",
+      ]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
     expect(
@@ -403,10 +408,6 @@ describe("lifecycle contents", () => {
         reachable(directory, ["prepush"]).includes("check"),
       ),
     ).toStrictEqual([
-      "apps/internal-dashboard",
-      "apps/internal-wiki",
-      "apps/service-admin",
-      "apps/service-member",
       "libs/db",
       "tools/ai-native",
       "tools/ai-native-telemetry",

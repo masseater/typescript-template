@@ -14,8 +14,9 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   run: {
     tasks: {
-      "check:effect": {
-        command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
+      ...effectDiagnostics(import.meta.dirname),
+      "check:effect:scenarios": {
+        command: effectTsgoNoEmit("scenarios/tsconfig.json"),
         env: [...telemetryEnv],
         input: effectDiagnostics(import.meta.dirname)["check:effect"].input,
       },
@@ -35,7 +36,7 @@ export default defineConfig({
       load: { cache: false, command: "./src/features/load/cli.ts" },
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check:modular"],
+        prepush: ["check:effect", "check:effect:scenarios", "check:imports", "check:modular"],
       }),
     },
   },

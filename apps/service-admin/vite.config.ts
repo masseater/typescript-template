@@ -3,6 +3,6 @@ import { appConfig, paraglideAppPlugin, paraglideAppRun } from "@repo/vite-confi
 import { defineConfig } from "vite-plus";
 
 export default defineConfig((env) => ({
-  ...appConfig(APPLICATION.admin, [paraglideAppPlugin()])(env),
+  ...appConfig(APPLICATION.admin, { plugins: [paraglideAppPlugin()] })(env),
   run: paraglideAppRun(import.meta.dirname),
 }));

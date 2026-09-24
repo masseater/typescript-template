@@ -10,6 +10,8 @@ const wikiApiEntrypoint = "WikiApi";
 const wikiDevOriginVariable = "WIKI_DEV_ORIGIN";
 const wikiHost = APPLICATION.wiki;
 
+const wikiPort = 3004;
+
 const wikiWorker = "internal-wiki";
 
 type WikiWorker = typeof wikiWorker;
@@ -35,6 +37,7 @@ export {
   wikiDevOriginVariable,
   wikiHost,
   wikiPagesBinding,
+  wikiPort,
   wikiServerFnBase,
   wikiWorker,
 };

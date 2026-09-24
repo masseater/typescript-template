@@ -27,7 +27,7 @@ import { ProfilePage, loadMember } from "#pages/profile/index.ts";
 
 `loadMember` はルートの loader から呼ぶ。`ProfilePage` は、loader の結果を受け取って表示する。`pages/profile/ui/profile-page.tsx` をルートから直接 import しない。
 
-層の外のファイル、上の層への import、public API を通さない import は steiger が失敗させる。コマンドは `quality-check-feature-sliced` である。
+層の外のファイル、上の層への import、public API を通さない import は steiger が失敗させる。コマンドは `dont-review-it-feature-sliced` である。
 
 ## 採ると
 
@@ -35,7 +35,7 @@ import { ProfilePage, loadMember } from "#pages/profile/index.ts";
 | --- | --- | --- |
 | `/users/123` | ルートファイルが、画面の表示まで持つ | `src/app/routes/_member/users.$id.tsx` は URL を繋ぐだけ。`ProfilePage` と `loadMember` は `#pages/profile/index.ts` から取る |
 | `pages/settings` からプロフィールを使う | 同じ層のファイルを直接 import できる | `pages/profile` は `pages/settings` を知らない。外から見えるのは `index.ts` だけである |
-| `pages/profile/ui/profile-page.tsx` をルートから import する | レビューで見つける | `quality-check-feature-sliced` が失敗する |
+| `pages/profile/ui/profile-page.tsx` をルートから import する | レビューで見つける | `dont-review-it-feature-sliced` が失敗する |
 
 ## 参考文献
 
