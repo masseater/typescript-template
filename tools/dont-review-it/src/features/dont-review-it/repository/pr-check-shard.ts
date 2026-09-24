@@ -48,3 +48,4 @@ const shardOutput = (
   });
 
 export { shardOutput };
+export type { NotAWorkspaceFilter };
