@@ -7,15 +7,24 @@ import {
   SearchRoute,
   UsersFailed,
   UsersPending,
-  loadMembers,
+  membersOptions,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
 
 import type { UsersSearch } from "#pages/users/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
+
+function withoutPage(search: UsersSearch): UsersSearch {
+  if (search.page === undefined) {
+    return search;
+  }
+  const { page: _page, ...filters } = search;
+  return filters;
+}
 
 function requireUsersSearch(raw: unknown): UsersSearch {
   try {
-    return normalizeUsersSearch(raw);
+    return withoutPage(normalizeUsersSearch(raw));
   } catch (error) {
     if (Schema.is(InvalidUsersSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/search" });
@@ -34,12 +43,16 @@ const Route = createFileRoute("/_member/search")({
     location: Readonly<{ searchStr: string }>;
     search: UsersSearch;
   }>) => {
-    if (location.searchStr !== defaultStringifySearch(search)) {
-      throw redirect({ replace: true, search, to: "/search" });
+    const normalized = withoutPage(search);
+    if (location.searchStr !== defaultStringifySearch(normalized)) {
+      throw redirect({ replace: true, search: normalized, to: "/search" });
     }
   },
-  loader: ({ deps }: Readonly<{ deps: UsersSearch }>) =>
-    loadMembers(deps).catch((error: unknown) => {
+  loader: ({
+    context,
+    deps,
+  }: Readonly<{ context: Readonly<{ queryClient: QueryClient }>; deps: UsersSearch }>) =>
+    context.queryClient.ensureInfiniteQueryData(membersOptions(deps)).catch((error: unknown) => {
       if (Schema.is(PaidPlanRequired)(error)) {
         throw redirect({ replace: true, search: {}, to: "/upgrade" });
       }

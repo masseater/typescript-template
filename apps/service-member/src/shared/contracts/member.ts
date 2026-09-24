@@ -8,6 +8,8 @@ import {
   laterPage,
   maximumKeywordLength,
   maximumNameLength,
+  maximumPasswordLength,
+  minimumPasswordLength,
   pageNumber,
 } from "@repo/runtime/contracts";
 import { Schema } from "effect";
@@ -22,6 +24,12 @@ const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
+
+const MemberName = Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength));
+
+const MemberPassword = Schema.String.check(
+  Schema.isLengthBetween(minimumPasswordLength, maximumPasswordLength),
+);
 
 const SocialLink = Schema.String.check(
   Schema.isMaxLength(maximumSocialLinkLength),
@@ -48,6 +56,12 @@ const ProfileUpdate = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
   profile: Schema.String.check(Schema.isMaxLength(maximumProfileLength)),
   socialLinks: SocialLinks,
+});
+
+const SignUpSubmission = Schema.Struct({
+  email: Email,
+  name: MemberName,
+  password: MemberPassword,
 });
 
 const VisibilityView = Schema.Struct({
@@ -137,6 +151,7 @@ export {
   RecoveryAccepted,
   RecoveryOfferView,
   SearchKeyword,
+  SignUpSubmission,
   VisibilityView,
   laterPage,
   maximumContactMessageLength,
@@ -144,6 +159,7 @@ export {
   maximumKeywordLength,
   maximumMemberPage,
   maximumNameLength,
+  maximumPasswordLength,
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
