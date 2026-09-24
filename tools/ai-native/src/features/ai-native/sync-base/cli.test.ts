@@ -1,15 +1,16 @@
+import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { runHook } from "cc-hooks-ts";
 import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath, optionalSetting, writeFileString } from "../host.ts";
+import { filesystem, paths, writeFileString } from "../host.ts";
 import { hook } from "./hook.ts";
 import { instructionFor } from "./message.ts";
 
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
-const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
+const CLI_PATH = paths.join(import.meta.dirname, "cli.ts");
 const BEHIND_GH_SCRIPT = `#!/bin/sh
 echo '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":11,"url":"https://example.com/11"}'
 `;
@@ -94,7 +95,7 @@ describe("sync-base cli", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             const directory = yield* filesystem.makeTempDirectory({ prefix: "sync-base-gh-" });
-            const ghPath = joinPath(directory, "gh");
+            const ghPath = paths.join(directory, "gh");
             yield* writeFileString({ location: ghPath, written: BEHIND_GH_SCRIPT });
             yield* filesystem.chmod(ghPath, 0o755);
             return directory;

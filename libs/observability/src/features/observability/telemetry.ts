@@ -5,11 +5,11 @@ import { isRoutes } from "./protocol.ts";
 import { serviceLabel, structuredLogs, type StructuredLogOptions } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 
-import type { ServiceName } from "./service-name.ts";
+import type { BuildTarget } from "@repo/config";
 class Telemetry extends Context.Service<
   Telemetry,
   {
-    readonly serviceName: ServiceName;
+    readonly serviceName: BuildTarget;
     readonly release: string;
     readonly routes: Readonly<Record<string, string>>;
     readonly labels: Readonly<ReadonlySet<string>>;

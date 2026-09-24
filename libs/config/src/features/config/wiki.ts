@@ -8,8 +8,6 @@ const wikiPagesBinding = "WIKI";
 const wikiApiBinding = "WIKI_API";
 const wikiApiEntrypoint = "WikiApi";
 const wikiDevOriginVariable = "WIKI_DEV_ORIGIN";
-const wikiHost = APPLICATION.wiki;
-
 const wikiPort = 3004;
 
 const wikiWorker = "internal-wiki";
@@ -24,7 +22,7 @@ const isWikiPath = (path: string): boolean =>
   path === wikiBasePath || path.startsWith(`${wikiBasePath}/`);
 
 const hostOf = (buildTarget: BuildTarget): Application =>
-  buildTarget === wikiWorker ? wikiHost : buildTarget;
+  buildTarget === wikiWorker ? APPLICATION.dashboard : buildTarget;
 
 export {
   BuildTargetName,
@@ -35,7 +33,6 @@ export {
   wikiApiEntrypoint,
   wikiBasePath,
   wikiDevOriginVariable,
-  wikiHost,
   wikiPagesBinding,
   wikiPort,
   wikiServerFnBase,

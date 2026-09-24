@@ -1,16 +1,12 @@
-import { INQUIRY_STATUS } from "@repo/config";
+import { InquiryStatus } from "@repo/config";
 import { IdentifierQuery, InquiryMessage } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
-const InquiryStatus = Schema.String;
+const InquiryStatusCount = Schema.Record(InquiryStatus, Schema.Finite);
 
-const InquiryStatusCount = Schema.Struct({
-  [INQUIRY_STATUS.answered]: Schema.Finite,
-  [INQUIRY_STATUS.closed]: Schema.Finite,
-  [INQUIRY_STATUS.open]: Schema.Finite,
-});
-
-const InquiryDailyTrend = Schema.Struct({ ...InquiryStatusCount.fields, day: Schema.String });
+const InquiryDailyTrend = Schema.StructWithRest(Schema.Struct({ day: Schema.String }), [
+  InquiryStatusCount,
+]);
 
 const StaffInquiryCounts = Schema.Struct({
   byStatus: InquiryStatusCount,

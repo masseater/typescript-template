@@ -1,4 +1,4 @@
-import { signalNumber } from "../host.ts";
+import { signalNumber } from "../host-facts.ts";
 
 import type { ChildEnd } from "../child-process.ts";
 

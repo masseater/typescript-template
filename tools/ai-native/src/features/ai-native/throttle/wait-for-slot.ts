@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { baseName, epochMillis } from "../host.ts";
+import { epochMillis, paths } from "../host.ts";
 import {
   dropInterruptHandler,
   installInterruptHandler,
@@ -93,7 +93,7 @@ export const waitForSlot = (
       yield* writeWaiterEntry(waiterPath);
       return yield* Effect.promise(() =>
         pollForSlot(configuration, {
-          entryName: baseName(waiterPath),
+          entryName: paths.basename(waiterPath),
           startedAt: epochMillis(),
           lastPrinted: "",
         }),

@@ -3,7 +3,6 @@ import workersHandler from "./libs/monitor/src/features/monitor/monitor-test-fix
 export {
   MailRecorder,
   ProbeMonitor,
-  Process,
   probeAlert,
   probeEvent,
   probeFailure,
@@ -14,5 +13,6 @@ export type {
 } from "./libs/monitor/src/features/monitor/monitor-test-fixture.ts";
 export { InternalApi } from "./apps/core/src/features/core/internal-api.ts";
 export { UserInbox } from "./apps/service-member/src/shared/inbox/inbox.ts";
+export { Process } from "./apps/service-member/src/shared/jobs/process.ts";
 
 export default workersHandler;

@@ -295,13 +295,7 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
-export {
-  INQUIRY_AUTHOR_KIND,
-  inquiry,
-  inquiryAuthorKinds,
-  inquiryMessage,
-} from "./inquiry-schema.ts";
-export type { InquiryAuthorKind } from "./inquiry-schema.ts";
+export { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 export { INQUIRY_STATUS, inquiryStatuses } from "@repo/config";
 export type { InquiryStatus } from "@repo/config";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";

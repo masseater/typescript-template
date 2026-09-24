@@ -5,12 +5,10 @@ import { describe, expect, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
 import {
-  baseName,
   fileExists,
   filesystem,
-  joinPath,
   makeDirectory,
-  parentPath,
+  paths,
   readDirectory,
   readFileString,
   removePath,
@@ -35,13 +33,13 @@ const SILENT_SCRIPT = "";
 
 const SILENT_COMMAND_LINE = [NODE, "-e", SILENT_SCRIPT].join(" ");
 
-const SILENT_COMMAND_ROOT = joinPath(TEST_ROOT, "silent-command");
+const SILENT_COMMAND_ROOT = paths.join(TEST_ROOT, "silent-command");
 
 const ESCAPED_OUTPUT_SCRIPT = 'process.stdout.write("\\u001b[31mred\\u001b[0m plain\\n");';
 
 const ESCAPED_OUTPUT_COMMAND_LINE = [NODE, "-e", ESCAPED_OUTPUT_SCRIPT].join(" ");
 
-const ESCAPED_OUTPUT_ROOT = joinPath(TEST_ROOT, "escaped-output");
+const ESCAPED_OUTPUT_ROOT = paths.join(TEST_ROOT, "escaped-output");
 
 const INTERLEAVED_OUTPUT_SCRIPT = [
   "const delay = (ms) => new Promise((r) => setTimeout(r, ms));",
@@ -50,20 +48,20 @@ const INTERLEAVED_OUTPUT_SCRIPT = [
 
 const INTERLEAVED_OUTPUT_COMMAND_LINE = [NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT].join(" ");
 
-const INTERLEAVED_OUTPUT_ROOT = joinPath(TEST_ROOT, "interleaved-output");
+const INTERLEAVED_OUTPUT_ROOT = paths.join(TEST_ROOT, "interleaved-output");
 
 const DELAYED_MARK_SCRIPT =
   'console.log("first-" + "mark"); setTimeout(() => { console.log("second-" + "mark"); }, 700);';
 
 const DELAYED_MARK_COMMAND_LINE = [NODE, "-e", DELAYED_MARK_SCRIPT].join(" ");
 
-const DELAYED_MARK_ROOT = joinPath(TEST_ROOT, "delayed-mark");
+const DELAYED_MARK_ROOT = paths.join(TEST_ROOT, "delayed-mark");
 
 const FAILING_SCRIPT = "process.exit(7)";
 
 const FAILING_COMMAND_LINE = [NODE, "-e", FAILING_SCRIPT].join(" ");
 
-const FAILING_ROOT = joinPath(TEST_ROOT, "failing-command");
+const FAILING_ROOT = paths.join(TEST_ROOT, "failing-command");
 
 const THIRTY_ROWS_SCRIPT =
   'for (let i = 1; i <= 30; i += 1) console.log("row " + i); process.exit(3);';
@@ -79,42 +77,42 @@ const THIRTY_ROWS_EXCERPT = Array.from(
   (_, rowIndex) => `row ${rowIndex + 11}\n`,
 ).join("");
 
-const THIRTY_ROWS_ROOT = joinPath(TEST_ROOT, "thirty-rows");
+const THIRTY_ROWS_ROOT = paths.join(TEST_ROOT, "thirty-rows");
 
 const PARTIAL_LINE_SCRIPT = 'process.stdout.write("partial oops"); process.exit(9);';
 
 const PARTIAL_LINE_COMMAND_LINE = [NODE, "-e", PARTIAL_LINE_SCRIPT].join(" ");
 
-const PARTIAL_LINE_ROOT = joinPath(TEST_ROOT, "partial-line");
+const PARTIAL_LINE_ROOT = paths.join(TEST_ROOT, "partial-line");
 
 const SELF_KILLING_SCRIPT =
   'process.stdout.write("before signal\\n", () => process.kill(process.pid, "SIGKILL"));';
 
 const SELF_KILLING_COMMAND_LINE = [NODE, "-e", SELF_KILLING_SCRIPT].join(" ");
 
-const SELF_KILLING_ROOT = joinPath(TEST_ROOT, "self-killing");
+const SELF_KILLING_ROOT = paths.join(TEST_ROOT, "self-killing");
 
 const MISSING_EXECUTABLE = "/nonexistent/never-here";
 
-const MISSING_EXECUTABLE_ROOT = joinPath(TEST_ROOT, "missing-executable");
+const MISSING_EXECUTABLE_ROOT = paths.join(TEST_ROOT, "missing-executable");
 
-const BLOCKED_ROOT_PARENT = joinPath(TEST_ROOT, "blocked-root");
+const BLOCKED_ROOT_PARENT = paths.join(TEST_ROOT, "blocked-root");
 
-const BLOCKED_ROOT = joinPath(BLOCKED_ROOT_PARENT, "blocked");
+const BLOCKED_ROOT = paths.join(BLOCKED_ROOT_PARENT, "blocked");
 
-const SENTINEL_PATH = joinPath(BLOCKED_ROOT_PARENT, "sentinel");
+const SENTINEL_PATH = paths.join(BLOCKED_ROOT_PARENT, "sentinel");
 
 const SENTINEL_SCRIPT = 'require("node:fs").writeFileSync(process.argv[1], "ran");';
 
 const SENTINEL_COMMAND_LINE = [NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH].join(" ");
 
-const FIFO_ROOT = joinPath(TEST_ROOT, "fifo-record");
+const FIFO_ROOT = paths.join(TEST_ROOT, "fifo-record");
 
-const FIFO_GATE_DIRECTORY = joinPath(TEST_ROOT, "fifo-gate");
+const FIFO_GATE_DIRECTORY = paths.join(TEST_ROOT, "fifo-gate");
 
-const FIFO_GATE = joinPath(FIFO_GATE_DIRECTORY, "gate");
+const FIFO_GATE = paths.join(FIFO_GATE_DIRECTORY, "gate");
 
-const FIFO_MARKER = joinPath(FIFO_GATE_DIRECTORY, "marker");
+const FIFO_MARKER = paths.join(FIFO_GATE_DIRECTORY, "marker");
 
 const FIFO_SCRIPT = [
   'const fs = require("node:fs");',
@@ -130,11 +128,11 @@ const FIFO_SCRIPT = [
 
 const FIFO_COMMAND_LINE = [NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER].join(" ");
 
-const CONCURRENT_ROOT = joinPath(TEST_ROOT, "concurrent");
+const CONCURRENT_ROOT = paths.join(TEST_ROOT, "concurrent");
 
 const PID_SCRIPT = "console.log(process.pid)";
 
-const ELAPSED_SECONDS_ROOT = joinPath(TEST_ROOT, "elapsed-seconds");
+const ELAPSED_SECONDS_ROOT = paths.join(TEST_ROOT, "elapsed-seconds");
 
 const ELAPSED_SECONDS_SCRIPT = 'console.log("h")';
 
@@ -232,7 +230,7 @@ describe("runSpool", () => {
 
     it("counts no bytes and no lines", ({ theSummaryOfASilentCommand }) => {
       expect(theSummaryOfASilentCommand).toBe(
-        `spool: command: ${SILENT_COMMAND_LINE}\nspool: log: ${joinPath(SILENT_COMMAND_ROOT, SEAMED_LOG_NAME)} (0 bytes, 0 lines)\nspool: exit: 0 (0.0s)\n`,
+        `spool: command: ${SILENT_COMMAND_LINE}\nspool: log: ${paths.join(SILENT_COMMAND_ROOT, SEAMED_LOG_NAME)} (0 bytes, 0 lines)\nspool: exit: 0 (0.0s)\n`,
       );
     });
   });
@@ -254,7 +252,7 @@ describe("runSpool", () => {
               spoolRoot: () => ESCAPED_OUTPUT_ROOT,
             }),
           );
-          return yield* readFileString(joinPath(ESCAPED_OUTPUT_ROOT, SEAMED_LOG_NAME));
+          return yield* readFileString(paths.join(ESCAPED_OUTPUT_ROOT, SEAMED_LOG_NAME));
         }),
       );
     });
@@ -301,7 +299,7 @@ describe("runSpool", () => {
                 spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
               }),
             );
-            return yield* readFileString(joinPath(INTERLEAVED_OUTPUT_ROOT, SEAMED_LOG_NAME));
+            return yield* readFileString(paths.join(INTERLEAVED_OUTPUT_ROOT, SEAMED_LOG_NAME));
           }),
         );
       });
@@ -341,7 +339,7 @@ describe("runSpool", () => {
               monotonicNow: () => 0,
               spoolRoot: () => DELAYED_MARK_ROOT,
             });
-            const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
+            const logPath = paths.join(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
             while (
               !(yield* fileExists(logPath)) ||
               !(yield* readFileString(logPath)).includes("first-mark")
@@ -368,7 +366,7 @@ describe("runSpool", () => {
               monotonicNow: () => 0,
               spoolRoot: () => DELAYED_MARK_ROOT,
             });
-            const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
+            const logPath = paths.join(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
             while (
               !(yield* fileExists(logPath)) ||
               !(yield* readFileString(logPath)).includes("first-mark")
@@ -418,7 +416,7 @@ describe("runSpool", () => {
                 spoolRoot: () => DELAYED_MARK_ROOT,
               }),
             );
-            return yield* readFileString(joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME));
+            return yield* readFileString(paths.join(DELAYED_MARK_ROOT, SEAMED_LOG_NAME));
           }),
         );
       });
@@ -528,7 +526,7 @@ describe("runSpool", () => {
       theSummaryOfARunExitingWithSeven,
     }) => {
       expect(theSummaryOfARunExitingWithSeven).toBe(
-        `spool: command: ${FAILING_COMMAND_LINE}\nspool: log: ${joinPath(FAILING_ROOT, SEAMED_LOG_NAME)} (0 bytes, 0 lines)\nspool: exit: 7 (0.0s)\n`,
+        `spool: command: ${FAILING_COMMAND_LINE}\nspool: log: ${paths.join(FAILING_ROOT, SEAMED_LOG_NAME)} (0 bytes, 0 lines)\nspool: exit: 7 (0.0s)\n`,
       );
     });
 
@@ -585,7 +583,7 @@ describe("runSpool", () => {
 
     it("follows the summary with the last twenty recorded rows", ({ theSummaryOfThirtyRows }) => {
       expect(theSummaryOfThirtyRows).toBe(
-        `spool: command: ${THIRTY_ROWS_COMMAND_LINE}\nspool: log: ${joinPath(THIRTY_ROWS_ROOT, SEAMED_LOG_NAME)} (${THIRTY_ROWS_BODY.length} bytes, 30 lines)\nspool: exit: 3 (0.0s)\n${THIRTY_ROWS_EXCERPT}`,
+        `spool: command: ${THIRTY_ROWS_COMMAND_LINE}\nspool: log: ${paths.join(THIRTY_ROWS_ROOT, SEAMED_LOG_NAME)} (${THIRTY_ROWS_BODY.length} bytes, 30 lines)\nspool: exit: 3 (0.0s)\n${THIRTY_ROWS_EXCERPT}`,
       );
     });
   });
@@ -638,7 +636,7 @@ describe("runSpool", () => {
 
     it("counts the unclosed line and closes it in the excerpt", ({ theSummaryOfAnOpenLine }) => {
       expect(theSummaryOfAnOpenLine).toBe(
-        `spool: command: ${PARTIAL_LINE_COMMAND_LINE}\nspool: log: ${joinPath(PARTIAL_LINE_ROOT, SEAMED_LOG_NAME)} (12 bytes, 1 lines)\nspool: exit: 9 (0.0s)\npartial oops\n`,
+        `spool: command: ${PARTIAL_LINE_COMMAND_LINE}\nspool: log: ${paths.join(PARTIAL_LINE_ROOT, SEAMED_LOG_NAME)} (12 bytes, 1 lines)\nspool: exit: 9 (0.0s)\npartial oops\n`,
       );
     });
   });
@@ -700,7 +698,7 @@ describe("runSpool", () => {
                 spoolRoot: () => SELF_KILLING_ROOT,
               }),
             );
-            return yield* readFileString(joinPath(SELF_KILLING_ROOT, SEAMED_LOG_NAME));
+            return yield* readFileString(paths.join(SELF_KILLING_ROOT, SEAMED_LOG_NAME));
           }),
         );
       });
@@ -711,7 +709,7 @@ describe("runSpool", () => {
 
     it("names that code in the summary", ({ theSummaryOfAKilledCommand }) => {
       expect(theSummaryOfAKilledCommand).toBe(
-        `spool: command: ${SELF_KILLING_COMMAND_LINE}\nspool: log: ${joinPath(SELF_KILLING_ROOT, SEAMED_LOG_NAME)} (14 bytes, 1 lines)\nspool: exit: 137 (0.0s)\nbefore signal\n`,
+        `spool: command: ${SELF_KILLING_COMMAND_LINE}\nspool: log: ${paths.join(SELF_KILLING_ROOT, SEAMED_LOG_NAME)} (14 bytes, 1 lines)\nspool: exit: 137 (0.0s)\nbefore signal\n`,
       );
     });
 
@@ -925,7 +923,7 @@ describe("runSpool", () => {
 
     it("names the record it could not open on standard error", ({ theStderrOfABlockedRoot }) => {
       expect(theStderrOfABlockedRoot).toBe(
-        `spool: command: ${SENTINEL_COMMAND_LINE}\nspool: error: cannot record to ${joinPath(BLOCKED_ROOT, SEAMED_LOG_NAME)}: Error: EEXIST: file already exists, mkdir '${BLOCKED_ROOT}'\n`,
+        `spool: command: ${SENTINEL_COMMAND_LINE}\nspool: error: cannot record to ${paths.join(BLOCKED_ROOT, SEAMED_LOG_NAME)}: Error: EEXIST: file already exists, mkdir '${BLOCKED_ROOT}'\n`,
       );
     });
 
@@ -948,7 +946,7 @@ describe("runSpool", () => {
             yield* removePath(FIFO_GATE_DIRECTORY);
             yield* makeDirectory(FIFO_ROOT);
             yield* makeDirectory(FIFO_GATE_DIRECTORY);
-            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            const fifoPath = paths.join(FIFO_ROOT, SEAMED_LOG_NAME);
             const madeFifo = yield* runCaptured({ executable: "mkfifo", handed: [fifoPath] });
             if (madeFifo.status !== 0) {
               return yield* Effect.die(`could not create the pipe at ${fifoPath}`);
@@ -996,7 +994,7 @@ describe("runSpool", () => {
             yield* removePath(FIFO_GATE_DIRECTORY);
             yield* makeDirectory(FIFO_ROOT);
             yield* makeDirectory(FIFO_GATE_DIRECTORY);
-            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            const fifoPath = paths.join(FIFO_ROOT, SEAMED_LOG_NAME);
             const madeFifo = yield* runCaptured({ executable: "mkfifo", handed: [fifoPath] });
             if (madeFifo.status !== 0) {
               return yield* Effect.die(`could not create the pipe at ${fifoPath}`);
@@ -1045,7 +1043,7 @@ describe("runSpool", () => {
             yield* removePath(FIFO_GATE_DIRECTORY);
             yield* makeDirectory(FIFO_ROOT);
             yield* makeDirectory(FIFO_GATE_DIRECTORY);
-            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            const fifoPath = paths.join(FIFO_ROOT, SEAMED_LOG_NAME);
             const madeFifo = yield* runCaptured({ executable: "mkfifo", handed: [fifoPath] });
             if (madeFifo.status !== 0) {
               return yield* Effect.die(`could not create the pipe at ${fifoPath}`);
@@ -1094,7 +1092,7 @@ describe("runSpool", () => {
             yield* removePath(FIFO_GATE_DIRECTORY);
             yield* makeDirectory(FIFO_ROOT);
             yield* makeDirectory(FIFO_GATE_DIRECTORY);
-            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            const fifoPath = paths.join(FIFO_ROOT, SEAMED_LOG_NAME);
             const madeFifo = yield* runCaptured({ executable: "mkfifo", handed: [fifoPath] });
             if (madeFifo.status !== 0) {
               return yield* Effect.die(`could not create the pipe at ${fifoPath}`);
@@ -1149,7 +1147,7 @@ describe("runSpool", () => {
       { timeout: 15_000 },
       ({ theStderrOfALostRecord }) => {
         expect(theStderrOfALostRecord).toBe(
-          `spool: command: ${FIFO_COMMAND_LINE}\nspool: error: cannot record to ${joinPath(FIFO_ROOT, SEAMED_LOG_NAME)}: Error: EPIPE: broken pipe, write\n`,
+          `spool: command: ${FIFO_COMMAND_LINE}\nspool: error: cannot record to ${paths.join(FIFO_ROOT, SEAMED_LOG_NAME)}: Error: EPIPE: broken pipe, write\n`,
         );
       },
     );
@@ -1258,7 +1256,7 @@ describe("runSpool", () => {
               ),
             );
             return yield* Effect.forEach(yield* readDirectory(CONCURRENT_ROOT), (logFileName) =>
-              readFileString(joinPath(CONCURRENT_ROOT, logFileName)).pipe(
+              readFileString(paths.join(CONCURRENT_ROOT, logFileName)).pipe(
                 Effect.map((recorded) => /^\d+\n$/.test(recorded.split("\n\n")[1] ?? "")),
               ),
             );
@@ -1287,7 +1285,7 @@ describe("runSpool", () => {
             const recordedPidLines = yield* Effect.forEach(
               yield* readDirectory(CONCURRENT_ROOT),
               (logFileName) =>
-                readFileString(joinPath(CONCURRENT_ROOT, logFileName)).pipe(
+                readFileString(paths.join(CONCURRENT_ROOT, logFileName)).pipe(
                   Effect.map((recorded) => recorded.split("\n\n")[1] ?? ""),
                 ),
             );
@@ -1377,7 +1375,7 @@ describe("runSpool", () => {
 
     it("cuts the elapsed time down to a tenth of a second", ({ theSummaryOfATwelveSecondRun }) => {
       expect(theSummaryOfATwelveSecondRun).toBe(
-        `spool: command: ${ELAPSED_SECONDS_COMMAND_LINE}\nspool: log: ${joinPath(ELAPSED_SECONDS_ROOT, SEAMED_LOG_NAME)} (2 bytes, 1 lines)\nspool: exit: 0 (12.3s)\n`,
+        `spool: command: ${ELAPSED_SECONDS_COMMAND_LINE}\nspool: log: ${paths.join(ELAPSED_SECONDS_ROOT, SEAMED_LOG_NAME)} (2 bytes, 1 lines)\nspool: exit: 0 (12.3s)\n`,
       );
     });
   });
@@ -1420,7 +1418,7 @@ describe("runSpool", () => {
             );
             const recordPath =
               /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
-            return parentPath(recordPath);
+            return paths.dirname(recordPath);
           }),
         );
       })
@@ -1441,7 +1439,7 @@ describe("runSpool", () => {
             );
             const recordPath =
               /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
-            return /^\d{8}T\d{6}Z-node--e-[0-9a-f]{8}\.log$/.test(baseName(recordPath));
+            return /^\d{8}T\d{6}Z-node--e-[0-9a-f]{8}\.log$/.test(paths.basename(recordPath));
           }),
         );
       })
@@ -1474,7 +1472,7 @@ describe("runSpool", () => {
     it("records into the spool directory of the work tree", ({
       theSpoolDirectoryOfADefaultRun,
     }) => {
-      expect(theSpoolDirectoryOfADefaultRun).toBe(joinPath(process.cwd(), ".spool"));
+      expect(theSpoolDirectoryOfADefaultRun).toBe(paths.join(process.cwd(), ".spool"));
     });
 
     it("names the record by the instant, the command and a random unique part", ({

@@ -44,7 +44,7 @@ describe("privatePath", () => {
       ["content/docs/index.md", "src/shared/server-api/mcp.ts"].map((candidatePath) =>
         privatePath({
           application: wikiWorker,
-          candidatePath: `${repositoryRoot}/apps/${APPLICATION.wiki}/${candidatePath}`,
+          candidatePath: `${repositoryRoot}/apps/${APPLICATION.dashboard}/${candidatePath}`,
           repositoryRoot,
         }),
       ),
@@ -53,7 +53,11 @@ describe("privatePath", () => {
     .extend("readmeFile", () => isSecretFileName("readme.md"));
 
   it("keeps the other applications off the member surface", ({ foreignApplications }) => {
-    expect(foreignApplications).toStrictEqual([APPLICATION.admin, APPLICATION.wiki, wikiWorker]);
+    expect(foreignApplications).toStrictEqual([
+      APPLICATION.admin,
+      APPLICATION.dashboard,
+      wikiWorker,
+    ]);
   });
 
   it("keeps infra, tools, secrets, and other apps off the member surface", ({

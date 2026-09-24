@@ -1,6 +1,5 @@
 import { monitorWorkerVite } from "@repo/monitor/vite";
-import { telemetryAsked } from "@repo/telemetry/optional-setting";
-import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
+import { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";
 import { defineConfig } from "vite-plus";
 
 const budgetMonitorVite = monitorWorkerVite(import.meta.dirname);
@@ -14,12 +13,7 @@ export default defineConfig({
     },
   },
   test: {
-    experimental: {
-      openTelemetry: {
-        enabled: telemetryAsked,
-        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
-      },
-    },
+    experimental: { openTelemetry: vitestOpenTelemetry },
     ...budgetMonitorVite.test,
     coverage: {
       exclude: ["specs/**"],

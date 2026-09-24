@@ -51,7 +51,7 @@ function editApp(wikiAuth: Auth["Service"], publisher: Layer.Layer<WikiPublisher
   const runtime = workerRuntime(() =>
     Layer.mergeAll(services, Layer.succeed(Auth, wikiAuth), publisher),
   );
-  const api = apiRoutes(runtime, { log: recordingSink().sink, service: APPLICATION.wiki });
+  const api = apiRoutes(runtime, { log: recordingSink().sink, service: APPLICATION.dashboard });
   return createApi(apiRoot).use(wikiEditApi(api));
 }
 
@@ -88,7 +88,7 @@ const signedInEditor = Effect.fn("signedInEditor")(function* signedInEditor(
 ) {
   const client = yield* wikiStaff("editor@example.com");
   return {
-    app: editApp((yield* AuthApps)[APPLICATION.wiki], publisher),
+    app: editApp((yield* AuthApps)[APPLICATION.dashboard], publisher),
     cookie: client.cookieHeaders().get("cookie") ?? "",
   };
 });

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Cause, Console, Effect, Option } from "effect";
 
 import { deploymentCredentials } from "./credentials.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { indexSecretHits } from "./staged.ts";
 
 const scanIndex = Effect.fn("scanIndex")(function* scanIndex() {

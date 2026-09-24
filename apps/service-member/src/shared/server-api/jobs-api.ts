@@ -3,9 +3,10 @@ import { JobPayload, readJobs, httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { CreatedResource } from "@repo/runtime/contracts";
 import { createApi, readJsonBody } from "@repo/runtime/http";
-import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
 import { env } from "cloudflare:workers";
 import { Effect, Schema } from "effect";
+
+import { enqueueJob, jobStatus } from "#shared/jobs/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";

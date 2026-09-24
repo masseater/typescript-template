@@ -33,7 +33,7 @@ const submitLoginForm = [
 const postLoginPaths: Readonly<Record<App, string>> = {
   [APPLICATION.admin]: "/members",
   [APPLICATION.user]: "/home",
-  [APPLICATION.wiki]: "/",
+  [APPLICATION.dashboard]: "/",
 };
 
 const agent = Effect.fn("agent")(function* agent(

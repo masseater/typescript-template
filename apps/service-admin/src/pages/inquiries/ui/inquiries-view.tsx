@@ -1,3 +1,4 @@
+import { inquiryStatusLabels, inquiryStatuses, type InquiryStatus } from "@repo/config";
 import {
   NavigationLink,
   Page,
@@ -6,20 +7,8 @@ import {
   formatWarekiDateTime,
 } from "@repo/ui";
 
-import {
-  INQUIRY_STATUS,
-  inquiryStatusLabel,
-  type InquiryStatus,
-} from "#pages/inquiries/model/status-label.ts";
-
 import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
 import type { ReactElement } from "react";
-
-const statusFilters = [
-  INQUIRY_STATUS.open,
-  INQUIRY_STATUS.answered,
-  INQUIRY_STATUS.closed,
-] as const;
 
 function InquiriesView({
   error,
@@ -40,7 +29,7 @@ function InquiriesView({
         <p className="text-sm leading-normal text-muted-foreground">対応待ち: {pendingCount} 件</p>
       )}
       <div className="flex flex-wrap gap-2">
-        {statusFilters.map((value) => (
+        {inquiryStatuses.map((value) => (
           <button
             key={value}
             type="button"
@@ -50,7 +39,7 @@ function InquiriesView({
             }}
             className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
           >
-            {inquiryStatusLabel(value)}
+            {inquiryStatusLabels[value]}
           </button>
         ))}
       </div>
@@ -83,7 +72,7 @@ function InquiriesView({
                   </NavigationLink>
                 </td>
                 <td className="p-2">会員</td>
-                <td className="p-2">{inquiryStatusLabel(inquiry.status)}</td>
+                <td className="p-2">{inquiryStatusLabels[inquiry.status]}</td>
                 <td className="p-2">{inquiry.memberName}</td>
                 <td className="p-2">{formatWarekiDateTime(inquiry.updatedAt.getTime())}</td>
               </tr>

@@ -1,3 +1,5 @@
+import { sumBy } from "es-toolkit";
+
 import { withoutCheckoutPath } from "./effect-typecheck-path.ts";
 
 const locatedDiagnosticLine = /^(.+)\((\d+),(\d+)\): error (TS\d+): (.*)$/u;
@@ -168,7 +170,7 @@ const formatDiagnostics = (diagnostics: readonly Diagnostic[]): string =>
     .join("\n");
 
 const occurrenceTotal = (countedDiagnostics: readonly CountedDiagnostic[]): number =>
-  countedDiagnostics.reduce((occurrenceSum, diagnostic) => occurrenceSum + diagnostic.count, 0);
+  sumBy(countedDiagnostics, (diagnostic) => diagnostic.count);
 
 const formatReport = (verdict: TypecheckVerdict): string => {
   const sections = [

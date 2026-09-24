@@ -2,7 +2,7 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { Deferred, Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
-import { epochMillis, filesystem, joinPath, readFileString, removePath } from "../host.ts";
+import { epochMillis, filesystem, paths, readFileString, removePath } from "../host.ts";
 import { TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { runWithSlot } from "./run-command.ts";
 import { runThrottle } from "./run-throttle.ts";
@@ -434,7 +434,7 @@ describe("runWithSlot", () => {
         return madeStampsDirectory;
       })
       .extend("theCodeOfARunWithASurvivingGrandchild", ({ slotDirectory, stampsDirectory }) => {
-        const pidFile = joinPath(stampsDirectory, "grandchild-pid");
+        const pidFile = paths.join(stampsDirectory, "grandchild-pid");
         return runThrottle(
           [
             "--timeout",
@@ -459,7 +459,7 @@ describe("runWithSlot", () => {
         ({ slotDirectory, stampsDirectory, stderr }) =>
           Effect.runPromise(
             Effect.gen(function* () {
-              const pidFile = joinPath(stampsDirectory, "grandchild-pid");
+              const pidFile = paths.join(stampsDirectory, "grandchild-pid");
               yield* Effect.promise(() =>
                 runThrottle(
                   [
@@ -487,7 +487,7 @@ describe("runWithSlot", () => {
       .extend("theEscalationOutlastedTheTimeout", ({ slotDirectory, stampsDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const pidFile = joinPath(stampsDirectory, "grandchild-pid");
+            const pidFile = paths.join(stampsDirectory, "grandchild-pid");
             const before = epochMillis();
             yield* Effect.promise(() =>
               runThrottle(
@@ -516,7 +516,7 @@ describe("runWithSlot", () => {
       .extend("theProbeOfTheGrandchild", ({ slotDirectory, stampsDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const pidFile = joinPath(stampsDirectory, "grandchild-pid");
+            const pidFile = paths.join(stampsDirectory, "grandchild-pid");
             yield* Effect.promise(() =>
               runThrottle(
                 [
@@ -598,7 +598,7 @@ describe("runWithSlot", () => {
       .extend("theMemberStampAfterACleanExit", ({ slotDirectory, stampsDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const stamp = joinPath(stampsDirectory, "member");
+            const stamp = paths.join(stampsDirectory, "member");
             yield* Effect.promise(() =>
               runThrottle(
                 [
@@ -648,7 +648,7 @@ describe("runWithSlot", () => {
       .extend("theMemberStampAfterAFailingExit", ({ slotDirectory, stampsDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const stamp = joinPath(stampsDirectory, "member");
+            const stamp = paths.join(stampsDirectory, "member");
             yield* Effect.promise(() =>
               runThrottle(
                 [
@@ -698,7 +698,7 @@ describe("runWithSlot", () => {
         return madeStampsDirectory;
       })
       .extend("theMemberStampWhenTheSlotWasGivenBack", ({ stampsDirectory }) => {
-        const stamp = joinPath(stampsDirectory, "member");
+        const stamp = paths.join(stampsDirectory, "member");
         const seenAtRelease = Deferred.makeUnsafe<string, Error>();
         const releaseAfterReadingTheStamp = (): Promise<void> =>
           Effect.runPromise(
@@ -748,8 +748,8 @@ describe("runWithSlot", () => {
       .extend("theTrappingMemberAfterTheRun", ({ slotDirectory, stampsDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const stamp = joinPath(stampsDirectory, "member");
-            const heartbeat = joinPath(stampsDirectory, "heartbeat");
+            const stamp = paths.join(stampsDirectory, "member");
+            const heartbeat = paths.join(stampsDirectory, "heartbeat");
             const before = epochMillis();
             yield* Effect.promise(() =>
               runThrottle(

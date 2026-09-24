@@ -1,5 +1,5 @@
 import { readJobs } from "@repo/config";
-import { Process, consumeJobs } from "@repo/runtime/jobs";
+import { consumeJobs } from "@repo/runtime/jobs";
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
@@ -56,7 +56,7 @@ export type { SentMail } from "./mail-recorder.ts";
 
 class ProbeMonitor extends probeMonitor.Worker {}
 
-export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
+export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
 const probeHandler = probeMonitor.handler;
 

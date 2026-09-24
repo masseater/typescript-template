@@ -1,5 +1,4 @@
-import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
+import { vitestOpenTelemetry } from "@repo/ai-native-telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   intentValidation,
@@ -65,12 +64,7 @@ export default defineConfig({
     },
   },
   test: {
-    experimental: {
-      openTelemetry: {
-        enabled: telemetryAsked,
-        sdkPath: sdkFilePath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
-      },
-    },
+    experimental: { openTelemetry: vitestOpenTelemetry },
     testTimeout: 60_000,
     mockReset: true,
     restoreMocks: true,

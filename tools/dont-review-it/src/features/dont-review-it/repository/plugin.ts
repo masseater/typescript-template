@@ -25,6 +25,7 @@ import {
 } from "./process-boundary.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
+import { repositoryRootOwner, repositoryRootPathVisitor } from "./repository-root-path.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
 import { atomHeldServerDataMessage, serverCacheApiMessage } from "./state-kinds.ts";
@@ -393,6 +394,12 @@ const projectPlugin = definePlugin({
       create: reactLegacyVisitor,
       meta: metadata(
         "React 19 で外した書き方は使えません。forwardRef と createFactory は ref を通常の props にした関数へ、Context.Provider は <Context value={...}> へ、文字列の ref は要素を指す ref へ、defaultProps は引数の既定値へ、propTypes は TypeScript へ置き換えてください。react-dom の render・hydrate・findDOMNode・unmountComponentAtNode と react-dom/server の renderToNodeStream・renderToStaticNodeStream は createRoot と hydrateRoot に置き換え、react-test-renderer は Testing Library に置き換えてください。",
+      ),
+    },
+    "repository-root": {
+      create: repositoryRootPathVisitor,
+      meta: metadata(
+        `import.meta.url や import.meta.dirname から ../ を 4 段以上たどってリポジトリのルートを求められません。ファイルを移すと段数がずれ、別の場所を指したまま動きます。@repo/config/repository-root の repositoryRoot か repositoryFile(...) を使ってください。段数を数えてよいのは ${repositoryRootOwner} だけです。`,
       ),
     },
     "retired-imports": {

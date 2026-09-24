@@ -8,6 +8,7 @@ import {
 } from "@repo/config";
 import { count, eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
+import { sumBy } from "es-toolkit";
 
 import { AGGREGATE_CLIENT_KIND, clientKindOf, type ClientKind } from "./client-kind.ts";
 import { query } from "./database.ts";
@@ -46,10 +47,7 @@ const clientKindTotals = (
   );
   return clientKinds.map((clientKind) => ({
     clientKind,
-    value: (sessionCountsByKind.get(clientKind) ?? []).reduce(
-      (sessionTotal, sessionCount) => sessionTotal + sessionCount.count,
-      0,
-    ),
+    value: sumBy(sessionCountsByKind.get(clientKind) ?? [], (sessionCount) => sessionCount.count),
   }));
 };
 
@@ -58,7 +56,7 @@ const wikiSessionCounts = Effect.fn("wikiSessionCounts")(function* wikiSessionCo
     database
       .select({ count: count(), userAgent: session.userAgent })
       .from(session)
-      .where(eq(session.audience, APPLICATION.wiki))
+      .where(eq(session.audience, APPLICATION.dashboard))
       .groupBy(session.userAgent),
   );
   return clientKindTotals(sessionCounts);

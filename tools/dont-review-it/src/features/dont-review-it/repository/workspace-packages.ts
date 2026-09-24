@@ -1,10 +1,11 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { uniq } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
+import { packageNameOf } from "../lint/oxlint/lib/package-specifier.ts";
 import { directoryEntries } from "../platform/directory-entries.ts";
 import { textOrNull } from "../platform/file-system.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { dependencyFields, workspaceRoots } from "./workspace-layout.ts";
 
 import type { WorkspacePackage } from "./pr-affected-scope.ts";
@@ -42,16 +43,10 @@ const dependencyNames = (manifest: typeof PackageManifest.Type): readonly string
 
 const TOOLCHAIN_CONFIG = "vite.config.ts";
 
-const packageNameOf = (specifier: string): string =>
-  specifier
-    .split("/")
-    .slice(0, specifier.startsWith("@") ? 2 : 1)
-    .join("/");
-
 const toolchainImportsIn = (source: string): readonly string[] =>
   parseSync(TOOLCHAIN_CONFIG, source).program.body.flatMap((statement) =>
     statement.type === "ImportDeclaration" && !statement.source.value.startsWith(".")
-      ? [packageNameOf(statement.source.value)]
+      ? (packageNameOf(statement.source.value) ?? [])
       : [],
   );
 

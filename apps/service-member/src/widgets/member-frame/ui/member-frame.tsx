@@ -1,7 +1,7 @@
 import { AppFrame, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 import { memberHasPaidPlan, memberNavItems, titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
@@ -44,7 +44,7 @@ function MemberFrame({
       headerLeading={<AccountMenu compact name={user.name} userId={user.id} />}
       homeTo="/home"
       navigationId="member-navigation"
-      productName={serviceName}
+      productName={productName}
       sections={[{ destinations, label: "" }]}
       title={titleForPath(pathname)}
     >

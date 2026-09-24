@@ -1,22 +1,22 @@
 import { Effect } from "effect";
 
-import { fileExists, joinPath, parentPath, resolvePath } from "../host.ts";
+import { fileExists, paths } from "../host.ts";
 
 const findSpoolRoot = (currentDir: string, fallbackDir: string): Effect.Effect<string, Error> =>
-  fileExists(joinPath(currentDir, "package.json")).pipe(
+  fileExists(paths.join(currentDir, "package.json")).pipe(
     Effect.flatMap((manifestFound) => {
       if (manifestFound) {
-        return Effect.succeed(joinPath(currentDir, ".spool"));
+        return Effect.succeed(paths.join(currentDir, ".spool"));
       }
-      const parent = parentPath(currentDir);
+      const parent = paths.dirname(currentDir);
       return parent === currentDir
-        ? Effect.succeed(joinPath(fallbackDir, ".spool"))
+        ? Effect.succeed(paths.join(fallbackDir, ".spool"))
         : findSpoolRoot(parent, fallbackDir);
     }),
   );
 
 export const defaultSpoolRoot = (startDir: string = process.cwd()): Effect.Effect<string, Error> =>
-  findSpoolRoot(resolvePath(startDir), resolvePath(startDir));
+  findSpoolRoot(paths.resolve(startDir), paths.resolve(startDir));
 
 export const timestampOf = (stampedInstant: Date): string =>
   `${stampedInstant.toISOString().slice(0, 19).replaceAll(/[:-]/g, "")}Z`;

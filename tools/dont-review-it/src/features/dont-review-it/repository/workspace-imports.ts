@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { cruise, format } from "dependency-cruiser";
 import { Console, Effect, Path, Schema } from "effect";
 
 import configuration from "./dependency-cruiser.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 class OutsideRepository extends Schema.TaggedError<OutsideRepository>()("OutsideRepository", {
   cwd: Schema.String,

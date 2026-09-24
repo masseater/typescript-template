@@ -1,13 +1,12 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
-import { APPLICATION, type Application } from "@repo/config";
+import { APPLICATION, memberMcpScopes, type Application } from "@repo/config";
 import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 import { Effect } from "effect";
 
 import { adminScopes } from "./admin-scopes.ts";
 import { memberApiKeyPlugin } from "./member-api-key-options.ts";
-import { memberScopes } from "./member-scopes.ts";
 import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
@@ -103,12 +102,12 @@ const memberAuthorizationServer = (origin: string): AuthPlugin[] => {
     mcp({
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
-      clientRegistrationAllowedScopes: [...memberScopes],
-      clientRegistrationDefaultScopes: [...memberScopes],
+      clientRegistrationAllowedScopes: [...memberMcpScopes],
+      clientRegistrationDefaultScopes: [...memberMcpScopes],
       consentPage: "/consent",
       loginPage: "/login",
       resource: `${origin}/mcp`,
-      scopes: [...memberScopes],
+      scopes: [...memberMcpScopes],
     }),
   ];
 };
@@ -125,7 +124,7 @@ const authPlugins = ({
     ...(audience === APPLICATION.user
       ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
       : []),
-    ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.dashboard ? wikiAuthorizationServer(origin) : []),
     ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
   ];
 };

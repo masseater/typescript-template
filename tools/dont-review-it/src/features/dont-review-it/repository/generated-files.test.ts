@@ -1,11 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { generatedSourcePaths } from "../lint/oxlint/lib/generated-source.ts";
 import { gitOutput } from "../lint/oxlint/lib/git-output.ts";
 import { generatedFiles } from "./lint.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const generatedAttribute = "linguist-generated";
 

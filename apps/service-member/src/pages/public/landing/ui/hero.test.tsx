@@ -10,7 +10,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 import { m } from "#shared/i18n/index.ts";
 import { Hero } from "./hero.tsx";
 
@@ -112,12 +112,12 @@ describe("landing hero", () => {
         expect.hasAssertions();
         const html = yield* renderedHero();
         const headline = m.hero_title();
-        expect(html.indexOf(headline)).toBeGreaterThan(html.indexOf(serviceName));
+        expect(html.indexOf(headline)).toBeGreaterThan(html.indexOf(productName));
         expect(fontSize(classNameOf(html, headline), "default")).toBeGreaterThan(
-          fontSize(classNameOf(html, serviceName), "default"),
+          fontSize(classNameOf(html, productName), "default"),
         );
         expect(fontSize(classNameOf(html, headline), "md")).toBeGreaterThan(
-          fontSize(classNameOf(html, serviceName), "md"),
+          fontSize(classNameOf(html, productName), "md"),
         );
       }),
     ));

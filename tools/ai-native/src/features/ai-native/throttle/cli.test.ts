@@ -3,10 +3,10 @@ import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, test } from "vite-plus/test";
 
 import { childEndOf } from "../child-process.ts";
-import { filesystem, joinPath, readDirectory, spawner } from "../host.ts";
+import { filesystem, paths, readDirectory, spawner } from "../host.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
 
-const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
+const CLI_PATH = paths.join(import.meta.dirname, "cli.ts");
 
 const TWO_STREAM_SCRIPT =
   "process.stdout.write('alpha\\nbeta\\n'); process.stderr.write('gamma\\ndelta\\n');";
@@ -175,7 +175,7 @@ describe("cli", () => {
             const tmpRoot = yield* filesystem.makeTempDirectoryScoped({
               prefix: "throttle-cli-tmp-",
             });
-            const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
+            const slotDir = paths.join(tmpRoot, "mst-throttle", "mst");
             yield* ensureSlots(slotDir, 1);
             const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
@@ -193,7 +193,7 @@ describe("cli", () => {
                 stdin: "ignore",
               }),
             );
-            const waitersDir = joinPath(slotDir, "waiters");
+            const waitersDir = paths.join(slotDir, "waiters");
             const ownEntries = readDirectory(waitersDir).pipe(
               Effect.map((waiterFileNames) =>
                 waiterFileNames.filter((waiterFileName) =>
@@ -239,7 +239,7 @@ describe("cli", () => {
             const tmpRoot = yield* filesystem.makeTempDirectoryScoped({
               prefix: "throttle-cli-tmp-",
             });
-            const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
+            const slotDir = paths.join(tmpRoot, "mst-throttle", "mst");
             yield* ensureSlots(slotDir, 1);
             const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
@@ -257,7 +257,7 @@ describe("cli", () => {
                 stdin: "ignore",
               }),
             );
-            const waitersDir = joinPath(slotDir, "waiters");
+            const waitersDir = paths.join(slotDir, "waiters");
             const ownEntries = readDirectory(waitersDir).pipe(
               Effect.map((waiterFileNames) =>
                 waiterFileNames.filter((waiterFileName) =>

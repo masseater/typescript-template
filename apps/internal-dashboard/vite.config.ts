@@ -4,7 +4,7 @@ import { appConfig, appRun, paths, wikiCompanion, wikiDevServices } from "@repo/
 import { defineConfig } from "vite-plus";
 
 export default defineConfig((env) => ({
-  ...appConfig(APPLICATION.wiki, {
+  ...appConfig(APPLICATION.dashboard, {
     plugins: [
       wikiCompanion({ repositoryRoot, wikiRoot: paths.join(repositoryRoot, "apps", wikiWorker) }),
     ],

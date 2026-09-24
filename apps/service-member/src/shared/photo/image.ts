@@ -1,4 +1,5 @@
 import { PHOTO_CONTENT_TYPE } from "@repo/config";
+import { sumBy } from "es-toolkit";
 
 import type { PhotoContentType } from "@repo/config";
 
@@ -14,7 +15,7 @@ function startsWith(bytes: Uint8Array, prefix: readonly number[], offset = 0): b
 }
 
 function concat(parts: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
-  const joined = new Uint8Array(parts.reduce((total, part) => total + part.byteLength, 0));
+  const joined = new Uint8Array(sumBy(parts, (part) => part.byteLength));
   let position = 0;
   for (const part of parts) {
     joined.set(part, position);

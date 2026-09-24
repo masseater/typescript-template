@@ -1,4 +1,4 @@
-import { range } from "es-toolkit";
+import { range, sumBy } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
@@ -217,10 +217,7 @@ const overflowingIn = (reading: Reading, budget: number): readonly Report[] => {
       ...direct.map((assertion) => ({ at: assertion, count: 1 })),
       ...reached,
     ];
-    const attributed = placed.reduce(
-      (carriedCount, placement) => carriedCount + placement.count,
-      0,
-    );
+    const attributed = sumBy(placed, (placement) => placement.count);
     const elsewhere = throughText(reached);
     return beyondBudget(placed, budget).map((overflowing): Report => ({
       node: overflowing.at,

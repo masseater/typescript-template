@@ -26,7 +26,7 @@ export {
   storybookOrigin,
   storybookPort,
 } from "./applications.ts";
-export type { Application, Capability, CapabilityOf, ServiceName } from "./applications.ts";
+export type { Application, Capability, CapabilityOf } from "./applications.ts";
 export {
   architectureKindOf,
   architectureKinds,
@@ -131,7 +131,6 @@ export {
   decode,
   distinctOrigins,
   isLocalDevelopmentOrigin,
-  minimumAuthSecretLength,
   readAi,
   readConfig,
   readEnvironment,
@@ -175,6 +174,7 @@ export {
 } from "./recording-schemas.ts";
 export {
   JobPayload,
+  jobInstanceId,
   jobsQueueBinding,
   jobsQueueName,
   jobsWorkflowBinding,
@@ -206,8 +206,18 @@ export { NOTIFICATION_KIND, notificationKinds } from "./notifications.ts";
 export type { NotificationKind } from "./notifications.ts";
 export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
 export type { GroupJoinPolicy } from "./group-join-policy.ts";
-export { INQUIRY_STATUS, inquiryStatusLabels, inquiryStatuses } from "./inquiry-status.ts";
-export type { InquiryStatus } from "./inquiry-status.ts";
+export {
+  INQUIRY_AUTHOR_KIND,
+  InquiryAuthorKind,
+  inquiryAuthorKindLabels,
+  inquiryAuthorKinds,
+} from "./inquiry-author-kind.ts";
+export {
+  INQUIRY_STATUS,
+  InquiryStatus,
+  inquiryStatusLabels,
+  inquiryStatuses,
+} from "./inquiry-status.ts";
 export {
   AUDIT_ACTION,
   CLIENT_KIND,
@@ -227,7 +237,6 @@ export {
   wikiApiEntrypoint,
   wikiBasePath,
   wikiDevOriginVariable,
-  wikiHost,
   wikiPagesBinding,
   wikiPort,
   wikiServerFnBase,

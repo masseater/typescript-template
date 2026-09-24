@@ -1,9 +1,13 @@
-import { GoogleAnalyticsMeasurementId, readWikiPublishConfig, wikiPublishKey } from "@repo/config";
+import {
+  AuthSecret,
+  GoogleAnalyticsMeasurementId,
+  readWikiPublishConfig,
+  wikiPublishKey,
+} from "@repo/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Config, Effect, Option, Redacted, Schema } from "effect";
 
 import {
-  AuthSecret,
   CloudflareId,
   Domain,
   Email,

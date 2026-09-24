@@ -1,4 +1,4 @@
-import { joinPath } from "../host.ts";
+import { paths } from "../host.ts";
 
 const withoutGitSuffix = (repositoryPath: string): string =>
   repositoryPath.replace(/\.git$/u, "").replace(/^\/+|\/+$/gu, "");
@@ -45,6 +45,6 @@ export const worktreeLocationOf = (
     ...placement.name.split("/"),
   ];
   return segments.every(isPlainSegment)
-    ? joinPath(placement.home, "worktrees", ...segments)
+    ? paths.join(placement.home, "worktrees", ...segments)
     : undefined;
 };

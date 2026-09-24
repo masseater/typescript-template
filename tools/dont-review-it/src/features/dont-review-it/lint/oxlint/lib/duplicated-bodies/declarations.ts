@@ -1,3 +1,4 @@
+import { sumBy } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
 import { NODE_TYPE_FIELD } from "../ast-node.ts";
@@ -36,16 +37,10 @@ export const structureOf = (syntaxField: unknown): string => {
 
 export const nodeCountOf = (syntaxField: unknown): number => {
   if (Array.isArray(syntaxField))
-    return syntaxField.reduce<number>(
-      (accumulatedCount, nestedItem) => accumulatedCount + nodeCountOf(nestedItem),
-      0,
-    );
+    return sumBy(syntaxField, (nestedItem: unknown) => nodeCountOf(nestedItem));
   if (!isNode(syntaxField)) return 0;
   const own = typeof syntaxField[NODE_TYPE_FIELD] === "string" ? 1 : 0;
-  return namedFieldsOf(syntaxField).reduce(
-    (accumulatedCount, [, nested]) => accumulatedCount + nodeCountOf(nested),
-    own,
-  );
+  return own + sumBy(namedFieldsOf(syntaxField), ([, nested]) => nodeCountOf(nested));
 };
 
 export type BodyDeclaration = {

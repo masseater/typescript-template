@@ -1,3 +1,5 @@
+import { clamp } from "es-toolkit";
+
 import type { Element, ElementContent, Root } from "hast";
 
 type Point = Readonly<{ x: number; y: number }>;
@@ -165,13 +167,11 @@ const distanceToSegment = (point: Point, [start, end]: readonly [Point, Point]):
   const along =
     length === 0
       ? 0
-      : Math.max(
+      : clamp(
+          ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) /
+            length,
           0,
-          Math.min(
-            1,
-            ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) /
-              length,
-          ),
+          1,
         );
   return Math.hypot(
     point.x - (start.x + along * (end.x - start.x)),

@@ -1,7 +1,7 @@
 import { ButtonLink, LocaleSwitch, NavigationLink } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 import * as i18n from "#shared/i18n/index.ts";
 import { m } from "#shared/i18n/index.ts";
 import { publicContentTrack } from "../model/public-content-track.ts";
@@ -16,7 +16,7 @@ function PublicHeader(): ReactElement {
       <div className={`mx-auto flex w-full ${track} flex-wrap items-center gap-2 px-4 py-3`}>
         <div className="mr-auto">
           <NavigationLink to="/" variant="brand">
-            {serviceName}
+            {productName}
           </NavigationLink>
         </div>
         <LocaleSwitch i18n={i18n} />

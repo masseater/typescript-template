@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, paths } from "../host.ts";
 import { createWorktree } from "./create-worktree.ts";
 import { gitOutput, runGit, WorktreeHomeFailure } from "./git.ts";
 
@@ -14,8 +14,8 @@ describe("createWorktree", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             const theSandbox = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-" });
-            const origin = joinPath(theSandbox, "origin.git");
-            const checkout = joinPath(theSandbox, "checkout");
+            const origin = paths.join(theSandbox, "origin.git");
+            const checkout = paths.join(theSandbox, "checkout");
             for (const gitStep of [
               { cwd: theSandbox, handed: ["init", "--quiet", "--bare", "-b", "main", origin] },
               { cwd: theSandbox, handed: ["init", "--quiet", "-b", "main", checkout] },

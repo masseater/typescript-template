@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import aiWriting from "@textlint-ja/textlint-rule-preset-ai-writing";
 import {
   TextlintKernelDescriptor,
@@ -16,7 +17,6 @@ import noMixDearuDesumasu from "textlint-rule-no-mix-dearu-desumasu";
 import aiWordsJa from "textlint-rule-preset-ai-words-ja";
 
 import { path } from "../platform/path.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 import type { TextlintRuleModule } from "@textlint/types";
 

@@ -103,7 +103,7 @@ describe("an admin invite", () => {
           });
           const rejected = yield* acceptInvite({
             ...accepted,
-            audience: APPLICATION.wiki,
+            audience: APPLICATION.dashboard,
             rawToken: invite.token,
           }).pipe(Effect.flip);
           return rejected._tag;
@@ -204,7 +204,10 @@ describe("a staff invite", () => {
       Effect.runPromise(
         Effect.gen(function* acceptStaff() {
           yield* addUser({ role: ROLE.staff, userId: "editor" });
-          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "editor" });
+          const sessionId = yield* addSession({
+            audience: APPLICATION.dashboard,
+            userId: "editor",
+          });
           const invite = yield* inviteStaff({
             email: "staff@example.com",
             permission: STAFF_PERMISSION.viewer,
@@ -212,7 +215,7 @@ describe("a staff invite", () => {
           });
           const createdStaff = yield* acceptInvite({
             ...accepted,
-            audience: APPLICATION.wiki,
+            audience: APPLICATION.dashboard,
             rawToken: invite.token,
           });
           const auditTrail = yield* auditActionsOf(invite.id);

@@ -1,5 +1,6 @@
 import {
   PLAN,
+  PaidPlanRequired,
   SUBSCRIPTION_STATUS,
   WEBHOOK_DISPOSITION,
   paidStatuses,
@@ -13,7 +14,6 @@ import { Effect } from "effect";
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { clockDate } from "./clock-date.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
-import { PaidPlanRequired } from "./paid-plan-required.ts";
 
 import type { BatchItem } from "drizzle-orm/batch";
 

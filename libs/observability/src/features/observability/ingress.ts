@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/config";
+import { httpStatus, type BuildTarget } from "@repo/config";
 import { DateTime, Effect, HashSet, Ref, Result } from "effect";
 
 import { errorFingerprint } from "./errors.ts";
@@ -8,7 +8,6 @@ import { readJson, rejectionStatus, type JsonRequest } from "./request.ts";
 import { logAt, statusSeverity, type Severity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 
-import type { ServiceName } from "./service-name.ts";
 const maximumBodyBytes = 32768;
 const retryAfterSeconds = "60";
 const rateWindowMilliseconds = 60000;
@@ -16,7 +15,7 @@ const maximumEventsPerWindow = 1200;
 const noStore = { "cache-control": "no-store" };
 const ingressWindows = Ref.makeUnsafe<
   ReadonlyMap<
-    ServiceName,
+    BuildTarget,
     {
       readonly start: number;
       readonly admitted: number;
@@ -39,7 +38,7 @@ const unrecorded = (
   );
 };
 const admitUnrecorded = (batch: {
-  readonly serviceName: ServiceName;
+  readonly serviceName: BuildTarget;
   readonly browserEvents: readonly BrowserEvent[];
 }): Effect.Effect<readonly BrowserEvent[] | undefined> =>
   Ref.modify(ingressWindows, (windows) => {
@@ -89,7 +88,7 @@ const eventSeverity = (browserEvent: BrowserEvent): Severity => {
   return browserEvent.kind === "http" ? statusSeverity(browserEvent.status) : "Info";
 };
 const recordBrowserEvent = (recorded: {
-  readonly serviceName: ServiceName;
+  readonly serviceName: BuildTarget;
   readonly browserEvent: BrowserEvent;
 }): Effect.Effect<void> => {
   const { browserEvent, serviceName } = recorded;
@@ -144,7 +143,7 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: Ingres
   return browserEvents.success;
 });
 const recordAdmitted = (batch: {
-  readonly serviceName: ServiceName;
+  readonly serviceName: BuildTarget;
   readonly browserEvents: readonly BrowserEvent[];
 }): Effect.Effect<Response> =>
   Effect.gen(function* recordAdmittedProgram() {

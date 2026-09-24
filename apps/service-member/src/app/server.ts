@@ -1,5 +1,5 @@
 import { activeGoogleAnalyticsMeasurementId, readEnvironment } from "@repo/config";
-import { Process, consumeJobBatch } from "@repo/runtime/jobs";
+import { consumeJobBatch } from "@repo/runtime/jobs";
 import { appServerEntry, withQueue } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { env } from "cloudflare:workers";
@@ -7,6 +7,7 @@ import { Effect, DateTime } from "effect";
 
 import { paraglideMiddleware } from "#paraglide/server.js";
 import { UserInbox } from "#shared/inbox/index.ts";
+import { Process } from "#shared/jobs/index.ts";
 import { purgeWithdrawnWithPhotos } from "#shared/photo/index.ts";
 import { reporting, runtime } from "#shared/server-api/index.ts";
 

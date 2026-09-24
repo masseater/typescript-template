@@ -5,13 +5,7 @@ import { DateTime, Effect } from "effect";
 import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
 import { inquiryThread, memberInquiryColumns } from "./inquiry-thread.ts";
-import {
-  INQUIRY_AUTHOR_KIND,
-  inquiry,
-  inquiryAuthorKinds,
-  inquiryStatuses,
-  user,
-} from "./schema.ts";
+import { inquiry, inquiryStatuses, user } from "./schema.ts";
 
 import type { InquiryMessage } from "./inquiry.ts";
 
@@ -124,8 +118,6 @@ const inquiryStaff: ReadOnlyInquiryStaff = {
 };
 
 export {
-  INQUIRY_AUTHOR_KIND,
-  inquiryAuthorKinds,
   inquiryStaff,
   inquiryStatuses,
   staffGetInquiry,
