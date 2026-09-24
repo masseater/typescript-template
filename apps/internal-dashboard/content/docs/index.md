@@ -27,4 +27,4 @@ description: 社内向けの文書と、MCP で文書を配る窓口
 | [ページ構成](/pages/internal-dashboard-layout) | 各アプリの画面の仕様 |
 | [計画](/plans/modernization) | 採用する技術と置き換えの計画 |
 
-認証の設定は [/security](/security) にある。
+認証の設定はダッシュボードの `/security` にある。
