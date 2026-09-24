@@ -1,7 +1,7 @@
 import { ROLE, memberRetentionDays } from "@repo/config";
-import { logAt } from "@repo/observability";
+import { logAt, logCause } from "@repo/observability";
 import { and, desc, eq, gt, inArray, isNull, lte, type SQL } from "drizzle-orm";
-import { DateTime, Effect, Schema } from "effect";
+import { DateTime, Effect, Schema, type Cause } from "effect";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { query } from "./database.ts";
@@ -377,11 +377,6 @@ const withdrawableMember = Effect.fn("withdrawableMember")(function* withdrawabl
   return member;
 });
 
-const storedPhotoKeys = (member: typeof user.$inferSelect): readonly string[] =>
-  [member.facePhotoKey, member.companyPhotoKey].filter(
-    (photoKey): photoKey is string => photoKey !== null,
-  );
-
 const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithdrawn(
   member: typeof user.$inferSelect,
 ) {
@@ -400,7 +395,6 @@ const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithd
         image: member.image,
         memberId,
         name: member.name,
-        photoKeys: storedPhotoKeys(member),
         profile: member.profile,
         securityVersion: member.securityVersion,
         snapshot,
@@ -419,39 +413,43 @@ const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithd
   return purgeAt;
 });
 
-const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
+type PhotoRemover<Failure, Requirements> = (
   memberId: string,
-  leave: Readonly<{ immediate: boolean }>,
+) => Effect.Effect<void, Failure, Requirements>;
+
+const photoPurgeFailed =
+  (memberId: string): ((cause: Cause.Cause<unknown>) => Effect.Effect<void>) =>
+  (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
+    logCause({ attributes: { memberId }, cause, eventName: "member_leave.photo_purge_failed" });
+
+const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember<Failure, Requirements>(
+  memberId: string,
+  leave: Readonly<{ immediate: boolean; removePhotos: PhotoRemover<Failure, Requirements> }>,
 ) {
   const member = yield* withdrawableMember(memberId);
-  yield* revokeUserSessions(memberId);
   if (leave.immediate) {
+    yield* leave.removePhotos(memberId);
+    yield* revokeUserSessions(memberId);
     yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
     return { immediate: true as const };
   }
+  yield* revokeUserSessions(memberId);
   const purgeAt = yield* retainWithdrawn(member);
+  yield* leave
+    .removePhotos(memberId)
+    .pipe(Effect.tapCause(photoPurgeFailed(memberId)), Effect.ignore);
   return { immediate: false as const, purgeAt };
 });
 
-type PhotoRemover<Failure, Requirements> = (
-  photoKeys: readonly string[],
-) => Effect.Effect<void, Failure, Requirements>;
-
 const releasePhotos = <Failure, Requirements>(
-  expired: readonly { readonly memberId: string; readonly photoKeys: readonly string[] }[],
+  memberIds: readonly string[],
   removePhotos: PhotoRemover<Failure, Requirements>,
 ): Effect.Effect<readonly string[], never, Requirements> =>
-  Effect.forEach(expired, ({ memberId, photoKeys }) =>
-    removePhotos(photoKeys).pipe(
-      Effect.match({ onFailure: () => undefined, onSuccess: () => memberId }),
-      Effect.tap((released) =>
-        released === undefined
-          ? logAt("Error", {
-              attributes: { memberId },
-              eventName: "member_leave.photo_purge_failed",
-            })
-          : Effect.void,
-      ),
+  Effect.forEach(memberIds, (memberId) =>
+    removePhotos(memberId).pipe(
+      Effect.as(memberId),
+      Effect.tapCause(photoPurgeFailed(memberId)),
+      Effect.orElseSucceed(() => undefined),
     ),
   ).pipe(Effect.map((released) => released.filter((memberId) => memberId !== undefined)));
 
@@ -462,12 +460,12 @@ const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
   ) {
     const expired = yield* query((database) =>
       database
-        .select({ memberId: withdrawnMember.memberId, photoKeys: withdrawnMember.photoKeys })
+        .select({ memberId: leaveRequest.memberId })
         .from(leaveRequest)
-        .innerJoin(withdrawnMember, eq(withdrawnMember.memberId, leaveRequest.memberId))
         .where(and(lte(leaveRequest.purgeAt, checkedAt), isNull(leaveRequest.restoredAt))),
     );
-    const memberIds = yield* releasePhotos(expired, removePhotos);
+    const expiredIds = expired.map((expiredLeave) => expiredLeave.memberId);
+    const memberIds = yield* releasePhotos(expiredIds, removePhotos);
     if (memberIds.length > 0) {
       yield* query((database) =>
         database.batch([
@@ -479,9 +477,7 @@ const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
     const released = new Set(memberIds);
     return {
       memberIds,
-      retainedMemberIds: expired
-        .map((member) => member.memberId)
-        .filter((memberId) => !released.has(memberId)),
+      retainedMemberIds: expiredIds.filter((memberId) => !released.has(memberId)),
     };
   },
 );

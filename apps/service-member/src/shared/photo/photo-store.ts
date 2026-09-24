@@ -2,6 +2,7 @@ import { isPhotoContentType } from "@repo/config";
 import { FileStore, StorageFailed } from "@repo/runtime";
 import { Context, Effect, Layer } from "effect";
 
+import { memberPhotoPrefix } from "./photo-key.ts";
 import { PhotoStorageFailed } from "./photo-storage-failed.ts";
 
 import type { SanitizedImage } from "./image.ts";
@@ -10,6 +11,7 @@ interface PhotoStoreShape {
   readonly get: (key: string) => Effect.Effect<SanitizedImage | undefined, PhotoStorageFailed>;
   readonly put: (key: string, photo: SanitizedImage) => Effect.Effect<void, PhotoStorageFailed>;
   readonly remove: (keys: readonly string[]) => Effect.Effect<void, PhotoStorageFailed>;
+  readonly removeMember: (memberId: string) => Effect.Effect<void, PhotoStorageFailed>;
 }
 
 const mapFailure = (cause: StorageFailed): PhotoStorageFailed =>
@@ -52,6 +54,8 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
               .put(key, { bytes: photo.bytes, contentType: photo.contentType })
               .pipe(Effect.mapError(mapFailure)),
           remove: (keys) => files.remove(keys).pipe(Effect.mapError(mapFailure)),
+          removeMember: (memberId) =>
+            files.removePrefix(memberPhotoPrefix(memberId)).pipe(Effect.mapError(mapFailure)),
         });
       }),
     );

@@ -147,8 +147,7 @@ it.effect.each([true, false])(
       const leaverFace = yield* uploadPhoto("leaver", PHOTO_SLOT.face, jpegWithExif);
       const leaverCompany = yield* uploadPhoto("leaver", PHOTO_SLOT.company, pngWithText);
       const kept = yield* uploadPhoto("stayer", PHOTO_SLOT.face, jpegWithExif);
-      const withdrawn = yield* withdrawWithPhotos("leaver", { immediate });
-      assert.strictEqual(withdrawn.removedPhotos, 2);
+      yield* withdrawWithPhotos("leaver", { immediate });
       assert.isUndefined(yield* storedBytes(`photos/leaver/face/${leaverFace.version ?? ""}`));
       assert.isUndefined(
         yield* storedBytes(`photos/leaver/company/${leaverCompany.version ?? ""}`),
@@ -169,19 +168,23 @@ const leftBehind = Effect.fn("leftBehind")(function* leftBehind(memberId: string
   yield* addUser(memberId);
   const face = yield* uploadPhoto(memberId, PHOTO_SLOT.face, jpegWithExif);
   const company = yield* uploadPhoto(memberId, PHOTO_SLOT.company, pngWithText);
-  const keys = [
-    `photos/${memberId}/face/${face.version ?? ""}`,
-    `photos/${memberId}/company/${company.version ?? ""}`,
-  ];
   const store = yield* PhotoStore;
-  const photos = yield* Effect.forEach(keys, (key) =>
-    store.get(key).pipe(Effect.map((photo) => ({ key, photo }))),
+  const photos = yield* Effect.forEach(
+    [
+      `photos/${memberId}/face/${face.version ?? ""}`,
+      `photos/${memberId}/company/${company.version ?? ""}`,
+    ],
+    (key) => store.get(key).pipe(Effect.map((photo) => ({ key, photo }))),
   );
   yield* withdrawWithPhotos(memberId, { immediate: false });
-  yield* Effect.forEach(photos, ({ key, photo }) =>
+  const stranded = [
+    ...photos,
+    { key: `photos/${memberId}/face/unrecorded-upload`, photo: photos[0]?.photo },
+  ];
+  yield* Effect.forEach(stranded, ({ key, photo }) =>
     photo === undefined ? Effect.void : store.put(key, photo),
   );
-  return keys;
+  return stranded.map(({ key }) => key);
 });
 
 it.effect(
@@ -189,13 +192,18 @@ it.effect(
   () =>
     Effect.gen(function* program() {
       const keys = yield* leftBehind("expired");
-      assert.isDefined(yield* storedBytes(keys[0] ?? ""));
+      yield* addUser("expired2");
+      const neighbour = yield* uploadPhoto("expired2", PHOTO_SLOT.face, jpegWithExif);
+      for (const key of keys) {
+        assert.isDefined(yield* storedBytes(key));
+      }
       const purged = yield* purgeWithdrawnWithPhotos(afterRetention);
       assert.deepStrictEqual(purged, { memberIds: ["expired"], retainedMemberIds: [] });
       for (const key of keys) {
         assert.isUndefined(yield* storedBytes(key));
       }
       assert.strictEqual(yield* withdrawnRows("expired"), 0);
+      assert.isDefined(yield* storedBytes(`photos/expired2/face/${neighbour.version ?? ""}`));
     }).pipe(Effect.provide(services)),
 );
 
@@ -214,6 +222,33 @@ it.effect("keeps the withdrawn record for the next purge when the photos cannot 
       assert.isUndefined(yield* storedBytes(key));
     }
   }).pipe(Effect.provide(services)),
+);
+
+it.effect(
+  "an immediate withdrawal fails and keeps the member when the photos cannot be deleted",
+  () =>
+    Effect.gen(function* program() {
+      yield* addUser("hasty");
+      const face = yield* uploadPhoto("hasty", PHOTO_SLOT.face, jpegWithExif);
+      assert.strictEqual(
+        yield* failureTag(
+          withdrawWithPhotos("hasty", { immediate: true }).pipe(
+            Effect.provide(
+              PhotoStore.fromFileStore().pipe(Layer.provide(FileStore.layer(undefined))),
+            ),
+          ),
+        ),
+        "PhotoStorageFailed",
+      );
+      assert.deepStrictEqual(yield* photoKeysOf("hasty"), {
+        company: null,
+        face: `photos/hasty/face/${face.version ?? ""}`,
+      });
+      assert.isDefined(yield* storedBytes(`photos/hasty/face/${face.version ?? ""}`));
+      yield* withdrawWithPhotos("hasty", { immediate: true });
+      assert.isUndefined(yield* storedBytes(`photos/hasty/face/${face.version ?? ""}`));
+      assert.strictEqual(yield* failureTag(photoKeysOf("hasty")), "UserNotFound");
+    }).pipe(Effect.provide(services)),
 );
 
 it.effect("a refused withdrawal keeps the photos", () =>

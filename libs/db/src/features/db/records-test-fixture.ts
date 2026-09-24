@@ -194,6 +194,9 @@ export const withdrawnSnapshotCount = Effect.fn("withdrawnSnapshotCount")(
   },
 );
 
+export const keepPhotos = (memberId: string): Effect.Effect<void> =>
+  Effect.asVoid(Effect.succeed(memberId));
+
 export const expireLeave = (memberId: string): Effect.Effect<void, DatabaseFailure, Database> =>
   query((database) =>
     database
