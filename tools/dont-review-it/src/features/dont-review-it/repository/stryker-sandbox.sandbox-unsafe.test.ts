@@ -67,6 +67,7 @@ describe("stryker sandbox unsafe tests", () => {
     "symlinkSync(target, link)",
     "lstatSync(entry).isSymbolicLink()",
     'paths.join(root, "tsconfig.json")',
+    'ChildProcess.make(vp, ["pack", "--out-dir", packed])',
   ])("treats a test calling %s as needing the real repository layout", (source) => {
     expect(needsRepositoryLayout(source)).toBe(true);
   });
