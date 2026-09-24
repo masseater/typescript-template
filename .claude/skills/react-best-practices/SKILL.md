@@ -1,7 +1,7 @@
 ---
 name: react-best-practices
 description: >
-  非同期の瀑布を消す。独立した Effect や Promise を直列に待たず、使わない枝では await せず、安い同期条件を先に見る。Suspense で殻を先に出す。React の部品、ローダー、API、サーバー処理を書く・直す・レビューするときに、他の性能メモより先にこの skill の async 規則を適用する。
+  非同期の瀑布を消す。独立した Effect や Promise を直列に待たず、使わない枝では await せず、安い同期条件を先に見る。Suspense で殻を先に出す。React のコンポーネント、ローダー、API、サーバー処理を書く・直す・レビューするときに、他の性能メモより先にこの skill の async 規則を適用する。
 license: MIT
 metadata:
   version: "1.0.0"
@@ -11,7 +11,7 @@ metadata:
 
 # React best practices
 
-大本は https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices （skill の宣言は MIT。本文は https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/SKILL.md ）。優先度がいちばん高いのは瀑布を消す `async-` 規則で、ここがその正本である。React 19 の API の選び方は `.claude/skills/modern-react-guidance/SKILL.md` に従う。
+大本は https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices （skill の宣言は MIT。本文は https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/SKILL.md ）。優先度がいちばん高いのは瀑布を消す `async-` 規則である。
 
 出典が Next.js、SWR、`useState`、`useMemo`、`useRef`、`better-all`、リクエストをまたぐ LRU を例にしている箇所は、このリポジトリでは採らない。
 
@@ -23,7 +23,7 @@ metadata:
 - Effect の外の Promise なら `Promise.all`。`.then` は `no-promise-chain` が拒否するので、依存のある続きは `Effect.flatMap` か async 関数の中で `await` する。
 - `better-all` は入れない。
 
-依存が一部だけのときは、依存しない側を先に走らせ、依存する側は必要な値ができてから始める。両方を一つの `Effect.all` に載せる。
+依存が一部だけのときは、依存しない側を先に始め、依存する側は必要な値ができてから始める。両方を一つの `Effect.all` に載せる。
 
 ```ts
 const loaded = Effect.all(
@@ -37,7 +37,7 @@ const loaded = Effect.all(
 
 使わない枝で待たない。安い同期条件が既に偽なら、その先の flag も I/O も始めない。
 
-API とサーバー処理では、認証結果に依存しない読み取りを、認証を待ってから始めない。認証と無関係な Effect は同じ `Effect.all` で先に走らせる。
+API とサーバー処理では、認証結果に依存しない読み取りを、認証を待ってから始めない。認証と無関係な Effect は同じ `Effect.all` で先に始める。
 
 殻（ナビ、ヘッダー、フッター）をデータの完了まで止めない。データが要る部分だけ Suspense の内側に置く。サーバーデータ自体は TanStack Query で、`use(fetch(...))` では取らない。レイアウトの分岐に必須な値だけ、殻の外で待つ。
 

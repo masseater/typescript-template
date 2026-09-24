@@ -23,5 +23,5 @@ description: 利用者向けのプライバシーポリシーページ
 
 ## 公開
 
-- 版の管理は [規約の版](/glossary/agreement-version) に従う。種類は `privacy`
+- [規約の版](/glossary/agreement-version) の種類は `privacy`
 - プライバシーポリシーの公開だけでは [規約への再同意](/pages/member-agreement) を求めない

@@ -1,5 +1,9 @@
 {
   "rules": {
-    "preset-ai-words-ja": true
+    "preset-ai-words-ja": {
+      "no-ai-words": {
+        "dictionaryPath": "./.textlint-ai-words.json"
+      }
+    }
   }
 }
