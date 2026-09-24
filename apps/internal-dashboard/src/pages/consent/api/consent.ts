@@ -3,6 +3,7 @@ import { OAuthClientView } from "@repo/auth-ui/consent";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
 import { Redirect } from "@repo/runtime/contracts";
+import { queryOptions } from "@tanstack/react-query";
 import { Effect } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
@@ -30,6 +31,15 @@ function loadClientName(clientId: string): Effect.Effect<string | undefined> {
   }).pipe(Effect.orDie);
 }
 
+function clientNameOptions(clientId: string) {
+  return queryOptions({
+    queryFn: () =>
+      Effect.runPromise(loadClientName(clientId).pipe(Effect.map((name) => name ?? null))),
+    queryKey: ["oauth-client-name", clientId] as const,
+    retry: false,
+  });
+}
+
 function submitDecision(accept: boolean): Effect.Effect<void> {
   return Effect.gen(function* sendDecision() {
     const requestBody = yield* HttpBody.json({
@@ -46,4 +56,4 @@ function submitDecision(accept: boolean): Effect.Effect<void> {
   }).pipe(Effect.orDie);
 }
 
-export { loadClientName, submitDecision };
+export { clientNameOptions, submitDecision };

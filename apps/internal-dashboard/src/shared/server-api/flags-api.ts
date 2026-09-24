@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { ConfigurationInvalid, httpStatus, readConfig } from "@repo/config";
 import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
@@ -11,7 +11,7 @@ import { FlagList, FlagToggle, FlagToggled } from "#shared/contracts/index.ts";
 import type { WikiServices } from "#shared/wiki/index.ts";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   ConfigurationInvalid: "unexpected",
   FlagEditorRequired: {
     message: "機能フラグの変更権限がありません。",
@@ -53,8 +53,8 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
   return createApi("")
-    .get("/flags", api.route(FlagList, listFlags, failures))
-    .patch("/flags", api.route(FlagToggled, patchFlag, failures));
+    .get("/flags", ...api.route({ response: FlagList }, listFlags, failures))
+    .patch("/flags", ...api.route({ response: FlagToggled }, patchFlag, failures));
 }
 
 export { flagsApi };

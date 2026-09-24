@@ -1,8 +1,4 @@
-import {
-  maximumNameLength,
-  maximumPasswordLength,
-  minimumPasswordLength,
-} from "@repo/runtime/contracts";
+import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import { ActionStatus, Button, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
 import { Effect } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
@@ -66,7 +62,6 @@ const InviteForm = ({
           name="name"
           type="text"
           autoComplete="name"
-          required
           maxLength={maximumNameLength}
           value={displayName.value}
           onValueChange={displayName.handleChange}
@@ -76,8 +71,6 @@ const InviteForm = ({
           name="account-password"
           type="password"
           autoComplete="new-password"
-          required
-          minLength={minimumPasswordLength}
           maxLength={maximumPasswordLength}
           value={password.value}
           onValueChange={password.handleChange}
