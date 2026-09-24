@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, runCli, runCommand } from "@repo/cli";
 import { APPLICATION, applicationOrigins, applications, httpStatus } from "@repo/config";
 import { Clock, Console, Effect, Option, Schema } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
@@ -151,7 +151,7 @@ const verifyCommand = Command.make(
   Command.withDescription(
     "Request a local app and wait until Local Explorer holds its structured log and completed trace",
   ),
-  Command.run({ version: "0.0.0" }),
+  runCommand({ version: "0.0.0" }),
   Effect.provide(layer),
 );
 

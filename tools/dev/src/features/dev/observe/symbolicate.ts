@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, runCli, runCommand } from "@repo/cli";
 import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
@@ -75,7 +75,7 @@ const symbolicateCommand = Command.make(
   }),
 ).pipe(
   Command.withDescription("Resolve Workers log locations through release source maps"),
-  Command.run({ renderErrors: false, version: "0.0.0" }),
+  runCommand({ renderErrors: false, version: "0.0.0" }),
   Effect.provide(layer),
 );
 

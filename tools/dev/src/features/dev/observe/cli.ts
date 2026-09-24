@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { causeRecord, reportFailed, runCli } from "@repo/cli";
+import { causeRecord, reportFailed, runCli, runCommand } from "@repo/cli";
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
 import { TraceId } from "@repo/observability";
@@ -213,7 +213,7 @@ const observeCommand = Command.make(
   Command.withDescription(
     "Read-only queries against the Cloudflare Local Explorer of the running app; exported reads the OTLP receiver of infra/local",
   ),
-  Command.run({ version: "0.0.0" }),
+  runCommand({ version: "0.0.0" }),
   Effect.provide(layer),
 );
 
