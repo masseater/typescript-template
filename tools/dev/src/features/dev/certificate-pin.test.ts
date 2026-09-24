@@ -1,3 +1,4 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { X509Certificate } from "node:crypto";
 
 import { describe, expect, it } from "vite-plus/test";
