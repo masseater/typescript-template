@@ -1,1 +1,1 @@
-請求書状態を語彙登録すると一般語がリポジトリ全体で奪われるため、状態は文字列で持ち未収額は Stripe の amount_remaining を記録する形に変えた。与信は加算、返金は累計の最大、どちらも状態の順序ガードから外した。
+fallow の private type leak (InvoiceRecord) と portal / payByInvoice の重複を解消
