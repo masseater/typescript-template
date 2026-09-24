@@ -103,7 +103,6 @@ const PROTECTED_RULES: readonly string[] = [
   "forbid-declared-command-invocation--use-designated-replacement",
   "forbid-tracked-path--untrack-and-ignore",
   "require-registered-file--restore-it-at-the-registered-path",
-  "no-mixed-package-surface--declare-one-surface",
   "no-inline-suppression-of-protected-rule--register-the-exception-in-configuration",
   "forbid-generic-restriction-rule--use-the-declared-rule",
   "no-unchecked-authored-path--include-it-in-every-declared-check",

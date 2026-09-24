@@ -38,11 +38,11 @@ const RULE_STANDING_ON_A_NORM = `export const rule = {
 };
 `;
 
-const MISSING = `A repository whose rules name their grounds must not go without \`${INDEX_PATH}\`. Generate it with \`vp run guard:fix\`.`;
+const MISSING = `A repository whose rules name their grounds must not go without \`${INDEX_PATH}\`. Generate it with \`dont-review-it check --write\`.`;
 
 const STRANDED = `\`${INDEX_PATH}\` must not stand while nothing keeps it fresh. This repository declares no place for its normative documents, so nothing regenerates the table. Declare \`normativeDocuments\` in the root manifest, or delete the table.`;
 
-const STALE = `\`${INDEX_PATH}\` must not fall behind the grounds its rules declare. Regenerate it with \`vp run guard:fix\`.`;
+const STALE = `\`${INDEX_PATH}\` must not fall behind the grounds its rules declare. Regenerate it with \`dont-review-it check --write\`.`;
 
 layer(NodeServices.layer)("guidelineIndexProblems", (it) => {
   describe("a repository that declares no place for its norms", () => {
@@ -190,7 +190,7 @@ layer(NodeServices.layer)("guidelineIndexProblems", (it) => {
         expect(tableText).toMatchInlineSnapshot(`
         "# Rules by normative document
 
-        Which lint rules of this repository declare each normative document as their grounds. Collected from those declarations alone, so what the off-the-shelf rules and the other checks cover is not in it. Generated; refresh it with \`vp run guard:fix\` rather than editing it.
+        Which lint rules of this repository declare each normative document as their grounds. Collected from those declarations alone, so what the off-the-shelf rules and the other checks cover is not in it. Generated; refresh it with \`dont-review-it check --write\` rather than editing it.
 
         <!-- BEGIN GENERATED rules-by-guideline -->
 

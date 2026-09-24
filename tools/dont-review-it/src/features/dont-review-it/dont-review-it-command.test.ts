@@ -1618,6 +1618,53 @@ describe("dontReviewItCommand", () => {
     });
   });
 
+  describe("check --write on a workspace whose lint rule index is missing", () => {
+    const it = standardIoTest.extend("theWrittenLintRuleIndexHeading", () =>
+      Effect.runPromise(
+        Effect.gen(function* theWrittenLintRuleIndexHeading() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+
+          const root = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "dont-review-it-cli-",
+          });
+          yield* filesystem.writeFileString(
+            paths.join(root, "pnpm-workspace.yaml"),
+            "packages:\n  - packages/*\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(root, "package.json"),
+            `{ "name": "probe" }`,
+          );
+          yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(root, "packages/example/package.json"),
+            `{ "lintRules": ["src/rules"] }`,
+          );
+          yield* filesystem.writeFileString(
+            paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+            `export const rule = {\n  name: "no-thing--allow-it",\n  meta: { docs: { description: "Disallow the thing" }, messages: { report: "No." } },\n  create: () => ({}),\n};\n`,
+          );
+          yield* Effect.promise(() =>
+            runCommand(dontReviewItCommand, {
+              rawArgs: ["check", "--write", "--repository-root", root],
+            }),
+          );
+          process.exitCode = 0;
+          return (yield* filesystem.readFileString(
+            paths.join(root, "packages/example/docs/lint/index.md"),
+          )).split("\n")[0];
+        }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+      ),
+    );
+
+    it("writes the index", ({ theWrittenLintRuleIndexHeading }) => {
+      expect(theWrittenLintRuleIndexHeading).toBe("# Lint rule index");
+    });
+  });
+
   describe("check --write on entries it must not repair", () => {
     const it = standardIoTest
       .extend("theExitCodeOfAnUnrepairableEntryComposition", () =>

@@ -31,7 +31,7 @@ export const checkCommand = defineCommand({
       type: "boolean",
       default: false,
       description:
-        "Rewrite the parts this repository decides on its own, entry scripts and shipped skill versions, then re-run the checks",
+        "Rewrite the parts this repository decides on its own, entry scripts, shipped skill versions and lint rule documents, then re-run the checks",
     },
   },
   run({ args, rawArgs }) {

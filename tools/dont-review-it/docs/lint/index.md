@@ -1,6 +1,6 @@
 # Lint rule index
 
-Every lint rule this workspace implements. Generated from the rule sources; refresh it with `vp run guard:fix` rather than editing it.
+Every lint rule this workspace implements. Generated from the rule sources; refresh it with `dont-review-it check --write` rather than editing it.
 
 <!-- BEGIN GENERATED lint-rules -->
 
@@ -154,17 +154,6 @@ Each bundle is adopted on its own, and a rule sits in exactly one of them. Which
 | [no-unordered-import--group-by-origin-then-sort-by-specifier](./no-unordered-import--group-by-origin-then-sort-by-specifier.md) | Disallow an import list whose order does not follow origin then specifier, so what a file depends on is read off the block boundaries instead of every specifier | oxlint |  |
 | [no-unused-style-class--delete-or-reference-it](./no-unused-style-class--delete-or-reference-it.md) | Disallow a style sheet class that no script and no markup in the repository spells, so the style sheet keeps only the classes that reach the rendered page | oxlint |  |
 | [require-re-export-only-files--move-declaration-to-owning-module](./require-re-export-only-files--move-declaration-to-owning-module.md) | Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards | oxlint | ⚙️ |
-
-## Enabled by name
-
-Rules this workspace ships without putting them in the preset. A consumer names one in `rules` to turn it on. Why a rule is left out is written in its own document.
-
-| Rule | Description | Tool | Notices |
-| --- | --- | --- | --- |
-| [no-barrel-import--import-from-the-owning-module](./no-barrel-import--import-from-the-owning-module.md) | Disallow a module specifier that names a re-export module while the statement takes a value through it, so the module a binding is taken from is the module that declares it | oxlint |  |
-| [no-barrel-module--declare-in-the-owning-module](./no-barrel-module--declare-in-the-owning-module.md) | Disallow a module whose every statement is a re-export and which forwards at least one value, so the module a binding is taken from is the module that declares it | oxlint | ⚙️ |
-| [no-mixed-package-surface--declare-one-surface](./no-mixed-package-surface--declare-one-surface.md) | Require a package to declare either the surface it is run through or the surface it is imported through, so which discipline owns the package is decided by its manifest instead of by whoever reaches into it next | oxlint | ⚙️ |
-| [require-spec-or-assets-only-in-spec-directory--move-out-or-inline](./require-spec-or-assets-only-in-spec-directory--move-out-or-inline.md) | Require every file under a directory named for specs to be a spec or the test data one of those specs owns, so setup carved out of a spec is reported where it sits instead of only where a spec imports it | oxlint | ⚙️ |
 
 Notices — 🔧: fixable / 💡: suggestions / ⚙️: options
 
