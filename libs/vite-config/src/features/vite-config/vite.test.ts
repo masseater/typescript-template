@@ -198,7 +198,7 @@ describe("sliceBoundaries", () => {
   }) => {
     expect(sliceChecks).toStrictEqual({
       check: {
-        command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
+        command: "quality-check-feature-sliced && quality-check-thin-app-routes",
         env: [...telemetryEnv],
         input: [
           ...taskInput,

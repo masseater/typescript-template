@@ -84,7 +84,6 @@ catalog:
   playwright: 1.63.0
   react: 19.3.0
   react-dom: 19.3.0
-  steiger: 0.6.0
   typescript: 7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0
   vite-plus: 1.0.0-rc.0
@@ -101,7 +100,6 @@ catalog:
   "@opentelemetry/sdk-trace": 2.10.0
   elysia: 2.0.0-beta.16
   storybook: 10.6.0
-  zod: 4.6.5
   "@types/mdast": 4.0.4
   remark: 15.0.1
   remark-mdx: 3.1.1
