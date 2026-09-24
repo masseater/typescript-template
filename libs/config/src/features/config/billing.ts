@@ -42,6 +42,8 @@ export const WEBHOOK_DISPOSITION = {
 export const priceIntervals = ["day", "week", "month", "year"] as const;
 export type PriceInterval = (typeof priceIntervals)[number];
 
+export const stripeApiVersion = "2026-08-26.dahlia";
+
 export const stripeWebhookEvents = [
   "checkout.session.completed",
   "customer.subscription.created",

@@ -73,6 +73,7 @@ catalog:
   drizzle-orm: 1.0.0-rc.5-ab785fc
   effect: 4.0.0-rc.117
   es-toolkit: 1.52.0
+  fs-native-extensions: 1.5.0
   lucide-react: 1.47.0
   miniflare: 5.20260917.0-alpha
   msw: 2.15.0
@@ -116,4 +117,5 @@ peerDependencyRules:
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
   "@cloudflare/vitest-plugin@1.1.12": patches/@cloudflare__vitest-plugin@1.1.12.patch
+  fs-native-extensions@1.5.0: patches/fs-native-extensions@1.5.0.patch
   fumadocs-mdx@15.4.1: patches/fumadocs-mdx@15.4.1.patch
