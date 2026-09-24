@@ -102,6 +102,10 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [forbid-tracked-path--untrack-and-ignore](../tools/dont-review-it/docs/lint/forbid-tracked-path--untrack-and-ignore.md) | Require every path registered as untrackable to stay out of the tracked file list and to stand in the ignore settings, so values that belong to one machine and output that a build produces never ride a commit into another clone |
 | [no-hardcoded-provider-id--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-provider-id--read-from-configuration.md) | Disallow text written out in the source at an identity argument of a client built from a provider package, so which account a deployment acts as is decided by its configuration rather than by the file that builds the client |
 
+## [.claude/skills/reviews/references/shared-code-and-abstractions.md](../.claude/skills/reviews/references/shared-code-and-abstractions.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/simplify.md](../.claude/skills/reviews/references/simplify.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
