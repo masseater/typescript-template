@@ -13,6 +13,7 @@
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
+    "@repo/observability": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },
@@ -20,6 +21,7 @@
     "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
