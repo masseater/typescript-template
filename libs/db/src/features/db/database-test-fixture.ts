@@ -15,7 +15,7 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;
-      readonly TEST_MIGRATIONS: D1Migration[];
+      readonly D1_MIGRATIONS: D1Migration[];
     }
   }
 }
@@ -42,7 +42,7 @@ const testDatabase = (migrated: boolean): Layer.Layer<Database> =>
     Effect.gen(function* database() {
       yield* Effect.promise(async () => reset());
       if (migrated) {
-        yield* Effect.promise(async () => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
+        yield* Effect.promise(async () => applyD1Migrations(env.DB, env.D1_MIGRATIONS));
       }
       return Database.layer(env.DB);
     }).pipe(Effect.orDie),

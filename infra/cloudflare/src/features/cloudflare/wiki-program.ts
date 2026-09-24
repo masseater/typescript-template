@@ -24,7 +24,6 @@ const wikiProgram = Effect.fn("wikiProgram")(function* wikiProgram() {
       ...(config.otlp === undefined
         ? {}
         : {
-            OTLP_ENABLED: String(config.otlp.enabled),
             OTLP_ENDPOINT: config.otlp.endpoint,
             ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
           }),

@@ -5,17 +5,18 @@ import { layer, path } from "./platform.ts";
 
 const OWNER_ONLY_FILE_MODE = 0o600;
 const APP_DOMAIN_KEY = "TEMPLATE_APP_DOMAIN";
-const retiredOriginKeys = [
+const retiredKeys = [
   "TEMPLATE_SERVICE_MEMBER_ORIGIN",
   "TEMPLATE_SERVICE_ADMIN_ORIGIN",
   "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
+  "TEMPLATE_OTLP_ENABLED",
 ] as const;
 
 class PrepareCiEnvFailure extends Schema.TaggedError<PrepareCiEnvFailure>()("PrepareCiEnvFailure", {
   code: Schema.Literals([
     "ci_env_incomplete",
     "ci_env_output_missing",
-    "ci_env_retired_origins",
+    "ci_env_retired_keys",
     "ci_env_unwritable",
   ]),
   keys: Schema.Array(Schema.String),
@@ -37,10 +38,10 @@ function dotenvLine(key: string, value: string): string {
   return `${key}=${JSON.stringify(value)}`;
 }
 
-function presentRetiredOrigins(
+function presentRetiredKeys(
   environment: Readonly<Record<string, string | undefined>>,
 ): readonly string[] {
-  return retiredOriginKeys.filter((key) => envValue(key, environment) !== undefined);
+  return retiredKeys.filter((key) => envValue(key, environment) !== undefined);
 }
 
 function unwritable(): PrepareCiEnvFailure {
@@ -57,13 +58,13 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
   });
   const present = required.flatMap(({ key, value }) => (value === undefined ? [] : [key]));
   const missing = required.flatMap(({ key, value }) => (value === undefined ? [key] : []));
-  const retired = presentRetiredOrigins(environment);
+  const retired = presentRetiredKeys(environment);
   if (present.length === 0 && retired.length === 0) {
     return { status: "unconfigured" } as const satisfies CiEnvPreparation;
   }
   if (retired.length > 0) {
     return yield* new PrepareCiEnvFailure({
-      code: "ci_env_retired_origins",
+      code: "ci_env_retired_keys",
       keys: missing.includes(APP_DOMAIN_KEY) ? [APP_DOMAIN_KEY, ...retired] : [...retired],
     });
   }

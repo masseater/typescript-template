@@ -44,7 +44,7 @@ export default defineProject({
         bindings: {
           ALERT_FROM: "monitor@example.test",
           ALERT_TO: "operator@example.test,oncall@example.test",
-          TEST_MIGRATIONS: migrations,
+          D1_MIGRATIONS: migrations,
         },
         compatibilityDate: workerCompatibility.date,
         compatibilityFlags: [...workerCompatibility.flags],

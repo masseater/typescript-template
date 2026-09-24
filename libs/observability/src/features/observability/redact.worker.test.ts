@@ -1,6 +1,6 @@
 import { setupNetwork } from "@msw/cloudflare";
 import { httpStatus } from "@repo/config";
-import { Cause, Effect, Ref, Schema } from "effect";
+import { Cause, Effect, Redacted, Ref, Schema } from "effect";
 import { FetchHttpClient } from "effect/unstable/http";
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vite-plus/test";
@@ -77,7 +77,7 @@ describe("a secret an attribute carries", () => {
           Effect.provide(
             Telemetry.layer({
               log: { error: recordLine, info: recordLine, warn: recordLine },
-              otlp: { authorization, endpoint },
+              otlp: { authorization: Redacted.make(authorization), endpoint },
               release: "abc123",
               routes: { "/": "home" },
               serviceName: "service-member",
@@ -177,7 +177,7 @@ describe("a secret an annotation or a span attribute carries", () => {
           Effect.provide(
             Telemetry.layer({
               log: { error: recordLine, info: recordLine, warn: recordLine },
-              otlp: { authorization, endpoint },
+              otlp: { authorization: Redacted.make(authorization), endpoint },
               release: "abc123",
               routes: { "/": "home" },
               serviceName: "service-member",
@@ -279,7 +279,7 @@ describe("a secret withSpan attributes carry", () => {
           Effect.provide(
             Telemetry.layer({
               log: { error: recordLine, info: recordLine, warn: recordLine },
-              otlp: { authorization, endpoint },
+              otlp: { authorization: Redacted.make(authorization), endpoint },
               release: "abc123",
               routes: { "/": "home" },
               serviceName: "service-member",
@@ -369,7 +369,7 @@ describe("a secret the cause of a failure carries", () => {
           Effect.provide(
             Telemetry.layer({
               log: { error: recordLine, info: recordLine, warn: recordLine },
-              otlp: { authorization, endpoint },
+              otlp: { authorization: Redacted.make(authorization), endpoint },
               release: "abc123",
               routes: { "/": "home" },
               serviceName: "service-member",
