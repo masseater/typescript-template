@@ -18,14 +18,17 @@ export type PassthroughDeps = {
   monotonicNow: () => number;
 };
 
-const passthroughCommand = (command: Command): ChildProcess.Command => {
+export const spoolChildCommand = (
+  command: Command,
+  childStreams: "inherit" | "pipe",
+): ChildProcess.Command => {
   const environment = childEnvironment();
   return ChildProcess.make(command[0], command.slice(1), {
     ...(environment === undefined ? {} : { env: environment }),
     detached: false,
     stdin: "inherit",
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: childStreams,
+    stderr: childStreams,
   });
 };
 
@@ -34,7 +37,7 @@ export const passThrough = (command: Command, deps: PassthroughDeps): Effect.Eff
     Effect.gen(function* passThroughCommand() {
       const commandLine = command.join(" ");
       const startedAt = deps.monotonicNow();
-      const handle = yield* spawner.spawn(passthroughCommand(command));
+      const handle = yield* spawner.spawn(spoolChildCommand(command, "inherit"));
       const exitCode = exitCodeOf(yield* childEndOf(handle));
       deps.stdout.write(
         `spool: command: ${commandLine}\nspool: exit: ${exitCode} (${formatElapsed(deps.monotonicNow() - startedAt)})\n`,

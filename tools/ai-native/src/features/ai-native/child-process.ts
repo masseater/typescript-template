@@ -82,4 +82,4 @@ const runCaptured = (launch: CapturedLaunch): Effect.Effect<CapturedExit> =>
   );
 
 export { childEndOf, runCaptured };
-export type { ChildEnd };
+export type { CapturedExit, CapturedLaunch, ChildEnd };

@@ -1,5 +1,4 @@
 import { Effect, Result, Stream, type FileSystem, type PlatformError, type Scope } from "effect";
-import { ChildProcess } from "effect/unstable/process";
 
 import { childEndOf, type ChildEnd } from "../child-process.ts";
 import {
@@ -14,17 +13,13 @@ import {
   spawner,
   wallClockDate,
 } from "../host.ts";
-import {
-  childEnvironment,
-  measureCommand,
-  recordCommandRecord,
-} from "../telemetry/command-telemetry.ts";
+import { measureCommand, recordCommandRecord } from "../telemetry/command-telemetry.ts";
 import { exitCodeOf, startFailureSummary } from "./child-outcome.ts";
 import { formatElapsed } from "./format-elapsed.ts";
 import { defaultSpoolRoot } from "./log-destination.ts";
 import { parseCommand, type Command } from "./parse-command.ts";
 import { recordNameOf } from "./record-name.ts";
-import { isPassthroughSignalled, passThrough } from "./run-passthrough.ts";
+import { isPassthroughSignalled, passThrough, spoolChildCommand } from "./run-passthrough.ts";
 import { stripEscapes } from "./strip-escapes.ts";
 
 const defaultIsPassthrough = (): boolean => isPassthroughSignalled(optionalSetting("CI"));
@@ -183,17 +178,6 @@ const reportCompletion = (input: {
   return exitCode;
 };
 
-const recordedCommand = (command: Command): ChildProcess.Command => {
-  const environment = childEnvironment();
-  return ChildProcess.make(command[0], command.slice(1), {
-    ...(environment === undefined ? {} : { env: environment }),
-    detached: false,
-    stdin: "inherit",
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-};
-
 type RecordedRun =
   | { readonly kind: "completed"; readonly exitCode: number }
   | { readonly kind: "start-failure"; readonly spawnError: Error };
@@ -209,7 +193,7 @@ const recordRun = (input: {
       .writeAll(new TextEncoder().encode(`${input.command.join(" ")}\n\n`))
       .pipe(Effect.match({ onFailure: nativeFailure, onSuccess: () => undefined }));
     const startedAt = input.deps.monotonicNow();
-    const handle = yield* spawner.spawn(recordedCommand(input.command));
+    const handle = yield* spawner.spawn(spoolChildCommand(input.command, "pipe"));
     const recording = yield* Stream.merge(
       Stream.result(stripEscapes(handle.stdout)),
       Stream.result(stripEscapes(handle.stderr)),
