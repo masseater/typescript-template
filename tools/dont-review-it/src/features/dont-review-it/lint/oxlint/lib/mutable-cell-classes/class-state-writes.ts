@@ -1,3 +1,5 @@
+import { ADMIN_PERMISSION } from "@repo/config/identity";
+
 import { SUGARED_NODE_TYPES } from "../node-kinds.ts";
 import { listedFieldsOf } from "../setup-modules/coupling-edges.ts";
 import { fieldOf, kindAt, nodeVisitsIn } from "./node-visits.ts";
@@ -45,7 +47,9 @@ const writtenTargetOf = (node: unknown): unknown => {
     case "AssignmentExpression":
       return fieldOf(node, "left");
     case "UnaryExpression":
-      return fieldOf(node, "operator") === "delete" ? fieldOf(node, "argument") : null;
+      return fieldOf(node, ADMIN_PERMISSION.operator) === "delete"
+        ? fieldOf(node, "argument")
+        : null;
     case "UpdateExpression":
       return fieldOf(node, "argument");
     default:

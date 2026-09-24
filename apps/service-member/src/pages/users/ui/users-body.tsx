@@ -10,7 +10,7 @@ function UsersBody({
   return (
     <main className="mx-auto flex w-full max-w-wide flex-col gap-4 px-4 py-8">
       <Heading as="h1" size="page">
-        ユーザーを探す
+        探す
       </Heading>
       <SearchForm />
       {children}

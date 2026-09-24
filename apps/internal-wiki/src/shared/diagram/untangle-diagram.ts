@@ -1,5 +1,12 @@
 import { DiagramCrowded } from "./diagram-crowded.ts";
-import { center, formatPoints, inflate, segmentsOf } from "./diagram-geometry.ts";
+import {
+  center,
+  distanceToRoute,
+  formatPoints,
+  inflate,
+  segmentsOf,
+  withoutSpaces,
+} from "./diagram-geometry.ts";
 import {
   boxesOverlap,
   collinearOverlap,
@@ -111,6 +118,18 @@ const candidatesFor = (label: Label): readonly Readonly<{ box: Box; onLine: bool
     )
     .toSorted((left, right) => Number(left.onLine === false) - Number(right.onLine === false));
 
+const closestToItsOwnRoute = (geometry: DiagramGeometry, label: Label, box: Box): boolean => {
+  const middle = center(box);
+  const words = withoutSpaces(label.route.label ?? "");
+  const ownDistance = distanceToRoute(middle, label.route);
+  return !geometry.routes.some(
+    (route) =>
+      route !== label.route &&
+      withoutSpaces(route.label ?? "") === words &&
+      distanceToRoute(middle, route) <= ownDistance,
+  );
+};
+
 const fits = (
   geometry: DiagramGeometry,
   label: Label,
@@ -118,6 +137,7 @@ const fits = (
   onLine: boolean,
   placed: readonly Box[],
 ): boolean =>
+  closestToItsOwnRoute(geometry, label, box) &&
   !geometry.shapes.some((shape) => boxesOverlap(inflate(shape.box, LABEL_GAP), box)) &&
   !placed.some((other) => boxesOverlap(inflate(other, LABEL_GAP), box)) &&
   !geometry.routes.some(

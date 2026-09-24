@@ -1,6 +1,6 @@
+import { photoContentTypes } from "@repo/config";
+import { Redirect } from "@repo/runtime/contracts";
 import { Schema } from "effect";
-
-import { Redirect } from "./redirect.ts";
 
 const maximumPathLength = 200;
 
@@ -32,7 +32,7 @@ const WikiDraftDiscard = Schema.Struct({ path: WikiPagePath, version: DraftVersi
 
 const WikiDraftSaved = Schema.Struct({ version: DraftVersion });
 
-const wikiImageTypes = ["image/gif", "image/jpeg", "image/png", "image/webp"] as const;
+const wikiImageTypes = ["image/gif", ...photoContentTypes] as const;
 
 const WikiImageUpload = Schema.Struct({
   bytes: Schema.Uint8ArrayFromBase64,

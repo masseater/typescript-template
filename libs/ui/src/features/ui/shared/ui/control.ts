@@ -8,4 +8,6 @@ const fieldClassName = "flex w-full flex-col gap-1";
 
 const errorClassName = "text-sm leading-normal text-destructive";
 
-export { controlClassName, errorClassName, fieldClassName, labelClassName };
+const hintClassName = "text-sm leading-normal text-muted-foreground";
+
+export { controlClassName, errorClassName, fieldClassName, hintClassName, labelClassName };

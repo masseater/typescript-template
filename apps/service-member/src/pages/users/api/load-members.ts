@@ -1,3 +1,4 @@
+import { PaidPlanRequired, httpStatus } from "@repo/config";
 import { apiData } from "@repo/runtime/client";
 
 import { userClient } from "#shared/api/index.ts";
@@ -13,9 +14,14 @@ function loadMembers(search: UsersSearch): Promise<Members> {
     page: String(search.page ?? 1),
   };
   return Promise.resolve(userClient()).then(({ api }) =>
-    api.members.get({ query }).then((response) => apiData(MemberList, response)),
+    api.members.get({ query }).then((reply) => {
+      if (reply.error?.status === httpStatus.paymentRequired) {
+        throw new PaidPlanRequired();
+      }
+      return apiData(MemberList, reply);
+    }),
   );
 }
 
-export { loadMembers };
+export { PaidPlanRequired, loadMembers };
 export type { Members };

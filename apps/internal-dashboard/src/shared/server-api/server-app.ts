@@ -2,10 +2,13 @@ import { handleAuthRequest } from "@repo/auth";
 import { sessionApi, unavailable } from "@repo/runtime/account";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 
+import { dashboardApi } from "./dashboard-api.ts";
 import { flagsApi } from "./flags-api.ts";
+import { inquiryApi } from "./inquiry-api.ts";
 import { serveMcp } from "./mcp.ts";
 import { recordingsApi } from "./recordings-api.ts";
 import { reporting, runtime } from "./runtime.ts";
+import { staffApi } from "./staff-api.ts";
 import { wikiEditApi } from "./wiki-edit-api.ts";
 
 const api = apiRoutes(runtime, reporting);
@@ -14,7 +17,10 @@ const wikiApi = createApi("")
   .use(
     createApi(apiRoot)
       .use(sessionApi(api))
+      .use(staffApi(api))
       .use(flagsApi(api))
+      .use(inquiryApi(api))
+      .use(dashboardApi(api))
       .use(recordingsApi(api))
       .use(wikiEditApi(api)),
   )

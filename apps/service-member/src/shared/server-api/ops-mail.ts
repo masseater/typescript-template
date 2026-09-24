@@ -6,7 +6,6 @@ import type { AppConfig } from "@repo/config";
 interface OpsMailShape extends MailSettings {
   readonly OPS_EMAIL: string;
 }
-
 class OpsMail extends Context.Service<OpsMail, OpsMailShape>()("@repo/service-member/OpsMail") {}
 
 function opsMailLayer(config: AppConfig): Layer.Layer<OpsMail> {

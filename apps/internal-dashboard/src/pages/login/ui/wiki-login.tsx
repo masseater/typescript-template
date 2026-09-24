@@ -1,11 +1,11 @@
 import { browserHttp, LoginPage } from "@repo/auth-ui";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
+import { Redirect } from "@repo/runtime/contracts";
 import { Effect } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 
 import { serviceName } from "#shared/config/index.ts";
-import { Redirect } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 

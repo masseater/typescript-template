@@ -1,3 +1,4 @@
+import { SessionUserProvider } from "@repo/auth-ui";
 import { loginPath } from "@repo/auth-ui/login-redirect";
 import { useSession } from "@repo/auth-ui/session";
 import { ROLE } from "@repo/config";
@@ -41,9 +42,11 @@ function AdminLayout(): ReactElement | null {
     return null;
   }
   return (
-    <AdminFrame email={session.user.email} name={session.user.name}>
-      <Outlet />
-    </AdminFrame>
+    <SessionUserProvider user={session.user}>
+      <AdminFrame email={session.user.email} name={session.user.name}>
+        <Outlet />
+      </AdminFrame>
+    </SessionUserProvider>
   );
 }
 

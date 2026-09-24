@@ -1,4 +1,5 @@
 import { Auth } from "@repo/auth";
+import { AuthApps, authTest, runWith, wikiStaff } from "@repo/auth/testing";
 import { APPLICATION, httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
@@ -10,8 +11,6 @@ import { describe, expect } from "vite-plus/test";
 import { WikiDraftSaved, WikiImageUploaded, WikiSource } from "#shared/contracts/index.ts";
 import { gitBlobRevision, readWikiSource } from "#shared/wiki-document/wiki-sources.ts";
 import { wikiLayer } from "#shared/wiki/index.ts";
-import { AuthApps, authTest, runWith } from "../../../../../libs/auth/src/features/auth/testing.ts";
-import { wikiAdministrator } from "../wiki/wiki-oauth-fixture.ts";
 import { wikiEditApi } from "./wiki-edit-api.ts";
 
 const routes = { "/api/wiki-edit/*": "wiki-edit" };
@@ -65,7 +64,7 @@ const jsonOf = (response: Response): Effect.Effect<unknown> =>
   Effect.promise(() => response.json() as Promise<unknown>);
 
 const signedInEditor = Effect.fn("signedInEditor")(function* signedInEditor() {
-  const client = yield* wikiAdministrator("editor@example.com");
+  const client = yield* wikiStaff("editor@example.com");
   return {
     app: editApp((yield* AuthApps)[APPLICATION.wiki]),
     cookie: client.cookieHeaders().get("cookie") ?? "",

@@ -1,27 +1,72 @@
-import { CheckboxField, FormColumn, Page, StatusMessage, localState } from "@repo/ui";
+import {
+  Button,
+  CheckboxField,
+  FormColumn,
+  Page,
+  STATUS_VARIANT,
+  StatusMessage,
+  localState,
+  useAction,
+  useToast,
+} from "@repo/ui";
+
+import { saveNotificationPreferences } from "#pages/settings/api/notification-preferences.ts";
+import { NotificationPreferences } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 
-const useMessageMail = localState(false);
-const useBoardMail = localState(false);
+type Preferences = typeof NotificationPreferences.Type;
 
-function NotificationsPage(): ReactElement {
-  const [messageMail, setMessageMail] = useMessageMail();
-  const [boardMail, setBoardMail] = useBoardMail();
+const useDraft = localState<Preferences | undefined>(undefined);
+
+function NotificationsPage({
+  initial,
+}: Readonly<{
+  initial: Preferences;
+}>): ReactElement {
+  const notify = useToast();
+  const saveAction = useAction();
+  const [draft, setDraft] = useDraft();
+  const preferences = draft ?? initial;
+  const setMessageMail = (messageMail: boolean): void => {
+    setDraft({
+      ...preferences,
+      messageMail,
+    });
+  };
+  const setBoardMail = (boardMail: boolean): void => {
+    setDraft({
+      ...preferences,
+      boardMail,
+    });
+  };
+  const save = (): void => {
+    saveAction.run(() =>
+      saveNotificationPreferences(preferences).then((saved) => {
+        setDraft(saved);
+        return notify("success", "通知設定を保存しました。");
+      }),
+    );
+  };
   return (
     <Page title="通知">
-      <StatusMessage>通知の配信はまだありません。既定はオフです。</StatusMessage>
+      {saveAction.error !== undefined && (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{saveAction.error}</StatusMessage>
+      )}
       <FormColumn>
         <CheckboxField
-          checked={messageMail}
+          checked={preferences.messageMail}
           label="メッセージのメール通知"
           onCheckedChange={setMessageMail}
         />
         <CheckboxField
-          checked={boardMail}
+          checked={preferences.boardMail}
           label="掲示板のメール通知"
           onCheckedChange={setBoardMail}
         />
+        <Button disabled={saveAction.blocked} onClick={save} type="button" variant="primary">
+          保存
+        </Button>
       </FormColumn>
     </Page>
   );

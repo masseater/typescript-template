@@ -6,9 +6,8 @@
     "#*": "./src/*"
   },
   "dependencies": {
-    "@better-auth/oauth-provider": "1.7.5",
     "@effect/atom-react": "catalog:",
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "catalog:",
     "@platejs/basic-nodes": "53.0.0",
     "@platejs/code-block": "53.0.0",
     "@platejs/link": "53.3.5",
@@ -31,7 +30,6 @@
     "@tanstack/react-start": "catalog:",
     "alchemy": "catalog:",
     "better-auth": "catalog:",
-    "better-call": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "platejs": "53.3.14",

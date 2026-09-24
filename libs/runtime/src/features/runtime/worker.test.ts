@@ -265,3 +265,35 @@ describe("a document that arrived over https", () => {
     expect(documentTransportSecurity).toBe(strictTransportSecurity);
   });
 });
+
+describe("a document behind a start server route with google analytics configured", () => {
+  const it = test.extend("analyticsDirectives", () =>
+    Effect.runPromise(
+      startRoute(
+        {
+          fetch: () =>
+            new Response("<!DOCTYPE html>", {
+              headers: { "content-type": "text/html; charset=utf-8" },
+            }),
+        },
+        { googleAnalytics: true },
+      )(new Request(origin)).pipe(
+        Effect.map((served) =>
+          (served.headers.get("content-security-policy") ?? "")
+            .split("; ")
+            .filter((directive) => /^(?:script|img|connect)-src /u.test(directive))
+            .map((directive) => directive.replace(/'nonce-[^']+'/u, "'nonce-handed'")),
+        ),
+      ),
+    ));
+
+  it("allows the google analytics hosts only where the tag needs them", ({
+    analyticsDirectives,
+  }) => {
+    expect(analyticsDirectives).toStrictEqual([
+      "script-src 'nonce-handed' 'strict-dynamic' https://www.googletagmanager.com",
+      "img-src 'self' data: https://www.google-analytics.com",
+      "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com",
+    ]);
+  });
+});
