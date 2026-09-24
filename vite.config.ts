@@ -6,7 +6,7 @@ import {
   generatedFiles,
   isolatedNodeTests,
   lintOptions,
-  rootNodeToolTestIncludes,
+  rootNodeTestIncludes,
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
@@ -58,16 +58,6 @@ const rootOwnedPaths = [
   "vitest.mutation.config.ts",
   "vitest.workers.config.ts",
   "vitest.workers.main.ts",
-] as const;
-
-const nodeTestIncludes = [
-  "libs/**/*.test.ts",
-  "libs/**/*.test.tsx",
-  "apps/**/*.test.ts",
-  "apps/**/*.test.tsx",
-  ...rootNodeToolTestIncludes,
-  "tools/dont-review-it/src/features/dont-review-it/repository/**/*.test.ts",
-  "infra/**/*.test.ts",
 ] as const;
 
 export default defineConfig({
@@ -127,7 +117,7 @@ export default defineConfig({
       },
       "test:dev-server": {
         cache: false,
-        command: "vp test run --passWithNoTests --project dev-server",
+        command: "vp test run --project dev-server",
         dependsOn: ["compile:paraglide"],
       },
       "test:storybook": {
@@ -184,7 +174,7 @@ export default defineConfig({
         extends: true,
         test: {
           exclude: [...defaultExclude, workerTests, devServerTests, isolatedNodeTests],
-          include: [...nodeTestIncludes],
+          include: [...rootNodeTestIncludes],
           isolate: false,
           name: "node",
         },
@@ -193,7 +183,7 @@ export default defineConfig({
         extends: true,
         test: {
           exclude: [...defaultExclude, workerTests, devServerTests],
-          include: nodeTestIncludes.map((pattern) =>
+          include: rootNodeTestIncludes.map((pattern) =>
             pattern.replace("/**/*.test.", "/**/*.isolated.test."),
           ),
           name: "node-isolated",

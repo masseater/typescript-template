@@ -21,7 +21,7 @@ import {
   workspaceDirectories,
   workspaceNames,
 } from "./tasks-test-fixture.ts";
-import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
+import { dedicatedToolVitestProjects, rootNodeTestIncludes } from "./tool-test-projects.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../../../.vite-hooks/pre-*",
@@ -65,11 +65,11 @@ function misplacedHooks(): string[] {
         source !==
           [
             `node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= ${requiredNodeMajor} ? 0 : 1)' || { echo "Node ${requiredNodeMajor} or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }`,
-            `scope="$(node tools/dont-review-it/src/features/dont-review-it/repository/hook-scope.ts ${stage})" || scope="-r"`,
-            '[ -n "$scope" ] || exit 0',
-            `vp run --concurrency-limit ${stage === "prepush" ? "1" : "2"} $scope ${stage}`,
+            `vp run --filter @repo/dont-review-it hook:${stage}`,
             "",
-          ].join("\n"),
+          ].join("\n") ||
+        commands("tools/dont-review-it", `hook:${stage}`).join("\n") !==
+          `dont-review-it-hook ${stage}`,
     )
     .map(([stage]) => stage);
 }
@@ -221,7 +221,7 @@ const toolsPackagesWithTests: TreeScan<string[]> = Effect.gen(function* toolsPac
 const uncoveredToolTestPackages = (packagesWithTests: readonly string[]): string[] => {
   const dedicated = new Set(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, "")));
   const rootOwned = new Set(
-    rootNodeToolTestIncludes.map((pattern) => pattern.replace(/\/\*\*\/\*\.test\.tsx?$/u, "")),
+    rootNodeTestIncludes.map((pattern) => pattern.replace(/\/\*\*\/\*\.test\.tsx?$/u, "")),
   );
   return packagesWithTests.filter(
     (directory) =>
@@ -299,7 +299,7 @@ describe("lifecycle entry points", () => {
       "vp run -w prepr",
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
       "vp run compile:paraglide",
-      "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
+      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
       "vp run compile:paraglide",
       "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
@@ -470,9 +470,7 @@ describe("test ownership", () => {
     expect(commands(".", "test")).toStrictEqual([
       "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
     ]);
-    expect(commands(".", "test:dev-server")).toStrictEqual([
-      "vp test run --passWithNoTests --project dev-server",
-    ]);
+    expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
     expect(commands(".", "test:storybook")).toStrictEqual(["vp test run --project storybook"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });

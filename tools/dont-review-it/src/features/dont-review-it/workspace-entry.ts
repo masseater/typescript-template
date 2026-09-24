@@ -11,5 +11,5 @@ export type { CapturedStream } from "./vitest/standard-io-test.ts";
 export { rootOnDemandChecks } from "./repository/on-demand-checks.ts";
 export {
   dedicatedToolVitestProjects,
-  rootNodeToolTestIncludes,
+  rootNodeTestIncludes,
 } from "./repository/tool-test-projects.ts";

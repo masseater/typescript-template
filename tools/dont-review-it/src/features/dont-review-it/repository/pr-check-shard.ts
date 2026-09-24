@@ -13,8 +13,15 @@ class NotAWorkspaceFilter extends Schema.TaggedError<NotAWorkspaceFilter>()("Not
 
 const shardOutput = (
   checkShard: string,
-  files: readonly string[],
-  packages: readonly WorkspacePackage[],
+  {
+    files,
+    packages,
+    rootTestFiles,
+  }: Readonly<{
+    files: readonly string[];
+    packages: readonly WorkspacePackage[];
+    rootTestFiles: readonly string[];
+  }>,
 ): Effect.Effect<string, NotAWorkspaceFilter> =>
   Effect.gen(function* shardOutput() {
     if (checkShard === prCheckRootShard) {
@@ -42,7 +49,13 @@ const shardOutput = (
     return [
       "root=false",
       `filters=${names.map((name) => `--filter ${name}`).join(" ")}`,
-      `paths=${affected.kind === "all" ? "" : directories.join(" ")}`,
+      `paths=${
+        affected.kind === "all"
+          ? ""
+          : directories
+              .filter((directory) => rootTestFiles.some((file) => file.startsWith(`${directory}/`)))
+              .join(" ")
+      }`,
       "",
     ].join("\n");
   });
