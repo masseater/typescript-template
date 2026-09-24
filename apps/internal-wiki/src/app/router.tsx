@@ -1,4 +1,4 @@
-import { loadBrowserSession, provideSessionLoader } from "@repo/auth-ui/session-loader";
+import { loadBrowserSession, provideSessionLoader } from "@repo/auth-ui/session";
 import { wikiBasePath } from "@repo/config";
 import { createAppRouter } from "@repo/ui/shell";
 import { QueryClient } from "@tanstack/react-query";
