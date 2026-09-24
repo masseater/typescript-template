@@ -1,4 +1,4 @@
-import { priceIntervals, readStripeConfig } from "@repo/config";
+import { priceIntervals, readStripeConfig, stripeApiVersion } from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Redirect } from "@repo/runtime/contracts";
 import { Context, Effect, Layer, Schema } from "effect";
@@ -13,6 +13,7 @@ import type { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
 const stripeApi = "https://api.stripe.com/v1";
 const patience = "15 seconds";
+const checkoutIntegration = "member-subscription-qhzvtkdw";
 
 const StripeEvent = Schema.Struct({
   created: Schema.Finite,
@@ -82,6 +83,7 @@ function request(
         ...(form === undefined ? {} : { body: form }),
         headers: {
           authorization: `Bearer ${secretKey}`,
+          "stripe-version": stripeApiVersion,
           ...(form === undefined
             ? {}
             : {
@@ -112,6 +114,7 @@ function checkoutForm(priceId: string, input: CheckoutInput): URLSearchParams {
   return new URLSearchParams({
     cancel_url: input.cancelUrl,
     client_reference_id: input.memberId,
+    integration_identifier: checkoutIntegration,
     "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
     mode: "subscription",

@@ -74,6 +74,7 @@ export {
   paidStatuses,
   plans,
   priceIntervals,
+  stripeApiVersion,
   stripeWebhookEvents,
   subscriptionStatuses,
   webhookOutcomes,
