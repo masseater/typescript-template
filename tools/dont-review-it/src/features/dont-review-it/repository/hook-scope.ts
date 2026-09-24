@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { NodeServices } from "@effect/platform-node";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, runCli } from "@repo/cli";
 import { Console, Effect, Option, Path, Schema } from "effect";
 import { ChildProcess } from "effect/unstable/process";

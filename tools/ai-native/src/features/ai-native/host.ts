@@ -1,4 +1,4 @@
-import { NodeServices } from "@effect/platform-node";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
@@ -14,10 +14,6 @@ const [paths, filesystem, randomness, spawner] = Effect.runSync(
   ]).pipe(Effect.provide(NodeServices.layer)),
 );
 
-const nativeFailure = (failure: PlatformError.PlatformError): Error =>
-  failure.reason.cause instanceof Error ? failure.reason.cause : failure;
-
-
 const joinPath = (...parts: readonly string[]): string => paths.join(...parts);
 
 const parentPath = (location: string): string => paths.dirname(location);
@@ -28,6 +24,9 @@ const resolvePath = (...parts: readonly string[]): string => paths.resolve(...pa
 
 const fileExists = (location: string): Effect.Effect<boolean> =>
   filesystem.exists(location).pipe(Effect.orElseSucceed(() => false));
+
+const nativeFailure = (failure: PlatformError.PlatformError): Error =>
+  failure.reason.cause instanceof Error ? failure.reason.cause : failure;
 
 const onDisk = <A, R>(
   operation: Effect.Effect<A, PlatformError.PlatformError, R>,
