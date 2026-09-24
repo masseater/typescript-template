@@ -10,6 +10,7 @@ const verificationSettings = {
     recipients: ["billing@example.com"],
   },
   mailFrom: "mail@template-verify.example.com",
+  googleAnalyticsMeasurementId: "G-VERIFYMEASUREMENT",
   origins: {
     "internal-dashboard": "https://template-verify-dashboard.example.com",
     "service-admin": "https://template-verify-admin.example.com",
@@ -18,6 +19,11 @@ const verificationSettings = {
   otlp: { enabled: true, endpoint: "https://otlp.example.com" },
   otlpAuthorization: "Bearer stack-verification-not-a-real-token",
   prefix: "template-verify",
+  stripe: {
+    priceId: "price_stackVerificationNotReal",
+    secretKey: "sk_test_stackVerificationNotAReal",
+    webhookSecret: "whsec_stackVerificationNotReal",
+  },
   zoneId: "b".repeat(HEX_ID_LENGTH),
 };
 
@@ -29,11 +35,15 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.cloudflareZoneId]: verificationSettings.zoneId,
   [deploymentKey.appDomain]: "example.com",
   [deploymentKey.authSecret]: verificationAuthSecret,
+  [deploymentKey.googleAnalyticsMeasurementId]: verificationSettings.googleAnalyticsMeasurementId,
   [deploymentKey.mailFrom]: verificationSettings.mailFrom,
   [deploymentKey.otlpAuthorization]: verificationSettings.otlpAuthorization,
   [deploymentKey.otlpEnabled]: String(verificationSettings.otlp.enabled),
   [deploymentKey.otlpEndpoint]: verificationSettings.otlp.endpoint,
   [deploymentKey.prefix]: verificationSettings.prefix,
+  [deploymentKey.stripePriceId]: verificationSettings.stripe.priceId,
+  [deploymentKey.stripeSecretKey]: verificationSettings.stripe.secretKey,
+  [deploymentKey.stripeWebhookSecret]: verificationSettings.stripe.webhookSecret,
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };

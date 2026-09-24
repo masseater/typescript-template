@@ -1,8 +1,19 @@
 import { applications } from "@repo/config";
-import { roles } from "@repo/config/identity";
+import { accountPermissions, roles } from "@repo/config/identity";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumTokenLength = 4096;
+const maximumIdentifierLength = 256;
+
+const maximumNameLength = 100;
+const minimumPasswordLength = 12;
+const maximumPasswordLength = 128;
+
+const Role = Schema.Literals(roles);
+const AccountPermission = Schema.Literals(accountPermissions);
+
+const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
+
 const ErrorBody = Schema.Struct({ error: Schema.String });
 const SessionView = Schema.Struct({
   strong: Schema.Boolean,
@@ -10,10 +21,28 @@ const SessionView = Schema.Struct({
     email: Schema.String,
     id: Schema.String,
     name: Schema.String,
-    role: Schema.Literals(roles),
+    permission: Schema.NullOr(AccountPermission),
+    role: Role,
     twoFactorEnabled: Schema.Boolean,
   }),
 });
+
+const InviteToken = Schema.String.check(Schema.isLengthBetween(1, maximumTokenLength));
+
+const InvitePreviewQuery = Schema.Struct({ token: InviteToken });
+
+const InvitePreview = Schema.Struct({ email: Schema.String, permission: AccountPermission });
+
+const InviteAcceptance = Schema.Struct({
+  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength)),
+  password: Schema.String.check(
+    Schema.isLengthBetween(minimumPasswordLength, maximumPasswordLength),
+  ),
+  token: InviteToken,
+});
+
+const InviteAccepted = Schema.Struct({ accepted: Schema.Literal(true), email: Schema.String });
+
 const EmailVerificationRequest = Schema.Struct({
   token: Schema.String.check(Schema.isLengthBetween(1, maximumTokenLength)),
 });
@@ -24,10 +53,19 @@ const HealthView = Schema.Struct({
   service: Schema.Literals(applications),
 });
 
-const maximumIdentifierLength = 256;
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 const IdentifierQuery = Schema.Struct({ id: Identifier });
 const CreatedResource = Schema.Struct({ id: Schema.String });
+const Acknowledged = Schema.Struct({ ok: Schema.Literal(true) });
+const Tally = Schema.Struct({ count: Schema.Finite });
+const Redirect = Schema.Struct({ url: Schema.String });
+const InvitationIssued = Schema.Struct({ email: Schema.String, expiresAt: Schema.DateFromString });
+const InquiryMessage = Schema.Struct({
+  authorId: Schema.String,
+  authorKind: Role,
+  body: Schema.String,
+  createdAt: Schema.DateFromString,
+  id: Schema.String,
+});
 
 const pageNumber = ({
   fallback,
@@ -65,6 +103,8 @@ const SearchKeyword = ScalarText.pipe(Schema.decodeTo(UserKeyword));
 type Decodable = Schema.Top & { readonly DecodingServices: never };
 
 export {
+  AccountPermission,
+  Acknowledged,
   CreatedResource,
   EmailVerificationRequest,
   EmailVerified,
@@ -72,11 +112,24 @@ export {
   HealthView,
   Identifier,
   IdentifierQuery,
+  InquiryMessage,
+  InvitationIssued,
+  InviteAcceptance,
+  InviteAccepted,
+  InvitePreview,
+  InvitePreviewQuery,
+  Redirect,
+  Role,
   SearchKeyword,
   SessionView,
+  Tally,
   UserKeyword,
   laterPage,
+  maximumIdentifierLength,
   maximumKeywordLength,
+  maximumNameLength,
+  maximumPasswordLength,
+  minimumPasswordLength,
   pageNumber,
 };
 export type { Decodable };

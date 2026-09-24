@@ -22,6 +22,7 @@ import { Route as DashboardInquiriesRouteImport } from './routes/_dashboard/inqu
 import { Route as DashboardSecurityRouteImport } from './routes/_dashboard/security'
 import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DashboardRecordingsIndexRouteImport } from './routes/_dashboard/recordings/index'
 import { Route as DashboardRecordingsIdRouteImport } from './routes/_dashboard/recordings/$id'
 
@@ -89,6 +90,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRecordingsIndexRoute =
   DashboardRecordingsIndexRouteImport.update({
     id: '/recordings/',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof DashboardSecurityRoute
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/recordings/$id': typeof DashboardRecordingsIdRoute
   '/recordings/': typeof DashboardRecordingsIndexRoute
 }
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/security': typeof DashboardSecurityRoute
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/': typeof DashboardIndexRoute
   '/recordings/$id': typeof DashboardRecordingsIdRoute
   '/recordings': typeof DashboardRecordingsIndexRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/_dashboard/security': typeof DashboardSecurityRoute
   '/_dashboard/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/_dashboard/': typeof DashboardIndexRoute
   '/_dashboard/recordings/$id': typeof DashboardRecordingsIdRoute
   '/_dashboard/recordings/': typeof DashboardRecordingsIndexRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/staff'
     | '/api/$'
+    | '/invite/$token'
     | '/recordings/$id'
     | '/recordings/'
   fileRoutesByTo: FileRoutesByTo
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/staff'
     | '/api/$'
+    | '/invite/$token'
     | '/'
     | '/recordings/$id'
     | '/recordings'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/_dashboard/security'
     | '/_dashboard/staff'
     | '/api/$'
+    | '/invite/$token'
     | '/_dashboard/'
     | '/_dashboard/recordings/$id'
     | '/_dashboard/recordings/'
@@ -211,6 +223,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_dashboard/recordings/': {
       id: '/_dashboard/recordings/'
       path: '/recordings'
@@ -357,6 +377,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

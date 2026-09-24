@@ -13,8 +13,6 @@ import {
 
 import type { ThreadSearch } from "#pages/board/index.ts";
 
-type ThreadParams = Readonly<{ id: string }>;
-
 function requireThreadSearch(raw: unknown): ThreadSearch {
   try {
     return normalizeThreadSearch(raw);
@@ -35,7 +33,7 @@ const Route = createFileRoute("/_member/board/$id")({
     search,
   }: Readonly<{
     location: Readonly<{ searchStr: string }>;
-    params: ThreadParams;
+    params: Readonly<{ id: string }>;
     search: ThreadSearch;
   }>) => {
     if (location.searchStr !== defaultStringifySearch(search)) {
@@ -45,7 +43,7 @@ const Route = createFileRoute("/_member/board/$id")({
   loader: ({
     deps,
     params,
-  }: Readonly<{ deps: Readonly<{ page: number }>; params: ThreadParams }>) =>
+  }: Readonly<{ deps: Readonly<{ page: number }>; params: Readonly<{ id: string }> }>) =>
     loadThread(params.id, deps.page),
   component: ThreadRoute,
   errorComponent: ThreadFailed,

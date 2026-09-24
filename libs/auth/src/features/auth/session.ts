@@ -1,11 +1,11 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { audienceRoles, type Application } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
 import { Auth } from "./auth.ts";
-import { isStrongMethod, sessionIsLive } from "./policy.ts";
+import { isPrivilegedRole, isStrongMethod, sessionIsLive } from "./policy.ts";
 import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
 import { sessionTokenFrom } from "./session-token.ts";
@@ -34,16 +34,18 @@ const readLiveSession = Effect.fn("readLiveSession")(function* readLiveSession(h
   return sessionRecord;
 });
 
-const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin({
+const verifyPrivileged = Effect.fn("verifyPrivileged")(function* verifyPrivileged({
   allowEnrollment,
+  audience,
   role,
   strong,
 }: {
   readonly allowEnrollment: boolean;
+  readonly audience: Application;
   readonly role: string;
   readonly strong: boolean;
 }) {
-  if (role !== ROLE.administrator) {
+  if (role !== audienceRoles[audience]) {
     return yield* new AdminRequired();
   }
   if (!allowEnrollment && !strong) {
@@ -58,18 +60,19 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   const { audience } = yield* Auth;
   const sessionRecord = yield* readLiveSession(headers);
   const strong = isStrongMethod(sessionRecord.session.authenticationMethod);
-  if (audience !== APPLICATION.user) {
-    yield* verifyAdmin({
+  if (isPrivilegedRole(audienceRoles[audience])) {
+    yield* verifyPrivileged({
       allowEnrollment,
+      audience,
       role: sessionRecord.user.role,
       strong,
     });
   }
-  const { email, id, name, role, twoFactorEnabled } = sessionRecord.user;
+  const { email, id, name, permission, role, twoFactorEnabled } = sessionRecord.user;
   return {
     session: { id: sessionRecord.session.id },
     strong,
-    user: { email, id, name, role, twoFactorEnabled },
+    user: { email, id, name, permission, role, twoFactorEnabled },
   };
 });
 
@@ -78,4 +81,11 @@ const verifySession = (
   allowEnrollment = false,
 ): ReturnType<typeof verifySessionWith> => verifySessionWith(headers, allowEnrollment);
 
-export { verifySession };
+const verifiedSessionId = Effect.fn("verifiedSessionId")(function* verifiedSessionId(
+  incoming: Readonly<{ headers: Headers }>,
+) {
+  const { session } = yield* verifySession(incoming.headers);
+  return session.id;
+});
+
+export { verifiedSessionId, verifySession };

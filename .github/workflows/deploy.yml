@@ -42,6 +42,7 @@ jobs:
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           TEMPLATE_APP_DOMAIN: ${{ secrets.TEMPLATE_APP_DOMAIN }}
           TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
+          TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID: ${{ secrets.TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID }}
           TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
           TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
           TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
@@ -50,6 +51,9 @@ jobs:
           TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
+          TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
+          TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
+          TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
@@ -78,6 +82,7 @@ jobs:
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           TEMPLATE_APP_DOMAIN: ${{ secrets.TEMPLATE_APP_DOMAIN }}
           TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
+          TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID: ${{ secrets.TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID }}
           TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
           TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
           TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
@@ -86,6 +91,9 @@ jobs:
           TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
+          TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
+          TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
+          TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'

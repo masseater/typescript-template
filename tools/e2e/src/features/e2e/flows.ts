@@ -1,11 +1,20 @@
-import { Effect } from "effect";
+import { Crypto, Effect } from "effect";
 
-import { appearanceTimeout, field, fill, pageStep, press, readyButton } from "./screens.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
+import {
+  appearanceTimeout,
+  field,
+  fill,
+  pageStep,
+  press,
+  readyButton,
+  seeHeading,
+  seeText,
+} from "./screens.ts";
 import { currentTotpCode } from "./totp.ts";
 
 import type { Page } from "playwright";
 import type { Account } from "./accounts.ts";
-import type { JourneyFailure } from "./journey-failure.ts";
 import type { MailSink } from "./mail.ts";
 
 type Visit = {
@@ -125,4 +134,100 @@ const signOut = (page: Page, origin: string): Effect.Effect<void, JourneyFailure
     yield* readyButton(page, signInButton);
   });
 
-export { answerTotpChallenge, confirmEmail, enrollTotp, homePattern, signIn, signOut, signUp };
+const passkeyLoginButton = "パスキーでログイン";
+
+const signInWithPasskey = (visit: Visit): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* signInViaPasskey() {
+    yield* pageStep(() => visit.page.goto(`${visit.origin}/login`));
+    yield* readyButton(visit.page, passkeyLoginButton);
+    yield* press(visit.page, passkeyLoginButton);
+    yield* pageStep(() =>
+      visit.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout }),
+    );
+  });
+
+const waitForPasskeyRegistration = (visit: Visit): ReturnType<Page["waitForResponse"]> =>
+  visit.page.waitForResponse(
+    (httpExchange) => httpExchange.url().includes("/passkey/verify-registration"),
+    { timeout: appearanceTimeout },
+  );
+
+const waitForPasskeyOptions = (visit: Visit): ReturnType<Page["waitForResponse"]> =>
+  visit.page.waitForResponse(
+    (httpExchange) => httpExchange.url().includes("/passkey/generate-register-options"),
+    { timeout: appearanceTimeout },
+  );
+
+const assertPasskeyHttpOk = (
+  httpExchange: Awaited<ReturnType<typeof waitForPasskeyOptions>>,
+  failureLabel: string,
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* assertPasskeyResponse() {
+    if (httpExchange.ok()) {
+      return;
+    }
+    const responseText = yield* pageStep(() => httpExchange.text());
+    return yield* failed(failureLabel, `${httpExchange.status()} ${responseText}`);
+  });
+
+const submitPasskeyRegistration = (
+  visit: Visit,
+  passkeyLabel: string,
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* submitPasskey() {
+    const generateOptionsHttpReply = waitForPasskeyOptions(visit);
+    const verifyRegistrationHttpReply = waitForPasskeyRegistration(visit);
+    yield* press(visit.page, "パスキーを登録");
+    yield* assertPasskeyHttpOk(
+      yield* pageStep(() => generateOptionsHttpReply),
+      "PASSKEY_OPTIONS_FAILED",
+    );
+    yield* assertPasskeyHttpOk(
+      yield* pageStep(() => verifyRegistrationHttpReply),
+      "PASSKEY_REGISTRATION_FAILED",
+    );
+    yield* seeText(visit.page, passkeyLabel);
+  });
+
+const registerPasskey = (visit: Visit, passkeyLabel: string): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* registerVisitPasskey() {
+    yield* pageStep(() => visit.page.goto(`${visit.origin}/settings/security`));
+    yield* readyButton(visit.page, "パスキーを登録");
+    yield* fill(visit.page, { fieldLabel: "パスキーの名前", typed: passkeyLabel });
+    yield* submitPasskeyRegistration(visit, passkeyLabel);
+  });
+
+const updateProfile = (
+  visit: Visit,
+): Effect.Effect<
+  { readonly biography: string; readonly profilePath: string },
+  JourneyFailure,
+  Crypto.Crypto
+> =>
+  Effect.gen(function* saveVisitProfile() {
+    const crypto = yield* Crypto.Crypto;
+    const identifier = yield* crypto.randomUUIDv4.pipe(Effect.orDie);
+    const biography = `verify ${identifier}`;
+    yield* pageStep(() => visit.page.goto(`${visit.origin}/settings/profile`));
+    yield* seeHeading(visit.page, "プロフィールの編集");
+    yield* readyButton(visit.page, "保存");
+    yield* fill(visit.page, { fieldLabel: "自己紹介", typed: biography });
+    yield* press(visit.page, "保存");
+    yield* pageStep(() =>
+      visit.page.waitForURL(`${visit.origin}/users/*`, { timeout: appearanceTimeout }),
+    );
+    return { biography, profilePath: new URL(visit.page.url()).pathname };
+  });
+
+export {
+  answerTotpChallenge,
+  confirmEmail,
+  enrollTotp,
+  homePattern,
+  registerPasskey,
+  signIn,
+  signInWithPasskey,
+  signOut,
+  signUp,
+  updateProfile,
+};

@@ -5,6 +5,9 @@ import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 import { Effect } from "effect";
 
+import { adminScopes } from "./admin-scopes.ts";
+import { memberApiKeyPlugin } from "./member-api-key-options.ts";
+import { memberScopes } from "./member-scopes.ts";
 import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
@@ -78,6 +81,38 @@ const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
   ];
 };
 
+const adminAuthorizationServer = (origin: string): AuthPlugin[] => {
+  return [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationAllowedScopes: [...adminScopes],
+      clientRegistrationDefaultScopes: [...adminScopes],
+      consentPage: "/consent",
+      loginPage: "/login",
+      resource: `${origin}/mcp`,
+      scopes: [...adminScopes],
+    }),
+  ];
+};
+
+const memberAuthorizationServer = (origin: string): AuthPlugin[] => {
+  return [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationAllowedScopes: [...memberScopes],
+      clientRegistrationDefaultScopes: [...memberScopes],
+      consentPage: "/consent",
+      loginPage: "/login",
+      resource: `${origin}/mcp`,
+      scopes: [...memberScopes],
+    }),
+  ];
+};
+
 const authPlugins = ({
   audience,
   origin,
@@ -87,7 +122,11 @@ const authPlugins = ({
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin({ audience, origin, run }),
+    ...(audience === APPLICATION.user
+      ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
+      : []),
     ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
   ];
 };
 

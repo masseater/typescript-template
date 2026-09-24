@@ -1,3 +1,4 @@
+import { SessionUserProvider } from "@repo/auth-ui";
 import { loginPath } from "@repo/auth-ui/login-redirect";
 import { useSession } from "@repo/auth-ui/session";
 import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
@@ -40,9 +41,11 @@ function DashboardLayout(): ReactElement | null {
     return null;
   }
   return (
-    <DashboardFrame email={session.user.email} name={session.user.name}>
-      <Outlet />
-    </DashboardFrame>
+    <SessionUserProvider user={session.user}>
+      <DashboardFrame email={session.user.email} name={session.user.name}>
+        <Outlet />
+      </DashboardFrame>
+    </SessionUserProvider>
   );
 }
 

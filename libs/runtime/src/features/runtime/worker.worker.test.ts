@@ -1,5 +1,6 @@
 import { setupNetwork } from "@msw/cloudflare";
 import { httpStatus } from "@repo/config";
+import { TestDatabase, runStatement } from "@repo/db/testing";
 import { Telemetry } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { cspNonceHeader } from "@repo/runtime/security";
@@ -11,6 +12,8 @@ import { describe, expect, test } from "vite-plus/test";
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import { appLayer } from "./bindings.ts";
 import { appServerEntry, serveApp, serveWorker, workerRuntime } from "./worker.ts";
+
+const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
 describe.for([
   [
@@ -105,6 +108,7 @@ describe("a worker serving a rendered document", () => {
     .extend("documentPolicy", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* documentPolicyProgram() {
+          yield* migrated;
           const runtime = workerRuntime(() =>
             appLayer({
               audience: "service-member",
@@ -144,6 +148,7 @@ describe("a worker serving a rendered document", () => {
     .extend("transportSecurity", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* transportSecurityProgram() {
+          yield* migrated;
           const runtime = workerRuntime(() =>
             appLayer({
               audience: "service-member",
@@ -245,6 +250,7 @@ describe.for(["/", "/assets/app.js"])("a worker answering %s", (path) => {
   const it = test.extend("robotsDirective", ({}, { onCleanup }) =>
     Effect.runPromise(
       Effect.gen(function* robotsDirectiveProgram() {
+        yield* migrated;
         const runtime = workerRuntime(() =>
           appLayer({ audience: "service-member", env: appEnvironment(), routes: { "/": "home" } }),
         );

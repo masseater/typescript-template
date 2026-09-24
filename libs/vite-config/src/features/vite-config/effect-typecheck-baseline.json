@@ -125,24 +125,6 @@
         "count": 3
       },
       {
-        "file": "src/features/db/security.worker.test.ts",
-        "code": "TS377066",
-        "message": "This code uses `Date.now()`, time access is represented through `Clock` from Effect. effect(globalDate)",
-        "count": 3
-      },
-      {
-        "file": "src/features/db/security.worker.test.ts",
-        "code": "TS377068",
-        "message": "This code constructs `new Date()`, date values are represented through `DateTime` from Effect. effect(globalDate)",
-        "count": 10
-      },
-      {
-        "file": "src/features/db/security.worker.test.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 19
-      },
-      {
         "file": "src/features/db/testing.ts",
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
@@ -188,12 +170,6 @@
       }
     ],
     "libs/runtime": [
-      {
-        "file": "src/features/runtime/account.ts",
-        "code": "TS4058",
-        "message": "Return type of exported function has or is using name 'ElysiaContext' from external module \"<repo>/libs/runtime/src/features/runtime/http\" but cannot be named.",
-        "count": 2
-      },
       {
         "file": "src/features/runtime/client.test.ts",
         "code": "TS377081",

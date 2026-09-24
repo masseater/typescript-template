@@ -11,6 +11,8 @@ const httpStatus = {
   notFound: 404,
   ok: 200,
   payloadTooLarge: 413,
+  paymentRequired: 402,
+  preconditionRequired: 428,
   permanentRedirect: 308,
   serviceUnavailable: 503,
   tooManyRequests: 429,

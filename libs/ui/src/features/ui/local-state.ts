@@ -19,6 +19,9 @@ const localState = <Value>(initial: Value): LocalState<Value> => {
   return useLocalState;
 };
 
-const useOptionalString = localState(Option.none<string>());
+const optionalState = <Value>(): LocalState<Option.Option<Value>> =>
+  localState(Option.none<Value>());
 
-export { localState, useOptionalString };
+const useOptionalString = optionalState<string>();
+
+export { localState, optionalState, useOptionalString };

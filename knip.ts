@@ -43,11 +43,10 @@ const workspaces = {
       "src/features/auth/browser-client.ts",
       "src/features/auth/email-change.ts",
       "src/features/auth/mail-fixture.ts",
-      "src/features/auth/testing.ts",
       "src/features/auth/unexpected-status.ts",
       "src/features/auth/wiki-oauth-fixture.ts",
     ],
-    project: ["src/**/*.ts!"],
+    project: ["src/**/*.ts!", "!src/features/auth/mock-network-fixture.ts!"],
   },
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
@@ -171,6 +170,7 @@ const scripts = {
     "src/features/dev/observe/verify.ts!",
     "src/features/dev/observe/symbolicate.ts!",
     "src/features/dev/observe/receiver-check.ts!",
+    "src/features/dev/verify/cli.ts!",
   ],
 };
 
@@ -195,14 +195,19 @@ const config = ({
       "apps/internal-dashboard/src/shared/server-api/recordings-api.worker.test.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/internal-dashboard/src/shared/server-api/staff-api.worker.test.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/wiki-gateway.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/transcription/process.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/transcription/transcribe-job.worker.test.ts": [
         "unlisted",
       ],
       "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
+      "apps/service-admin/src/shared/server-api/admin-api.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/service-member/src/app/server.ts": ["unlisted"],
+      "apps/service-member/src/shared/analytics/measurement-id.ts": ["unlisted"],
+      "apps/service-member/src/shared/photo/photos.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/inbox/binding.ts": ["exports"],
@@ -212,6 +217,8 @@ const config = ({
       "apps/service-member/src/shared/inbox/index.ts": ["exports", "types"],
       "apps/service-member/src/shared/server-api/jobs-api.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/member-social.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/notifications.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/realtime-api.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/server-app.ts": ["exports"],
@@ -253,12 +260,12 @@ const config = ({
       "apps/service-admin": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["src/**/*.{ts,tsx}!"],
+        project: ["src/**/*.{ts,tsx}!", "!src/shared/admin/admin-oauth-fixture.ts!"],
       },
       "apps/service-member": {
         ...app,
-        entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["src/**/*.{ts,tsx}!"],
+        entry: ["alchemy.run.ts!", ...application.entry, "src/shared/photo/image-fixture.ts"],
+        project: ["src/**/*.{ts,tsx}!", "!src/shared/mcp/member-oauth-fixture.ts!"],
       },
       "infra/budget-monitor": {
         entry: [

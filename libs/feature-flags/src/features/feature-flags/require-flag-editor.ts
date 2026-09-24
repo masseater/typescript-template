@@ -8,7 +8,7 @@ const requireFlagEditor = Effect.fn("requireFlagEditor")(function* requireFlagEd
 ) {
   const { session, user } = yield* verifySession(headers);
   const access = yield* FlagEditorAccess;
-  yield* access.assertEditor(user.id);
+  yield* access.assertEditor(user);
   return { session, user };
 });
 

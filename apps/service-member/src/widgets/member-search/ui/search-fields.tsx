@@ -12,7 +12,7 @@ function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement 
   function search(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
     const next = draft.trim();
-    void navigate({ search: next === "" ? {} : { keyword: next }, to: "/users" });
+    void navigate({ search: next === "" ? {} : { keyword: next }, to: "/search" });
   }
   return (
     <search>

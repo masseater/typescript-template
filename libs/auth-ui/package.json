@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/features/auth-ui/index.ts",
+    "./consent": "./src/features/auth-ui/oauth-consent.ts",
     "./login-redirect": "./src/features/auth-ui/login-redirect.ts",
     "./session": "./src/features/auth-ui/use-session.ts"
   },
@@ -11,6 +12,7 @@
     "@better-auth/passkey": "catalog:",
     "@effect/atom-react": "catalog:",
     "@repo/config": "workspace:*",
+    "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "better-auth": "catalog:",
     "effect": "catalog:",

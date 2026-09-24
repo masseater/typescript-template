@@ -8,9 +8,12 @@ import { Cause, Effect } from "effect";
 import { z } from "zod";
 
 import { authorizeMcpRequest } from "#shared/wiki/index.ts";
+import { registerDashboardTools } from "./mcp-dashboard.ts";
 import { runtime } from "./runtime.ts";
 
+import type { WikiServices } from "#shared/wiki/index.ts";
 import type { ServiceFetcher } from "@repo/config";
+import type { Context } from "effect";
 import type { RpcClient, RpcGroup } from "effect/unstable/rpc";
 import type { RpcClientError } from "effect/unstable/rpc/RpcClientError";
 
@@ -40,7 +43,7 @@ function callWiki(
   );
 }
 
-function createServer(binding: ServiceFetcher): McpServer {
+function createServer(binding: ServiceFetcher, context: Context.Context<WikiServices>): McpServer {
   const server = new McpServer({ name: APPLICATION.wiki, version: mcpVersion });
   server.registerTool(
     "search",
@@ -80,12 +83,14 @@ function createServer(binding: ServiceFetcher): McpServer {
         ),
       ),
   );
+  registerDashboardTools(server, context);
   return server;
 }
 
 const handleMcp = Effect.fn("handleMcp")(function* handleMcp(request: Request) {
   const bindings = yield* readWikiBindings(env).pipe(Effect.orDie);
-  const handler = createMcpHandler(() => createServer(bindings[wikiApiBinding]));
+  const context = yield* Effect.context<WikiServices>();
+  const handler = createMcpHandler(() => createServer(bindings[wikiApiBinding], context));
   return yield* Effect.promise(() => handler.fetch(request));
 });
 

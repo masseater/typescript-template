@@ -7,7 +7,12 @@ import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
 import { readMigrationFiles, type MigrationConfig } from "drizzle-orm/migrator";
 import { Clock, Effect, Schema } from "effect";
 
-import { BootstrappedAdmin, bootstrapStatement, type Email } from "./bootstrap-statement.ts";
+import {
+  BOOTSTRAP_KIND,
+  BootstrappedAdmin,
+  bootstrapStatement,
+  type Email,
+} from "./bootstrap-statement.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";
@@ -48,7 +53,12 @@ type Migration = typeof MigrationFile.Type;
 const RowCells = Schema.Array(Schema.Array(Schema.Unknown));
 const TableNameRows = Schema.Array(Schema.Tuple([Schema.String]));
 const HistoryRows = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
-const BootstrappedRow = Schema.Tuple([Schema.Unknown, Schema.Unknown, Schema.Unknown]);
+const BootstrappedRow = Schema.Tuple([
+  Schema.Unknown,
+  Schema.Unknown,
+  Schema.Unknown,
+  Schema.Unknown,
+]);
 
 const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' AND name NOT LIKE '\_cf\_%' ESCAPE '\' AND name NOT IN ('__drizzle_migrations', 'd1_migrations')`;
 
@@ -209,16 +219,21 @@ const bootstrapDatabase = <Result>(
     yield* deployedMigrations(input.database, yield* loadRemoteMigrations());
     const bootstrappedRows = yield* queryValues(
       input.database,
-      bootstrapStatement(input.email, yield* Clock.currentTimeMillis),
+      bootstrapStatement({
+        bootstrapKind: BOOTSTRAP_KIND.admin,
+        email: input.email,
+        updatedAt: yield* Clock.currentTimeMillis,
+      }),
     ).pipe(Effect.flatMap(decodeBootstrappedRows));
     const [bootstrappedAdministrator] = bootstrappedRows;
     if (bootstrappedRows.length !== 1 || bootstrappedAdministrator === undefined) {
       return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
     }
-    const [administratorId, address, role] = bootstrappedAdministrator;
+    const [administratorId, address, role, permission] = bootstrappedAdministrator;
     yield* Schema.decodeUnknownEffect(BootstrappedAdmin)({
       email: address,
       id: administratorId,
+      permission,
       role,
     }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })));
   }).pipe(withSpan("bootstrapDatabase"));

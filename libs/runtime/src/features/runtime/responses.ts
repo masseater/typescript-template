@@ -1,4 +1,9 @@
-import { httpStatus } from "@repo/config";
+import {
+  googleAnalyticsConnectSrc,
+  googleAnalyticsImgSrc,
+  googleAnalyticsScriptSrc,
+  httpStatus,
+} from "@repo/config";
 import { strictTransportSecurity } from "@repo/runtime/security";
 const nonceBytes = 16;
 const isolationDirectives = [
@@ -20,28 +25,43 @@ const privateHeaders = {
 const jsonResponse = (decoded: unknown, httpStatusCode: number = httpStatus.ok): Response => {
   return Response.json(decoded, { headers: privateHeaders, status: httpStatusCode });
 };
-const documentPolicy = (nonce: string): string => {
+const documentPolicy = (nonce: string, googleAnalytics = false): string => {
   return [
     "default-src 'none'",
-    `script-src 'nonce-${nonce}' 'strict-dynamic'`,
+    googleAnalytics
+      ? `script-src 'nonce-${nonce}' 'strict-dynamic' ${googleAnalyticsScriptSrc.join(" ")}`
+      : `script-src 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    googleAnalytics
+      ? `img-src 'self' data: ${googleAnalyticsImgSrc.join(" ")}`
+      : "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self'",
+    googleAnalytics
+      ? `connect-src 'self' ${googleAnalyticsConnectSrc.join(" ")}`
+      : "connect-src 'self'",
     "manifest-src 'self'",
     "form-action 'self'",
     ...isolationDirectives,
   ].join("; ");
 };
-const contentSecurityPolicy = (httpResponse: Response, nonce: string | undefined): string => {
+const contentSecurityPolicy = (
+  asked: Readonly<{
+    httpResponse: Response;
+    nonce: string | undefined;
+    googleAnalytics: boolean;
+  }>,
+): string => {
   const rendersDocument =
-    httpResponse.headers.get("content-type")?.startsWith("text/html") === true;
-  return rendersDocument && nonce !== undefined ? documentPolicy(nonce) : dataPolicy;
+    asked.httpResponse.headers.get("content-type")?.startsWith("text/html") === true;
+  return rendersDocument && asked.nonce !== undefined
+    ? documentPolicy(asked.nonce, asked.googleAnalytics)
+    : dataPolicy;
 };
 const secureResponse = (asked: {
   readonly httpRequest: Request;
   readonly httpResponse: Response;
   readonly nonce?: string;
+  readonly googleAnalytics?: boolean;
 }): Response => {
   const secured = new Response(asked.httpResponse.body, asked.httpResponse);
   secured.headers.set("cache-control", "no-store");
@@ -51,7 +71,11 @@ const secureResponse = (asked: {
   secured.headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
   secured.headers.set(
     "content-security-policy",
-    contentSecurityPolicy(asked.httpResponse, asked.nonce),
+    contentSecurityPolicy({
+      googleAnalytics: asked.googleAnalytics ?? false,
+      httpResponse: asked.httpResponse,
+      nonce: asked.nonce,
+    }),
   );
   if (new URL(asked.httpRequest.url).protocol === "https:") {
     secured.headers.set("strict-transport-security", strictTransportSecurity);
