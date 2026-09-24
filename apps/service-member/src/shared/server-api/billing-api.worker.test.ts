@@ -60,11 +60,9 @@ function billingApp() {
   const environment = appEnvironment({
     APP_ORIGIN: origin,
     AUTH_SECRET: authTestSecret,
-    STRIPE_AUTOMATIC_TAX: "true",
     STRIPE_METERED_PRICE_ID: meteredPriceId,
     STRIPE_PRICE_ID: priceId,
     STRIPE_SECRET_KEY: "sk_test_placeholder",
-    STRIPE_TRIAL_PERIOD_DAYS: String(trialPeriodDays),
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
   const runtime = workerRuntime(() => {

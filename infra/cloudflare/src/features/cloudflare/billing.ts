@@ -2,8 +2,6 @@ import {
   aiMeterEventName,
   aiUsageUnitAmount,
   stripeApiVersion,
-  stripeAutomaticTax,
-  stripeTrialPeriodDays,
   stripeWebhookEvents,
 } from "@repo/config";
 import { apiRoot } from "@repo/runtime/http";
@@ -44,11 +42,9 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
     url: `${origin}${apiRoot}/billing/webhook`,
   });
   return {
-    STRIPE_AUTOMATIC_TAX: String(stripeAutomaticTax),
     STRIPE_METERED_PRICE_ID: meteredPrice.id,
     STRIPE_PRICE_ID: price.id,
     STRIPE_SECRET_KEY: secretKey,
-    STRIPE_TRIAL_PERIOD_DAYS: String(stripeTrialPeriodDays),
     STRIPE_WEBHOOK_SECRET: webhook.secret.pipe(
       Output.mapEffect((secret: Redacted.Redacted | undefined) =>
         secret === undefined

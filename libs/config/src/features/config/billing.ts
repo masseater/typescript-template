@@ -44,7 +44,6 @@ export const WEBHOOK_DISPOSITION = {
   ignored: webhookOutcomes[2],
 } as const satisfies Record<string, WebhookOutcome>;
 
-export const stripeAutomaticTax = true;
 export const stripeTrialPeriodDays = 14;
 
 export const aiMeterEventName = "ai_interview_turn";
