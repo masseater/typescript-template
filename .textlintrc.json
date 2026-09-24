@@ -11,6 +11,9 @@
         }
       }
     },
+    "no-doubled-conjunction": true,
+    "no-exclamation-question-mark": true,
+    "no-mix-dearu-desumasu": true,
     "preset-ai-words-ja": {
       "no-ai-words": {
         "dictionaryPath": "./.textlint-ai-words.json"
