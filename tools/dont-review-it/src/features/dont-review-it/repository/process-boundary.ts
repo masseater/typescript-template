@@ -68,3 +68,4 @@ const processBoundaryVisitor = (inspection: OptionedLintContext): Visitor => {
 };
 
 export { cliImplementation, exitCodeImplementation, processBoundaryVisitor, processMember };
+export type { OptionedLintContext };

@@ -52,4 +52,4 @@ const reportedRules = (probe: { readonly code: string; readonly filename: string
 };
 
 export { reportCount, reported, reportedRules, ruleNames };
-export type { RuleName };
+export type { Probe, RuleName };
