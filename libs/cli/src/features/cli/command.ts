@@ -1,24 +1,27 @@
 import { Console, Effect } from "effect";
 import { CliError, Command } from "effect/unstable/cli";
 
-const diagnosticConsole = (output: Console.Console): Console.Console => ({
-  ...output,
-  info: (...lines) => output.error(...lines),
-  log: (...lines) => output.error(...lines),
-});
+const diagnosticConsole = (terminal: Readonly<Console.Console>): Console.Console =>
+  new Proxy(terminal, {
+    get: (wrapped, member): unknown =>
+      Reflect.get(wrapped, member === "log" || member === "info" ? "error" : member),
+  });
 
-const parseFailure = (error: unknown): error is CliError.ShowHelp =>
-  CliError.isCliError(error) && error._tag === "ShowHelp" && error.errors.length > 0;
+const isParseFailure = (failure: unknown): failure is CliError.ShowHelp =>
+  CliError.isCliError(failure) && failure._tag === "ShowHelp" && failure.errors.length > 0;
 
 const runCommand =
-  (config: { readonly version: string; readonly renderErrors?: boolean }) =>
-  <Name extends string, Input, E, R, ContextInput>(
+  (config: {
+    readonly version: string;
+    readonly renderErrors?: boolean;
+  }): (<Name extends string, Input, E, R, ContextInput>(
     command: Command.Command<Name, Input, ContextInput, E, R>,
-  ): Effect.Effect<void, E | CliError.CliError, R | Command.Environment> =>
-    Console.consoleWith((output) =>
-      Command.run(config)(Command.provideSync(command, Console.Console, output)).pipe(
-        Effect.provideService(Console.Console, diagnosticConsole(output)),
-        Effect.catchIf(parseFailure, (help) => Effect.fail(help.errors[0] ?? help)),
+  ) => Effect.Effect<void, E | CliError.CliError, R | Command.Environment>) =>
+  (command) =>
+    Console.consoleWith((terminal) =>
+      Command.run(config)(Command.provideSync(command, Console.Console, terminal)).pipe(
+        Effect.provideService(Console.Console, diagnosticConsole(terminal)),
+        Effect.catchIf(isParseFailure, (help) => Effect.fail(help.errors[0] ?? help)),
       ),
     );
 
