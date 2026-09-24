@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem, Schema } from "effect";
 
@@ -79,11 +77,19 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),
   ];
+  const filesystem = yield* FileSystem.FileSystem;
+  const runnerTemp = environment["RUNNER_TEMP"];
   const filename =
     destination ??
-    path.join(environment["RUNNER_TEMP"] ?? tmpdir(), "template-cloudflare", "cloudflare.env");
+    (runnerTemp === undefined
+      ? path.join(
+          yield* filesystem
+            .makeTempDirectory({ prefix: "template-cloudflare-" })
+            .pipe(Effect.mapError(unwritable)),
+          "cloudflare.env",
+        )
+      : path.join(runnerTemp, "template-cloudflare", "cloudflare.env"));
   const directory = path.dirname(filename);
-  const filesystem = yield* FileSystem.FileSystem;
   yield* filesystem
     .makeDirectory(directory, { mode: 0o700, recursive: true })
     .pipe(Effect.mapError(unwritable));

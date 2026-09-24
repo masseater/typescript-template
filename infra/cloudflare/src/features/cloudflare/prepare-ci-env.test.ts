@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
@@ -14,7 +12,6 @@ function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.gen(function* makeTemporary() {
     const filesystem = yield* FileSystem.FileSystem;
     const directory = yield* filesystem.makeTempDirectoryScoped({
-      directory: tmpdir(),
       prefix: "template-ci-env-",
     });
     return yield* filesystem.realPath(directory);

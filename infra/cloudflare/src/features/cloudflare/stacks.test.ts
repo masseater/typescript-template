@@ -1,8 +1,7 @@
-import { pathToFileURL } from "node:url";
-
 import { Effect, Predicate } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { path } from "./platform.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
 import {
   applyOrderViolations,
@@ -80,9 +79,8 @@ describe("alchemy stacks", () => {
     Effect.runPromise(
       Effect.gen(function* program() {
         expect.hasAssertions();
-        const module: unknown = yield* Effect.promise(
-          () => import(pathToFileURL(stackEntrypoint(stack)).href),
-        );
+        const location = yield* path.toFileUrl(stackEntrypoint(stack));
+        const module: unknown = yield* Effect.promise(() => import(location.href));
         expect(Effect.isEffect(defaultExport(module))).toBe(true);
       }),
     ),

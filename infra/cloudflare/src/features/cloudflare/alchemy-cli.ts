@@ -1,11 +1,8 @@
-import { env as processEnvironment } from "node:process";
-import { fileURLToPath } from "node:url";
-
 import { cliStderr, cliStdout } from "@repo/cli";
 import { Effect, PlatformError, Schema, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 
-import { layer } from "./platform.ts";
+import { fileUrlPath, layer } from "./platform.ts";
 import { redact } from "./secrets.ts";
 
 import type { WriteTarget } from "@repo/cli";
@@ -27,7 +24,7 @@ type AlchemyCommand = typeof AllowedAlchemyCommand.Type;
 
 const isAlchemyCommand = Schema.is(AllowedAlchemyCommand);
 
-const alchemyBinary = fileURLToPath(new URL("../../../node_modules/.bin/alchemy", import.meta.url));
+const alchemyBinary = fileUrlPath(new URL("../../../node_modules/.bin/alchemy", import.meta.url));
 
 function forward(
   stream: Stream.Stream<Uint8Array, PlatformError.PlatformError>,
@@ -51,7 +48,7 @@ function spawnAlchemy(
 ): Effect.Effect<number, AlchemyFailure> {
   return Effect.gen(function* runAlchemyChild() {
     const handle = yield* ChildProcess.make(alchemyBinary, [...args], {
-      env: { ...processEnvironment, ALCHEMY_TELEMETRY_DISABLED: "1" },
+      env: { ...process.env, ALCHEMY_TELEMETRY_DISABLED: "1" },
       extendEnv: false,
       stdin: "ignore",
     }).pipe(Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })));
