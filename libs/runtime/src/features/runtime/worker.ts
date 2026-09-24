@@ -128,7 +128,9 @@ type StartHandler = {
 };
 const startRoute = (
   routeHandler: StartHandler,
+  analyticsSwitch: Readonly<{ googleAnalytics?: boolean }> = {},
 ): ((httpRequest: Request) => Effect.Effect<Response>) => {
+  const googleAnalytics = analyticsSwitch.googleAnalytics === true;
   return (httpRequest) =>
     Effect.gen(function* startRouteProgram() {
       const nonce = createNonce();
@@ -138,6 +140,7 @@ const startRoute = (
         httpRequest,
         httpResponse: yield* Effect.promise(() => Promise.resolve(routeHandler.fetch(rendered))),
         nonce,
+        googleAnalytics,
       });
     });
 };
@@ -145,12 +148,13 @@ const appServerEntry = <Requirements>(asked: {
   readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>;
   readonly routeHandler: StartHandler;
   readonly reporting: Reporting;
+  readonly googleAnalytics?: boolean;
   readonly assetBase?: string | undefined;
 }): FetchWorker => {
   return serveApp({
     runtime: asked.runtime,
     reporting: asked.reporting,
-    route: startRoute(asked.routeHandler),
+    route: startRoute(asked.routeHandler, { googleAnalytics: asked.googleAnalytics ?? false }),
     assetBase: asked.assetBase,
   });
 };

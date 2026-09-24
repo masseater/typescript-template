@@ -3,7 +3,7 @@ import { RequestRejected } from "@repo/observability";
 import { Cause, Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { failureResponse } from "./failures.ts";
+import { failureResponse, type Failure } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
 
 const invalidInput = "入力内容を確認してください。";
@@ -102,6 +102,37 @@ describe("a failure only a route table names", () => {
     expect(failureAnswer).toStrictEqual({
       body: { error: "既に登録されています。" },
       status: httpStatus.conflict,
+    });
+  });
+});
+
+describe("a failure whose route table attaches details", () => {
+  const it = test.extend("failureAnswer", () =>
+    Effect.runPromise(
+      Effect.gen(function* failureAnswerProgram() {
+        const table = {
+          Pending: (caughtError: {
+            readonly _tag: "Pending";
+            readonly kinds: readonly string[];
+          }): Failure => ({
+            details: { error: "overridden", kinds: caughtError.kinds },
+            message: "同意が必要です。",
+            status: httpStatus.preconditionRequired,
+          }),
+        };
+        const answered = yield* failureResponse(
+          table,
+          Cause.fail({ _tag: "Pending", kinds: ["terms"] }),
+        );
+        const answerBody: unknown = yield* Effect.promise(() => answered.json());
+        return { body: answerBody, status: answered.status };
+      }),
+    ));
+
+  it("carries the details without letting them replace the message", ({ failureAnswer }) => {
+    expect(failureAnswer).toStrictEqual({
+      body: { error: "同意が必要です。", kinds: ["terms"] },
+      status: httpStatus.preconditionRequired,
     });
   });
 });

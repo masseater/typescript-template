@@ -1,6 +1,7 @@
 import { Crypto, Effect } from "effect";
 
 import { type Account, newAccount } from "./accounts.ts";
+import { agentUserAgent } from "./agent-user-agent.ts";
 import {
   answerTotpChallenge,
   confirmEmail,
@@ -10,6 +11,7 @@ import {
   signOut,
   signUp,
 } from "./flows.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import {
   appearanceTimeout,
   fill,
@@ -20,10 +22,10 @@ import {
   seeHeading,
   seeText,
 } from "./screens.ts";
+import { runVerifyMember } from "./verify-member.ts";
 
 import type { Page } from "playwright";
 import type { JourneyEnvironment } from "./environment.ts";
-import type { JourneyFailure } from "./journey-failure.ts";
 
 const saveAndOpenHome = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
   Effect.all(
@@ -99,7 +101,10 @@ const browseMainScreens = (
     yield* openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
     yield* openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
     yield* pageStep(() => stage.page.goto(`${origin}/users`));
-    yield* seeHeading(stage.page, "ユーザーを探す");
+    yield* pageStep(() =>
+      stage.page.waitForURL(`${origin}/upgrade`, { timeout: appearanceTimeout }),
+    );
+    yield* seeHeading(stage.page, "有料プラン");
   });
 
 const openNewThreadForm = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
@@ -379,4 +384,50 @@ const runDocumentJourney = (
     };
   });
 
-export { runDocumentJourney, runMemberJourney, runOperatorJourney };
+const assertVerifyMemberObservability = (verified: {
+  readonly requestIds: readonly string[];
+  readonly sessionToken: string | undefined;
+  readonly userId: string | undefined;
+}): Effect.Effect<void, JourneyFailure> => {
+  if (verified.requestIds.length === 0) {
+    return Effect.fail(failed("VERIFY_OBSERVABILITY_MISSING"));
+  }
+  if (verified.sessionToken === undefined || verified.userId === undefined) {
+    return Effect.fail(failed("VERIFY_SESSION_MISSING"));
+  }
+  return Effect.void;
+};
+
+const runVerifyMemberJourney = (
+  stage: JourneyStage,
+): Effect.Effect<
+  {
+    readonly browserUserAgent: string;
+    readonly enrolledTotp: true;
+    readonly observabilityRecorded: true;
+    readonly passkeyRegistered: true;
+    readonly sessionEstablished: true;
+    readonly userAgent: string;
+  },
+  JourneyFailure,
+  Crypto.Crypto
+> =>
+  Effect.gen(function* verifyMemberThroughApps() {
+    const origin = stage.environment.originOf("member");
+    const verified = yield* runVerifyMember({
+      mail: stage.environment.mail,
+      origin,
+      page: stage.page,
+    });
+    yield* assertVerifyMemberObservability(verified);
+    return {
+      browserUserAgent: agentUserAgent,
+      enrolledTotp: true as const,
+      observabilityRecorded: true as const,
+      passkeyRegistered: true as const,
+      sessionEstablished: true as const,
+      userAgent: agentUserAgent,
+    };
+  });
+
+export { runDocumentJourney, runMemberJourney, runOperatorJourney, runVerifyMemberJourney };

@@ -1,9 +1,15 @@
 import { NodeHttpServer } from "@effect/platform-node";
 import { Auth } from "@repo/auth";
-import { APPLICATION, applicationOrigins, mailpitSendPath } from "@repo/config";
+import {
+  APPLICATION,
+  applicationOrigins,
+  applications,
+  mailpitSendPath,
+  type Application,
+} from "@repo/config";
 import { Database } from "@repo/db";
 import { localDatabasePlatform } from "@repo/db-local/platform";
-import { ensureAdminRole } from "@repo/db/bootstrap";
+import { ensureAdminRole, type BootstrapKind } from "@repo/db/bootstrap";
 import { createEmailVerificationToken } from "better-auth/api";
 import {
   Context,
@@ -27,20 +33,38 @@ import { assertOwnerOnly, replacePrivateFile } from "./private-files.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 
-const OPERATOR_EMAIL = "local-operator@example.test";
-const OPERATOR_NAME = "Local Operator";
 const PASSWORD_BYTES = 24;
 const HTTP_OK = 200;
-const operatorFile = new URL("operator.json", local);
+const operatorFile = new URL("operators.json", local);
 
-const OperatorFile = Schema.Struct({
+type OperatorAccount = Readonly<{ email: string; kind?: BootstrapKind; name: string }>;
+
+const operatorAccounts: Readonly<Record<Application, OperatorAccount>> = {
+  [APPLICATION.admin]: {
+    email: "local-admin@example.test",
+    kind: "admin",
+    name: "Local Admin",
+  },
+  [APPLICATION.user]: { email: "local-member@example.test", name: "Local Member" },
+  [APPLICATION.wiki]: {
+    email: "local-staff@example.test",
+    kind: "staff",
+    name: "Local Staff",
+  },
+};
+
+const OperatorCredentials = Schema.Struct({
   email: Schema.String,
   name: Schema.String,
   password: Schema.String.check(Schema.isMinLength(12)),
   totpURI: Schema.String,
 });
 
-type Operator = typeof OperatorFile.Type;
+const OperatorFile = Schema.Record(Schema.Literals(applications), OperatorCredentials);
+
+type Operator = typeof OperatorCredentials.Type;
+
+type Operators = typeof OperatorFile.Type;
 
 const TotpEnrollment = Schema.Struct({
   backupCodes: Schema.Array(Schema.String),
@@ -152,7 +176,7 @@ function operatorExists(): Effect.Effect<
   );
 }
 
-const readOperator = Effect.fn("readOperator")(function* readOperator() {
+const readOperators = Effect.fn("readOperators")(function* readOperators() {
   yield* assertOwnerOnly(operatorFile);
   const path = yield* urlPath(operatorFile);
   const text = yield* withFileSystem((fs) => fs.readFileString(path));
@@ -161,8 +185,8 @@ const readOperator = Effect.fn("readOperator")(function* readOperator() {
   );
 });
 
-const writeOperator = Effect.fn("writeOperator")(function* writeOperator(operator: Operator) {
-  const content = yield* Schema.encodeEffect(Schema.fromJsonString(OperatorFile))(operator).pipe(
+const writeOperators = Effect.fn("writeOperators")(function* writeOperators(operators: Operators) {
+  const content = yield* Schema.encodeEffect(Schema.fromJsonString(OperatorFile))(operators).pipe(
     Effect.orDie,
   );
   yield* replacePrivateFile(operatorFile, `${content}\n`);
@@ -198,47 +222,60 @@ const createOperator = Effect.fn("createOperator")(function* createOperator(
   auth: AuthService,
   origin: string,
   secret: string,
+  account: OperatorAccount,
 ) {
   const crypto = yield* Crypto.Crypto;
   const bytes = yield* crypto.randomBytes(PASSWORD_BYTES).pipe(Effect.orDie);
   const password = Buffer.from(bytes).toString("base64url");
   const jar = new CookieJar();
   const signedUp = yield* authRequest(auth, jar, origin, "/sign-up/email", {
-    email: OPERATOR_EMAIL,
-    name: OPERATOR_NAME,
+    email: account.email,
+    name: account.name,
     password,
   });
   if (!signedUp.ok) {
     return yield* failure("operator_provision_failed");
   }
   const token = yield* Effect.promise(() =>
-    Promise.resolve(createEmailVerificationToken(secret, OPERATOR_EMAIL)),
+    Promise.resolve(createEmailVerificationToken(secret, account.email)),
   );
   yield* Effect.promise(() => Promise.resolve(auth.instance.api.verifyEmail({ query: { token } })));
   const signedIn = yield* authRequest(auth, jar, origin, "/sign-in/email", {
-    email: OPERATOR_EMAIL,
+    email: account.email,
     password,
   });
   if (signedIn.status !== HTTP_OK) {
     return yield* failure("operator_provision_failed");
   }
   const totpURI = yield* enrollTotp(auth, jar, origin, password);
-  yield* ensureAdminRole(OPERATOR_EMAIL).pipe(
-    Effect.mapError(() => failure("operator_provision_failed")),
-  );
-  const operator: Operator = {
-    email: OPERATOR_EMAIL,
-    name: OPERATOR_NAME,
-    password,
-    totpURI,
-  };
-  yield* writeOperator(operator);
+  if (account.kind !== undefined) {
+    yield* ensureAdminRole(account.email, account.kind).pipe(
+      Effect.mapError(() => failure("operator_provision_failed")),
+    );
+  }
+  const operator: Operator = { email: account.email, name: account.name, password, totpURI };
   return operator;
 });
 
-const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
+const createOperators = Effect.fn("createOperators")(function* createOperators(
+  auth: AuthService,
+  origin: string,
+  secret: string,
+) {
+  const provisioned: Partial<Record<Application, Operator>> = {};
+  for (const app of applications) {
+    provisioned[app] = yield* createOperator(auth, origin, secret, operatorAccounts[app]);
+  }
+  const operators = yield* Schema.decodeUnknownEffect(OperatorFile)(provisioned).pipe(
+    Effect.mapError(() => failure("operator_provision_failed")),
+  );
+  yield* writeOperators(operators);
+  return operators;
+});
+
+const ensureOperators = Effect.fn("ensureOperators")(function* ensureOperators() {
   if (yield* operatorExists()) {
-    return yield* readOperator();
+    return yield* readOperators();
   }
   const credentials = yield* readCredentials();
   const origin = applicationOrigins[APPLICATION.user];
@@ -257,7 +294,7 @@ const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
         secret: credentials.authSecret,
       }).pipe(Layer.provideMerge(Database.layer(env.DB)));
       return yield* Effect.gen(function* useAuth() {
-        return yield* createOperator(yield* Auth, origin, credentials.authSecret);
+        return yield* createOperators(yield* Auth, origin, credentials.authSecret);
       }).pipe(
         Effect.provide(authLayer),
         Effect.mapError((cause): LocalCommandFailure => {
@@ -276,5 +313,5 @@ const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
   );
 });
 
-export { ensureOperator, operatorExists, operatorFile };
+export { ensureOperators, operatorExists, operatorFile };
 export type { Operator };

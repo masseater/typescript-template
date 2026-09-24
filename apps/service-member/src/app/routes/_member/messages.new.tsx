@@ -1,0 +1,50 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Option, Schema } from "effect";
+
+import { ComposeRoute, lookupConversation } from "#pages/messages/index.ts";
+import { loadMember } from "#pages/profile/index.ts";
+
+const ComposeSearchParams = Schema.Struct({
+  peer: Schema.String.check(Schema.isLengthBetween(1, 256)),
+});
+type ComposeSearch = typeof ComposeSearchParams.Type;
+const decodeComposeSearch = Schema.decodeUnknownOption(ComposeSearchParams);
+function requireComposeSearch(raw: unknown): ComposeSearch {
+  return Option.getOrThrowWith(decodeComposeSearch(raw), () => {
+    throw redirect({
+      replace: true,
+      search: {},
+      to: "/messages",
+    });
+  });
+}
+const Route = createFileRoute("/_member/messages/new")({
+  component: ComposeRoute,
+  validateSearch: requireComposeSearch,
+  loaderDeps: ({
+    search,
+  }: Readonly<{
+    search: ComposeSearch;
+  }>) => search,
+  loader: ({
+    deps,
+  }: Readonly<{
+    deps: ComposeSearch;
+  }>) =>
+    lookupConversation(deps.peer).then((existing) =>
+      Promise.resolve().then(() => {
+        if (existing !== null) {
+          throw redirect({
+            params: {
+              id: existing,
+            },
+            replace: true,
+            search: {},
+            to: "/messages/$id",
+          });
+        }
+        return loadMember(deps.peer);
+      }),
+    ),
+});
+export { Route };

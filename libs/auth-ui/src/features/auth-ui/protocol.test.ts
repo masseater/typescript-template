@@ -141,6 +141,7 @@ describe("セッション応答の検証", () => {
     email: "user@example.com",
     id: "user-id",
     name: "名前",
+    permission: null,
     role: "member",
     twoFactorEnabled: false,
   };

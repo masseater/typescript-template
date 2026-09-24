@@ -21,7 +21,9 @@ describe("FlagEditorAccess", () => {
   it.effect("rejects a viewer from editing flags", () =>
     Effect.gen(function* rejectViewer() {
       const access = yield* FlagEditorAccess.pipe(Effect.provide(viewerOnlyEditors));
-      const flagEditorRequired = yield* access.assertEditor("viewer-id").pipe(Effect.flip);
+      const flagEditorRequired = yield* access
+        .assertEditor({ id: "viewer-id", permission: null })
+        .pipe(Effect.flip);
       assert.strictEqual(flagEditorRequired._tag, "FlagEditorRequired");
     }),
   );

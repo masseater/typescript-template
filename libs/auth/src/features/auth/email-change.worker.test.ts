@@ -247,10 +247,24 @@ describe("email change", () => {
             return yield* signInStatuses();
           }),
         ),
+      )
+      .extend("completedNotice", ({ auth }) =>
+        runWith(auth, () =>
+          Effect.gen(function* completedNoticeAfterConfirm() {
+            const client = yield* strongMember();
+            yield* requestEmailChange(client, NEW_EMAIL);
+            yield* confirmEmailChange(client);
+            return (yield* receivedLink(OLD_EMAIL, mailSubjects.emailChangeCompleted)).pathname;
+          }),
+        ),
       );
 
     it("is accepted", ({ confirmed }) => {
       expect(confirmed).toStrictEqual(httpStatus.ok);
+    });
+
+    it("tells the old address that the change is complete", ({ completedNotice }) => {
+      expect(completedNotice).toBe("/settings/security");
     });
 
     it("moves the session to the new address", ({ email }) => {

@@ -119,3 +119,4 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
 }
 
 export { Interviewer };
+export type { ModelAccess };

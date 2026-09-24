@@ -12,7 +12,7 @@ const probeModules: Readonly<Record<BuildTarget, string>> = {
   "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
   "internal-wiki": "src/widgets/wiki-frame/ui/wiki-frame.tsx",
   "service-admin": "src/pages/login/ui/admin-login.tsx",
-  "service-member": "src/pages/landing/ui/hero.tsx",
+  "service-member": "src/pages/public/landing/ui/hero.tsx",
 };
 
 const sharedClientReachable: readonly string[] = [

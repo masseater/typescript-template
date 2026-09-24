@@ -1,11 +1,9 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { user } from "./identity-schema.ts";
-
 const boardThread = sqliteTable(
   "board_thread",
   {
-    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    authorId: text("author_id"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey().notNull(),
     lastPostedAt: integer("last_posted_at", { mode: "timestamp_ms" }).notNull(),
@@ -18,7 +16,7 @@ const boardThread = sqliteTable(
 const boardPost = sqliteTable(
   "board_post",
   {
-    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    authorId: text("author_id"),
     body: text("body").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey().notNull(),

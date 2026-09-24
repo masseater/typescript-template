@@ -10,8 +10,8 @@ describe("users page search normalization", () => {
   it("keeps every well-formed condition", () => {
     expect.hasAssertions();
     expect(
-      normalizeUsersSearch({ keyword: "alice", page: 3, role: "admin", verified: false }),
-    ).toStrictEqual({ keyword: "alice", page: 3, role: "admin", verified: false });
+      normalizeUsersSearch({ keyword: "alice", page: 3, status: "suspended", verified: false }),
+    ).toStrictEqual({ keyword: "alice", page: 3, status: "suspended", verified: false });
   });
 
   it("accepts the shapes a hand-written URL decodes to", () => {
@@ -25,14 +25,14 @@ describe("users page search normalization", () => {
     expect(normalizeUsersSearch(JSON.parse('{"keyword":null}'))).toStrictEqual({ keyword: "null" });
   });
 
-  it("rejects a broken page or role instead of dropping them into an empty search", () => {
+  it("rejects a broken page or status instead of dropping them into an empty search", () => {
     expect.hasAssertions();
     expect(() =>
       normalizeUsersSearch({
         extra: "x",
         keyword: "  bob  ",
         page: 0,
-        role: "owner",
+        status: "paid",
         verified: "yes",
       }),
     ).toThrow(InvalidUsersSearch);
@@ -63,13 +63,13 @@ describe("user list request query", () => {
   it("turns the page number into an offset and forwards the filters", () => {
     expect.hasAssertions();
     expect(
-      userListQuery({ keyword: "花子", page: 3, role: "member", verified: true }),
+      userListQuery({ keyword: "花子", page: 3, status: "active", verified: true }),
     ).toStrictEqual({
+      accountState: "active",
       emailVerified: "true",
       keyword: "花子",
       limit: "50",
       offset: "100",
-      role: "member",
     });
     expect(userListQuery({ verified: false })).toStrictEqual({
       emailVerified: "false",
