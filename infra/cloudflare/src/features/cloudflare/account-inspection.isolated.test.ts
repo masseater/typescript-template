@@ -51,13 +51,15 @@ it.effect("blocks while a budget alert recipient waits for its verification link
   }).pipe(Effect.scoped),
 );
 
-it.effect("lets the email stack register budget alert recipients that are not destinations yet", () =>
-  Effect.gen(function* program() {
-    yield* mockServer(...accountHandlers({ addresses: [], scripts: ["unrelated-worker"] }));
-    const inspection = yield* inspectAccount(access, config, emptyState());
-    assert.deepStrictEqual(blocked(inspection), []);
-    assert.strictEqual(inspection.alertQuota, "unregistered");
-  }).pipe(Effect.scoped),
+it.effect(
+  "lets the email stack register budget alert recipients that are not destinations yet",
+  () =>
+    Effect.gen(function* program() {
+      yield* mockServer(...accountHandlers({ addresses: [], scripts: ["unrelated-worker"] }));
+      const inspection = yield* inspectAccount(access, config, emptyState());
+      assert.deepStrictEqual(blocked(inspection), []);
+      assert.strictEqual(inspection.alertQuota, "unregistered");
+    }).pipe(Effect.scoped),
 );
 
 it.effect("clears an account that holds nothing this deployment claims", () =>
