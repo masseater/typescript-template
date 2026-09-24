@@ -6,8 +6,12 @@ const layer = NodeServices.layer;
 
 const path = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 
+function fileUrlPath(url: URL): string {
+  return Effect.runSync(path.fromFileUrl(url));
+}
+
 function encodeJson(value: unknown): Effect.Effect<string, Schema.SchemaError> {
   return Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value);
 }
 
-export { encodeJson, isNotFound, layer, path };
+export { encodeJson, fileUrlPath, isNotFound, layer, path };

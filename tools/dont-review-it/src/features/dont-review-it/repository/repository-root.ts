@@ -1,5 +1,5 @@
-import { fileURLToPath } from "node:url";
+import { filePathOf } from "../platform/path.ts";
 
-const repositoryRoot = fileURLToPath(new URL("../../../../../../", import.meta.url));
+const repositoryRoot = filePathOf(new URL("../../../../../../", import.meta.url));
 
 export { repositoryRoot };

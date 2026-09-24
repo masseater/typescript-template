@@ -1,7 +1,5 @@
-import { fileURLToPath } from "node:url";
-
 import { runHook } from "cc-hooks-ts";
-import { Effect, Schema } from "effect";
+import { Effect, Path, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { spawnChildSync } from "../node-spawn.ts";
@@ -10,7 +8,11 @@ import { denyReasonFor } from "./message.ts";
 
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
-const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
+const CLI_PATH = Effect.runSync(
+  Effect.flatMap(Path.Path, (path) => path.fromFileUrl(new URL("./cli.ts", import.meta.url))).pipe(
+    Effect.provide(Path.layer),
+  ),
+);
 
 const SLICING_COMMAND_PAYLOAD =
   '{"cwd":"/repo","hook_event_name":"PreToolUse","session_id":"session","tool_input":{"command":"vp test | tail -50"},"tool_name":"Bash","tool_use_id":"toolu_1","transcript_path":"/repo/transcript.jsonl"}';

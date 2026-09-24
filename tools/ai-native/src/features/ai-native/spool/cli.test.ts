@@ -1,7 +1,4 @@
-import { env as processEnvironment } from "node:process";
-import { fileURLToPath } from "node:url";
-
-import { Effect } from "effect";
+import { Effect, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
@@ -29,7 +26,11 @@ const nodeOs = process.getBuiltinModule("os") as {
   readonly tmpdir: () => string;
 };
 
-const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
+const CLI_PATH = Effect.runSync(
+  Effect.flatMap(Path.Path, (path) => path.fromFileUrl(new URL("./cli.ts", import.meta.url))).pipe(
+    Effect.provide(Path.layer),
+  ),
+);
 
 const LARGE_OUTPUT_SCRIPT =
   'const line = "x".repeat(99) + "\\n"; for (let i = 0; i < 50000; i += 1) process.stdout.write(line);';
@@ -67,7 +68,7 @@ describe("spool cli", () => {
           handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
           spawnOptions: {
             cwd: theWorkTreeOfALargeOutput,
-            env: { ...processEnvironment, CI: "" },
+            env: { ...process.env, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -112,7 +113,7 @@ describe("spool cli", () => {
           handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "" },
+            env: { ...process.env, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -136,7 +137,7 @@ describe("spool cli", () => {
           handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "" },
+            env: { ...process.env, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -213,7 +214,7 @@ describe("spool cli", () => {
           handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "true" },
+            env: { ...process.env, CI: "true" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -245,7 +246,7 @@ describe("spool cli", () => {
           handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "true" },
+            env: { ...process.env, CI: "true" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -309,7 +310,7 @@ describe("spool cli", () => {
           handed: [CLI_PATH],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "" },
+            env: { ...process.env, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -376,7 +377,7 @@ describe("spool cli", () => {
           ],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "" },
+            env: { ...process.env, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -415,7 +416,7 @@ describe("spool cli", () => {
           ],
           spawnOptions: {
             cwd: workTree,
-            env: { ...processEnvironment, CI: "" },
+            env: { ...process.env, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
@@ -557,7 +558,7 @@ describe("spool cli", () => {
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               spawnOptions: {
                 cwd: workTree,
-                env: { ...processEnvironment, CI: "" },
+                env: { ...process.env, CI: "" },
                 stdio: ["ignore", "pipe", "pipe"],
               },
             });
@@ -581,7 +582,7 @@ describe("spool cli", () => {
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               spawnOptions: {
                 cwd: workTree,
-                env: { ...processEnvironment, CI: "" },
+                env: { ...process.env, CI: "" },
                 stdio: ["ignore", "pipe", "pipe"],
               },
             });
@@ -606,7 +607,7 @@ describe("spool cli", () => {
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               spawnOptions: {
                 cwd: workTree,
-                env: { ...processEnvironment, CI: "" },
+                env: { ...process.env, CI: "" },
                 stdio: ["ignore", "pipe", "pipe"],
               },
             });
@@ -633,7 +634,7 @@ describe("spool cli", () => {
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               spawnOptions: {
                 cwd: workTree,
-                env: { ...processEnvironment, CI: "" },
+                env: { ...process.env, CI: "" },
                 stdio: ["ignore", "pipe", "pipe"],
               },
             });

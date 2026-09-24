@@ -1,7 +1,4 @@
-import { env as processEnvironment } from "node:process";
-import { fileURLToPath } from "node:url";
-
-import { Effect } from "effect";
+import { Effect, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
@@ -25,7 +22,11 @@ const streamConsumers = process.getBuiltinModule("stream/consumers") as {
   readonly text: (readable: unknown) => Promise<string>;
 };
 
-const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
+const CLI_PATH = Effect.runSync(
+  Effect.flatMap(Path.Path, (path) => path.fromFileUrl(new URL("./cli.ts", import.meta.url))).pipe(
+    Effect.provide(Path.layer),
+  ),
+);
 
 const TWO_STREAM_SCRIPT =
   "process.stdout.write('alpha\\nbeta\\n'); process.stderr.write('gamma\\ndelta\\n');";
@@ -42,7 +43,7 @@ describe("cli", () => {
         handed: [CLI_PATH],
         spawnOptions: {
           stdio: ["ignore", "pipe", "pipe"],
-          env: { ...processEnvironment, TMPDIR: tmpRoot },
+          env: { ...process.env, TMPDIR: tmpRoot },
         },
       });
       return Promise.all([
@@ -137,7 +138,7 @@ describe("cli", () => {
           handed: [CLI_PATH, "--", process.execPath, "-e", TWO_STREAM_SCRIPT],
           spawnOptions: {
             stdio: ["ignore", "pipe", "pipe"],
-            env: { ...processEnvironment, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+            env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
           },
         });
         return Promise.all([
@@ -185,7 +186,7 @@ describe("cli", () => {
               handed: [CLI_PATH, "--", process.execPath, "-e", ""],
               spawnOptions: {
                 stdio: ["ignore", "pipe", "pipe"],
-                env: { ...processEnvironment, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+                env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
               },
             });
             const waitersDir = joinPath(slotDir, "waiters");
@@ -247,7 +248,7 @@ describe("cli", () => {
               handed: [CLI_PATH, "--", process.execPath, "-e", ""],
               spawnOptions: {
                 stdio: ["ignore", "pipe", "pipe"],
-                env: { ...processEnvironment, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+                env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
               },
             });
             const waitersDir = joinPath(slotDir, "waiters");

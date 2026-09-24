@@ -1,16 +1,16 @@
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { describe, expect } from "vite-plus/test";
 
+import { filePathOf } from "./platform/path.ts";
+
 const NO_LOCAL_RULE = "dont-review-it/no-local-finite-value-set--use-or-register-canonical-values";
 
 const NO_LOCAL_CODE = "dont-review-it(no-local-finite-value-set--use-or-register-canonical-values)";
 
-const PLUGIN_PATH = fileURLToPath(new URL("./plugin.ts", import.meta.url));
+const PLUGIN_PATH = filePathOf(new URL("./plugin.ts", import.meta.url));
 
 const PROCESS_TIMEOUT = 180_000;
 

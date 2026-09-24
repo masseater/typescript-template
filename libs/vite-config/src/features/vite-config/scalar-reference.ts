@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-
 import { scalarReferencePath } from "@repo/config";
 import { Cause, Effect } from "effect";
 
@@ -7,7 +5,9 @@ import { filesystem, paths } from "./host.ts";
 
 import type { Plugin } from "vite-plus";
 
-const scalarReferenceEntry = fileURLToPath(import.meta.resolve("@scalar/api-reference"));
+const scalarReferenceEntry = Effect.runSync(
+  paths.fromFileUrl(new URL(import.meta.resolve("@scalar/api-reference"))),
+);
 const scalarReferenceSource = paths.join(
   paths.dirname(scalarReferenceEntry),
   "browser/standalone.js",

@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
@@ -14,7 +12,6 @@ function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.gen(function* makeTemporary() {
     const filesystem = yield* FileSystem.FileSystem;
     const directory = yield* filesystem.makeTempDirectoryScoped({
-      directory: tmpdir(),
       prefix: "template-ci-env-",
     });
     return yield* filesystem.realPath(directory);
@@ -74,6 +71,16 @@ it.effect("writes an owner-only env file from required deployment keys", () =>
     }).pipe(Effect.orDie, Effect.provide(layer));
     assert.include(pointer, `TEMPLATE_CLOUDFLARE_ENV_FILE=${preparation.filename}`);
   }).pipe(Effect.scoped),
+);
+
+it.effect("refuses to pick a secrets location outside the runner temp directory", () =>
+  Effect.gen(function* program() {
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const failure = yield* writeCiSecretsFile(required).pipe(Effect.flip);
+    assert.deepStrictEqual([failure.code, failure.keys], ["ci_env_incomplete", ["RUNNER_TEMP"]]);
+  }),
 );
 
 it.effect("reports unconfigured when every deployment key is absent", () =>

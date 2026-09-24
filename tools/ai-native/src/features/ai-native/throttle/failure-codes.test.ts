@@ -1,16 +1,14 @@
-import { tmpdir } from "node:os";
-
 import { attempt } from "es-toolkit";
 import { describe, expect, test } from "vite-plus/test";
 
-import { joinPath, readFileString } from "../host.ts";
+import { joinPath, readFileString, temporaryDirectory } from "../host.ts";
 import { failureSpelling } from "./failure-codes.ts";
 
 describe("failureSpelling", () => {
   describe("a refusal the file system named with a code", () => {
     const it = test.extend("theSpellingOfACodedRefusal", () => {
       const [refusal] = attempt<string, Error>(() =>
-        readFileString(joinPath(tmpdir(), "throttle-marker-that-was-never-written")),
+        readFileString(joinPath(temporaryDirectory(), "throttle-marker-that-was-never-written")),
       );
       return failureSpelling(refusal);
     });

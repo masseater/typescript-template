@@ -54,9 +54,8 @@ export const checkRepositoryCommand = defineCommand({
           const afterDontReviewIt = process.exitCode ?? EXIT_SUCCESS;
           if (afterDontReviewIt === EXIT_MISUSE) return;
 
-          const rootArgs = ["--repository-root", repositoryRoot];
           const lintRuleAuthoringExit = writeCliResult(
-            yield* runLintRuleAuthoring(["check", ...rootArgs]),
+            yield* runLintRuleAuthoring({ repositoryRoot, write: false }),
           );
           const stopAiSlopExit = writeCliResult(yield* stopAiSlop({ repositoryRoot }));
           const worst = Math.max(afterDontReviewIt, lintRuleAuthoringExit, stopAiSlopExit);

@@ -1,26 +1,9 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { runLintRuleAuthoring } from "./run-cli.ts";
-
-const USAGE = `Usage: lint-rule-authoring check [--write] [--repository-root <path>]
-
-Reconciles every workspace lint rule index (docs/lint/index.md), every rule
-document (docs/lint/<rule>.md), and the repository table of rules by normative
-document (docs/lint-rules-by-guideline.md) with the rule implementations found
-under the directories that the workspace manifests declare in their lintRules
-field. Also reports every rule that names no normative document as its grounds,
-or names one that is not there. Without --write it only reports what is missing,
-unmarked, stale, or still carrying the text a seeded document was written with;
-with --write it seeds the absent documents and regenerates every generated
-region. Exits non-zero when a problem remains.
-
-Options:
-  --write                   Write the regenerated documents instead of only reporting them.
-  --repository-root <path>  Root of the repository to scan. Defaults to the current working directory.
-`;
 
 const MISSING_INDEX = `packages/example/docs/lint/index.md A workspace that declares lint rules must not go without \`packages/example/docs/lint/index.md\`. Generate it with \`vp run guard:fix\`.\n`;
 
@@ -123,7 +106,7 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
     describe("a check of it", () => {
       const theRunFixture = Effect.gen(function* theRun() {
         const emptyRepository = yield* emptyRepositoryFixture;
-        return yield* runLintRuleAuthoring(["check", "--repository-root", emptyRepository]);
+        return yield* runLintRuleAuthoring({ repositoryRoot: emptyRepository, write: false });
       });
 
       it.effect("stays silent and exits zero because every index is fresh", () =>
@@ -141,7 +124,7 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
         const missingRoot = paths.join(emptyRepository, "missing");
         return {
           missingRoot,
-          ran: yield* runLintRuleAuthoring(["check", "--repository-root", missingRoot]),
+          ran: yield* runLintRuleAuthoring({ repositoryRoot: missingRoot, write: false }),
         };
       });
 
@@ -163,7 +146,7 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
     describe("a check of it", () => {
       const theRunFixture = Effect.gen(function* theRun() {
         const declaringRepository = yield* declaringRepositoryFixture;
-        return yield* runLintRuleAuthoring(["check", "--repository-root", declaringRepository]);
+        return yield* runLintRuleAuthoring({ repositoryRoot: declaringRepository, write: false });
       });
 
       it.effect("reports every document it would have generated, and exits one", () =>
@@ -181,12 +164,7 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
     describe("a check of it that is allowed to write", () => {
       const theRunFixture = Effect.gen(function* theRun() {
         const declaringRepository = yield* declaringRepositoryFixture;
-        return yield* runLintRuleAuthoring([
-          "check",
-          "--write",
-          "--repository-root",
-          declaringRepository,
-        ]);
+        return yield* runLintRuleAuthoring({ repositoryRoot: declaringRepository, write: true });
       });
 
       it.effect(
@@ -206,8 +184,8 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
     describe("a check of it that follows a writing check", () => {
       const theRunFixture = Effect.gen(function* theRun() {
         const declaringRepository = yield* declaringRepositoryFixture;
-        yield* runLintRuleAuthoring(["check", "--write", "--repository-root", declaringRepository]);
-        return yield* runLintRuleAuthoring(["check", "--repository-root", declaringRepository]);
+        yield* runLintRuleAuthoring({ repositoryRoot: declaringRepository, write: true });
+        return yield* runLintRuleAuthoring({ repositoryRoot: declaringRepository, write: false });
       });
 
       it.effect("leaves nothing about the index and keeps asking for the seeded sections", () =>
@@ -232,12 +210,7 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
         paths.join(declaringRepository, TEST_FILE_PATH),
         UNSPELLABLE_TEST,
       );
-      return yield* runLintRuleAuthoring([
-        "check",
-        "--write",
-        "--repository-root",
-        declaringRepository,
-      ]);
+      return yield* runLintRuleAuthoring({ repositoryRoot: declaringRepository, write: true });
     });
 
     it.effect("names the marked case it could not spell out beside the missing example", () =>
@@ -261,12 +234,7 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
         paths.join(declaringRepository, TEST_FILE_PATH),
         JOINED_TEST,
       );
-      return yield* runLintRuleAuthoring([
-        "check",
-        "--write",
-        "--repository-root",
-        declaringRepository,
-      ]);
+      return yield* runLintRuleAuthoring({ repositoryRoot: declaringRepository, write: true });
     });
 
     it.effect("publishes the case and asks only for the sections it seeded", () =>
@@ -276,67 +244,6 @@ layer(NodeServices.layer)("runLintRuleAuthoring", (it) => {
           exitCode: 1,
           out: [...SEEDED_SECTIONS, ""].join("\n"),
           error: "",
-        });
-      }),
-    );
-  });
-
-  describe("a check given no repository root", () => {
-    const workingDirectoryFixture = Effect.gen(function* workingDirectory() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const root = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "lint-rule-authoring-cli-",
-      });
-
-      return root;
-    });
-
-    const theRunFixture = Effect.gen(function* theRun() {
-      const workingDirectory = yield* workingDirectoryFixture;
-      vi.spyOn(process, "cwd").mockReturnValue(workingDirectory);
-      return yield* runLintRuleAuthoring(["check"]);
-    });
-
-    it.effect("scans the working directory and finds nothing to report", () =>
-      Effect.gen(function* program() {
-        const theRun = yield* theRunFixture;
-        expect(theRun).toStrictEqual({ exitCode: 0, out: "", error: "" });
-      }),
-    );
-  });
-
-  describe("an unknown command", () => {
-    const theRunFixture = runLintRuleAuthoring(["publish"]);
-
-    it.effect("returns the usage as an error and exits two", () =>
-      Effect.gen(function* program() {
-        const theRun = yield* theRunFixture;
-        expect(theRun).toStrictEqual({ exitCode: 2, out: "", error: USAGE });
-      }),
-    );
-  });
-
-  describe("no command at all", () => {
-    const theRunFixture = runLintRuleAuthoring([]);
-
-    it.effect("is answered the same way an unknown command is", () =>
-      Effect.gen(function* program() {
-        const theRun = yield* theRunFixture;
-        expect(theRun).toStrictEqual({ exitCode: 2, out: "", error: USAGE });
-      }),
-    );
-  });
-
-  describe("an unknown option", () => {
-    const theRunFixture = runLintRuleAuthoring(["check", "--repo-root", "."]);
-
-    it.effect("exits two instead of falling back to a default", () =>
-      Effect.gen(function* program() {
-        const theRun = yield* theRunFixture;
-        expect(theRun).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: `Unknown option '--repo-root'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- "--repo-root"\n`,
         });
       }),
     );

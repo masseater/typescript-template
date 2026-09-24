@@ -1,5 +1,3 @@
-import { EventEmitter } from "node:events";
-
 import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
@@ -19,12 +17,27 @@ const nodeOs = process.getBuiltinModule("os") as {
   readonly tmpdir: () => string;
 };
 
-class FakeChildProcess extends EventEmitter {
-  pid: number | undefined;
+class FakeChildProcess {
+  readonly pid: number | undefined;
+  readonly listeners = new EventTarget();
 
   constructor(pid?: number) {
-    super();
     this.pid = pid;
+  }
+
+  once(eventName: string, listener: (...emitted: never[]) => void): this {
+    this.listeners.addEventListener(
+      eventName,
+      (dispatched) => {
+        listener(...(dispatched as CustomEvent<never[]>).detail);
+      },
+      { once: true },
+    );
+    return this;
+  }
+
+  emit(eventName: string, ...emitted: readonly unknown[]): boolean {
+    return this.listeners.dispatchEvent(new CustomEvent(eventName, { detail: emitted }));
   }
 }
 

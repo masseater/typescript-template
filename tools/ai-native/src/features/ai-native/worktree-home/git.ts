@@ -1,5 +1,3 @@
-import { env as processEnvironment } from "node:process";
-
 import { spawnChildSync } from "../node-spawn.ts";
 
 export type GitRunner = (
@@ -10,7 +8,7 @@ export const runGit: GitRunner = (gitLaunch) =>
   spawnChildSync({
     executable: "git",
     handed: gitLaunch.handed,
-    spawnOptions: { cwd: gitLaunch.cwd, encoding: "utf8", env: processEnvironment },
+    spawnOptions: { cwd: gitLaunch.cwd, encoding: "utf8", env: process.env },
   });
 
 export const gitOutput = (
