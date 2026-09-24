@@ -1,6 +1,6 @@
 import { CloudflareId } from "@repo/config";
 import { schemaMismatches } from "@repo/config/schema-mismatches";
-import { Effect, Schema } from "effect";
+import { Effect, Redacted, Schema } from "effect";
 
 import { ErrorMonitorFailure } from "./config.ts";
 
@@ -15,7 +15,7 @@ type ErrorGroup = {
 
 type QueryWindow = {
   readonly accountId: string;
-  readonly token: string;
+  readonly token: Redacted.Redacted;
   readonly from: number;
   readonly to: number;
   readonly queryEndpoint: string;
@@ -101,7 +101,7 @@ const queryTelemetry = ({
         body: queryBody(queryWindow, offsetBy),
         headers: {
           Accept: "application/json",
-          Authorization: `Bearer ${queryWindow.token}`,
+          Authorization: `Bearer ${Redacted.value(queryWindow.token)}`,
           "Content-Type": "application/json",
         },
         method: "POST",

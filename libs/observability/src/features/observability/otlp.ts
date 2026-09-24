@@ -1,5 +1,5 @@
 import { httpStatus } from "@repo/config";
-import { Duration, Effect, Layer, Logger } from "effect";
+import { Duration, Effect, Layer, Logger, Redacted } from "effect";
 import {
   FetchHttpClient,
   HttpClient,
@@ -17,7 +17,7 @@ import { logAt } from "./severity.ts";
 import { redactedLogger } from "./structured-logs.ts";
 type OtlpDestination = {
   readonly endpoint: string;
-  readonly authorization?: string | undefined;
+  readonly authorization?: Redacted.Redacted | undefined;
 };
 type TelemetryFlusher = OtlpExporter.Flusher;
 const trailingSlashes = /\/+$/u;
@@ -55,7 +55,10 @@ const otlpExport = (exported: {
   }
   const shared = {
     exportInterval: Duration.infinity,
-    headers: otlp.authorization === undefined ? undefined : { authorization: otlp.authorization },
+    headers:
+      otlp.authorization === undefined
+        ? undefined
+        : { authorization: Redacted.value(otlp.authorization) },
     resource: { serviceName: exported.service, serviceVersion: exported.release },
   };
   const logs = Effect.map(

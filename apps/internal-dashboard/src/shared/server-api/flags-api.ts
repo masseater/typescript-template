@@ -4,7 +4,7 @@ import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
-import { Effect, Redacted } from "effect";
+import { Effect } from "effect";
 
 import { FlagList, FlagToggle, FlagToggled } from "#shared/contracts/index.ts";
 
@@ -45,7 +45,7 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
     {
       accountId: config.FLAGSHIP_ACCOUNT_ID,
       appId: config.FLAGSHIP_APP_ID,
-      authToken: Redacted.make(config.FLAGSHIP_API_TOKEN),
+      authToken: config.FLAGSHIP_API_TOKEN,
     },
     { actorId: user.id, enabled: change.enabled, key: change.key },
   );

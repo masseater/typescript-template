@@ -1,6 +1,6 @@
 import { ConfigurationInvalid } from "@repo/config";
 import { env } from "cloudflare:workers";
-import { Effect } from "effect";
+import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
@@ -11,7 +11,14 @@ describe("readWorkerConfig", () => {
     const it = test
       .extend("workerEnvironment", () => appEnvironment())
       .extend("workerConfig", ({ workerEnvironment }) =>
-        Effect.runPromise(readWorkerConfig(workerEnvironment)),
+        Effect.runPromise(
+          readWorkerConfig(workerEnvironment).pipe(
+            Effect.map((config) => ({
+              ...config,
+              AUTH_SECRET: Redacted.value(config.AUTH_SECRET),
+            })),
+          ),
+        ),
       );
 
     it("reads D1, the auth secret, and email", ({ workerConfig, workerEnvironment }) => {
@@ -41,7 +48,14 @@ describe("readWorkerConfig", () => {
           },
         }))
       .extend("workerConfig", ({ workerEnvironment }) =>
-        Effect.runPromise(readWorkerConfig(workerEnvironment)),
+        Effect.runPromise(
+          readWorkerConfig(workerEnvironment).pipe(
+            Effect.map((config) => ({
+              ...config,
+              AUTH_SECRET: Redacted.value(config.AUTH_SECRET),
+            })),
+          ),
+        ),
       );
 
     it("keeps the real D1 binding and the model", ({ workerConfig, workerEnvironment }) => {

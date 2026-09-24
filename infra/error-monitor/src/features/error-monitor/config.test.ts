@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ErrorMonitorFailure, parseErrorMonitorConfig } from "./config.ts";
@@ -12,7 +12,15 @@ const valid = {
 } as const;
 
 describe("parseErrorMonitorConfig", () => {
-  const it = test.extend("acceptedConfig", () => Effect.runPromise(parseErrorMonitorConfig(valid)));
+  const it = test.extend("acceptedConfig", () =>
+    Effect.runPromise(
+      parseErrorMonitorConfig(valid).pipe(
+        Effect.map((config) => ({
+          ...config,
+          OBSERVABILITY_TOKEN: Redacted.value(config.OBSERVABILITY_TOKEN),
+        })),
+      ),
+    ));
 
   it("accepts a scoped token", ({ acceptedConfig }) => {
     expect(acceptedConfig).toStrictEqual(valid);

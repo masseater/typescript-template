@@ -28,8 +28,6 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "database_output_unavailable",
     "deploy_token_permissions_missing",
     "mail_from_outside_deployment",
-    "otlp_enabled_without_endpoint",
-    "otlp_endpoint_without_enabled",
     "origins_must_differ",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
@@ -94,32 +92,12 @@ const SharedSettings = Schema.Struct({
     "service-admin": Origin,
     "service-member": Origin,
   }),
-  otlp: Schema.UndefinedOr(Schema.Struct({ enabled: Schema.Boolean, endpoint: HttpsUrl })),
+  otlp: Schema.UndefinedOr(Schema.Struct({ endpoint: HttpsUrl })),
   prefix: Prefix,
   zoneId: CloudflareId,
 });
 
 type SharedConfig = typeof SharedSettings.Type;
-
-const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSettings(
-  otlp: Readonly<{ enabled: boolean | undefined; endpoint: string | undefined }>,
-) {
-  if (otlp.endpoint === undefined && otlp.enabled !== undefined) {
-    return yield* fail("otlp_enabled_without_endpoint", [
-      deploymentKey.otlpEnabled,
-      deploymentKey.otlpEndpoint,
-    ]);
-  }
-  if (otlp.endpoint !== undefined && otlp.enabled === undefined) {
-    return yield* fail("otlp_endpoint_without_enabled", [
-      deploymentKey.otlpEnabled,
-      deploymentKey.otlpEndpoint,
-    ]);
-  }
-  return otlp.endpoint === undefined || otlp.enabled === undefined
-    ? undefined
-    : { enabled: otlp.enabled, endpoint: otlp.endpoint };
-});
 
 function deriveOrigins(prefix: string, appDomain: string): SharedConfig["origins"] {
   const origin = (label: string): string => `https://${prefix}-${label}.${appDomain}`;
@@ -146,7 +124,6 @@ const workerCompatibilityOptions = {
   flags: [...workerCompatibility.flags],
 };
 interface TraceDestination {
-  readonly enabled: boolean;
   readonly name: string;
   readonly url: string;
 }
@@ -155,7 +132,6 @@ function traceDestination(config: SharedConfig): TraceDestination | undefined {
   return config.otlp === undefined
     ? undefined
     : {
-        enabled: config.otlp.enabled,
         name: `${config.prefix}-traces`,
         url: otlpSignalUrl(config.otlp.endpoint, "traces"),
       };
@@ -241,7 +217,6 @@ export {
   Prefix,
   Recipients,
   SharedSettings,
-  checkOtlpSettings,
   checkSharedConfig,
   deriveOrigins,
   hstsSetting,

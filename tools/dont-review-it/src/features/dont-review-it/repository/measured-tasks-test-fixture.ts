@@ -8,4 +8,15 @@ const unmeasuredTasks = (tasks: Tasks): string[] =>
     return telemetryEnv.every((variable) => passed.includes(variable)) ? [] : [name];
   });
 
-export { unmeasuredTasks };
+const specifiedNamespaceWildcards: readonly string[] = ["OTEL_*"];
+
+const wildcardEnvTasks = (tasks: Tasks): string[] =>
+  Object.entries(tasks).flatMap(([name, task]) => {
+    if (typeof task === "string" || Array.isArray(task) || task.cache === false) return [];
+    return [...(task.env ?? []), ...(task.untrackedEnv ?? [])]
+      .filter((variable) => /[*?[]/u.test(variable))
+      .filter((variable) => !specifiedNamespaceWildcards.includes(variable))
+      .map((variable) => `${name} ${variable}`);
+  });
+
+export { unmeasuredTasks, wildcardEnvTasks };

@@ -1,6 +1,6 @@
 import { setupNetwork } from "@msw/cloudflare";
 import { httpStatus } from "@repo/config";
-import { Effect, Ref, Schema } from "effect";
+import { Effect, Redacted, Ref, Schema } from "effect";
 import { FetchHttpClient } from "effect/unstable/http";
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vite-plus/test";
@@ -74,7 +74,7 @@ describe("an exported request", () => {
           Effect.provide(
             Telemetry.layer({
               log: { error: recordLine, info: recordLine, warn: recordLine },
-              otlp: { authorization, endpoint },
+              otlp: { authorization: Redacted.make(authorization), endpoint },
               release: "abc123",
               routes: { "/": "home" },
               serviceName: "service-member",
@@ -294,7 +294,7 @@ describe("client requests refused with client errors", () => {
           Effect.provide(
             Telemetry.layer({
               log: { error: recordLine, info: recordLine, warn: recordLine },
-              otlp: { authorization, endpoint },
+              otlp: { authorization: Redacted.make(authorization), endpoint },
               release: "abc123",
               routes: { "/": "home" },
               serviceName: "service-member",

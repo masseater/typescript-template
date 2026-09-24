@@ -32,7 +32,7 @@ const Decimal = DecimalText.pipe(
 );
 
 const BudgetEnvironment = Schema.Struct({
-  [budgetMonitorEnv.billingReadToken]: CloudflareApiToken,
+  [budgetMonitorEnv.billingReadToken]: Schema.RedactedFromValue(CloudflareApiToken),
   [budgetMonitorEnv.budgetJpy]: Decimal.check(Schema.isGreaterThan(0)),
   [budgetMonitorEnv.accountId]: CloudflareId,
 });
