@@ -1,0 +1,6 @@
+Revision history for #1937:
+
+rev 2 (content) 2026-09-25 01:49 UTC — skill-authoring の基準に合わせ、dont-it-yourself の理由文を命令に直し、自前で書かないものを具体的に列挙
+rev 1 (initial) 2026-09-25 01:49 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1937,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"a7255f5402d8fab2f254b40f6debbe3e55c105fe","timestamp_iso":"2026-09-25T01:49:42Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"a7255f5402d8fab2f254b40f6debbe3e55c105fe","new_sha":"bb41bd6f9c8631ddae9f9b8c12a48f5ca81bf3cc","timestamp_iso":"2026-09-25T01:49:42Z","reason":"skill-authoring の基準に合わせ、dont-it-yourself の理由文を命令に直し、自前で書かないものを具体的に列挙","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/a7255f5402d8fab2f254b40f6debbe3e55c105fe...bb41bd6f9c8631ddae9f9b8c12a48f5ca81bf3cc"}]} -->
