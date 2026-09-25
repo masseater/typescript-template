@@ -129,7 +129,7 @@ const propertySpecifier = (text: string, index: number): Read | undefined => {
 };
 
 const remember = (found: string[], read: Read | undefined): void => {
-  if (read !== undefined && read.value.startsWith("@repo/")) {
+  if (read !== undefined) {
     found.push(read.value);
   }
 };
@@ -248,12 +248,20 @@ const extendsSpecifiers = (text: string): readonly string[] => {
   return specs;
 };
 
+const scriptSpecifiers = (filename: string, text: string): readonly string[] =>
+  scriptExtensions.has(posixPath.extname(filename)) ? codeSpecifiers(text) : [];
+
 const moduleSpecifiers = (filename: string, text: string): readonly string[] => {
   if (filename.endsWith(".json")) {
     return extendsSpecifiers(text);
   }
-  return scriptExtensions.has(posixPath.extname(filename)) ? codeSpecifiers(text) : [];
+  return scriptSpecifiers(filename, text).filter((specifier) => specifier.startsWith("@repo/"));
 };
+
+const relativeImports = (filename: string, text: string): readonly string[] =>
+  scriptSpecifiers(filename, text)
+    .filter((specifier) => specifier.startsWith("./") || specifier.startsWith("../"))
+    .map((specifier) => posixPath.join(posixPath.dirname(filename), specifier));
 
 const skippedDirectory = (name: string): boolean => name.startsWith(".") || skippedNames.has(name);
 
@@ -325,7 +333,10 @@ const specifierIndex = (
   const index = new Map<string, Set<string>>();
   for (const source of sources) {
     const workspace = workspaceOf(source.file);
-    for (const specifier of moduleSpecifiers(source.file, source.text)) {
+    for (const specifier of [
+      ...moduleSpecifiers(source.file, source.text),
+      ...relativeImports(source.file, source.text),
+    ]) {
       const current = index.get(specifier);
       if (current === undefined) {
         index.set(specifier, new Set([workspace]));
@@ -465,16 +476,31 @@ const subpathMatcher =
       ? specifier === target.specifier || specifier.startsWith(`${target.specifier}/`)
       : specifier === target.specifier;
 
-const subpathFindingsOf = (
-  { workspace, name, self }: CheckedWorkspace,
+const exportTarget = (manifest: unknown, key: string): string | undefined => {
+  const target = field(field(manifest, "exports"), key);
+  return typeof target === "string" ? target : undefined;
+};
+
+const ownerImports = (
+  { workspace, self }: CheckedWorkspace,
+  key: string,
   index: SpecifierIndex,
-): readonly Finding[] =>
-  exportKeys(workspace.manifest).flatMap((key) => {
+): boolean => {
+  const target = exportTarget(workspace.manifest, key);
+  return target !== undefined && index.get(posixPath.join(self, target))?.has(self) === true;
+};
+
+const subpathFindingsOf = (checked: CheckedWorkspace, index: SpecifierIndex): readonly Finding[] =>
+  exportKeys(checked.workspace.manifest).flatMap((key) => {
+    const { workspace, name, self } = checked;
     const target = subpathTarget(name, key);
     if (target === undefined) {
       return [];
     }
-    const consumers = importers(index, subpathMatcher(target), self);
+    const consumers = [
+      ...importers(index, subpathMatcher(target), self),
+      ...(ownerImports(checked, key, index) ? [self] : []),
+    ].sort();
     return consumers.length < 2
       ? [
           {
@@ -553,5 +579,13 @@ const repositorySingleConsumerFindings: TreeScan<readonly Finding[]> = Effect.ma
     ),
 );
 
-export { moduleSpecifiers, repositorySingleConsumerFindings, singleConsumerFindings };
+export {
+  moduleSpecifiers,
+  relativeImports,
+  repositorySingleConsumerFindings,
+  repositorySources,
+  repositoryWorkspaces,
+  singleConsumerFindings,
+  workspaceOf,
+};
 export type { Finding, SourceText };

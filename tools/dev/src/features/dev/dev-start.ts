@@ -42,7 +42,7 @@ function migrateDatabase(
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const handle = yield* spawner
       .spawn(
-        ChildProcess.make(vp, ["run", "--filter", "@repo/db-local", "db:migrate:local"], {
+        ChildProcess.make(vp, ["run", "--filter", "@repo/dev", "db:migrate:local"], {
           cwd: repositoryRoot,
           extendEnv: true,
           stderr: "inherit",

@@ -6,10 +6,10 @@ import type { Visitor } from "vite-plus/lint/plugins";
 
 const rawD1Modules = [
   "libs/db/src/features/db/database-test-fixture.ts",
-  "libs/db-local/src/features/db-local/testing-node.ts",
+  "libs/db/src/features/db/node-database-test-fixture.ts",
 ];
 const rawD1Pattern = new RegExp(
-  String.raw`/libs/db/src/features/db/database-test-fixture\.ts$|/libs/db-local/src/features/db-local/testing-node\.ts$`,
+  String.raw`/libs/db/src/features/db/(?:node-)?database-test-fixture\.ts$`,
   "u",
 );
 

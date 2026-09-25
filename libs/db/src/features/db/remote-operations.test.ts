@@ -1,13 +1,18 @@
 import { NodeServices } from "@effect/platform-node";
 import { assert, describe, it } from "@effect/vitest";
 import { APPLICATION, AUTHENTICATION_METHOD } from "@repo/config";
-import { EmptyTestDatabase, TestBinding, deployMigrations, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { DateTime, Effect, FileSystem, Path } from "effect";
 
 import { bootstrapAdmin, BootstrapUnavailable } from "./bootstrap-statement.ts";
 import { query } from "./database.ts";
+import {
+  EmptyTestDatabase,
+  TestBinding,
+  deployMigrations,
+  runStatement,
+} from "./node-database-test-fixture.ts";
 import {
   RemoteFailure,
   bootstrapDatabase,

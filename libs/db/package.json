@@ -10,7 +10,8 @@
     "./testing": "./src/features/db/database-test-fixture.ts",
     "./migrations": "./src/features/db/remote-operations.ts",
     "./local": "./src/features/db/local.ts",
-    "./inquiry-staff": "./src/features/db/inquiry-staff.ts"
+    "./inquiry-staff": "./src/features/db/inquiry-staff.ts",
+    "./node-testing": "./src/features/db/node-database-test-fixture.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
@@ -28,6 +29,7 @@
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
+    "miniflare": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
