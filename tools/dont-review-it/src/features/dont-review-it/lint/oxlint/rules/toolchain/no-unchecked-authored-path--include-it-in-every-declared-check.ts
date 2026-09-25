@@ -43,7 +43,9 @@ export const noUncheckedAuthoredPath = createDontReviewItRule({
     docs: {
       description:
         "Require every authored path to sit inside a check this repository declares, and every registration row to sit inside the check that consumes it, so a check that opens nothing is reported instead of passing for a check that found nothing",
-      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/prove-every-guard-fails-on-a-violation.md",
+      ],
     },
     messages: {
       [UNCHECKED_AUTHORED_PATH_MESSAGE_ID]:

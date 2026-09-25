@@ -224,7 +224,9 @@ export const noSpecFileHelperFunction = createDontReviewItRule({
     docs: {
       description:
         "Disallow a helper function standing at module scope or in the body of a grouping block of a spec file, a fixture builder standing at module scope, and a fixture handing back a function written in place, so the block that names a behaviour also spells out the work that behaviour runs",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       scopedHelperDeclaration:
