@@ -24,7 +24,7 @@ import {
 } from "./screens.ts";
 import { runVerifyMember } from "./verify-member.ts";
 
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 import type { JourneyEnvironment } from "./environment-test-fixture.ts";
 
 const saveAndOpenHome = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
@@ -356,12 +356,71 @@ const readDocument = (stage: JourneyStage, url: string): Effect.Effect<void, Jou
     yield* seeAnyHeading(stage.page);
   });
 
+const narrowViewport = { height: 844, width: 390 } as const;
+
+const visibleButton = (page: Page, buttonName: string): Locator =>
+  page.getByRole("button", { name: buttonName }).filter({ visible: true }).first();
+
+const opensTheDocumentTree = (page: Page): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openDocumentTree() {
+    yield* pageStep(() => visibleButton(page, "サイドバーを開く").click());
+    const closeTree = visibleButton(page, "サイドバーを閉じる");
+    yield* pageStep(() => closeTree.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    const opened = yield* pageStep(() => closeTree.isVisible());
+    yield* pageStep(() => closeTree.click());
+    return opened;
+  });
+
+const opensTheSearch = (page: Page): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openSearch() {
+    yield* pageStep(() => visibleButton(page, "検索を開く").click());
+    const searchDialog = page.getByRole("dialog");
+    yield* pageStep(() => searchDialog.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    const opened = yield* pageStep(() => searchDialog.isVisible());
+    yield* pageStep(() => page.keyboard.press("Escape"));
+    return opened;
+  });
+
+const openNarrowDocumentMenus = (
+  page: Page,
+  url: string,
+): Effect.Effect<
+  { readonly opensTheDocumentTree: boolean; readonly opensTheSearch: boolean },
+  JourneyFailure
+> =>
+  Effect.gen(function* openFromTheHeaderBand() {
+    const wideViewport = page.viewportSize();
+    yield* pageStep(() => page.setViewportSize(narrowViewport));
+    yield* pageStep(() => page.goto(url));
+    const tree = yield* opensTheDocumentTree(page);
+    const search = yield* opensTheSearch(page);
+    if (wideViewport !== null) {
+      yield* pageStep(() => page.setViewportSize(wideViewport));
+    }
+    return { opensTheDocumentTree: tree, opensTheSearch: search };
+  });
+
+const showsTheLoginAddressField = (
+  page: Page,
+  origin: string,
+): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openLogin() {
+    yield* pageStep(() => page.goto(`${origin}/login`));
+    const address = page.getByLabel("メールアドレス", { exact: true }).first();
+    yield* pageStep(() => address.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    return yield* pageStep(() => address.isVisible());
+  });
+
 const runDocumentJourney = (
   stage: JourneyStage,
 ): Effect.Effect<
   {
     readonly documentsRead: number;
     readonly loginPath: string;
+    readonly narrowScreen: {
+      readonly opensTheDocumentTree: boolean;
+      readonly opensTheSearch: boolean;
+    };
     readonly showsTheAddressField: boolean;
   },
   JourneyFailure
@@ -372,14 +431,13 @@ const runDocumentJourney = (
     const [firstDocument = "", secondDocument = ""] = environment.documents;
     yield* readDocument(stage, `${origin}${firstDocument}`);
     yield* readDocument(stage, `${origin}${secondDocument}`);
-    yield* pageStep(() => page.goto(`${origin}/login`));
-    const address = page.getByLabel("メールアドレス", { exact: true }).first();
-    yield* pageStep(() => address.waitFor({ state: "visible", timeout: appearanceTimeout }));
-    const showsTheAddressField = yield* pageStep(() => address.isVisible());
+    const narrowScreen = yield* openNarrowDocumentMenus(page, `${origin}${firstDocument}`);
+    const showsTheAddressField = yield* showsTheLoginAddressField(page, origin);
     return {
       documentsRead: [firstDocument, secondDocument].filter((documentPath) => documentPath !== "")
         .length,
       loginPath: new URL(page.url()).pathname,
+      narrowScreen,
       showsTheAddressField,
     };
   });

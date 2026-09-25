@@ -72,10 +72,13 @@ describe("アプリ全体の導線", () => {
     });
   });
 
-  it("誰でも読める資料は複数ページと認証画面を配る", ({ documentJourney }) => {
+  it("誰でも読める資料は複数ページと認証画面を配り、狭い画面でも見出しの帯から文書の木と検索を開ける", ({
+    documentJourney,
+  }) => {
     expect(documentJourney).toStrictEqual({
       documentsRead: documentsReadByAnyone,
       loginPath: "/login",
+      narrowScreen: { opensTheDocumentTree: true, opensTheSearch: true },
       showsTheAddressField: true,
     });
   });
