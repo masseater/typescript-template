@@ -35,6 +35,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - `staging` の必須キーが揃っているとき、main への統合が staging へ適用します。1つも無いときは適用を始めず、一部だけあるときは失敗します。
   - `production` は Actions の deploy を `workflow_dispatch` で target `production` にしたときだけ適用します。Environment に承認者を付けます。
   - 計画にリソースの削除・置き換え・既存リソースの取り込みがあると、deploy はそのスタックの手前で止まり、Environment `<環境名>-removal-approval` の承認を待ちます。Actions の実行画面の「Review deployments」で承認すると、止まったスタックから同じコミットで適用を続けます。
+    - 1 回の承認で通せるのは 1 スタックだけです。続くスタックにも削除などがあると、承認後の適用はそのスタックで失敗します。deploy をもう一度実行すると、そのスタックの手前で止まり、改めて承認を待ちます。
   - 両方でキー名は同じです。`TEMPLATE_PREFIX` と、そこから決まる origin・送信ドメインは環境ごとに分けます。
   - 必須キーは `libs/observability/src/features/observability/deployment-keys.ts` の `deploymentKeys` です。
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
