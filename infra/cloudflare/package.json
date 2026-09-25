@@ -16,7 +16,6 @@
     "./application": "./src/features/cloudflare/app.ts",
     "./core-program": "./src/features/cloudflare/core-program.ts",
     "./deployment": "./src/features/cloudflare/deployment.ts",
-    "./lint-overrides": "./src/features/cloudflare/lint-overrides.ts",
     "./monitor": "./src/features/cloudflare/monitor.ts",
     "./operator": "./src/features/cloudflare/operator.ts",
     "./prefixed-stack": "./src/features/cloudflare/prefixed-stack.ts",

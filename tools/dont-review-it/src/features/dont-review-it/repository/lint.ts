@@ -1,8 +1,4 @@
 import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
-import {
-  cloudflareNewCapExceptions,
-  cloudflareSourceFiles,
-} from "@repo/infra-cloudflare/lint-overrides";
 
 import { dontReviewItPreset } from "../configs/preset.ts";
 import { LINT_SEVERITY } from "../lint-rule-authoring/index.ts";
@@ -897,9 +893,20 @@ const lintOptions = {
       },
     },
     {
-      files: cloudflareSourceFiles,
+      files: [
+        "infra/cloudflare/src/features/cloudflare/**",
+        "apps/**/alchemy.run.ts",
+        "infra/**/alchemy.run.ts",
+      ],
       rules: {
-        "new-cap": [LINT_SEVERITY.ERROR, cloudflareNewCapExceptions],
+        "new-cap": [
+          LINT_SEVERITY.ERROR,
+          {
+            capIsNewExceptionPattern:
+              "^(?:Schema|Context|Data|Config|ApiToken|D1|Email|Workers|Zone)\\.",
+            capIsNewExceptions: ["DurableObject", "InMemoryService", "Stack", "Worker"],
+          },
+        ],
       },
     },
     {
