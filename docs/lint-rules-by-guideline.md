@@ -88,10 +88,6 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-citty-parent-run--move-run-into-a-subcommand](../tools/dont-review-it/docs/lint/no-citty-parent-run--move-run-into-a-subcommand.md) | Disallow a `run` handler on a citty command that declares `subCommands`, so a matched subcommand's output is never followed by the parent's |
 | [no-hardcoded-endpoint--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-endpoint--read-from-configuration.md) | Disallow text written out in the source at the destination argument of a call that opens a connection, so where a deployment talks to is decided by its configuration rather than by the file that performs the request |
 
-## [.claude/skills/reviews/references/review-findings-and-fix-completion.md](../.claude/skills/reviews/references/review-findings-and-fix-completion.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
 ## [.claude/skills/reviews/references/secrets-and-permissions.md](../.claude/skills/reviews/references/secrets-and-permissions.md)
 
 | Rule | Description |
@@ -179,14 +175,6 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-weakened-protected-rule--register-the-exception-in-configuration](../tools/dont-review-it/docs/lint/no-weakened-protected-rule--register-the-exception-in-configuration.md) | Disallow silencing a protected rule from a severity the lint configuration lowers, so an exception to one of these rules stands as one registered entry carrying the grounds somebody wrote for it |
 | [require-spec-lint-coverage--lint-every-spec-file](../tools/dont-review-it/docs/lint/require-spec-lint-coverage--lint-every-spec-file.md) | Require every file declaring a test block to sit inside the reach of the spec discipline bundle, with those rules failing a run and their shared settings handed out from one declaration, so a run that reports nothing stands apart from a bundle that reaches nothing |
 | [require-test-block-for-spec-file--add-test-or-delete-file](../tools/dont-review-it/docs/lint/require-test-block-for-spec-file--add-test-or-delete-file.md) | Require a file named as a spec to declare at least one test block that runs, so naming a file a spec costs a check that actually executes rather than buying the standing of a spec for free |
-
-## [.claude/skills/reviews/references/workspace-placement-and-tooling.md](../.claude/skills/reviews/references/workspace-placement-and-tooling.md)
-
-| Rule | Description |
-| --- | --- |
-| [no-standalone-tsconfig--extend-shared-preset](../tools/dont-review-it/docs/lint/no-standalone-tsconfig--extend-shared-preset.md) | Require the tsconfig.json that governs a file to extend one of the shared presets, so compiler ruleOptions are decided in one place instead of being copied into every workspace |
-| [no-unwrapped-toolchain-config--call-the-preset-for-the-block](../tools/dont-review-it/docs/lint/no-unwrapped-toolchain-config--call-the-preset-for-the-block.md) | Require the lint and fmt blocks of a Vite+ configuration to be what the matching `dontReviewItPreset` function returns, so the rule set, the formatting decisions, and what git is told to ignore all arrive without the caller restating them |
-| [require-registered-file--restore-it-at-the-registered-path](../tools/dont-review-it/docs/lint/require-registered-file--restore-it-at-the-registered-path.md) | Require every path the required-file table registers to hold a file that is not empty, so a file whose readers sit outside the source keeps its place instead of leaving with the change that stopped mentioning it |
 
 ## [AGENTS.md](../AGENTS.md)
 
