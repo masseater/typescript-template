@@ -48,11 +48,7 @@ const nestedProjects: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: true },
 );
 const projectTexts: Readonly<Record<string, string>> = import.meta.glob(
-  [
-    "../../../../../../tsconfig.base.json",
-    "../../../../tsconfig/base.json",
-    "../../../../../../{apps,libs,infra,tools}/*/tsconfig.json",
-  ],
+  ["../../../../tsconfig/base.json", "../../../../../../{apps,libs,infra,tools}/*/tsconfig.json"],
   { eager: true, import: "default", query: "?raw" },
 );
 
@@ -70,9 +66,7 @@ const parsedProjects = Object.entries(projectTexts)
   }))
   .toSorted((left, right) => left.file.localeCompare(right.file));
 
-const sharedProjects = parsedProjects.filter(
-  ({ file }) => file.endsWith("tsconfig.base.json") || file.endsWith("tsconfig/base.json"),
-);
+const sharedProjects = parsedProjects.filter(({ file }) => file.endsWith("tsconfig/base.json"));
 
 const environment = { command: "serve", mode: "development" };
 
@@ -260,7 +254,6 @@ describe("effect diagnostics coverage", () => {
       parsedProjects.filter(({ text }) => text.includes('"diagnostics": false')),
     ).toStrictEqual([]);
     expect(sharedProjects.map(({ project }) => project.compilerOptions?.plugins)).toStrictEqual([
-      [EFFECT_LANGUAGE_SERVICE],
       [EFFECT_LANGUAGE_SERVICE],
     ]);
   });
