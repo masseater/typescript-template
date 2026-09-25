@@ -1,4 +1,4 @@
-import type { LoadHookSync, ResolveHookSync } from "node:module";
+import { type LoadHookSync, type ResolveHookSync, registerHooks } from "node:module";
 
 const workersStub = new URL("./cloudflare-workers-stub.mjs", import.meta.url).href;
 const workflowsStub = new URL("./cloudflare-workflows-stub.mjs", import.meta.url).href;
@@ -28,4 +28,8 @@ const load: LoadHookSync = (url, loadContext, nextLoad) => {
   return nextLoad(url, loadContext);
 };
 
-export { load, resolve };
+const stubCloudflareModules = (): void => {
+  registerHooks({ load, resolve });
+};
+
+export { load, resolve, stubCloudflareModules };

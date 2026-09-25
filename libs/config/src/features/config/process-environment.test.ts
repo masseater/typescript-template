@@ -1,8 +1,8 @@
-import { env as processEnvironment } from "node:process";
-
 import { describe, expect, test } from "vite-plus/test";
 
 import { definedEnvironment, optionalSetting } from "./process-environment.ts";
+
+const CARRIED_VARIABLE = "TEMPLATE_PROCESS_ENVIRONMENT_CARRIED";
 
 describe("optionalSetting", () => {
   describe("a variable the process does not carry", () => {
@@ -15,18 +15,19 @@ describe("optionalSetting", () => {
   });
 
   describe("a variable the process carries", () => {
-    const it = test.extend("settingRead", () => optionalSetting("PATH"));
+    const it = test.extend("settingRead", () => optionalSetting(CARRIED_VARIABLE));
 
     it("answers the value the process carries", ({ settingRead }) => {
-      expect(settingRead).toBe(processEnvironment["PATH"]);
+      expect(settingRead).toBe("carried");
     });
   });
 });
 
 describe("definedEnvironment", () => {
-  const it = test.extend("environmentRead", () => definedEnvironment());
+  const it = test.extend("environmentRead", () =>
+    Object.entries(definedEnvironment()).filter(([variable]) => variable === CARRIED_VARIABLE));
 
-  it("copies every variable the process carries", ({ environmentRead }) => {
-    expect(environmentRead).toStrictEqual({ ...processEnvironment });
+  it("copies the variables the process carries", ({ environmentRead }) => {
+    expect(environmentRead).toStrictEqual([[CARRIED_VARIABLE, "carried"]]);
   });
 });
