@@ -16,8 +16,6 @@ import { runThrottle } from "./run-throttle.ts";
 
 const TRIVIAL_COMMAND = ["--", process.execPath, "-e", ""];
 
-const SLOT_MARKER_PATTERN = /^slot-\d+$/u;
-
 describe("runThrottle", () => {
   const throttleTest = standardIoTest
     .extend("slotDirectory", ({}, { onCleanup }) => {
@@ -149,8 +147,9 @@ describe("runThrottle", () => {
 
         Environment:
           MST_THROTTLE_LIMIT   Number of slots shared by every throttle on this host
-                               and namespace. Invalid values (non-integer, zero or
-                               less) fall back to the default of 1.
+                               and namespace. Defaults to 1 when unset. A value
+                               that is not a positive integer exits with code 2
+                               without running the command.
 
         Exit codes:
           0  the wrapped command succeeded
@@ -686,93 +685,59 @@ describe("runThrottle", () => {
     );
   });
 
-  describe("a worded environment limit", () => {
-    const it = throttleTest
-      .extend("theCodeOfARunUnderAWordedLimit", ({ slotDirectory }) => {
-        vi.stubEnv("MST_THROTTLE_LIMIT", "abc");
-        return runThrottle(TRIVIAL_COMMAND, {
-          slotDir: slotDirectory,
-          waitBudgetMs: 5000,
-          pollMs: 1000,
-          isInteractive: false,
-        });
-      })
-      .extend("theMarkersUnderAWordedLimit", ({ slotDirectory }) =>
+  describe("an environment limit that is not a positive integer", () => {
+    const it = throttleTest.extend(
+      "theRunsUnderRejectedLimits",
+      ({ slotDirectory, stampsDirectory, stderr }) =>
         Effect.runPromise(
-          Effect.gen(function* () {
-            vi.stubEnv("MST_THROTTLE_LIMIT", "abc");
-            yield* Effect.promise(() =>
-              runThrottle(TRIVIAL_COMMAND, {
-                slotDir: slotDirectory,
-                waitBudgetMs: 5000,
-                pollMs: 1000,
-                isInteractive: false,
-              }),
-            );
-            return (yield* readDirectory(slotDirectory)).filter((slotFileName) =>
-              SLOT_MARKER_PATTERN.test(slotFileName),
-            );
-          }),
+          Effect.forEach(["abc", "0", "-3"], (written) =>
+            Effect.gen(function* () {
+              vi.stubEnv("MST_THROTTLE_LIMIT", written);
+              const ranStamp = joinPath(stampsDirectory, `ran-${written}`);
+              const reportStart = stderr.text().length;
+              const code = yield* Effect.promise(() =>
+                runThrottle(
+                  [
+                    "--",
+                    process.execPath,
+                    "-e",
+                    `require("node:fs").writeFileSync("${ranStamp}", "")`,
+                  ],
+                  {
+                    slotDir: slotDirectory,
+                    waitBudgetMs: 5000,
+                    pollMs: 1000,
+                    isInteractive: false,
+                  },
+                ),
+              );
+              return {
+                written,
+                code,
+                report: stderr.text().slice(reportStart),
+                commandRan: yield* fileExists(ranStamp),
+                markers: yield* readDirectory(slotDirectory),
+              };
+            }),
+          ),
         ),
-      );
-
-    it("does not fail the run", { timeout: 30_000 }, ({ theCodeOfARunUnderAWordedLimit }) => {
-      expect(theCodeOfARunUnderAWordedLimit).toBe(0);
-    });
-
-    it("falls back to one slot", { timeout: 30_000 }, ({ theMarkersUnderAWordedLimit }) => {
-      expect(theMarkersUnderAWordedLimit).toStrictEqual(["slot-0"]);
-    });
-  });
-
-  describe("an environment limit of zero", () => {
-    const it = throttleTest.extend("theMarkersUnderALimitOfZero", ({ slotDirectory }) =>
-      Effect.runPromise(
-        Effect.gen(function* () {
-          vi.stubEnv("MST_THROTTLE_LIMIT", "0");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              waitBudgetMs: 5000,
-              pollMs: 1000,
-              isInteractive: false,
-            }),
-          );
-          return (yield* readDirectory(slotDirectory)).filter((slotFileName) =>
-            SLOT_MARKER_PATTERN.test(slotFileName),
-          );
-        }),
-      ),
     );
 
-    it("falls back to one slot", { timeout: 30_000 }, ({ theMarkersUnderALimitOfZero }) => {
-      expect(theMarkersUnderALimitOfZero).toStrictEqual(["slot-0"]);
-    });
-  });
-
-  describe("a negative environment limit", () => {
-    const it = throttleTest.extend("theMarkersUnderANegativeLimit", ({ slotDirectory }) =>
-      Effect.runPromise(
-        Effect.gen(function* () {
-          vi.stubEnv("MST_THROTTLE_LIMIT", "-3");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              waitBudgetMs: 5000,
-              pollMs: 1000,
-              isInteractive: false,
-            }),
-          );
-          return (yield* readDirectory(slotDirectory)).filter((slotFileName) =>
-            SLOT_MARKER_PATTERN.test(slotFileName),
-          );
-        }),
-      ),
+    it(
+      "fails as a misuse naming the key without running the command or taking a slot",
+      { timeout: 30_000 },
+      ({ theRunsUnderRejectedLimits }) => {
+        expect(theRunsUnderRejectedLimits).toStrictEqual(
+          ["abc", "0", "-3"].map((written) => ({
+            written,
+            code: 2,
+            report: `throttle: MST_THROTTLE_LIMIT must be a positive integer, got "${written}"\n`,
+            commandRan: false,
+            markers: [],
+          })),
+        );
+      },
     );
-
-    it("falls back to one slot", { timeout: 30_000 }, ({ theMarkersUnderANegativeLimit }) => {
-      expect(theMarkersUnderANegativeLimit).toStrictEqual(["slot-0"]);
-    });
   });
 
   describe("an unusable slot area", () => {

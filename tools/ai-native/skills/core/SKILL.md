@@ -64,7 +64,7 @@ Open the named file with an editor or a file-reading tool. A second run with a f
 MST_THROTTLE_LIMIT=3 throttle --timeout 1800 -- spool -- vp run guard:all
 ```
 
-The limit is shared by every `throttle` on this host and namespace, and it defaults to 1. Non-integer values, zero, and negatives fall back to that default rather than failing. When every slot is held the wrapper joins a wait queue and reports its position on stderr; `--timeout` stops the whole process tree, with SIGTERM then SIGKILL on POSIX and `taskkill /T /F` on Windows, and `0` never interrupts the command itself. When the command exits, `throttle` ends the rest of its process group, SIGTERM first and then SIGKILL after the grace period, before it gives the slot back, so a background process the command started does not outlive it.
+The limit is shared by every `throttle` on this host and namespace, and it defaults to 1. A value that is not a positive integer, such as `abc`, `0`, or `-3`, makes `throttle` exit with code 2 and name the key without running the command. When every slot is held the wrapper joins a wait queue and reports its position on stderr; `--timeout` stops the whole process tree, with SIGTERM then SIGKILL on POSIX and `taskkill /T /F` on Windows, and `0` never interrupts the command itself. When the command exits, `throttle` ends the rest of its process group, SIGTERM first and then SIGKILL after the grace period, before it gives the slot back, so a background process the command started does not outlive it.
 
 ### Refuse the commands that read a slice
 

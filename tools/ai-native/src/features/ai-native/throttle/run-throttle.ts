@@ -20,18 +20,30 @@ export type ThrottleSeams = {
 
 const DEFAULT_LIMIT = 1;
 
-const limitFromEnvironment = (): number => {
-  const raw = optionalSetting("MST_THROTTLE_LIMIT");
-  return raw !== undefined && /^[0-9]+$/.test(raw) && Number(raw) > 0 ? Number(raw) : DEFAULT_LIMIT;
+const LIMIT_SETTING = "MST_THROTTLE_LIMIT";
+
+const limitFromEnvironment = (): number | string => {
+  const raw = optionalSetting(LIMIT_SETTING);
+  if (raw === undefined) {
+    return DEFAULT_LIMIT;
+  }
+  return /^[0-9]+$/.test(raw) && Number(raw) > 0
+    ? Number(raw)
+    : `throttle: ${LIMIT_SETTING} must be a positive integer, got "${raw}"`;
 };
 
-const resolveConfiguration = (seams: ThrottleSeams): WaitConfiguration => ({
-  slotDir: seams.slotDir ?? joinPath(temporaryDirectory(), "mst-throttle", "mst"),
-  limit: seams.limit ?? limitFromEnvironment(),
-  waitBudgetMs: seams.waitBudgetMs ?? DEFAULT_WAIT_BUDGET_MS,
-  pollMs: seams.pollMs ?? DEFAULT_POLL_MS,
-  interactive: seams.isInteractive ?? process.stderr.isTTY,
-});
+const resolveConfiguration = (seams: ThrottleSeams): WaitConfiguration | string => {
+  const limit = seams.limit ?? limitFromEnvironment();
+  return typeof limit === "string"
+    ? limit
+    : {
+        slotDir: seams.slotDir ?? joinPath(temporaryDirectory(), "mst-throttle", "mst"),
+        limit,
+        waitBudgetMs: seams.waitBudgetMs ?? DEFAULT_WAIT_BUDGET_MS,
+        pollMs: seams.pollMs ?? DEFAULT_POLL_MS,
+        interactive: seams.isInteractive ?? process.stderr.isTTY,
+      };
+};
 
 const acquireSlot = (configuration: WaitConfiguration): Promise<SlotHold | null> =>
   Effect.runPromise(
@@ -63,7 +75,12 @@ export const runThrottle = (argv: readonly string[], seams: ThrottleSeams = {}):
         process.stderr.write(`${invocation}\n`);
         return 2;
       }
-      const hold = yield* Effect.promise(() => acquireSlot(resolveConfiguration(seams)));
+      const configuration = resolveConfiguration(seams);
+      if (typeof configuration === "string") {
+        process.stderr.write(`${configuration}\n`);
+        return 2;
+      }
+      const hold = yield* Effect.promise(() => acquireSlot(configuration));
       return hold === null
         ? 1
         : yield* Effect.promise(() =>

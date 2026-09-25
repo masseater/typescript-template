@@ -26,8 +26,9 @@ Options:
 
 Environment:
   MST_THROTTLE_LIMIT   Number of slots shared by every throttle on this host
-                       and namespace. Invalid values (non-integer, zero or
-                       less) fall back to the default of 1.
+                       and namespace. Defaults to 1 when unset. A value
+                       that is not a positive integer exits with code 2
+                       without running the command.
 
 Exit codes:
   0  the wrapped command succeeded
