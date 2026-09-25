@@ -4,30 +4,33 @@ import { describe, expect, it } from "vite-plus/test";
 import { serviceName } from "#shared/config/index.ts";
 import { ConsentView } from "./consent-view.tsx";
 
-function rendered(clientId: string | undefined, client: string | undefined, error: string): string {
-  return renderedAt(
-    <ConsentView client={client} clientId={clientId} error={error} onError={() => undefined} />,
-    ["/consent"],
-  );
+function rendered(
+  clientId: string | undefined,
+  client: string | undefined,
+  failure: string | undefined,
+): string {
+  return renderedAt(<ConsentView client={client} clientId={clientId} failure={failure} />, [
+    "/consent",
+  ]);
 }
 
 describe("consent", () => {
   it("says the client is unknown when the request names none", () => {
-    expect(rendered(undefined, undefined, "")).toContain(
+    expect(rendered(undefined, undefined, undefined)).toContain(
       "連携を求めているクライアントが分かりません。",
     );
   });
 
   it("does not wait for a client the request does not name", () => {
-    expect(rendered(undefined, undefined, "")).not.toContain("読み込み中です。");
+    expect(rendered(undefined, undefined, undefined)).not.toContain("読み込み中です。");
   });
 
   it("says it is loading until the client name arrives", () => {
-    expect(rendered("client-1", undefined, "")).toContain("読み込み中です。");
+    expect(rendered("client-1", undefined, undefined)).toContain("読み込み中です。");
   });
 
   it("asks to allow the named client", () => {
-    expect(rendered("client-1", "Claude", "")).toContain(
+    expect(rendered("client-1", "Claude", undefined)).toContain(
       `Claude に ${serviceName} の管理操作を許可しますか？`,
     );
   });
