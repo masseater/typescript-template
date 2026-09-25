@@ -140,7 +140,7 @@ const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never 
     Effect.mapError((issue) => invalid(issue.message)),
   );
 
-type EnvironmentScalars = Schema.Schema.Type<typeof Scalars>;
+type EnvironmentScalars = typeof Scalars.Type;
 
 const refuseMissingRelease = (
   scalars: EnvironmentScalars,

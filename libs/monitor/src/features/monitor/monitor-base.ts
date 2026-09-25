@@ -156,7 +156,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
     });
   }
 
-  protected abstract check(notify: Notify): Effect.Effect<object, unknown>;
+  protected abstract check(notify: Notify): Effect.Effect<object, Cause.YieldableError>;
 }
 
 export { AlertEnvironment, Monitor, Recipients };

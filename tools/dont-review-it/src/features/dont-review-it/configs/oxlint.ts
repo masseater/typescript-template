@@ -44,12 +44,27 @@ const RE_EXPORT_ONLY_FILES = ["**/index.ts", "**/index.tsx"];
 const PLUGIN_NAME = "dont-review-it";
 const EFFECT_PLUGIN = "effecttsgo";
 
-const effectRules: NonNullable<OxlintConfig["rules"]> = Object.fromEntries(
-  Object.entries(recommended.rules ?? {}).map(([name, severity]) => [
+const EFFECT_RULES_BEYOND_RECOMMENDED = [
+  "any-unknown-in-error-context",
+  "effect-do-notation",
+  "missed-pipeable-opportunity",
+  "missing-effect-service-dependency",
+  "prefer-schema-type-property",
+  "schema-union-of-literals",
+  "service-not-as-class",
+  "unsafe-effect-type-assertion",
+];
+
+const effectRules: NonNullable<OxlintConfig["rules"]> = Object.fromEntries([
+  ...Object.entries(recommended.rules ?? {}).map(([name, severity]) => [
     name,
     severity === LINT_SEVERITY.WARN ? LINT_SEVERITY.ERROR : severity,
   ]),
-);
+  ...EFFECT_RULES_BEYOND_RECOMMENDED.map((name) => [
+    `${EFFECT_PLUGIN}/${name}`,
+    LINT_SEVERITY.ERROR,
+  ]),
+]);
 
 const pluginSpecifier = filePathOf(new URL("../plugin.ts", import.meta.url));
 

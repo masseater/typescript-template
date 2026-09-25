@@ -716,7 +716,6 @@ const lintOptions = {
         "project/effect-failures": LINT_SEVERITY.OFF,
         "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
         "dont-review-it/no-twin-declaration--merge-into-one-owner": LINT_SEVERITY.OFF,
-        "effecttsgo/any-unknown-in-error-context": LINT_SEVERITY.OFF,
         "dont-review-it/no-detached-test-file--move-beside-source": LINT_SEVERITY.OFF,
       },
     },
@@ -731,7 +730,6 @@ const lintOptions = {
         "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
         "typescript/no-this-alias": LINT_SEVERITY.OFF,
         "eslint/max-params": LINT_SEVERITY.OFF,
-        "effecttsgo/any-unknown-in-error-context": LINT_SEVERITY.OFF,
       },
     },
 

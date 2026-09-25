@@ -70,8 +70,10 @@ const jsonSchema = (contract: Decodable): JsonSchema.JsonSchema =>
   Schema.toJsonSchemaDocument(contract, inlined).schema;
 
 const queryParameters = (contract: Decodable & QueryContract): Parameters => {
-  const { properties, required } = Result.getOrThrow(
-    Schema.decodeUnknownResult(ObjectSchema)(jsonSchema(contract)),
+  const { properties, required } = contract.pipe(
+    jsonSchema,
+    Schema.decodeUnknownResult(ObjectSchema),
+    Result.getOrThrow,
   );
   const requiredFields = new Set(required);
   return Object.entries(properties).map(([fieldName, property]) => ({

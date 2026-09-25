@@ -1,5 +1,5 @@
 import { httpStatus } from "@repo/config";
-import { Effect } from "effect";
+import { Effect, type Cause } from "effect";
 
 import { monitorCheckUrl } from "./binding.ts";
 import { Monitor, type Alert, type MonitorBindings, type Notify } from "./monitor-base.ts";
@@ -37,7 +37,7 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
   readonly check: (
     scope: { readonly ctx: DurableObjectState; readonly env: Bindings },
     notify: Notify,
-  ) => Effect.Effect<object, unknown>;
+  ) => Effect.Effect<object, Cause.YieldableError>;
   readonly event: string;
   readonly failure: Alert;
 }): {
@@ -54,7 +54,7 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
     protected readonly monitorEvent = monitorEvent;
     protected readonly failure = failure;
 
-    protected check(notify: Notify): Effect.Effect<object, unknown> {
+    protected check(notify: Notify): Effect.Effect<object, Cause.YieldableError> {
       return check({ ctx: this.durableState, env: this.env }, notify);
     }
   }
