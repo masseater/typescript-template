@@ -1,0 +1,6 @@
+Revision history for #1942:
+
+rev 2 (rebase) 2026-09-25 02:12 UTC — dont-it-yourself の追加を別 PR に分離し、この PR を名称変更だけにする
+rev 1 (initial) 2026-09-25 02:12 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1942,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"12fecf58d6328935af9a620b1cc98a23def9fe24","timestamp_iso":"2026-09-25T02:12:04Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"12fecf58d6328935af9a620b1cc98a23def9fe24","new_sha":"2bf39cd2b31724a9ab1194297093d32476af842b","timestamp_iso":"2026-09-25T02:12:04Z","reason":"dont-it-yourself の追加を別 PR に分離し、この PR を名称変更だけにする","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/12fecf58d6328935af9a620b1cc98a23def9fe24...2bf39cd2b31724a9ab1194297093d32476af842b"}]} -->
