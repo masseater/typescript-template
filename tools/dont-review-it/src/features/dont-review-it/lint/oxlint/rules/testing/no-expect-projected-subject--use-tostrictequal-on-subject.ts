@@ -163,7 +163,9 @@ export const noExpectProjectedSubject = createDontReviewItRule({
     docs: {
       description:
         "Disallow handing an assertion anything other than the bare binding a fixture produced, so one comparison of the whole subject catches a missing field, an added field and a renamed field alike",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       projectedSubject:

@@ -116,7 +116,9 @@ export const noPlainSecretEnvironmentKey = createDontReviewItRule({
     docs: {
       description:
         "Disallow declaring an environment key whose name marks it as a secret without wrapping its value in `Redacted`, so the value cannot reach a log, an error message or a trace as plain text",
-      relatedGuidelines: [".claude/skills/reviews/references/secrets-and-permissions.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/keep-secrets-out-and-authorize-where-changes-happen.md",
+      ],
     },
     messages: {
       plainSecret:

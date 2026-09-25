@@ -12,7 +12,9 @@ export const noBehaviorSwitchEnvironmentKey = createDontReviewItRule({
     docs: {
       description:
         "Disallow environment keys named as switches (`*_ENABLED`, `*_DISABLED`, `*_MODE`, `DEBUG`), so behaviour follows from whether the real value is present or from a feature flag instead of from a second key that can disagree with it",
-      relatedGuidelines: [".claude/skills/reviews/references/minimal-environment-variables.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/never-add-an-environment-variable-for-a-known-value.md",
+      ],
     },
     messages: {
       behaviorSwitch:

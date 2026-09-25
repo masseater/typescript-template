@@ -27,7 +27,7 @@ export const requireReExportOnlyFiles = createDontReviewItRule({
     docs: {
       description:
         "Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards",
-      relatedGuidelines: [".claude/skills/reviews/references/ownership-and-duplication.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/give-every-concept-one-owner.md"],
     },
     messages: {
       extraStatement:

@@ -49,7 +49,9 @@ export const forbidNumberedSiblingFile = createDontReviewItRule({
     docs: {
       description:
         "Disallow splitting a file into siblings distinguished only by a number, so every file name states the responsibility that file owns",
-      relatedGuidelines: [".claude/skills/reviews/references/names-and-vocabularies.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/type-the-vocabulary-never-paraphrase-names.md",
+      ],
     },
     messages: {
       numberedSiblingFile:

@@ -62,7 +62,9 @@ export const noRuleSuppression = createDontReviewItRule({
     docs: {
       description:
         "Disallow taking a rule of the parallel determinism gate out of a run through a lowered severity or an ignore entry, leaving the code the rule stands on as the only place a report ends",
-      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/prove-every-guard-fails-on-a-violation.md",
+      ],
     },
     messages: {
       weakenedRule:
