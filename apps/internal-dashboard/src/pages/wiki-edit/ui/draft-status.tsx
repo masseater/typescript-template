@@ -1,9 +1,9 @@
-import { ButtonAnchor, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { ButtonAnchor, FailureStatus, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
 type DraftStatusProps = Readonly<{
-  failures: readonly (string | undefined)[];
+  failure: string | undefined;
   publishedUrl: string | null;
   version: number;
 }>;
@@ -11,7 +11,7 @@ type DraftStatusProps = Readonly<{
 function DraftNotice({
   publishedUrl,
   version,
-}: Omit<DraftStatusProps, "failures">): ReactElement | null {
+}: Omit<DraftStatusProps, "failure">): ReactElement | null {
   if (publishedUrl !== null) {
     return (
       <StatusMessage variant={STATUS_VARIANT.success}>
@@ -32,17 +32,11 @@ function DraftNotice({
   );
 }
 
-function DraftStatus({ failures, publishedUrl, version }: DraftStatusProps): ReactElement {
+function DraftStatus({ failure, publishedUrl, version }: DraftStatusProps): ReactElement {
   return (
     <>
       <DraftNotice publishedUrl={publishedUrl} version={version} />
-      {failures
-        .filter((failure) => failure !== undefined)
-        .map((failure) => (
-          <StatusMessage key={failure} variant={STATUS_VARIANT.failure}>
-            {failure}
-          </StatusMessage>
-        ))}
+      <FailureStatus error={failure} />
     </>
   );
 }

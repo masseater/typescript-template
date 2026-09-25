@@ -4,31 +4,27 @@ import type { ActionState } from "@repo/ui";
 import type { ReactElement } from "react";
 
 type DraftActionsProps = Readonly<{
+  action: ActionState;
   backHref: string;
-  discarding: ActionState;
   onDiscard: () => void;
   onPublish: () => void;
   onSave: () => void;
   publishable: boolean;
-  publishing: ActionState;
-  saving: ActionState;
   version: number;
 }>;
 
 function DraftActions({
+  action,
   backHref,
-  discarding,
   onDiscard,
   onPublish,
   onSave,
   publishable,
-  publishing,
-  saving,
   version,
 }: DraftActionsProps): ReactElement {
-  const busy = saving.blocked || publishing.blocked;
+  const busy = action.blocked;
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div aria-busy={action.pending} className="flex flex-wrap items-center gap-2">
       <Button
         action={onSave}
         disabled={busy}
@@ -43,12 +39,7 @@ function DraftActions({
         </Button>
       ) : null}
       {version === 0 ? null : (
-        <Button
-          disabled={discarding.blocked || busy}
-          onClick={onDiscard}
-          type="button"
-          variant="danger"
-        >
+        <Button disabled={busy} onClick={onDiscard} type="button" variant="danger">
           下書きを捨てる
         </Button>
       )}

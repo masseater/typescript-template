@@ -6,17 +6,14 @@ import { DraftActions } from "./draft-actions.tsx";
 function rendered(
   shown: Readonly<{ pending?: boolean; publishable?: boolean; version?: number }>,
 ): string {
-  const idle = actionState();
   return renderedAt(
     <DraftActions
+      action={actionState({ pending: shown.pending ?? false })}
       backHref="/wiki/guide"
-      discarding={idle}
       onDiscard={() => undefined}
       onPublish={() => undefined}
       onSave={() => undefined}
       publishable={shown.publishable ?? false}
-      publishing={idle}
-      saving={actionState({ pending: shown.pending ?? false })}
       version={shown.version ?? 0}
     />,
     ["/", "/wiki/guide"],
@@ -41,9 +38,13 @@ describe("wiki draft actions", () => {
     expect(rendered({})).toContain('href="/wiki/guide"');
   });
 
-  it("disables every draft action while a save is running", () => {
+  it("disables saving, publishing and discarding while any draft operation is running", () => {
     expect(
       rendered({ pending: true, publishable: true, version: 1 }).match(/disabled=""/gu),
     ).toHaveLength(3);
+  });
+
+  it("enables every draft action when nothing is running", () => {
+    expect(rendered({ publishable: true, version: 1 })).not.toContain('disabled=""');
   });
 });
