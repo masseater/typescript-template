@@ -5,21 +5,22 @@ description: このリポジトリのコードレビュー指針。作業を完�
 
 以下のファイルを順番に読み込み、それぞれの観点でレビューする。この時ファイルやワークスペース単位で担当を区切るのではなく、必ず観点を元にリポジトリ全体を横断してレビューすること。単一ファイルをちょっと変更すれば良いのではなく、リポジトリ全体のコード品質を向上させることが目的である。
 
-1. `./references/ownership-and-duplication.md`
-2. `./references/io-boundaries-and-types.md`
-3. `./references/failure-handling-and-fallbacks.md`
-4. `./references/names-and-vocabularies.md`
-5. `./references/package-and-command-surfaces.md`
-6. `./references/test-design.md`
-7. `./references/normative-documents.md`
-8. `./references/verification-and-automation.md`
-9. `./references/infrastructure-resources-and-apply.md`
-10. `./references/monitoring-logging-and-status-codes.md`
-11. `./references/secrets-and-permissions.md`
-12. `./references/frontend-components-and-state.md`
-13. `./references/forbid-excessive-code-sharing.md`
-14. `./references/minimal-environment-variables.md`
-15. `./references/simplify.md`
+1. `./references/give-every-concept-one-owner.md`
+2. `./references/dont-it-yourself.md`
+3. `./references/parse-external-input-at-the-boundary.md`
+4. `./references/never-hide-a-failure.md`
+5. `./references/type-the-vocabulary-never-paraphrase-names.md`
+6. `./references/expose-only-what-a-real-caller-uses.md`
+7. `./references/assert-observable-behavior-with-real-dependencies.md`
+8. `./references/never-document-what-code-or-a-check-owns.md`
+9. `./references/prove-every-guard-fails-on-a-violation.md`
+10. `./references/declare-only-owned-infrastructure-and-verify-it-runs.md`
+11. `./references/report-only-defects-with-the-right-status-and-logs.md`
+12. `./references/keep-secrets-out-and-authorize-where-changes-happen.md`
+13. `./references/build-ui-on-libs-ui-and-keep-server-state-in-query.md`
+14. `./references/never-share-code-before-a-second-caller.md`
+15. `./references/never-add-an-environment-variable-for-a-known-value.md`
+16. `./references/remove-needless-branches-wrappers-and-work.md`
 
 以下は、その修正をしないことを正当化する理由として認めない。かかる時間は度外視し、リポジトリ全体を俯瞰して、コード品質を向上させるための改善点を見つけることに全力を注ぐこと。
 
