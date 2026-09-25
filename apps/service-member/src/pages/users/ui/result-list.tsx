@@ -1,6 +1,7 @@
 import { TextLink } from "@repo/ui";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { Suspense, use, useEffect } from "react";
+import { browser } from "react-dom";
 
 import { memberPageSize } from "#shared/contracts/index.ts";
 import { MemberCard } from "#widgets/member-search/index.ts";
@@ -38,6 +39,7 @@ function VirtualizedGrid({
   members,
   total,
 }: Listing): ReactElement {
+  use(browser("会員一覧の仮想スクロールはブラウザの window を使う"));
   const rowCount = Math.ceil(members.length / columns);
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
@@ -87,10 +89,6 @@ function VirtualizedGrid({
 
 function ResultList(listing: Listing): ReactElement {
   const { members, total } = listing;
-  const [virtualReady, setVirtualReady] = useState(false);
-  useLayoutEffect(() => {
-    setVirtualReady(true);
-  }, []);
   if (total === 0 || members.length === 0) {
     return (
       <p className="text-base leading-normal">
@@ -104,11 +102,9 @@ function ResultList(listing: Listing): ReactElement {
         {total} 人中 1〜{members.length} 人
         {members.length < total ? "（読み込み中の分を含む）" : ""}
       </p>
-      {virtualReady ? (
+      <Suspense fallback={<StaticGrid members={members.slice(0, memberPageSize)} />}>
         <VirtualizedGrid {...listing} />
-      ) : (
-        <StaticGrid members={members.slice(0, memberPageSize)} />
-      )}
+      </Suspense>
     </>
   );
 }
