@@ -71,6 +71,10 @@ Which lint rules of this repository declare each normative document as their gro
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
+## [.claude/skills/reviews/references/dont-it-yourself.md](../.claude/skills/reviews/references/dont-it-yourself.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/expose-only-what-a-real-caller-uses.md](../.claude/skills/reviews/references/expose-only-what-a-real-caller-uses.md)
 
 | Rule | Description |
