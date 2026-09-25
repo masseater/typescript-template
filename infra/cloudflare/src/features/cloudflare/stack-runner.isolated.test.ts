@@ -7,7 +7,12 @@ import { describeCause } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 
 const CONFIRMATION = "0".repeat(16);
-const deployment = { access, config, secrets: { contents: "", filename: "/dev/null" } };
+const deployment = {
+  access,
+  approvalOutput: undefined,
+  config,
+  secrets: { contents: "", filename: "/dev/null" },
+};
 
 it.effect("refuses to apply the onboarding unit before the account guard clears it", () =>
   Effect.gen(function* program() {

@@ -12,6 +12,7 @@ on:
         default: staging
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -21,79 +22,60 @@ concurrency:
 jobs:
   staging:
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.target == 'staging')
-    environment: staging
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: staging
+      ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.sha }}
+    secrets: inherit
+
+  staging-removal-approval:
+    needs: staging
+    if: needs.staging.outputs.approval-stack != ''
+    environment: staging-removal-approval
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.sha }}
-      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
-        with:
-          node-version-file: package.json
-          cache: true
-      - id: prepare
-        run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+      - run: echo "Approved $APPROVAL_STACK $APPROVAL_CONFIRMATION"
         env:
-          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-          BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_WORKERS_SUBDOMAIN: ${{ secrets.CLOUDFLARE_WORKERS_SUBDOMAIN }}
-          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          TEMPLATE_APP_DOMAIN: ${{ secrets.TEMPLATE_APP_DOMAIN }}
-          TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
-          TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID: ${{ secrets.TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID }}
-          TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
-          TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
-          TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
-          TEMPLATE_OTLP_ENDPOINT: ${{ secrets.TEMPLATE_OTLP_ENDPOINT }}
-          TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
-          TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
-          TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
-      - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare deploy:ordered
-      - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare probe:origins
+          APPROVAL_STACK: ${{ needs.staging.outputs.approval-stack }}
+          APPROVAL_CONFIRMATION: ${{ needs.staging.outputs.approval-confirmation }}
+
+  staging-approved:
+    needs: [staging, staging-removal-approval]
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: staging
+      ref: ${{ needs.staging.outputs.commit }}
+      approval-stack: ${{ needs.staging.outputs.approval-stack }}
+      approval-confirmation: ${{ needs.staging.outputs.approval-confirmation }}
+    secrets: inherit
 
   production:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
-    environment: production
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: production
+      ref: main
+    secrets: inherit
+
+  production-removal-approval:
+    needs: production
+    if: needs.production.outputs.approval-stack != ''
+    environment: production-removal-approval
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
-        with:
-          node-version-file: package.json
-          cache: true
-      - id: prepare
-        run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+      - run: echo "Approved $APPROVAL_STACK $APPROVAL_CONFIRMATION"
         env:
-          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-          BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_WORKERS_SUBDOMAIN: ${{ secrets.CLOUDFLARE_WORKERS_SUBDOMAIN }}
-          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          TEMPLATE_APP_DOMAIN: ${{ secrets.TEMPLATE_APP_DOMAIN }}
-          TEMPLATE_AUTH_SECRET: ${{ secrets.TEMPLATE_AUTH_SECRET }}
-          TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID: ${{ secrets.TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID }}
-          TEMPLATE_INTERNAL_DASHBOARD_ORIGIN: ${{ secrets.TEMPLATE_INTERNAL_DASHBOARD_ORIGIN }}
-          TEMPLATE_MAIL_FROM: ${{ secrets.TEMPLATE_MAIL_FROM }}
-          TEMPLATE_OTLP_AUTHORIZATION: ${{ secrets.TEMPLATE_OTLP_AUTHORIZATION }}
-          TEMPLATE_OTLP_ENDPOINT: ${{ secrets.TEMPLATE_OTLP_ENDPOINT }}
-          TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
-          TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
-          TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
-          TEMPLATE_WIKI_PUBLISH_APP_ID: ${{ secrets.TEMPLATE_WIKI_PUBLISH_APP_ID }}
-          TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY }}
-          TEMPLATE_WIKI_PUBLISH_REPOSITORY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_REPOSITORY }}
-      - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare deploy:ordered
-      - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare probe:origins
+          APPROVAL_STACK: ${{ needs.production.outputs.approval-stack }}
+          APPROVAL_CONFIRMATION: ${{ needs.production.outputs.approval-confirmation }}
+
+  production-approved:
+    needs: [production, production-removal-approval]
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: production
+      ref: ${{ needs.production.outputs.commit }}
+      approval-stack: ${{ needs.production.outputs.approval-stack }}
+      approval-confirmation: ${{ needs.production.outputs.approval-confirmation }}
+    secrets: inherit
