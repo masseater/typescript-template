@@ -62,6 +62,21 @@ describe("atom-server-data", () => {
       "libs/ui/src/features/ui/probe.ts",
       'import { AtomHttpApi } from "effect/unstable/reactivity"; export const r = AtomHttpApi;',
     ],
+    [
+      "fetch-in-fn",
+      "libs/ui/src/features/ui/probe.ts",
+      'import { Atom } from "effect/unstable/reactivity"; import { Effect } from "effect"; export const a = Atom.fn((id: string) => Effect.promise(() => fetch(`/api/items/${id}`)));',
+    ],
+    [
+      "api-segment-read-in-fn",
+      "apps/internal-dashboard/src/pages/inquiries/model/probe.ts",
+      'import { request } from "@repo/ui"; import { Atom } from "effect/unstable/reactivity"; import { loadInquiry } from "#pages/inquiries/api/inquiries.ts"; export const a = Atom.fn((inquiryId: string) => request(() => loadInquiry(inquiryId)));',
+    ],
+    [
+      "api-segment-read-in-family-fn",
+      "apps/internal-dashboard/src/pages/inquiries/model/probe.ts",
+      'import { request } from "@repo/ui"; import { Atom } from "effect/unstable/reactivity"; import { loadInquiry } from "#pages/inquiries/api/inquiries.ts"; export const a = Atom.family((slot: string) => Atom.fn(() => request(() => loadInquiry(slot))));',
+    ],
   ] as const;
 
   it.for(serverDataInAtoms)("rejects server data held in atoms: %s", ([_label, name, code]) => {
@@ -87,6 +102,10 @@ describe("atom-server-data", () => {
     [
       "plain-make",
       'import { Atom } from "effect/unstable/reactivity"; export const open = Atom.make(false);',
+    ],
+    [
+      "fn-running-a-given-task",
+      'import { Atom } from "effect/unstable/reactivity"; import { Semaphore } from "effect"; import { request } from "./request"; const gate = Semaphore.makeUnsafe(1); export const a = Atom.fn(({ task }: { task: () => Promise<void> }) => gate.withPermits(1)(request(task)), { concurrent: true });',
     ],
   ] as const)("allows non-server Atom usage: %s", ([_label, code]) => {
     expect.hasAssertions();
