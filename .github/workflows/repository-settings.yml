@@ -22,23 +22,9 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       GH_TOKEN: ${{ secrets.TEMPLATE_GITHUB_ADMIN_TOKEN }}
     steps:
-      - id: prepare
-        run: |
-          configured=0
-          for key in GH_TOKEN CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
-            if [ -n "${!key}" ]; then configured=$((configured + 1)); else echo "::notice::$key is not set"; fi
-          done
-          if [ "$configured" -ne 0 ] && [ "$configured" -ne 3 ]; then
-            echo "::error::set all of TEMPLATE_GITHUB_ADMIN_TOKEN, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the repository-settings environment, or none of them"
-            exit 1
-          fi
-          echo "configured=$([ "$configured" -eq 3 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-      - if: steps.prepare.outputs.configured == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - if: steps.prepare.outputs.configured == 'true'
-        uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
           cache: true
-      - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-github deploy:ci
+      - run: vp run --filter @repo/infra-github deploy:ci

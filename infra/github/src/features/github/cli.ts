@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { firstUserArgumentIndex, runCli } from "@repo/cli";
+import { optionalSetting } from "@repo/config/process-environment";
 import { repositoryRoot } from "@repo/config/repository-root";
 import {
   Confirmation,
@@ -31,7 +32,7 @@ const commandRejectedEvent = "github.command_rejected";
 
 class GitHubCommandFailure extends Schema.TaggedError<GitHubCommandFailure>()(
   "GitHubCommandFailure",
-  { code: Schema.Literals(["command_invalid"]) },
+  { code: Schema.Literals(["command_invalid", "apply_settings_incomplete"]) },
 ) {}
 
 const ApplyUnit = Schema.Literals(["github", "wiki-publisher"]);
@@ -101,11 +102,28 @@ const planStack = Effect.fn("planGitHubStack")(function* planStack(
   return { confirmation: planConfirmation(planned, slug), planned, slug, snapshot };
 });
 
+const applySettings = ["GH_TOKEN", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"] as const;
+
+const applyConfigured = Effect.fn("applyConfigured")(function* applyConfigured() {
+  const present = applySettings.filter((variable) => (optionalSetting(variable) ?? "") !== "");
+  if (present.length === 0) {
+    return false;
+  }
+  if (present.length < applySettings.length) {
+    return yield* new GitHubCommandFailure({ code: "apply_settings_incomplete" });
+  }
+  return true;
+});
+
 runCli(
   Effect.gen(function* program() {
     const parsedCommand = yield* Schema.decodeUnknownEffect(Command)(
       process.argv.slice(firstUserArgumentIndex),
     ).pipe(Effect.mapError(() => new GitHubCommandFailure({ code: "command_invalid" })));
+    if (parsedCommand[0] === "apply" && !(yield* applyConfigured())) {
+      yield* write({ event: "github.apply_skipped", unconfigured: applySettings });
+      return;
+    }
     const { confidential, ...access } = yield* stackAccess(parsedCommand);
     yield* Effect.gen(function* run() {
       const planning = yield* planStack({ ...access, unit: parsedCommand[1] });
