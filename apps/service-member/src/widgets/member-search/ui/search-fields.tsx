@@ -1,8 +1,6 @@
 import { maximumKeywordLength } from "@repo/config/paging";
 import { Button, Field } from "@repo/ui";
-import { useDebouncedCallback } from "@tanstack/react-pacer/debouncer";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
 
 import { useSearchDraft } from "../model/search-draft.ts";
 
@@ -10,31 +8,7 @@ import type { ReactElement } from "react";
 
 function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement {
   const [draft, setDraft] = useSearchDraft(keyword);
-  const skippingKeyword = useRef(false);
   const navigate = useNavigate();
-  const applyKeyword = useDebouncedCallback(
-    (next: string) => {
-      const trimmed = next.trim();
-      void navigate({
-        replace: true,
-        search: trimmed === "" ? {} : { keyword: trimmed },
-        to: "/search",
-      });
-    },
-    { wait: 300 },
-  );
-  useEffect(() => {
-    if (skippingKeyword.current) {
-      skippingKeyword.current = false;
-      return;
-    }
-    setDraft(keyword);
-  }, [keyword, setDraft]);
-  function handleValueChange(next: string): void {
-    skippingKeyword.current = true;
-    setDraft(next);
-    applyKeyword(next);
-  }
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
     const trimmed = draft.trim();
@@ -52,7 +26,7 @@ function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement 
           name="keyword"
           maxLength={maximumKeywordLength}
           value={draft}
-          onValueChange={handleValueChange}
+          onValueChange={setDraft}
         />
         <Button type="submit" variant="primary">
           検索

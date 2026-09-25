@@ -19,6 +19,7 @@ const atomUiRetiredPackages: Readonly<Record<string, string>> = {
   "@nanostores/": atomState,
   "@preact/signals-react": atomState,
   "@reduxjs/": atomState,
+  "@tanstack/react-pacer": "useDeferredValue",
   "@tanstack/react-store": atomState,
   "@tanstack/store": atomState,
   effector: atomState,

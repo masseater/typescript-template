@@ -59,6 +59,7 @@ describe("replaced packages", () => {
     { kind: "exact", dependency: "@base-ui/react" },
     { kind: "exact", dependency: "i18next" },
     { kind: "exact", dependency: "react-intl" },
+    { kind: "exact", dependency: "@tanstack/react-pacer" },
     { kind: "prefix", dependency: "@pulumi/cloudflare" },
     { kind: "prefix", dependency: "@lingui/core" },
   ])("rejects a workspace that declares $dependency ($kind)", ({ dependency }) => {
