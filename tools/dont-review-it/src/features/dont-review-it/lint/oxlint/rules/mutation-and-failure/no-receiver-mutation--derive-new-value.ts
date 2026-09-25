@@ -49,7 +49,7 @@ export const noReceiverMutation = createDontReviewItRule({
     docs: {
       description:
         "Disallow calling a method that writes to a receiver which is not an array - a collection, a moment, a query string, a form, a sink, or a class of one's own whose body writes to `this` - so a changed value always appears as a newly derived binding",
-      relatedGuidelines: [".claude/skills/reviews/references/failure-handling-and-fallbacks.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/never-hide-a-failure.md"],
     },
     messages: {
       builtinReceiverMutation:

@@ -80,7 +80,9 @@ export const noSutIndependentAssertion = createDontReviewItRule({
     docs: {
       description:
         "Disallow an assertion whose operands never went through the code under test, so a passing assertion states something the code has to keep true rather than something the spec compared with itself",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       sutIndependentAssertion:
