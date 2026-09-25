@@ -7,8 +7,7 @@ import { Effect, Layer } from "effect";
 
 import { CoreRecords } from "./core-records.ts";
 import { transcribeJob } from "./transcribe-job.ts";
-import { Transcriber } from "./transcriber.ts";
-import { TranscriptionFailed } from "./transcription-failed.ts";
+import { Transcriber, type WorkerModel } from "./transcriber.ts";
 
 import type { Transcript } from "./transcript.ts";
 
@@ -33,11 +32,40 @@ const heard: Transcript = {
   ],
 };
 
-function services(transcribe: Parameters<typeof Transcriber.of>[0]["transcribe"]) {
+const heardOutput = {
+  results: {
+    channels: [
+      {
+        alternatives: [
+          {
+            words: [
+              { end: 1.5, punctuated_word: "始めます。", speaker: 0, start: 0, word: "始めます" },
+              {
+                end: 4.2,
+                punctuated_word: "お願いします。",
+                speaker: 1,
+                start: 1.8,
+                word: "お願いします",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const answering = (output: unknown): WorkerModel => ({ run: () => Promise.resolve(output) });
+
+const rejecting: WorkerModel = {
+  run: () => Promise.reject(new Error("upstream model refused the audio")),
+};
+
+function services(ai: WorkerModel | undefined) {
   return Layer.mergeAll(
     CoreRecords.layer(env.CORE),
     Layer.orDie(FileStore.fromEnvironment(env)),
-    Layer.succeed(Transcriber, Transcriber.of({ transcribe })),
+    Transcriber.layer(ai),
   );
 }
 
@@ -71,6 +99,20 @@ const storedRecording = Effect.fn("storedRecording")(function* storedRecording(w
   return { id, jobId };
 });
 
+const failureAfterTranscribing = Effect.fn("failureAfterTranscribing")(
+  function* failureAfterTranscribing() {
+    yield* migrated;
+    const { id, jobId } = yield* storedRecording(true);
+    const outcome = yield* transcribeJob(jobId);
+    const found = yield* (yield* CoreRecords).findRecording({ recordingId: id });
+    return {
+      outcome: outcome.outcome,
+      status: found.recording.status,
+      failure: found.recording.failure,
+    };
+  },
+);
+
 describe("transcribeJob", () => {
   it.effect("stores the transcript and one speaker row per voice", () =>
     Effect.gen(function* program() {
@@ -86,23 +128,37 @@ describe("transcribeJob", () => {
         { label: 0, person: null },
         { label: 1, person: null },
       ]);
-    }).pipe(Effect.provide(services(() => Effect.succeed(heard)))),
+    }).pipe(Effect.provide(services(answering(heardOutput)))),
   );
 
-  it.effect("marks the recording failed when the model fails", () =>
+  it.effect("marks the recording failed when the model rejects the audio", () =>
     Effect.gen(function* program() {
-      yield* migrated;
-      const { id, jobId } = yield* storedRecording(true);
-      const outcome = yield* transcribeJob(jobId);
-      const found = yield* (yield* CoreRecords).findRecording({ recordingId: id });
-      assert.deepStrictEqual(outcome, { jobId, outcome: "failed" });
-      assert.strictEqual(found.recording.status, RECORDING_STATUS.failed);
-      assert.strictEqual(found.recording.failure, "model_rejected");
-    }).pipe(
-      Effect.provide(
-        services(() => Effect.fail(new TranscriptionFailed({ reason: "model_rejected" }))),
-      ),
-    ),
+      assert.deepStrictEqual(yield* failureAfterTranscribing(), {
+        outcome: "failed",
+        status: RECORDING_STATUS.failed,
+        failure: "model_rejected",
+      });
+    }).pipe(Effect.provide(services(rejecting))),
+  );
+
+  it.effect("marks the recording failed when the model answers in a shape it cannot read", () =>
+    Effect.gen(function* program() {
+      assert.deepStrictEqual(yield* failureAfterTranscribing(), {
+        outcome: "failed",
+        status: RECORDING_STATUS.failed,
+        failure: "output_unreadable",
+      });
+    }).pipe(Effect.provide(services(answering({ results: {} })))),
+  );
+
+  it.effect("marks the recording failed when no model is bound", () =>
+    Effect.gen(function* program() {
+      assert.deepStrictEqual(yield* failureAfterTranscribing(), {
+        outcome: "failed",
+        status: RECORDING_STATUS.failed,
+        failure: "ai_unbound",
+      });
+    }).pipe(Effect.provide(services(undefined))),
   );
 
   it.effect("marks the recording failed when its audio is gone", () =>
@@ -112,7 +168,7 @@ describe("transcribeJob", () => {
       yield* transcribeJob(jobId);
       const found = yield* (yield* CoreRecords).findRecording({ recordingId: id });
       assert.strictEqual(found.recording.failure, "audio_missing");
-    }).pipe(Effect.provide(services(() => Effect.succeed(heard)))),
+    }).pipe(Effect.provide(services(answering(heardOutput)))),
   );
 
   it.effect("ignores a job that a retry has replaced", () =>
@@ -120,6 +176,6 @@ describe("transcribeJob", () => {
       yield* migrated;
       const outcome = yield* transcribeJob("replaced-job");
       assert.deepStrictEqual(outcome, { jobId: "replaced-job", outcome: "superseded" });
-    }).pipe(Effect.provide(services(() => Effect.succeed(heard)))),
+    }).pipe(Effect.provide(services(answering(heardOutput)))),
   );
 });

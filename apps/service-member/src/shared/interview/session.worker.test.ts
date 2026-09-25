@@ -14,7 +14,9 @@ import { Interviewer } from "./interviewer.ts";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
 
-type Understand = Parameters<typeof Interviewer.of>[0]["understand"];
+import type { Scope } from "effect";
+
+type Network = ReturnType<typeof setupNetwork>;
 
 const DAILY_TURNS = 60;
 const NICKNAME_LIMIT = 30;
@@ -23,6 +25,7 @@ const layoutEndpoint =
   "https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions";
 const layoutAccess = { accountId: "account", apiKey: "test-token" } as const;
 const stripeTestLayer = Layer.orDie(Stripe.fromEnvironment(appEnvironment()));
+const unavailable = 503;
 
 function layoutCompletion(content: unknown): Response {
   return HttpResponse.json({
@@ -49,22 +52,30 @@ function addMember(id: string): Effect.Effect<unknown, unknown> {
   );
 }
 
-function services(
-  understand: Understand,
-): Layer.Layer<
-  | Layer.Success<typeof TestDatabase>
-  | Interviewer
-  | ProfileLayoutAssembler
-  | Layer.Success<typeof stripeTestLayer>,
-  Layer.Error<typeof TestDatabase>
-> {
-  return Layer.mergeAll(
-    TestDatabase,
-    Layer.succeed(Interviewer, Interviewer.of({ understand })),
-    ProfileLayoutAssembler.layer(),
-    stripeTestLayer,
+function withModel(
+  ...handlers: Parameters<Network["use"]>
+): Effect.Effect<Network, never, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.sync(() => {
+      const network = setupNetwork();
+      network.configure({ onUnhandledFrame: "error" });
+      network.use(...handlers);
+      network.enable();
+      return network;
+    }),
+    (network) =>
+      Effect.sync(() => {
+        network.disable();
+      }),
   );
 }
+
+const withInterviewModel = Layer.mergeAll(
+  TestDatabase,
+  Interviewer.layer(layoutAccess),
+  ProfileLayoutAssembler.layer(),
+  stripeTestLayer,
+);
 
 const withoutModel = Layer.mergeAll(
   TestDatabase,
@@ -91,19 +102,18 @@ it.effect("an interview that was left midway resumes with the same conversation"
 
 it.effect("what the model understood is applied to the sheet", () => {
   const message = "大阪の学生さんなんですね。なんて呼べばいいですか？";
-  function understand(): ReturnType<Understand> {
-    return Effect.succeed({
-      source: "model",
-      understanding: {
-        ask: "nickname",
-        finish: false,
-        message,
-        skip: false,
-        values: { area: "大阪", occupation: "学生" },
-      },
-    });
-  }
   return Effect.gen(function* program() {
+    yield* withModel(
+      http.post(layoutEndpoint, () =>
+        layoutCompletion({
+          ask: "nickname",
+          finish: false,
+          message,
+          skip: false,
+          values: { area: "大阪", occupation: "学生" },
+        }),
+      ),
+    );
     yield* addMember("member");
     const view = yield* takeTurn("member", { kind: "text", text: "大阪で学生をしています" });
     assert.deepStrictEqual(
@@ -117,24 +127,21 @@ it.effect("what the model understood is applied to the sheet", () => {
       ],
     );
     assert.deepStrictEqual(view.messages.at(-1), { role: "interviewer", text: message });
-  }).pipe(Effect.provide(services(understand)));
+  }).pipe(Effect.provide(withInterviewModel));
 });
 
-it.effect(
-  "a failing model is returned to the member instead of continuing as rules success",
-  () => {
-    const failure = new UnderstandingFailed({ reason: "model_failed" });
-    function understand(): ReturnType<Understand> {
-      return Effect.fail(failure);
-    }
-    return Effect.gen(function* program() {
-      yield* addMember("member");
-      const refused = yield* takeTurn("member", { kind: "text", text: "たろう" }).pipe(Effect.flip);
-      assert.deepStrictEqual(refused, failure);
-      const opened = yield* openInterview("member");
-      assert.deepStrictEqual(opened.messages, [greeting]);
-    }).pipe(Effect.provide(services(understand)));
-  },
+it.effect("a failing model is returned to the member instead of continuing as rules success", () =>
+  Effect.gen(function* program() {
+    yield* withModel(
+      http.post(layoutEndpoint, () => new HttpResponse(undefined, { status: unavailable })),
+    );
+    yield* addMember("member");
+    const refused = yield* takeTurn("member", { kind: "text", text: "たろう" }).pipe(Effect.flip);
+    assert.instanceOf(refused, UnderstandingFailed);
+    assert.strictEqual(refused.reason, "model_failed");
+    const opened = yield* openInterview("member");
+    assert.deepStrictEqual(opened.messages, [greeting]);
+  }).pipe(Effect.provide(withInterviewModel)),
 );
 
 it.effect("saving keeps the sheet and is refused while questions remain", () =>
@@ -201,24 +208,12 @@ it.effect("a stored conversation that no longer matches the schema starts over",
 
 it.effect("saving stores a model-assembled layout with the sheet", () =>
   Effect.gen(function* program() {
-    yield* Effect.acquireRelease(
-      Effect.sync(() => {
-        const network = setupNetwork();
-        network.configure({ onUnhandledFrame: "error" });
-        network.use(
-          http.post(layoutEndpoint, () =>
-            layoutCompletion({
-              blocks: [{ kind: "identity" }, { kind: "sheet-nickname" }, { kind: "actions" }],
-            }),
-          ),
-        );
-        network.enable();
-        return network;
-      }),
-      (network) =>
-        Effect.sync(() => {
-          network.disable();
+    yield* withModel(
+      http.post(layoutEndpoint, () =>
+        layoutCompletion({
+          blocks: [{ kind: "identity" }, { kind: "sheet-nickname" }, { kind: "actions" }],
         }),
+      ),
     );
     yield* addMember("member");
     yield* takeTurn("member", { kind: "text", text: "たろう" });
