@@ -158,6 +158,7 @@ describe("member MCP authorization", () => {
           {
             cancelAtPeriodEnd: false,
             currentPeriodEnd: DateTime.toDate(DateTime.makeUnsafe("2099-01-01T00:00:00.000Z")),
+            currentPeriodStart: undefined,
             memberId: granted.userId,
             status: SUBSCRIPTION_STATUS.active,
             stripeCustomerId: "cus_sender",
