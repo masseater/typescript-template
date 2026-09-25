@@ -57,7 +57,8 @@ description: テンプレートを自分のサービス向けにカスタマイ�
 - Alchemy によるインフラ適用:
   - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。
   - main のルールは `.github/workflows/repository-settings.yml` が main への push ごとに適用します。リポジトリ全体の設定なので、staging・production とは別の Environment `repository-settings` を使います。
-    - 最初に一度だけ、Environment `repository-settings` を作り、secret に `TEMPLATE_GITHUB_ADMIN_TOKEN`（このリポジトリの Administration を書ける fine-grained token）、`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（Alchemy の state を置く Cloudflare アカウント）を置きます。3 つが揃うまで workflow は何もしません。
+    - 最初に一度だけ、Environment `repository-settings` を作り、secret に `TEMPLATE_GITHUB_ADMIN_TOKEN`（このリポジトリの Administration を書ける fine-grained token）、`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（Alchemy の state を置く Cloudflare アカウント）を置きます。どれも置かなければ workflow は何もせず、一部だけなら失敗します。
+    - 適用は workflow だけが行います。手元からは適用しません。
     - 適用すると、この Environment は main からしか使えなくなります。他のブランチの workflow から token を読まれないためです。
     - 手元で確かめるときは、`infra/github` の `vp run plan` が [GitHub CLI](https://cli.github.com/) のログインで差分を出します。
   - `infra/wiki-publisher` の `vp run plan` と `vp run deploy` は、手元の GitHub CLI のログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。

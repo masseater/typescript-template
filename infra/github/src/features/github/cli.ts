@@ -40,7 +40,7 @@ const Command = Schema.Union([
   Schema.Tuple([Schema.Literal("plan"), ApplyUnit]),
   Schema.Tuple([
     Schema.Literal("deploy"),
-    ApplyUnit,
+    Schema.Literal("wiki-publisher"),
     Schema.Literal("--confirm-plan"),
     Confirmation,
   ]),
