@@ -34,6 +34,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - 置き場所は Environment `staging` と `production` です。リポジトリ secret には置きません。
   - `staging` の必須キーが揃っているとき、main への統合が staging へ適用します。1つも無いときは適用を始めず、一部だけあるときは失敗します。
   - `production` は Actions の deploy を `workflow_dispatch` で target `production` にしたときだけ適用します。Environment に承認者を付けます。
+  - 計画にリソースの削除・置き換え・既存リソースの取り込みがあると、deploy はそのスタックの手前で止まり、Environment `<環境名>-removal-approval` の承認を待ちます。Actions の実行画面の「Review deployments」で承認すると、止まったスタックから同じコミットで適用を続けます。
   - 両方でキー名は同じです。`TEMPLATE_PREFIX` と、そこから決まる origin・送信ドメインは環境ごとに分けます。
   - 必須キーは `libs/observability/src/features/observability/deployment-keys.ts` の `deploymentKeys` です。
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
@@ -60,6 +61,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - 最初に一度だけ、Environment `repository-settings` を作り、secret に `TEMPLATE_GITHUB_ADMIN_TOKEN`（このリポジトリの Administration を書ける fine-grained token）、`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（Alchemy の state を置く Cloudflare アカウント）を置きます。どれも置かなければ workflow は何もせず、一部だけなら失敗します。
     - 適用は workflow だけが行います。手元からは適用しません。
     - 適用すると、この Environment は main からしか使えなくなります。他のブランチの workflow から token を読まれないためです。
+    - 同じ適用で Environment `staging-removal-approval`・`production-removal-approval` も作ります。承認者は `TEMPLATE_GITHUB_ADMIN_TOKEN` の持ち主です。
     - 手元で確かめるときは、`infra/github` の `vp run plan` が [GitHub CLI](https://cli.github.com/) のログインで差分を出します。
   - `infra/wiki-publisher` の `vp run plan` と `vp run deploy` は、手元の GitHub CLI のログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。
     - 初回の deploy は端末に `http://127.0.0.1:<port>/` を出して待ちます。ブラウザで開くと GitHub の App 作成画面へ進むので、作成を押します。App の名前は `{TEMPLATE_PREFIX} wiki publisher` で、権限は Contents と Pull requests の書き込みだけです。

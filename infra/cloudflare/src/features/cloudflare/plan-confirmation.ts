@@ -2,11 +2,14 @@ import { NodeServices } from "@effect/platform-node";
 import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
 import { Crypto, Effect, Predicate, Redacted } from "effect";
 
+import { handOffApproval } from "./approval-handoff.ts";
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
 
 import type { Stack as StackRoute } from "alchemy/Alchemist";
 import type { Plan } from "alchemy/Plan";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
+import type { PendingApproval } from "./approval-handoff.ts";
+import type { StackName } from "./stacks.ts";
 
 type RowAction = PlannedAction["action"] | PlannedResource["action"];
 
@@ -221,14 +224,6 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   planned: PlannedStack,
   approval: { readonly confirmation: string; readonly subject: string },
 ) {
-  const refusals = refusedRows(planned);
-  const code = refusals[0]?.code;
-  if (code !== undefined) {
-    return yield* new CloudflareFailure({
-      code,
-      keys: refusals.filter((row) => row.code === code).map((row) => row.id),
-    });
-  }
   if (planConfirmation(planned, approval.subject) !== approval.confirmation) {
     return yield* new CloudflareFailure({
       code: "plan_confirmation_mismatch",
@@ -237,5 +232,46 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   }
 });
 
-export { acceptPlan, planConfirmation, planReport, plannedStack };
+function needsApproval(planned: PlannedStack): boolean {
+  return refusedRows(planned).length > 0;
+}
+
+const acceptUnreviewedPlan = Effect.fn("acceptUnreviewedPlan")(function* acceptUnreviewedPlan(
+  planned: PlannedStack,
+) {
+  const refusals = refusedRows(planned);
+  const code = refusals[0]?.code;
+  if (code !== undefined) {
+    return yield* new CloudflareFailure({
+      code,
+      keys: refusals.filter((row) => row.code === code).map((row) => row.id),
+    });
+  }
+});
+
+const acceptOrderedPlan = Effect.fn("acceptOrderedPlan")(function* acceptOrderedPlan(
+  planned: PlannedStack,
+  order: Readonly<{
+    approval: PendingApproval | undefined;
+    approvalOutput: string | undefined;
+    stack: StackName;
+    subject: string;
+  }>,
+) {
+  const { approval, stack, subject } = order;
+  if (approval?.stack === stack) {
+    yield* acceptPlan(planned, { confirmation: approval.confirmation, subject });
+    return "apply" as const;
+  }
+  if (approval === undefined && needsApproval(planned)) {
+    const confirmation = planConfirmation(planned, subject);
+    if (yield* handOffApproval({ confirmation, stack }, order.approvalOutput)) {
+      return "hold" as const;
+    }
+  }
+  yield* acceptUnreviewedPlan(planned);
+  return "apply" as const;
+});
+
+export { acceptOrderedPlan, acceptPlan, planConfirmation, planReport, plannedStack };
 export type { PlannedStack, PlanReport, PlanRow, RowAction };

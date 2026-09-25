@@ -6,7 +6,15 @@ import * as GitHub from "alchemy/GitHub";
 import { Effect } from "effect";
 
 import { rulesetProviders } from "./src/features/github/credentials.ts";
-import { originRepository, repositoryStage } from "./src/features/github/repository.ts";
+import {
+  removalApprovalEnvironment,
+  removalApprovalEnvironments,
+} from "./src/features/github/removal-approval.ts";
+import {
+  operatorLogin,
+  originRepository,
+  repositoryStage,
+} from "./src/features/github/repository.ts";
 import { mainBranchRuleset, rulesApplyEnvironmentSettings } from "./src/features/github/rules.ts";
 
 export default Stack(
@@ -19,6 +27,13 @@ export default Stack(
       Effect.gen(function* repositoryRules() {
         const mainRuleset = yield* GitHub.Ruleset("Main", mainBranchRuleset(address));
         yield* GitHub.Environment("RulesApply", rulesApplyEnvironmentSettings(address));
+        const reviewer = yield* Effect.orDie(operatorLogin());
+        for (const environment of removalApprovalEnvironments) {
+          yield* GitHub.Environment(
+            environment,
+            removalApprovalEnvironment(address, { environment, reviewer }),
+          );
+        }
         return { rulesetId: mainRuleset.rulesetId };
       }),
     );
