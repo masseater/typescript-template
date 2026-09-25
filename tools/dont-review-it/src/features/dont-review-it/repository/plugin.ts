@@ -35,7 +35,7 @@ import {
 } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
 import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
-import { warekiFormatVisitor } from "./wareki-format.ts";
+import { warekiFormatVisitor, warekiInDataSegmentVisitor } from "./wareki-format.ts";
 
 const metadata = (violation: string): RuleMeta => {
   return {
@@ -421,6 +421,12 @@ const projectPlugin = definePlugin({
       create: warekiFormatVisitor,
       meta: metadata(
         "画面に出す日付は Intl.DateTimeFormat ではなく @repo/ui の formatWarekiDate / formatWarekiMonth を使ってください。和暦と Temporal の入口を一本に保つためです。",
+      ),
+    },
+    "wareki-in-data-segment": {
+      create: warekiInDataSegmentVisitor,
+      meta: metadata(
+        "和暦の書式の関数は FSD の api と model のセグメントから呼べません。取得の結果と Atom には日時をそのまま持たせ、書式は描画の中で当ててください。",
       ),
     },
     "worker-fetch": {

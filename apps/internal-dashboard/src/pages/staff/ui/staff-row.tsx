@@ -5,6 +5,7 @@ import {
   SelectField,
   TableCell,
   TableRow,
+  formatWarekiDate,
   type Confirmation,
 } from "@repo/ui";
 
@@ -51,7 +52,7 @@ function StaffRow({
           onValueChange={action.handlePermissionChange}
         />
       </TableCell>
-      <TableCell>{member.registeredOn}</TableCell>
+      <TableCell>{formatWarekiDate(member.createdAt)}</TableCell>
       <TableCell>
         {self ? null : (
           <Button
