@@ -71,7 +71,7 @@ it.effect("a plan that removes resources waits for the approval job and then app
       assert.include(caller, `needs.production.outputs.${output}`);
     }
     assert.include(callee, 'deploy:ordered --approve "$APPROVAL_STACK" "$APPROVAL_CONFIRMATION"');
-    assert.include(callee, "verify:removal-approval");
+    assert.include(callee, "require:removal-approval");
     assert.include(callee, "commit: ${{ steps.checkout.outputs.commit }}");
     assert.include(caller, "ref: ${{ needs.staging.outputs.commit }}");
     assert.include(caller, "ref: ${{ needs.production.outputs.commit }}");

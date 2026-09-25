@@ -72,7 +72,7 @@ jobs:
         if: steps.prepare.outputs.configured == 'true' && inputs.approval-stack == ''
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true' && inputs.approval-stack != ''
-        run: vp run --filter @repo/infra-github verify:removal-approval "$APPROVAL_ENVIRONMENT"
+        run: vp run --filter @repo/infra-github require:removal-approval "$APPROVAL_ENVIRONMENT"
         env:
           APPROVAL_ENVIRONMENT: ${{ inputs.environment }}-removal-approval
           GITHUB_TOKEN: ${{ github.token }}
