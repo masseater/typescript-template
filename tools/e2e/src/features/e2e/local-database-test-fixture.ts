@@ -6,7 +6,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { repositoryRoot, vitePlus } from "./repository-test-fixture.ts";
 
-const databasePackage = "@repo/db-local";
+const databasePackage = "@repo/dev";
 const prefix = "template-e2e-";
 
 type DatabaseEnvironment = {

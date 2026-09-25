@@ -19,7 +19,7 @@ const generatedTreeExclusions = [
 describe("effectDiagnostics", () => {
   const it = test
     .extend("libraryDiagnostics", () =>
-      effectDiagnostics(paths.join(repositoryRoot, "libs/db-local")))
+      effectDiagnostics(paths.join(repositoryRoot, "libs/config")))
     .extend("rootDiagnostics", () => effectDiagnostics(repositoryRoot))
     .extend("repositoryRanges", () => Effect.runPromise(workspaceDependencyRanges(repositoryRoot)));
 
@@ -33,7 +33,7 @@ describe("effectDiagnostics", () => {
         env: [...telemetryEnv],
         input: [
           ...taskInput,
-          ...(repositoryRanges.get("libs/db-local") ?? []).flatMap((directory) => [
+          ...(repositoryRanges.get("libs/config") ?? []).flatMap((directory) => [
             { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
             { base: "workspace", pattern: `${directory}/**/package.json` },
             { base: "workspace", pattern: `${directory}/**/tsconfig*.json` },

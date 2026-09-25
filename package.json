@@ -13,7 +13,6 @@
     "@repo/ai-native": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/db-local": "workspace:*",
     "@repo/dont-review-it": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@repo/telemetry": "workspace:*",

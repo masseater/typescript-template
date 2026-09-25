@@ -63,7 +63,7 @@ describe("lifecycle", () => {
   });
 });
 
-const libraryRoot = paths.join(repositoryRoot, "libs/db-local");
+const libraryRoot = paths.join(repositoryRoot, "libs/config");
 const applicationRoot = paths.join(repositoryRoot, "apps/service-admin");
 
 describe("effectRun", () => {

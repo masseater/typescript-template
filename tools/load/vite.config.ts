@@ -29,7 +29,7 @@ export default defineConfig({
         dependsOn: [
           "@repo/local#up",
           "@repo/dev#setup",
-          "@repo/db-local#db:migrate:local",
+          "@repo/dev#db:migrate:local",
           "@repo/service-member#build",
         ],
       },

@@ -1,11 +1,11 @@
 import { query, schema } from "@repo/db";
+import { RemoteFailure, loadRemoteMigrations, migrateD1 } from "@repo/db/migrations";
 import {
   EmptyTestDatabase,
   TestBinding,
   deployMigrations,
   executeD1RawBatch,
-} from "@repo/db-local";
-import { RemoteFailure, loadRemoteMigrations, migrateD1 } from "@repo/db/migrations";
+} from "@repo/db/node-testing";
 import { DateTime, Effect, ManagedRuntime } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";

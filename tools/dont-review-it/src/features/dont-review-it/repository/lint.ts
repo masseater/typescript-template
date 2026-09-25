@@ -702,7 +702,6 @@ const lintOptions = {
     {
       files: [
         "libs/db/src/features/db/security.ts",
-        "libs/db/src/features/db/local-platform.test.ts",
         "libs/db/src/features/db/identity-schema.ts",
         "infra/budget-monitor/src/features/budget-monitor/decision.ts",
         "infra/error-monitor/src/features/error-monitor/telemetry.ts",
@@ -1006,13 +1005,6 @@ const lintOptions = {
       },
     },
 
-    {
-      files: ["libs/db/src/features/db/local-platform.test.ts"],
-      rules: {
-        "dont-review-it/no-detached-test-file--move-beside-source": LINT_SEVERITY.OFF,
-        "dont-review-it/require-it-only-expect--move-setup-into-fixture": LINT_SEVERITY.OFF,
-      },
-    },
     {
       files: [
         "libs/db/src/features/db/database-test-fixture.ts",

@@ -18,6 +18,8 @@ export default defineConfig({
       browser: { cache: false, command: "./src/features/dev/cli.ts browser" },
       "browser-command": { cache: false, command: "./src/features/dev/cli.ts browser-command" },
       "ci-runner": { cache: false, command: "./src/features/dev/cli.ts ci-runner" },
+      "db:bootstrap:local": { cache: false, command: "./src/features/dev/bootstrap-local.ts" },
+      "db:migrate:local": { cache: false, command: "./src/features/dev/migrate-local.ts" },
       connect: { cache: false, command: "./src/features/dev/cli.ts connect" },
       logs: { cache: false, command: "./src/features/dev/cli.ts logs" },
       operator: { cache: false, command: "./src/features/dev/cli.ts operator" },

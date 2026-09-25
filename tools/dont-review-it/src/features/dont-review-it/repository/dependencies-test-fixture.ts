@@ -86,9 +86,6 @@ const developmentOnlyDependencyViolations = (
     if (area !== "apps" && area !== "libs") {
       return [];
     }
-    if (file === "libs/db-local/package.json") {
-      return [];
-    }
     const dependencies = field(manifest, "dependencies");
     if (typeof dependencies !== "object" || dependencies === null) {
       return [];
@@ -105,9 +102,6 @@ const developmentOnlyDependencyViolations = (
 const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ area, file, manifest }) => {
     if (area !== "libs") {
-      return [];
-    }
-    if (file === "libs/db-local/package.json") {
       return [];
     }
     const bin = field(manifest, "bin");

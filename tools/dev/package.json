@@ -17,7 +17,6 @@
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/db-local": "workspace:*",
     "@repo/local": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",
@@ -27,9 +26,11 @@
     "otpauth": "catalog:",
     "playwright": "catalog:",
     "portless": "0.15.6",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "wrangler": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",

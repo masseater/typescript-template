@@ -395,9 +395,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:libs/db
-      '@repo/db-local':
+      '@repo/dev':
         specifier: workspace:*
-        version: link:libs/db-local
+        version: link:tools/dev
       '@repo/dont-review-it':
         specifier: workspace:*
         version: link:tools/dont-review-it
@@ -1095,9 +1095,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.117(effect@4.0.0-rc.117)(vitest@5.0.1)
-      '@repo/db-local':
-        specifier: workspace:*
-        version: link:../../libs/db-local
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1562,49 +1559,9 @@ importers:
       drizzle-kit:
         specifier: 'catalog:'
         version: 1.0.0-rc.5-ab785fc
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vite-plus:
-        specifier: 'catalog:'
-        version: 1.0.0-rc.0(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
-
-  libs/db-local:
-    dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.117(effect@4.0.0-rc.117)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@repo/cli':
-        specifier: workspace:*
-        version: link:../cli
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../config
-      '@repo/db':
-        specifier: workspace:*
-        version: link:../db
-      effect:
-        specifier: 'catalog:'
-        version: 4.0.0-rc.117
       miniflare:
         specifier: 'catalog:'
         version: 5.20260917.0-alpha(@types/node@26.6.1)
-      wrangler:
-        specifier: 'catalog:'
-        version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
-    devDependencies:
-      '@cloudflare/workers-types':
-        specifier: 'catalog:'
-        version: 5.20260916.1
-      '@repo/telemetry':
-        specifier: workspace:*
-        version: link:../telemetry
-      '@repo/vite-config':
-        specifier: workspace:*
-        version: link:../vite-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.1
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2233,9 +2190,6 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@repo/db-local':
-        specifier: workspace:*
-        version: link:../../libs/db-local
       '@repo/local':
         specifier: workspace:*
         version: link:../../infra/local
@@ -2266,7 +2220,13 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 1.0.0-rc.0(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 'catalog:'
+        version: 5.20260916.1
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.117(effect@4.0.0-rc.117)(vitest@5.0.1)

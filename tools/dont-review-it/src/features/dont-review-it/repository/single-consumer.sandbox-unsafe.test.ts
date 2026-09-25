@@ -287,6 +287,41 @@ describe("single consumer findings", () => {
     expect(findings.map((finding) => finding.id)).toStrictEqual(["package:@repo/runner"]);
   });
 
+  const fixtureOwner = workspace("libs/store/package.json", {
+    exports: { ".": "./src/index.ts", "./node-testing": "./src/node-test-fixture.ts" },
+    name: "@repo/store",
+  });
+
+  const fixtureConsumers = [
+    fixtureOwner,
+    workspace("libs/one/package.json", { dependencies: { "@repo/store": "workspace:*" } }),
+    workspace("libs/two/package.json", { dependencies: { "@repo/store": "workspace:*" } }),
+  ];
+
+  it("counts the owner as a subpath importer when its own files import the target", () => {
+    expect.hasAssertions();
+    expect(
+      singleConsumerFindings(fixtureConsumers, [
+        source("libs/one/src/index.test.ts", 'import "@repo/store/node-testing";\n'),
+        source(
+          "libs/store/src/features/store/schema.test.ts",
+          'import "../../node-test-fixture.ts";\n',
+        ),
+      ]),
+    ).toStrictEqual([]);
+  });
+
+  it("reports a subpath whose only importer is one other workspace", () => {
+    expect.hasAssertions();
+    const findings = singleConsumerFindings(fixtureConsumers, [
+      source("libs/one/src/index.test.ts", 'import "@repo/store/node-testing";\n'),
+      source("libs/store/src/features/store/schema.test.ts", 'import "../../index.ts";\n'),
+    ]);
+    expect(findings.map((finding) => finding.id)).toStrictEqual([
+      "subpath:@repo/store/node-testing",
+    ]);
+  });
+
   it("reports a wildcard subpath with one importer", () => {
     expect.hasAssertions();
     const findings = singleConsumerFindings(
