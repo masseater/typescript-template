@@ -107,6 +107,10 @@ describe("retired server-state imports", () => {
       'import { createTRPCClient } from "@trpc/client"; export { createTRPCClient };',
     ],
     ["react-query", 'export * from "react-query";'],
+    [
+      "fumadocs-core/search/client",
+      'import { useDocsSearch } from "fumadocs-core/search/client"; export { useDocsSearch };',
+    ],
   ] as const)("rejects %s imports", ([_label, code]) => {
     expect.hasAssertions();
     expect(
