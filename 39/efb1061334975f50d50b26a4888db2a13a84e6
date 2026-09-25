@@ -1,1 +1,6 @@
-例であることを明記し、「自前のまま残してよいもの」の節を削除
+Revision history for #1948:
+
+rev 2 (content) 2026-09-25 02:20 UTC — 例であることを明記し、「自前のまま残してよいもの」の節を削除
+rev 1 (initial) 2026-09-25 02:20 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1948,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"732b13d187eadb24e523bc969d1abbd6acd25467","timestamp_iso":"2026-09-25T02:20:16Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"732b13d187eadb24e523bc969d1abbd6acd25467","new_sha":"39efb1061334975f50d50b26a4888db2a13a84e6","timestamp_iso":"2026-09-25T02:20:16Z","reason":"例であることを明記し、「自前のまま残してよいもの」の節を削除","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/732b13d187eadb24e523bc969d1abbd6acd25467...39efb1061334975f50d50b26a4888db2a13a84e6"}]} -->
