@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { noop } from "es-toolkit";
-import { expect, screen, userEvent } from "storybook/test";
+import { expect, screen, userEvent, waitFor } from "storybook/test";
 
 import preview, { playTask } from "../../../../../storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
@@ -40,6 +40,37 @@ export const Opened = meta.story({
           screen.findByRole("menuitem", { name: "権限を変更" }),
         );
         yield* playTask(() => expect(menuItem).toBeInTheDocument());
+      }),
+    ),
+});
+
+export const ClosedByTrigger = meta.story({
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* toggleMenu() {
+        const trigger = canvas.getByRole("button", { name: "利用者の操作" });
+        yield* playTask(() => userEvent.click(trigger));
+        yield* playTask(() => screen.findByRole("menu"));
+        yield* playTask(() => userEvent.click(trigger));
+        const menuHasCollapsed = (): Promise<void> =>
+          expect(trigger).toHaveAttribute("aria-expanded", "false");
+        yield* playTask(() => waitFor(menuHasCollapsed));
+        yield* playTask(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+      }),
+    ),
+});
+
+export const ClosedByOutsideClick = meta.story({
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* dismissMenu() {
+        const trigger = canvas.getByRole("button", { name: "利用者の操作" });
+        yield* playTask(() => userEvent.click(trigger));
+        yield* playTask(() => screen.findByRole("menu"));
+        yield* playTask(() => userEvent.click(globalThis.document.body));
+        const menuHasCollapsed = (): Promise<void> =>
+          expect(trigger).toHaveAttribute("aria-expanded", "false");
+        yield* playTask(() => waitFor(menuHasCollapsed));
       }),
     ),
 });

@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode } from "react";
+import { useId, type ReactElement } from "react";
 
 import { localState } from "../../local-state";
 import { DropdownMenuContext } from "./dropdown-menu-context";
@@ -6,24 +6,26 @@ import { DropdownMenuContext } from "./dropdown-menu-context";
 import type { Children } from "./types";
 
 const useMenuOpen = localState(false);
-const useMenuPanel = localState<ReactNode>(null);
 
 const DropdownMenu = ({ children }: Children): ReactElement => {
-  const [isOpen, setIsOpen] = useMenuOpen();
-  const [menuPanel, setMenuPanel] = useMenuPanel();
+  const [open, setOpen] = useMenuOpen();
+  const triggerId = useId();
   return (
     <DropdownMenuContext
       value={{
         close: () => {
-          setIsOpen(false);
+          setOpen(false);
         },
-        isOpen,
-        menuPanel,
-        setIsOpen,
-        setMenuPanel,
+        open,
+        toggle: () => {
+          setOpen((wasOpen) => !wasOpen);
+        },
+        triggerId,
       }}
     >
-      <div data-slot="dropdown-menu">{children}</div>
+      <div data-slot="dropdown-menu" className="relative inline-flex">
+        {children}
+      </div>
     </DropdownMenuContext>
   );
 };

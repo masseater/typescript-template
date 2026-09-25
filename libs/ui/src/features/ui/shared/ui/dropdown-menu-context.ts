@@ -1,11 +1,10 @@
-import { createContext, use, type ReactElement, type ReactNode } from "react";
+import { createContext, use } from "react";
 
 type DropdownMenuContextValue = {
   readonly close: () => void;
-  readonly menuPanel: ReactNode;
-  readonly isOpen: boolean;
-  readonly setMenuPanel: (next: null | ReactElement) => void;
-  readonly setIsOpen: (next: boolean | ((current: boolean) => boolean)) => void;
+  readonly open: boolean;
+  readonly toggle: () => void;
+  readonly triggerId: string;
 };
 
 const DropdownMenuContext = createContext<DropdownMenuContextValue | undefined>(undefined);

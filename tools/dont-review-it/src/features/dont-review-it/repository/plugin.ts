@@ -5,6 +5,7 @@ import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { appFrameSidebarVisitor } from "./app-frame-sidebar.ts";
 import { atomServerDataVisitor } from "./atom-server-data-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
+import { effectAtomSetterVisitor } from "./effect-atom-setter.ts";
 import {
   atomStateVisitor,
   effectFailuresVisitor,
@@ -294,6 +295,12 @@ const projectPlugin = definePlugin({
       create: effectFailuresVisitor,
       meta: metadata(
         "effect を使うファイルでは throw と try/catch を使えません。失敗は Schema.TaggedError で型に載せ、Effect.fail・Effect.try・Effect.tryPromise・Result.try で扱ってください。better-auth のフックが要求する APIError だけは throw できます。",
+      ),
+    },
+    "effect-atom-setter": {
+      create: effectAtomSetterVisitor,
+      meta: metadata(
+        "useEffect と useLayoutEffect の本体で Atom の setter を呼べません。props や描画の値を Atom に写すと、描画のたびに書き込みと描画のやり直しが起きます。派生値は描画の中で計算し、操作の結果はイベントや useAction の run の中で書いてください。購読のコールバックの中で呼ぶのは構いません。",
       ),
     },
     "effect-event-deps": {
