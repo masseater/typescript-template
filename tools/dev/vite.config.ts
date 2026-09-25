@@ -23,7 +23,6 @@ export default defineConfig({
       connect: { cache: false, command: "./src/features/dev/cli.ts connect" },
       logs: { cache: false, command: "./src/features/dev/cli.ts logs" },
       operator: { cache: false, command: "./src/features/dev/cli.ts operator" },
-      "prepare-browser": { cache: false, command: "./src/features/dev/prepare-browser.ts" },
       observe: { cache: false, command: "./src/features/dev/observe/cli.ts" },
       "check:exported": { cache: false, command: "./src/features/dev/observe/receiver-check.ts" },
       symbolicate: { cache: false, command: "./src/features/dev/observe/symbolicate.ts" },
