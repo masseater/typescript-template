@@ -9,7 +9,7 @@ import {
   useToast,
 } from "@repo/ui";
 import { ChevronDownIcon } from "lucide-react";
-import { useEffect, type ReactElement, type ReactNode, type ReactPortal } from "react";
+import { type ReactElement, type ReactNode, type ReactPortal } from "react";
 
 import { useSignOut } from "./use-sign-out";
 
@@ -31,13 +31,10 @@ const AccountMenu = (
   const identity = "email" in props;
   const accountName = identity ? props.name : props.label;
   const destination = identity ? undefined : props.destination;
-  const { action, signOut } = useSignOut(destination);
   const notify = useToast();
-  useEffect(() => {
-    if (action.error !== undefined) {
-      notify("error", action.error);
-    }
-  }, [action.error, notify]);
+  const { action, signOut } = useSignOut(destination ?? "/login", (failureMessage) => {
+    notify("error", failureMessage);
+  });
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label={`${accountName} のアカウントメニュー`}>

@@ -12,6 +12,7 @@ import { BaseWebProvider } from "../src/features/ui/baseweb-provider.tsx";
 import { MotionProvider } from "../src/features/ui/motion-provider.tsx";
 import { FieldValidationMessageProvider } from "../src/features/ui/shared/ui/field-validation-message-provider.tsx";
 import { japaneseFieldValidationMessages } from "../src/features/ui/shared/ui/field-validation-messages.ts";
+import { ToastProvider } from "../src/features/ui/shared/ui/toast-provider.tsx";
 
 import type { ReactElement } from "react";
 
@@ -43,6 +44,14 @@ const storyQueries = (): { readonly queryClient: QueryClient } => ({
   queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
 });
 
+const withToasts = (Story: () => ReactElement): ReactElement => {
+  return (
+    <ToastProvider>
+      <Story />
+    </ToastProvider>
+  );
+};
+
 const withProviders = (Story: () => ReactElement): ReactElement => {
   return (
     <BaseWebProvider>
@@ -59,7 +68,7 @@ const withProviders = (Story: () => ReactElement): ReactElement => {
 
 const preview = definePreview({
   addons: [a11y(), vitest(), msw()],
-  decorators: [withRouter, withQueries, withProviders],
+  decorators: [withRouter, withQueries, withToasts, withProviders],
   loaders: [storyQueries],
   parameters: { a11y: { test: "error" }, layout: "padded" },
   tags: ["test"],

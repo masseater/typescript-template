@@ -281,6 +281,7 @@ const lintOptions = {
         "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
         "project/cross-request-state": LINT_SEVERITY.ERROR,
+        "project/effect-atom-setter": LINT_SEVERITY.ERROR,
         "project/effect-event-deps": LINT_SEVERITY.ERROR,
         "project/effect-failures": LINT_SEVERITY.ERROR,
         "project/effect-stack": LINT_SEVERITY.ERROR,
