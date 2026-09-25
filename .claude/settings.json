@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && if ! command -v vp >/dev/null 2>&1; then echo \"sync-base skipped: vp is not on PATH\" >&2; exit 0; fi && exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && if ! command -v vp >/dev/null 2>&1; then printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"sync-base did not check whether the open pull request is behind its base, because vp is not on PATH. Run `git fetch origin` and compare the branch with its base before pushing.\"}}'; exit 0; fi && exec vp exec -F @repo/ai-native -- sync-base"
           }
         ]
       }
@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && if ! command -v vp >/dev/null 2>&1; then echo \"sync-base skipped: vp is not on PATH\" >&2; exit 0; fi && exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && if ! command -v vp >/dev/null 2>&1; then printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"sync-base did not check whether the open pull request is behind its base, because vp is not on PATH. Run `git fetch origin` and compare the branch with its base before pushing.\"}}'; exit 0; fi && exec vp exec -F @repo/ai-native -- sync-base"
           }
         ]
       }
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && if ! command -v vp >/dev/null 2>&1; then echo \"sync-base skipped: vp is not on PATH\" >&2; exit 0; fi && exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && if ! command -v vp >/dev/null 2>&1; then printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"sync-base did not check whether the open pull request is behind its base, because vp is not on PATH. Run `git fetch origin` and compare the branch with its base before pushing.\"}}'; exit 0; fi && exec vp exec -F @repo/ai-native -- sync-base"
           }
         ]
       }
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/worktree-home/cli.ts"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && exec vp exec -F @repo/ai-native -- worktree-home"
           }
         ]
       }
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/worktree-home/cli.ts"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && exec vp exec -F @repo/ai-native -- worktree-home"
           }
         ]
       }
@@ -74,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/worktree-home/cli.ts"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -f \"$HOME/.config/vite-plus/env\" ]; then . \"$HOME/.config/vite-plus/env\"; fi && exec vp exec -F @repo/ai-native -- worktree-home"
           }
         ]
       }
