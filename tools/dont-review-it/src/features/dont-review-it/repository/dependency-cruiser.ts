@@ -122,7 +122,10 @@ const configuration = {
     {
       comment:
         "配布物に入るコードが devDependencies を取り込んでいます。その依存を dependencies に移すか、import type で型だけを取り込む形にしてください。型の再エクスポートは、その依存をパッケージの公開する面に載せるので同じ扱いです。",
-      from: { path: "^(?:apps|libs|infra)/[^/]+/src/", pathNot: developmentModule },
+      from: {
+        path: "^(?:(?:apps|libs|infra)/[^/]+/src/|tools/dont-review-it/src/features/dont-review-it/lint/)",
+        pathNot: developmentModule,
+      },
       name: "no-development-dependency-in-shipped-code",
       severity: "error",
       to: { dependencyTypes: ["npm-dev"], dependencyTypesNot: ["type-only"] },

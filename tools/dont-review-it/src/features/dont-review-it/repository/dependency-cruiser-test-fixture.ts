@@ -42,6 +42,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     "./stacks": "./src/features/cloudflare/stacks.ts",
   },
   "tools/dev": { ".": "./src/features/dev/index.ts" },
+  "tools/dont-review-it": { ".": "./src/features/dont-review-it/index.ts" },
 };
 const installedPackages = ["drizzle-orm", "miniflare", "msw"];
 
@@ -62,7 +63,10 @@ const write = (root: string, file: string, code: string): FixtureBuild<void> =>
 
 type Workspace = readonly [string, Readonly<Record<string, string>>];
 
-const developmentDependencies: Readonly<Record<string, readonly string[]>> = { "libs/ui": ["msw"] };
+const developmentDependencies: Readonly<Record<string, readonly string[]>> = {
+  "libs/ui": ["msw"],
+  "tools/dont-review-it": ["msw"],
+};
 
 const packageNames: Readonly<Record<string, string>> = {
   "infra/cloudflare": "@repo/infra-cloudflare",

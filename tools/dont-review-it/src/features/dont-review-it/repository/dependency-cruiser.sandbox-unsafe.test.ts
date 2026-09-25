@@ -154,6 +154,13 @@ const detected: readonly Case[] = [
     { "libs/ui/src/features/ui/index.ts": 'export type { Handler } from "msw";\n' },
   ],
   [
+    "no-development-dependency-in-shipped-code",
+    {
+      "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/rule.ts":
+        'export * from "msw";\n',
+    },
+  ],
+  [
     "no-raw-database-driver",
     { "libs/auth/src/features/auth/index.ts": 'export * from "drizzle-orm";\n' },
   ],
@@ -293,6 +300,13 @@ const accepted: readonly Case[] = [
     "no-development-dependency-in-shipped-code",
     {
       "libs/ui/src/features/ui/index.ts":
+        'import type { Handler } from "msw";\n\nexport type Mocked = Handler;\n',
+    },
+  ],
+  [
+    "no-development-dependency-in-shipped-code",
+    {
+      "tools/dont-review-it/src/features/dont-review-it/lint/oxlint/lib/rule.ts":
         'import type { Handler } from "msw";\n\nexport type Mocked = Handler;\n',
     },
   ],

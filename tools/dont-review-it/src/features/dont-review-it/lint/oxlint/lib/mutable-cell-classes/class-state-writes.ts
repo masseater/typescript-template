@@ -1,8 +1,8 @@
-import { ADMIN_PERMISSION } from "@repo/config/identity";
-
 import { SUGARED_NODE_TYPES } from "../node-kinds.ts";
 import { listedFieldsOf } from "../setup-modules/coupling-edges.ts";
 import { fieldOf, kindAt, nodeVisitsIn } from "./node-visits.ts";
+
+import type { AstFields } from "../ast-node.ts";
 
 const HELD_STATE_MEMBER_KINDS: ReadonlySet<string> = new Set([
   "AccessorProperty",
@@ -42,14 +42,14 @@ const ownStateFieldOf = (checked: unknown): string | null => {
   return kindAt(receiver) === "ThisExpression" ? spelledKey(written) : ownStateFieldOf(receiver);
 };
 
-const writtenTargetOf = (node: unknown): unknown => {
+const DELETE_OPERATOR = "delete";
+
+const writtenTargetOf = (node: AstFields): unknown => {
   switch (kindAt(node)) {
     case "AssignmentExpression":
       return fieldOf(node, "left");
     case "UnaryExpression":
-      return fieldOf(node, ADMIN_PERMISSION.operator) === "delete"
-        ? fieldOf(node, "argument")
-        : null;
+      return node.operator === DELETE_OPERATOR ? fieldOf(node, "argument") : null;
     case "UpdateExpression":
       return fieldOf(node, "argument");
     default:
