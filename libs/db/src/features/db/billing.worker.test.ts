@@ -237,10 +237,23 @@ describe("a completed checkout", () => {
             id: "evt_checkout",
             type: "checkout.session.completed",
           },
-          { ...aliceSubscription, currentPeriodEnd: undefined },
+          aliceSubscription,
         );
         const afterCheckout = yield* findSubscription("alice");
         const paidAfterCheckout = yield* isPaidMember("alice");
+        const olderCreation = yield* recordSubscription(
+          {
+            createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-19T23:59:59.000Z")),
+            id: "evt_created",
+            type: "customer.subscription.created",
+          },
+          {
+            ...aliceSubscription,
+            currentPeriodEnd: DateTime.toDate(DateTime.makeUnsafe("2026-09-19T23:59:59.000Z")),
+            status: SUBSCRIPTION_STATUS.incomplete,
+          },
+        );
+        const afterOlderCreation = yield* findSubscription("alice");
         yield* recordSubscription(
           {
             createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:01.000Z")),
@@ -255,31 +268,27 @@ describe("a completed checkout", () => {
             id: "evt_checkout_2",
             type: "checkout.session.completed",
           },
-          { ...aliceSubscription, currentPeriodEnd: undefined },
+          aliceSubscription,
         );
         const afterSubscriptionEvent = yield* findSubscription("alice");
         return {
           afterCheckout,
+          afterOlderCreation,
           afterSubscriptionEvent,
           attached,
           attachedAgain,
+          olderCreation,
           paidAfterCheckout,
         };
       }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
     ));
 
-  it("attaches the customer only until a subscription event knows more", ({
+  it("stores the period end at checkout and keeps it through an older event that arrives late", ({
     checkoutAttachment,
   }) => {
     expect(checkoutAttachment).toStrictEqual({
-      afterCheckout: {
-        cancelAtPeriodEnd: false,
-        currentPeriodEnd: undefined,
-        memberId: "alice",
-        status: "active",
-        stripeCustomerId: "cus_alice",
-        stripeSubscriptionId: "sub_alice",
-      },
+      afterCheckout: aliceSubscription,
+      afterOlderCreation: aliceSubscription,
       afterSubscriptionEvent: {
         cancelAtPeriodEnd: true,
         currentPeriodEnd: monthLater,
@@ -290,6 +299,7 @@ describe("a completed checkout", () => {
       },
       attached: "applied",
       attachedAgain: "applied",
+      olderCreation: "applied",
       paidAfterCheckout: true,
     });
   });

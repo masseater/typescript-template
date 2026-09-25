@@ -172,11 +172,11 @@ const quotes = Effect.fn("billing.api.quotes")(function* quotes(request: Request
 const usage = Effect.fn("billing.api.usage")(function* usage(request: Request) {
   const { user } = yield* verifySession(request.headers);
   const subscription = yield* findSubscription(user.id);
-  const periodEnd = subscription?.currentPeriodEnd ?? undefined;
+  if (subscription === undefined) {
+    return yield* new PaidPlanRequired();
+  }
   const periodStart = DateTime.toDate(
-    periodEnd === undefined
-      ? DateTime.makeUnsafe(0)
-      : DateTime.subtract(DateTime.fromDateUnsafe(periodEnd), { months: 1 }),
+    DateTime.subtract(DateTime.fromDateUnsafe(subscription.currentPeriodEnd), { months: 1 }),
   );
   return {
     ...(yield* aiUsageSince({ memberId: user.id, since: periodStart })),

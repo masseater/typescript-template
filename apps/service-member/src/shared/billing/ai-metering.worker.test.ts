@@ -15,6 +15,7 @@ import type { Scope } from "effect";
 const meterEvents = "https://api.stripe.com/v1/billing/meter_events";
 const customerId = "cus_metered_member";
 const epoch = DateTime.toDate(DateTime.makeUnsafe(0));
+const periodEnd = DateTime.toDate(DateTime.makeUnsafe("2099-01-01T00:00:00.000Z"));
 
 const stripeLayer = Layer.orDie(Stripe.fromEnvironment(appEnvironment()));
 
@@ -29,7 +30,8 @@ function addMember(id: string): Effect.Effect<unknown, unknown> {
 
 function subscribe(id: string): Effect.Effect<unknown, unknown> {
   return runStatement(
-    "INSERT INTO plan_subscription (cancel_at_period_end, current_period_end, member_id, status, stripe_customer_id, stripe_subscription_id, updated_at) VALUES (0, NULL, ?, 'active', ?, ?, 0)",
+    "INSERT INTO plan_subscription (cancel_at_period_end, current_period_end, member_id, status, stripe_customer_id, stripe_subscription_id, updated_at) VALUES (0, ?, ?, 'active', ?, ?, 0)",
+    periodEnd.getTime(),
     id,
     customerId,
     `sub_${id}`,

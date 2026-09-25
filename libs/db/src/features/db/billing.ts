@@ -25,7 +25,7 @@ type StripeEventRecord = Readonly<{
 
 type SubscriptionRecord = Readonly<{
   cancelAtPeriodEnd: boolean;
-  currentPeriodEnd: Date | undefined;
+  currentPeriodEnd: Date;
   memberId: string;
   status: SubscriptionStatus;
   stripeCustomerId: string;
@@ -51,12 +51,7 @@ const findSubscription = Effect.fn("findSubscription")(function* findSubscriptio
       .where(eq(planSubscription.memberId, memberId))
       .limit(1),
   );
-  return subscriptionRow === undefined
-    ? undefined
-    : ({
-        ...subscriptionRow,
-        currentPeriodEnd: subscriptionRow.currentPeriodEnd ?? undefined,
-      } satisfies SubscriptionRecord);
+  return subscriptionRow satisfies SubscriptionRecord | undefined;
 });
 
 const memberOfCustomer = Effect.fn("memberOfCustomer")(function* memberOfCustomer(
@@ -75,7 +70,7 @@ const memberOfCustomer = Effect.fn("memberOfCustomer")(function* memberOfCustome
 const entitles = (subscription: SubscriptionRecord | undefined, checkedAt: Date): boolean =>
   subscription !== undefined &&
   paidStatuses.includes(subscription.status) &&
-  (subscription.currentPeriodEnd === undefined || subscription.currentPeriodEnd > checkedAt);
+  subscription.currentPeriodEnd > checkedAt;
 
 const planOf = Effect.fn("planOf")(function* planOf(memberId: string) {
   const subscription = yield* findSubscription(memberId);
@@ -139,7 +134,7 @@ const subscriptionValues = (
   updatedAt: Date,
 ): typeof planSubscription.$inferInsert => ({
   cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-  currentPeriodEnd: subscription.currentPeriodEnd ?? null,
+  currentPeriodEnd: subscription.currentPeriodEnd,
   memberId: subscription.memberId,
   status: subscription.status,
   stripeCustomerId: subscription.stripeCustomerId,
