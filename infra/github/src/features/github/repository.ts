@@ -6,6 +6,9 @@ type RepositoryAddress = Readonly<{ owner: string; repository: string }>;
 const repositorySlug = (address: RepositoryAddress): string =>
   `${address.owner}/${address.repository}`;
 
+const repositoryStage = (address: RepositoryAddress): string =>
+  `${address.owner}-${address.repository}`.toLowerCase();
+
 const RepositoryView = Schema.fromJsonString(
   Schema.Struct({ name: Schema.String, owner: Schema.Struct({ login: Schema.String }) }),
 );
@@ -29,5 +32,5 @@ const originRepository = Effect.fn("originRepository")(function* originRepositor
   return { owner: view.owner.login, repository: view.name } as const satisfies RepositoryAddress;
 });
 
-export { originRepository, repositorySlug };
+export { originRepository, repositorySlug, repositoryStage };
 export type { RepositoryAddress };
