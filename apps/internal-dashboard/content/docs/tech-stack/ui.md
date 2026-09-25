@@ -13,8 +13,6 @@ description: 挙動は Base UI が持ち、見た目のコンポーネントは�
 
 `disabled` は Base UI の Button に渡る。`variant="primary"` がどのクラスになるかは、コピーしたコンポーネントのファイルに書いてある。shadcn のコンポーネントはパッケージの公開 API として依存せず、そのファイルを編集して見た目を変える。
 
-コンポーネントを足すときの判断は `.claude/skills/reviews/references/build-ui-on-libs-ui-and-keep-server-state-in-query.md` にある。
-
 ## 採ると
 
 | 見ているもの | 採る前 | 採ったあと |
