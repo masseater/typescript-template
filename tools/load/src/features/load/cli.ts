@@ -143,9 +143,9 @@ const measure = Effect.fn("measure")(function* measure(input: typeof loadCliArgu
   const { app, profile } = input;
   const origin = applicationOrigins[app];
   const { binary, scenario } = yield* prepare(app, origin);
-  const before = oneMinuteLoadAverage();
+  const before = yield* oneMinuteLoadAverage;
   const crossed = yield* runScenario({ binary, scenario }, scenarioEnvironment(profile, origin));
-  const loadAverage = { after: oneMinuteLoadAverage(), before };
+  const loadAverage = { after: yield* oneMinuteLoadAverage, before };
   const measured: Measured = {
     app,
     crossed,

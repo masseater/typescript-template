@@ -1,5 +1,3 @@
-import { homedir } from "node:os";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Config, Effect, FileSystem, Path } from "effect";
@@ -137,9 +135,17 @@ layer(NodeServices.layer)("gitExcludePatterns", (it) => {
   describe("an environment naming no home at all", () => {
     const fixtures = Effect.gen(function* homelessPatterns() {
       const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
       const homelessSandbox = yield* filesystem.makeTempDirectoryScoped({
         prefix: "mst-git-excludes-home-",
       });
+      yield* filesystem.makeDirectory(paths.join(homelessSandbox, ".config", "git"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(homelessSandbox, ".config", "git", "ignore"),
+        ".takt/\n",
+      );
       const inheritedPath = yield* searchPath;
       return {
         patternsWithoutHome: gitExcludePatterns({
@@ -148,20 +154,20 @@ layer(NodeServices.layer)("gitExcludePatterns", (it) => {
             PATH: inheritedPath,
           },
         }),
-        patternsWithRuntimeHome: gitExcludePatterns({
+        patternsWithEmptyHome: gitExcludePatterns({
           cwd: homelessSandbox,
           env: {
-            HOME: homedir(),
+            HOME: "",
             PATH: inheritedPath,
           },
         }),
       };
     });
 
-    it.effect("falls back to the home the runtime reports", () =>
+    it.effect("reads no global excludes file, as git does", () =>
       Effect.gen(function* program() {
-        const { patternsWithoutHome, patternsWithRuntimeHome } = yield* fixtures;
-        expect(patternsWithoutHome).toStrictEqual(patternsWithRuntimeHome);
+        const patterns = yield* fixtures;
+        expect(patterns).toStrictEqual({ patternsWithoutHome: [], patternsWithEmptyHome: [] });
       }),
     );
   });

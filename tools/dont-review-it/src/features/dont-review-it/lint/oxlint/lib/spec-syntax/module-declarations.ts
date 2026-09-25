@@ -1,10 +1,8 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync } from "node:fs";
-
 import { parseSync } from "oxc-parser";
 
 import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
+import { textAt } from "../../../../platform/synchronous-host.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 import type { SpecStatement } from "./subject-expressions.ts";
@@ -115,7 +113,7 @@ export const moduleDeclarationsOf = (
 });
 
 const parsedModuleAt = (filePath: string): ModuleDeclarations | null => {
-  const source = readUnlessMissing(() => readFileSync(filePath, "utf8"));
+  const source = readUnlessMissing(() => textAt(filePath));
   if (source === null) return null;
 
   const writtenBody = parseSync(filePath, source).program.body.map(

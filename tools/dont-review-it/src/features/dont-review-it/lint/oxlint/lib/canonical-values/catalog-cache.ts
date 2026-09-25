@@ -1,9 +1,11 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
-
 import { attempt } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
+import {
+  createDirectoryTree,
+  movePath,
+  writeTextAt,
+} from "../../../../platform/synchronous-host.ts";
 import {
   CACHE_FORMAT_VERSION,
   cacheIntegrity,
@@ -54,9 +56,9 @@ export const writeCachedEntries = (
     integrity: cacheIntegrity({ fingerprint, entries }),
   };
   const [unwritableCache] = attempt(() => {
-    mkdirSync(path.dirname(filePath), { recursive: true });
-    writeFileSync(temporaryPath, JSON.stringify(cacheDocument), "utf8");
-    renameSync(temporaryPath, filePath);
+    createDirectoryTree(path.dirname(filePath));
+    writeTextAt(temporaryPath, JSON.stringify(cacheDocument));
+    movePath(temporaryPath, filePath);
   });
   if (unwritableCache !== null) return;
 };

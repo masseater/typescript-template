@@ -1,10 +1,8 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { realpathSync } from "node:fs";
-
 import { attempt, sortBy, uniq } from "es-toolkit";
 import * as ts from "typescript-6";
 
 import { path } from "../../../../platform/path.ts";
+import { nativeRealPathOf } from "../../../../platform/synchronous-host.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import { toPosixPath } from "../posix-path.ts";
 import {
@@ -25,8 +23,8 @@ import type { CanonicalValuesImportRoute } from "./catalog.ts";
 
 const realPathIsInside = (parent: string, candidate: string): boolean => {
   const [failure, paths] = attempt(() => ({
-    candidate: realpathSync.native(candidate),
-    parent: realpathSync.native(parent),
+    candidate: nativeRealPathOf(candidate),
+    parent: nativeRealPathOf(parent),
   }));
   return failure === null && paths !== null && pathIsInside(paths.parent, paths.candidate);
 };

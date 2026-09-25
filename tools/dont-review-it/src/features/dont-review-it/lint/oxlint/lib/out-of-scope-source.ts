@@ -1,7 +1,5 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { existsSync } from "node:fs";
-
 import { path } from "../../../platform/path.ts";
+import { isPresentAt } from "../../../platform/synchronous-host.ts";
 import { pathIsInside } from "./path-is-inside.ts";
 
 export const OUT_OF_SCOPE_FILE_NAME =
@@ -37,4 +35,4 @@ export const isOutOfScopeSource = (filename: string, repositoryRoot?: string): b
 };
 
 export const isOutOfScopeLintSource = (filename: string, repositoryRoot: string): boolean =>
-  isOutOfScopeSource(filename, existsSync(filename) ? repositoryRoot : undefined);
+  isOutOfScopeSource(filename, isPresentAt(filename) ? repositoryRoot : undefined);

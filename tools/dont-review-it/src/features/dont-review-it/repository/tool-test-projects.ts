@@ -1,7 +1,5 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readdirSync } from "node:fs";
-
 import { filePathOf } from "../platform/path.ts";
+import { childEntriesIn } from "../platform/synchronous-host.ts";
 
 const toolsDirectory = filePathOf(new URL("../../../../..", import.meta.url));
 
@@ -16,9 +14,7 @@ const dedicatedToolNames = new Set(
   dedicatedToolVitestProjects.map((path) => path.replace(/^\.\/tools\//u, "")),
 );
 
-const rootNodeToolTestIncludes: readonly string[] = readdirSync(toolsDirectory, {
-  withFileTypes: true,
-})
+const rootNodeToolTestIncludes: readonly string[] = childEntriesIn(toolsDirectory)
   .filter((entry) => entry.isDirectory() && !dedicatedToolNames.has(entry.name))
   .map((entry) => entry.name)
   .toSorted((left, right) => left.localeCompare(right))

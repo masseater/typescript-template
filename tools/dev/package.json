@@ -13,6 +13,7 @@
   "type": "module",
   "dependencies": {
     "@effect/platform-node": "catalog:",
+    "@jridgewell/trace-mapping": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",

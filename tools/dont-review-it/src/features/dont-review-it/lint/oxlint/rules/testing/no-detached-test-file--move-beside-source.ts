@@ -1,17 +1,15 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { existsSync } from "node:fs";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
+import { isPresentAt } from "../../../../platform/synchronous-host.ts";
 import { segmentsOf } from "../../lib/path-segments.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
 
 const DEFAULT_TEST_FILE_SUFFIXES = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"];
 
-const pathExists = memoize((filePath: string): boolean => existsSync(filePath));
+const pathExists = memoize((filePath: string): boolean => isPresentAt(filePath));
 
 const stringsFrom = (
   ruleOptions: Readonly<Options>,

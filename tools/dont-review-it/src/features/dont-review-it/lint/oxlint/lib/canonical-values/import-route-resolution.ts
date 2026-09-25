@@ -1,10 +1,8 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync } from "node:fs";
-
 import { attempt } from "es-toolkit";
 import * as ts from "typescript-6";
 
 import { filePathOf, path } from "../../../../platform/path.ts";
+import { textAt } from "../../../../platform/synchronous-host.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import {
   realPathOf,
@@ -169,7 +167,7 @@ const routeMatchesResolvedSource = (input: {
 
 const declarationExportsName = (filePath: string, importedName: string): boolean => {
   if (!/\.d\.[cm]?ts$/u.test(filePath)) return false;
-  const source = readFileSync(filePath, "utf8");
+  const source = textAt(filePath);
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.ESNext, true);
   return sourceFile.statements.some((statement) => {
     if (!ts.isVariableStatement(statement)) return false;

@@ -1,9 +1,9 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
-import { Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
+import { Config, Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-import { homeDirectory, isSignalName, signalNumber, temporaryDirectory } from "./host-facts.ts";
+import { isSignalName, signalNumber } from "./host-facts.ts";
 
 const [paths, filesystem, randomness, spawner] = Effect.runSync(
   Effect.all([
@@ -13,6 +13,18 @@ const [paths, filesystem, randomness, spawner] = Effect.runSync(
     ChildProcessSpawner.ChildProcessSpawner,
   ]).pipe(Effect.provide(NodeServices.layer)),
 );
+
+const homeDirectory = (): string => Effect.runSync(Config.NonEmptyString("HOME"));
+
+const temporaryDirectory = (): string =>
+  Effect.runSync(
+    Config.String("TMPDIR").pipe(
+      Config.withDefault(""),
+      Config.map((configured) =>
+        configured === "" ? "/tmp" : configured.replace(/(?<=.)\/+$/u, ""),
+      ),
+    ),
+  );
 
 const joinPath = (...parts: readonly string[]): string => paths.join(...parts);
 

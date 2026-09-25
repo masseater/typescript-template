@@ -1,15 +1,13 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { existsSync, lstatSync, realpathSync } from "node:fs";
-
 import { attempt, memoize } from "es-toolkit";
 
 import { measureStage } from "../../../lint-rule-authoring/index.ts";
 import { path, relativePosixPath } from "../../../platform/path.ts";
+import { isPresentAt, linkStatusAt, nativeRealPathOf } from "../../../platform/synchronous-host.ts";
 import { gitOutput } from "./git-output.ts";
 import { pathIsInside } from "./path-is-inside.ts";
 
 const realPathOf = (filePath: string): string => {
-  const [failure, realPath] = attempt(() => realpathSync.native(filePath));
+  const [failure, realPath] = attempt(() => nativeRealPathOf(filePath));
   return failure === null && realPath !== null ? realPath : filePath;
 };
 
@@ -31,7 +29,7 @@ const firstSymbolicPath = (repositoryRoot: string, repositoryPath: string): stri
   const segments = repositoryPath.split(path.sep);
   for (const index of segments.keys()) {
     const candidate = path.join(repositoryRoot, ...segments.slice(0, index + 1));
-    const [failure, stats] = attempt(() => lstatSync(candidate));
+    const [failure, stats] = attempt(() => linkStatusAt(candidate));
     if (failure === null && stats?.isSymbolicLink() === true)
       return path.relative(repositoryRoot, candidate);
   }
@@ -39,7 +37,7 @@ const firstSymbolicPath = (repositoryRoot: string, repositoryPath: string): stri
 };
 
 const repositoryTopLevel = (directory: string): string | null => {
-  if (existsSync(path.join(directory, ".git"))) return directory;
+  if (isPresentAt(path.join(directory, ".git"))) return directory;
   const parent = path.dirname(directory);
   return parent === directory ? null : repositoryTopLevel(parent);
 };

@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import {
   applicationPorts,
   applications,
@@ -8,7 +6,7 @@ import {
   minimumAuthSecretLength,
 } from "@repo/config";
 import { repositoryRoot as root } from "@repo/config/repository-root";
-import { Effect, Option, Path, Schema } from "effect";
+import { Config, Effect, Option, Path, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { failure } from "./failure.ts";
@@ -119,10 +117,22 @@ const readCredentials = Effect.fn("readCredentials")(function* readCredentials()
   );
 });
 
+const temporaryDirectory = Config.NonEmptyString("TMPDIR").pipe(
+  Config.orElse(() => Config.NonEmptyString("TMP")),
+  Config.orElse(() => Config.NonEmptyString("TEMP")),
+  Config.orElse(() => Config.succeed("/tmp")),
+  Config.map((directory) =>
+    directory.length > 1 && directory.endsWith("/") ? directory.slice(0, -1) : directory,
+  ),
+);
+
 const browserSocketDirectory = Effect.fn("browserSocketDirectory")(
   function* browserSocketDirectory() {
     const path = yield* Path.Path;
-    const directory = path.join(tmpdir(), `ab-${rootHash}`);
+    const temporary = yield* temporaryDirectory.pipe(
+      Effect.mapError(() => failure("browser_socket_directory_invalid")),
+    );
+    const directory = path.join(temporary, `ab-${rootHash}`);
     yield* withFileSystem((fs) =>
       fs.makeDirectory(directory, { mode: privateDirectoryMode, recursive: true }),
     );

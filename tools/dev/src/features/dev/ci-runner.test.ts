@@ -1,6 +1,5 @@
-import { homedir, userInfo } from "node:os";
-
-import { Effect, FileSystem, Path, PlatformError } from "effect";
+import { Config, Effect, FileSystem, Path, PlatformError } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { describe, expect, it } from "vite-plus/test";
 
 import { ciRunner } from "./ci-runner.ts";
@@ -70,11 +69,14 @@ describe("the ci runner service document", () => {
         yield* fs.writeFileString(path.join(base, ".service"), `${file}\n`);
         yield* ciRunner([base, "--write"]);
         const document = yield* fs.readFileString(file);
+        const home = yield* Config.String("HOME");
+        const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+        const user = yield* spawner.string(ChildProcess.make("id", ["-un"]));
         expect(document).toContain("<string>named.service</string>");
-        expect(document).toContain(`<string>${userInfo().username}</string>`);
+        expect(document).toContain(`<string>${user.trim()}</string>`);
         expect(document).toContain(`<string>${base}</string>`);
         expect(document).toContain(
-          `<string>${path.join(homedir(), "Library/Logs/named.service/stdout.log")}</string>`,
+          `<string>${path.join(home, "Library/Logs/named.service/stdout.log")}</string>`,
         );
       }).pipe(Effect.provide(layer)),
     ));

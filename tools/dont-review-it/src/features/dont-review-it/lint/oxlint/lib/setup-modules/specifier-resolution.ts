@@ -1,10 +1,8 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { realpathSync } from "node:fs";
-
 import { memoize } from "es-toolkit";
 
 import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
+import { walkedRealPathOf } from "../../../../platform/synchronous-host.ts";
 import { isDirectory, isFile } from "../canonical-values/source-files.ts";
 import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";
@@ -75,7 +73,7 @@ export const packageReferenceOf = (
 };
 
 const realPathOf = (filePath: string): string | null =>
-  readUnlessMissing(() => realpathSync(filePath));
+  readUnlessMissing(() => walkedRealPathOf(filePath));
 
 const installedPackageDirectory = (fromDirectory: string, packageName: string): string | null => {
   const candidate = path.join(fromDirectory, "node_modules", packageName);

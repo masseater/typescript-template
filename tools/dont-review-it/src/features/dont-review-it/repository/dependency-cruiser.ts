@@ -152,7 +152,7 @@ const configuration = {
     },
     {
       comment:
-        "@repo/infra-cloudflare/deployment は node:os と node:path でデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
+        "@repo/infra-cloudflare/deployment は実行環境の HOME と XDG_CONFIG_HOME からデプロイ用の設定ファイルを解決します。apps と libs からは、経路の途中のモジュールも含めて到達できません。デプロイの入力が要るコードは infra か tools に置いてください。",
       from: { path: "^(?:apps|libs)/" },
       name: "no-deployment-config-in-shipped-code",
       severity: "error",

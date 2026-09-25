@@ -1,5 +1,3 @@
-import { loadavg } from "node:os";
-
 import { NodeServices } from "@effect/platform-node";
 import {
   type Application,
@@ -10,15 +8,32 @@ import {
 } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 const readinessChecks = 120;
 const readinessInterval = "500 millis" as const;
 const loadAverageDigits = 2;
 
-const oneMinuteLoadAverage = (): number => {
-  const [average = 0] = loadavg();
-  return Number(average.toFixed(loadAverageDigits));
-};
+const leadingLoadAverage = /\d+(?:\.\d+)?/u;
+
+const loadAverageText = Effect.gen(function* readLoadAverageText() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  return yield* filesystem
+    .readFileString("/proc/loadavg")
+    .pipe(
+      Effect.catchTag("PlatformError", () =>
+        spawner.string(ChildProcess.make("sysctl", ["-n", "vm.loadavg"])),
+      ),
+    );
+});
+
+const oneMinuteLoadAverage: Effect.Effect<number> = loadAverageText.pipe(
+  Effect.map((reported) => Number(leadingLoadAverage.exec(reported)?.[0] ?? 0)),
+  Effect.orElseSucceed(() => 0),
+  Effect.map((average) => Number(average.toFixed(loadAverageDigits))),
+  Effect.provide(NodeServices.layer),
+);
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
   reason: Schema.Literals([
