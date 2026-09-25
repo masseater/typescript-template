@@ -34,6 +34,8 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - 置き場所は Environment `staging` と `production` です。リポジトリ secret には置きません。
   - `staging` の必須キーが揃っているとき、main への統合が staging へ適用します。1つも無いときは適用を始めず、一部だけあるときは失敗します。
   - `production` は Actions の deploy を `workflow_dispatch` で target `production` にしたときだけ適用します。Environment に承認者を付けます。
+  - 計画にリソースの削除・置き換え・既存リソースの取り込みがあると、deploy はそのスタックの手前で止まり、Environment `<環境名>-removal-approval` の承認を待ちます。Actions の実行画面の「Review deployments」で承認すると、止まったスタックから同じコミットで適用を続けます。
+    - 1 回の承認で通せるのは 1 スタックだけです。続くスタックにも削除などがあると、承認後の適用はそのスタックで失敗します。deploy をもう一度実行すると、そのスタックの手前で止まり、改めて承認を待ちます。
   - 両方でキー名は同じです。`TEMPLATE_PREFIX` と、そこから決まる origin・送信ドメインは環境ごとに分けます。
   - 必須キーは `libs/observability/src/features/observability/deployment-keys.ts` の `deploymentKeys` です。
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
@@ -56,7 +58,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。
 - Alchemy によるインフラ適用:
   - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。
-  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールを作ります。
+  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールと、Environment `staging-removal-approval`・`production-removal-approval` を作ります。後の 2 つは、ログインした人を承認者にします。
   - `infra/wiki-publisher` の `vp run plan` と `vp run deploy` は、同じログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。
     - 初回の deploy は端末に `http://127.0.0.1:<port>/` を出して待ちます。ブラウザで開くと GitHub の App 作成画面へ進むので、作成を押します。App の名前は `{TEMPLATE_PREFIX} wiki publisher` で、権限は Contents と Pull requests の書き込みだけです。
     - 作成の後はインストール画面へ移ります。このリポジトリを選んでインストールすると、deploy が App ID、秘密鍵、`owner/repository` を Environment `production` の secret に書き込みます。
