@@ -12,7 +12,9 @@ export const noSingleUseLocalType = createDontReviewItRule({
     docs: {
       description:
         "Disallow a type declared at the top level of a file without being exported when the file references it at most once, so a name is given to a shape only where more than one place has to agree on it",
-      relatedGuidelines: [".claude/skills/reviews/references/io-boundaries-and-types.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/parse-external-input-at-the-boundary.md",
+      ],
     },
     messages: {
       singleUseLocalType:

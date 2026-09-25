@@ -54,7 +54,9 @@ export const noSilentSuppression = createDontReviewItRule({
     docs: {
       description:
         "Disallow a lint configuration lowering a rule that keeps one declaration in one place, or ignoring a path outside the regions the repository excludes, so what the linter stops saying is a decision somebody wrote down",
-      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/prove-every-guard-fails-on-a-violation.md",
+      ],
     },
     messages: {
       weakenedRule:
