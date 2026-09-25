@@ -137,7 +137,7 @@ describe("appRun", () => {
         },
         "check:dev": {
           cache: false,
-          command: "../../tools/dev/src/features/dev/dev-start.ts",
+          command: "dev-start",
           dependsOn: ["@repo/dev#setup"],
         },
         dev: { cache: false, command: "vp dev" },
