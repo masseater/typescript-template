@@ -1,2 +1,2 @@
-node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 26 ? 0 : 1)' || { echo "Node 26 or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }
+node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 26 ? 0 : 1)' || { echo "Node 26 or later is required by package.json devEngines; this hook ran on $(node --version)" >&2; exit 1; }
 vp run --filter @repo/dont-review-it hook:precommit

@@ -50,8 +50,12 @@ const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
 
-const engines = field(rootManifests["../../../../../../package.json"], "engines");
-const [, requiredNodeMajor = ""] = /^>=(?<major>\d+)\./u.exec(String(field(engines, "node"))) ?? [];
+const rootManifest = rootManifests["../../../../../../package.json"];
+const requiredNodeVersion = String(
+  field(field(field(rootManifest, "devEngines"), "runtime"), "version"),
+);
+const [requiredNodeMajor = ""] = requiredNodeVersion.split(".");
+const enginesNodeRange = field(field(rootManifest, "engines"), "node");
 
 const hookStages = Object.entries(hooks).map(
   ([file, source]) => [file.replace(/^.*\/pre-/u, "pre"), source] as const,
@@ -64,7 +68,7 @@ function misplacedHooks(): string[] {
         !lifecycles.some((name) => name === stage) ||
         source !==
           [
-            `node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= ${requiredNodeMajor} ? 0 : 1)' || { echo "Node ${requiredNodeMajor} or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }`,
+            `node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= ${requiredNodeMajor} ? 0 : 1)' || { echo "Node ${requiredNodeMajor} or later is required by package.json devEngines; this hook ran on $(node --version)" >&2; exit 1; }`,
             `vp run --filter @repo/dont-review-it hook:${stage}`,
             "",
           ].join("\n") ||
@@ -272,6 +276,11 @@ describe("lifecycle entry points", () => {
     expect.hasAssertions();
     expect(hookStages.length).toBeGreaterThan(0);
     expect(misplacedHooks()).toStrictEqual([]);
+  });
+
+  it("declares in engines the same Node version devEngines requires", () => {
+    expect.hasAssertions();
+    expect(enginesNodeRange).toBe(`>=${requiredNodeVersion}`);
   });
 
   it("gives a pull request the pr gate and leaves merge and release to their own gates", () => {
