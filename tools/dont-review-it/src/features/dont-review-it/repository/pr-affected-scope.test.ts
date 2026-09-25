@@ -102,34 +102,29 @@ describe("hook filters", () => {
     expect(hookFilters([], packages)).toStrictEqual([]);
   });
 
-  it("runs the root and filters to the changed package and the packages that depend on it", () => {
+  it("runs the root and filters to the changed package without its dependents", () => {
     expect(hookFilters(["libs/ui/src/features/ui/button.tsx"], packages)).toStrictEqual([
       "-w",
       "--filter",
       "@repo/ui",
-      "--filter",
-      "@repo/service-member",
     ]);
   });
 
-  it("runs only the root when the changed files outside the workspaces are text the root checks", () => {
+  it("runs only the root when no changed file is inside a workspace", () => {
     expect(
       hookFilters(
-        [".claude/skills/reviews/SKILL.md", "AGENTS.md", ".textlint-ai-words.json"],
+        [".claude/skills/reviews/SKILL.md", "AGENTS.md", ".vite-hooks/pre-push", "vite.config.ts"],
         packages,
       ),
     ).toStrictEqual(["-w"]);
-    expect(
-      hookFilters(
-        [".claude/skills/reviews/SKILL.md", "libs/ui/src/features/ui/button.tsx"],
-        packages,
-      ),
-    ).toStrictEqual(["-w", "--filter", "@repo/ui", "--filter", "@repo/service-member"]);
   });
 
-  it("walks every workspace when a changed file is outside the workspaces", () => {
+  it("never walks every workspace, whatever the changed files are", () => {
     expect(
-      hookFilters(["libs/cli/src/features/cli/cli.ts", ".vite-hooks/pre-push"], packages),
-    ).toStrictEqual(["-r"]);
+      hookFilters(
+        ["libs/cli/src/features/cli/cli.ts", ".vite-hooks/pre-push", "apps/missing/src/index.ts"],
+        packages,
+      ),
+    ).toStrictEqual(["-w", "--filter", "@repo/cli"]);
   });
 });
