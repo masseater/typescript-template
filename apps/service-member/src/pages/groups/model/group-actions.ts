@@ -22,7 +22,7 @@ function useLeaveGroup(groupId: string, onLeft: () => Promise<void>) {
   return { error: action.error, handleLeave, pending: action.pending };
 }
 
-function useCopyInvite(groupId: string, onRefreshed: (token: string) => void) {
+function useCopyInvite(groupId: string, onRefreshed: (token: string) => Promise<void>) {
   const action = useAction();
   function handleCopyInvite(): void {
     action.run(() => refreshInvite(groupId).then(onRefreshed));

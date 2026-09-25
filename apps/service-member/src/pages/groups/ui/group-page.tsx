@@ -37,11 +37,11 @@ function GroupPage({
   const leave = useLeaveGroup(group.id, () =>
     router.invalidate().then(() => notify("success", "グループから退席しました。")),
   );
-  const copyInvite = useCopyInvite(group.id, (token) => {
-    const link = `${globalThis.location.origin}${invitePath(group.id, token)}`;
-    void navigator.clipboard.writeText(link);
-    notify("success", "招待リンクをコピーしました。");
-  });
+  const copyInvite = useCopyInvite(group.id, (token) =>
+    navigator.clipboard
+      .writeText(`${globalThis.location.origin}${invitePath(group.id, token)}`)
+      .then(() => notify("success", "招待リンクをコピーしました。")),
+  );
   const rename = useRenameGroupForm(group.id, group.name, () =>
     router.invalidate().then(() => notify("success", "グループ名を変更しました。")),
   );
