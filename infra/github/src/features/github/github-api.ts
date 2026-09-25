@@ -10,6 +10,7 @@ import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable
 class GitHubAppFailure extends Schema.TaggedError<GitHubAppFailure>()("GitHubAppFailure", {
   cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
+    "admin_permission_missing",
     "github_refused",
     "github_unreachable",
     "installation_timeout",

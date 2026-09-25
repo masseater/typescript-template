@@ -1,8 +1,6 @@
 import { wikiPublishPermissions } from "@repo/config";
 import { type AppDefinition, type RepositoryAddress, repositorySlug } from "@repo/infra-github";
 
-const productionEnvironment = "production";
-
 const wikiPublisherApp = (address: RepositoryAddress, prefix: string): AppDefinition => ({
   ...address,
   name: `${prefix} wiki publisher`,
@@ -10,4 +8,4 @@ const wikiPublisherApp = (address: RepositoryAddress, prefix: string): AppDefini
   url: `https://github.com/${repositorySlug(address)}`,
 });
 
-export { productionEnvironment, wikiPublisherApp };
+export { wikiPublisherApp };

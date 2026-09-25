@@ -15,12 +15,25 @@ import {
   planReport,
   plannedStack,
   reportCause,
+  deploymentState,
 } from "@repo/infra-cloudflare/operator";
 import { Console, Effect, Path, Schema } from "effect";
 
-import { originRepository, repositorySlug } from "./repository.ts";
+import { type OperatorAccess, operatorAccess } from "./access.ts";
+import {
+  type ApplyTarget,
+  DeploymentEnvironment,
+  type StackTarget,
+  applyTarget,
+  legacyTarget,
+} from "./apply-target.ts";
+import { gitHubToken } from "./credentials.ts";
+import { approvalSubject, plannedEvent } from "./plan-event.ts";
+import { matchingRepository, targetRepository, viewedRepository } from "./repository.ts";
+import { moveStackState, refuseLegacyState } from "./state-migration.ts";
 
 import type { ProgressEvent } from "alchemy/Alchemist";
+import type { StateService } from "alchemy/State";
 
 const commandRejectedEvent = "github.command_rejected";
 
@@ -29,17 +42,26 @@ class GitHubCommandFailure extends Schema.TaggedError<GitHubCommandFailure>()(
   { code: Schema.Literals(["command_invalid"]) },
 ) {}
 
-const ApplyUnit = Schema.Literals(["github", "wiki-publisher"]);
+const Inspection = Schema.Literals(["plan", "migrate-state"]);
+const Deploy = Schema.Literal("deploy");
+const ConfirmFlag = Schema.Literal("--confirm-plan");
+const Repository = Schema.Literal("github");
+const WikiPublisher = Schema.Literal("wiki-publisher");
 
 const Command = Schema.Union([
-  Schema.Tuple([Schema.Literal("plan"), ApplyUnit]),
-  Schema.Tuple([
-    Schema.Literal("deploy"),
-    ApplyUnit,
-    Schema.Literal("--confirm-plan"),
-    Confirmation,
-  ]),
+  Schema.Tuple([Inspection, Repository]),
+  Schema.Tuple([Inspection, WikiPublisher, DeploymentEnvironment]),
+  Schema.Tuple([Deploy, Repository, ConfirmFlag, Confirmation]),
+  Schema.Tuple([Deploy, WikiPublisher, DeploymentEnvironment, ConfirmFlag, Confirmation]),
 ]);
+
+type ParsedCommand = typeof Command.Type;
+
+const commandTarget = (command: ParsedCommand): ApplyTarget =>
+  command[1] === "github" ? { unit: command[1] } : { environment: command[2], unit: command[1] };
+
+const commandConfirmation = (command: ParsedCommand): string | undefined =>
+  command[0] === "deploy" ? command.at(-1) : undefined;
 
 const write = (report: Readonly<Record<string, unknown>>): Effect.Effect<void> =>
   encodeJson(report).pipe(Effect.flatMap(Console.info), Effect.orDie);
@@ -59,19 +81,51 @@ const reportProgress = (progress: ProgressEvent): Effect.Effect<void> => {
   return Effect.void;
 };
 
+const verifiedAccess = Effect.fn("verifiedGitHubAccess")(function* verifiedAccess() {
+  const declared = yield* targetRepository;
+  const address = yield* matchingRepository(declared, yield* viewedRepository(repositoryRoot));
+  return yield* operatorAccess(address, yield* gitHubToken);
+});
+
 const planStack = Effect.fn("planGitHubStack")(function* planStack(
-  deployment: Readonly<{ envFile: string; stage: string; unit: typeof ApplyUnit.Type }>,
+  deployment: Readonly<{ envFile: string; selection: ApplyTarget }>,
 ) {
   const paths = yield* Path.Path;
   const snapshot = yield* planDeployment({
-    entrypoint: paths.join(repositoryRoot, "infra", deployment.unit, "alchemy.run.ts"),
+    entrypoint: paths.join(repositoryRoot, "infra", deployment.selection.unit, "alchemy.run.ts"),
     envFile: deployment.envFile,
-    stage: deployment.stage,
+    stage: applyTarget(deployment.selection).stage,
   });
-  const address = yield* originRepository(repositoryRoot);
-  const planned = plannedStack(snapshot);
-  const slug = repositorySlug(address);
-  return { confirmation: planConfirmation(planned, slug), planned, slug, snapshot };
+  return { planned: plannedStack(snapshot), snapshot };
+});
+
+const migrateState = Effect.fn("migrateGitHubState")(function* migrateState(
+  store: StateService,
+  move: Readonly<{ from: StackTarget; to: StackTarget }>,
+) {
+  const moved = yield* moveStackState(store, move);
+  yield* write({ event: "github.state_moved", resources: moved.length, ...move.to });
+});
+
+const planOrApply = Effect.fn("planOrApplyGitHubStack")(function* planOrApply(
+  deployment: Readonly<{
+    access: OperatorAccess;
+    confirmation: string | undefined;
+    envFile: string;
+    selection: ApplyTarget;
+  }>,
+) {
+  const planning = yield* planStack(deployment);
+  const plan = planReport(planning.planned);
+  const subject = approvalSubject(deployment.access);
+  if (deployment.confirmation === undefined) {
+    const confirmation = planConfirmation(planning.planned, subject);
+    return yield* write(plannedEvent(deployment.access, { confirmation, plan }));
+  }
+  yield* write(plannedEvent(deployment.access, { plan }));
+  yield* acceptPlan(planning.planned, { confirmation: deployment.confirmation, subject });
+  yield* applyDeployment(planning.snapshot, reportProgress);
+  yield* write({ event: "github.applied", stack: planning.planned.stack.name });
 });
 
 runCli(
@@ -79,25 +133,21 @@ runCli(
     const parsedCommand = yield* Schema.decodeUnknownEffect(Command)(
       process.argv.slice(firstUserArgumentIndex),
     ).pipe(Effect.mapError(() => new GitHubCommandFailure({ code: "command_invalid" })));
+    const selection = commandTarget(parsedCommand);
     const { config, confidential, secrets } = yield* deploymentAccess();
     yield* Effect.gen(function* run() {
-      const planning = yield* planStack({
-        envFile: secrets.filename,
-        stage: config.prefix,
-        unit: parsedCommand[1],
-      });
-      const plan = planReport(planning.planned);
-      if (parsedCommand[0] === "plan") {
-        yield* write({ confirmation: planning.confirmation, event: "github.planned", plan });
-        return;
+      const store = yield* deploymentState(secrets);
+      const legacy = legacyTarget(selection.unit, config.prefix);
+      if (parsedCommand[0] === "migrate-state") {
+        return yield* migrateState(store, { from: legacy, to: applyTarget(selection) });
       }
-      yield* write({ event: "github.planned", plan });
-      yield* acceptPlan(planning.planned, {
-        confirmation: parsedCommand[3],
-        subject: planning.slug,
+      yield* refuseLegacyState(store, legacy);
+      return yield* planOrApply({
+        access: yield* verifiedAccess(),
+        confirmation: commandConfirmation(parsedCommand),
+        envFile: secrets.filename,
+        selection,
       });
-      yield* applyDeployment(planning.snapshot, reportProgress);
-      yield* write({ event: "github.applied", stack: planning.planned.stack.name });
     }).pipe(
       Effect.provide(alchemist()),
       Effect.scoped,

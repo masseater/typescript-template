@@ -3,11 +3,13 @@ import { deploymentKey } from "@repo/observability/deployment-keys";
 import { State as StateRoute } from "alchemy/Alchemist";
 import { Config, Effect, Redacted } from "effect";
 
+import { CloudflareFailure } from "./config.ts";
 import { verifiedSecrets } from "./credentials.ts";
 import { ENVIRONMENT_FILE_VARIABLE } from "./deployment.ts";
 import { causeRecord, reportCause, withVerifiedSecrets } from "./secrets.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
 
+import type { StateService } from "alchemy/State";
 import type { SharedConfig } from "./config.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
 import type { Confidential } from "./secrets.ts";
@@ -77,6 +79,14 @@ function stateStore(secrets: DeploymentSecrets): ReturnType<typeof StateRoute.st
   return StateRoute.store({ backend: "cloudflare", envFile: secrets.filename });
 }
 
+function deploymentState(
+  secrets: DeploymentSecrets,
+): Effect.Effect<StateService, CloudflareFailure, Effect.Services<ReturnType<typeof stateStore>>> {
+  return stateStore(secrets).pipe(
+    Effect.mapError(() => new CloudflareFailure({ code: "state_store_unavailable", keys: [] })),
+  );
+}
+
 type DeploymentAccess = Effect.Success<ReturnType<typeof deploymentAccess>>;
 
 function runDeploymentCommand<Input, InputFailure, CommandFailure>(
@@ -96,5 +106,5 @@ function runDeploymentCommand<Input, InputFailure, CommandFailure>(
   );
 }
 
-export { deploymentAccess, runDeploymentCommand, stateStore };
+export { deploymentAccess, deploymentState, runDeploymentCommand, stateStore };
 export type { DeploymentAccess };

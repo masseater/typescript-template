@@ -8,6 +8,7 @@ export default defineConfig({
     tasks: {
       ...effectRun(import.meta.dirname).tasks,
       deploy: { cache: false, command: "repo-github deploy wiki-publisher" },
+      "migrate:state": { cache: false, command: "repo-github migrate-state wiki-publisher" },
       plan: { cache: false, command: "repo-github plan wiki-publisher" },
     },
   },

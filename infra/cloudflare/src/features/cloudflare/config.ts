@@ -36,6 +36,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "secrets_store_already_present",
     "sending_domain_unavailable",
     "state_store_name_taken",
+    "state_store_unavailable",
     "trace_destination_not_applied",
   ]),
   keys: Schema.Array(Schema.String),

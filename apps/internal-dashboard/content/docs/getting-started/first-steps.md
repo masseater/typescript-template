@@ -31,9 +31,9 @@ description: テンプレートを自分のサービス向けにカスタマイ�
 デプロイ先環境（Cloudflare）の資格情報と設定を準備します。
 
 - GitHub Environment の secret:
-  - 置き場所は Environment `staging` と `production` です。リポジトリ secret には置きません。
+  - 置き場所は Environment `staging` と `production` です。リポジトリ secret には置きません。Environment は下の `infra/github` の適用で作ります。
   - `staging` の必須キーが揃っているとき、main への統合が staging へ適用します。1つも無いときは適用を始めず、一部だけあるときは失敗します。
-  - `production` は Actions の deploy を `workflow_dispatch` で target `production` にしたときだけ適用します。Environment に承認者を付けます。
+  - `production` は Actions の deploy を `workflow_dispatch` で target `production` にしたときだけ適用します。承認者は `infra/github` を適用したアカウントで、承認されるまで適用は始まりません。
   - 両方でキー名は同じです。`TEMPLATE_PREFIX` と、そこから決まる origin・送信ドメインは環境ごとに分けます。
   - 必須キーは `libs/observability/src/features/observability/deployment-keys.ts` の `deploymentKeys` です。
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
@@ -56,10 +56,12 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。
 - Alchemy によるインフラ適用:
   - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。
-  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールを作ります。
-  - `infra/wiki-publisher` の `vp run plan` と `vp run deploy` は、同じログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。
+  - `infra/github` と `infra/wiki-publisher` の適用には、環境変数 `GITHUB_TOKEN`（リポジトリの管理権限を持つアカウントのトークン）と `GITHUB_REPOSITORY`（`owner/repository`）を渡します。どちらかが無いとキー名を示して失敗し、`GITHUB_REPOSITORY` が作業ディレクトリの `gh repo view` と食い違うときや、トークンのアカウントに管理権限が無いときも失敗します。`plan` の出力の `repository` と `principal` に、書き込み先とアカウントが出ます。
+  - `infra/github` の `vp run plan` と `vp run deploy` は、main のルールと Environment `staging`・`production` を作ります。どちらの Environment も main からしか使えず、`production` には適用したアカウントを承認者に置きます。stack はリポジトリに 1 つで、`TEMPLATE_PREFIX` に依りません。
+  - `infra/wiki-publisher` の `vp run plan <Environment>` と `vp run deploy <Environment>` は、wiki 公開用の GitHub App を作り、その資格情報を指定した Environment の secret に書きます。今のデプロイが secret を渡すのは `production` だけです。`infra/github` を先に適用します。
+  - 以前の `{TEMPLATE_PREFIX}-github` と `{TEMPLATE_PREFIX}-wiki-publisher` の stack を適用したことがあるなら、`plan` はその state が残っている間は失敗します。その prefix の設定で `infra/github` の `vp run migrate:state` と `infra/wiki-publisher` の `vp run migrate:state production` を 1 回ずつ実行し、state を新しい stack へ移してから `plan` します。
     - 初回の deploy は端末に `http://127.0.0.1:<port>/` を出して待ちます。ブラウザで開くと GitHub の App 作成画面へ進むので、作成を押します。App の名前は `{TEMPLATE_PREFIX} wiki publisher` で、権限は Contents と Pull requests の書き込みだけです。
-    - 作成の後はインストール画面へ移ります。このリポジトリを選んでインストールすると、deploy が App ID、秘密鍵、`owner/repository` を Environment `production` の secret に書き込みます。
+    - 作成の後はインストール画面へ移ります。このリポジトリを選んでインストールすると、deploy が App ID、秘密鍵、`owner/repository` を指定した Environment の secret に書き込みます。
     - 作成画面で 15 分待っても作成されないときは、何も作らずに deploy が失敗します。もう一度 deploy します。
     - インストールを 15 分待っても済まないときは、App と secret を残して deploy を終えます。インストールしてからもう一度 deploy すると、インストールを確かめて完了します。
     - GitHub には App を消す API がないので、destroy はインストールを外すだけです。App は GitHub の Developer settings から消します。

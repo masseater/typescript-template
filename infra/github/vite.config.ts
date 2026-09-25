@@ -8,6 +8,10 @@ export default defineConfig({
     tasks: {
       ...effectRun(import.meta.dirname).tasks,
       deploy: { cache: false, command: "./src/features/github/cli.ts deploy github" },
+      "migrate:state": {
+        cache: false,
+        command: "./src/features/github/cli.ts migrate-state github",
+      },
       plan: { cache: false, command: "./src/features/github/cli.ts plan github" },
     },
   },

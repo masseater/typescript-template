@@ -1,1 +1,1 @@
-export { productionEnvironment, wikiPublisherApp } from "./wiki-publisher.ts";
+export { wikiPublisherApp } from "./wiki-publisher.ts";
