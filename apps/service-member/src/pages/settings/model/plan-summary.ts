@@ -1,5 +1,4 @@
 import { PLAN, SUBSCRIPTION_STATUS } from "@repo/config";
-import { formatWarekiDate } from "@repo/ui";
 
 import type { PlanView } from "#shared/contracts/index.ts";
 
@@ -9,7 +8,7 @@ interface PlanSummary {
   readonly attention: string | undefined;
   readonly headline: string;
   readonly manageable: boolean;
-  readonly periodEnd: string | undefined;
+  readonly periodEnd: { readonly canceling: boolean; readonly endsAt: Date } | undefined;
   readonly upgradable: boolean;
 }
 
@@ -21,14 +20,11 @@ const attentionByStatus: Readonly<Partial<Record<NonNullable<Plan["status"]>, st
     "支払いに失敗しました。プランを管理する画面から支払い方法を更新してください。",
 };
 
-function periodEndOf(plan: Plan): string | undefined {
+function periodEndOf(plan: Plan): PlanSummary["periodEnd"] {
   if (plan.plan !== PLAN.paid || plan.currentPeriodEnd === undefined) {
     return undefined;
   }
-  const date = formatWarekiDate(plan.currentPeriodEnd);
-  return plan.cancelAtPeriodEnd
-    ? `${date} に解約され、その後は無料プランになります。`
-    : `現在の期間は ${date} までです。`;
+  return { canceling: plan.cancelAtPeriodEnd, endsAt: plan.currentPeriodEnd };
 }
 
 function summarizePlan(plan: Plan): PlanSummary {

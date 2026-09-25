@@ -30,4 +30,33 @@ const warekiFormatVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
-export { warekiFormatVisitor };
+const warekiFormatters = new Set(["formatWarekiDate", "formatWarekiDateTime", "formatWarekiMonth"]);
+
+const dataSegmentFile = /\/src\/(?:.+\/)?(?:api|model)\/[^/]+$/u;
+
+const warekiInDataSegmentVisitor = (inspection: LintContext): Visitor => {
+  if (!dataSegmentFile.test(filename(inspection))) {
+    return {};
+  }
+  return {
+    ImportDeclaration(node: Node): void {
+      if (node.type !== "ImportDeclaration" || node.source.value !== "@repo/ui") {
+        return;
+      }
+      for (const specifier of node.specifiers) {
+        if (
+          specifier.type === "ImportSpecifier" &&
+          warekiFormatters.has(
+            specifier.imported.type === "Identifier"
+              ? specifier.imported.name
+              : specifier.imported.value,
+          )
+        ) {
+          reportViolation(inspection, specifier);
+        }
+      }
+    },
+  };
+};
+
+export { warekiFormatVisitor, warekiInDataSegmentVisitor };

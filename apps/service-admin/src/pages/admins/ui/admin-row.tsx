@@ -5,6 +5,7 @@ import {
   SelectField,
   TableCell,
   TableRow,
+  formatWarekiDate,
   type Confirmation,
 } from "@repo/ui";
 
@@ -59,7 +60,7 @@ function AdminRow({
         />
       </TableCell>
       <TableCell>{adminStateLabels[admin.accountState]}</TableCell>
-      <TableCell>{admin.registeredOn}</TableCell>
+      <TableCell>{formatWarekiDate(admin.createdAt)}</TableCell>
       <TableCell>
         {self ? null : (
           <Button

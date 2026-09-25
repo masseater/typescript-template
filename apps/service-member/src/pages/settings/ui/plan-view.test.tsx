@@ -1,10 +1,14 @@
+import { formatWarekiDate } from "@repo/ui";
 import { actionState, renderedAt } from "@repo/ui/testing";
+import { DateTime } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { PlanView } from "./plan-view.tsx";
 
 import type { PlanSummary } from "#pages/settings/model/plan-summary.ts";
 import type { ActionState } from "@repo/ui";
+
+const periodEndsAt = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00Z"));
 
 const free = {
   attention: undefined,
@@ -18,7 +22,10 @@ const paid = {
   attention: "支払いに失敗しました。",
   headline: "有料プラン",
   manageable: true,
-  periodEnd: "令和8年10月20日 に更新されます。",
+  periodEnd: {
+    canceling: false,
+    endsAt: periodEndsAt,
+  },
   upgradable: false,
 } as const satisfies PlanSummary;
 
@@ -59,7 +66,7 @@ describe("plan view", () => {
   it("shows the period, the warning and the portal to a paying member", () => {
     expect.hasAssertions();
     const html = rendered(paid, false, actionState({ pending: true }));
-    expect(html).toContain(paid.periodEnd);
+    expect(html).toContain(`現在の期間は ${formatWarekiDate(periodEndsAt)} までです。`);
     expect(html).toContain(paid.attention);
     expect(html).toContain("プランを管理する");
     expect(html).toContain("支払い事業者の管理ページ");
