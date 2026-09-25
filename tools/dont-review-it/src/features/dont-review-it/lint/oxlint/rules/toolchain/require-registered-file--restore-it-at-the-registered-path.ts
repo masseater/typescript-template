@@ -24,7 +24,9 @@ export const requireRegisteredFile = createDontReviewItRule({
     docs: {
       description:
         "Require every path the required-file table registers to hold a file that is not empty, so a file whose readers sit outside the source keeps its place instead of leaving with the change that stopped mentioning it",
-      relatedGuidelines: [".claude/skills/reviews/references/package-and-command-surfaces.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/expose-only-what-a-real-caller-uses.md",
+      ],
     },
     messages: {
       [MISSING_REGISTERED_FILE_MESSAGE_ID]:
