@@ -1,10 +1,4 @@
-import {
-  SUBSCRIPTION_STATUS,
-  WEBHOOK_DISPOSITION,
-  stripeCollectionMethods,
-  stripeWebhookEvents,
-  subscriptionStatuses,
-} from "@repo/config";
+import { WEBHOOK_DISPOSITION, stripeCollectionMethods, stripeWebhookEvents } from "@repo/config";
 import {
   acceptQuote,
   applyInvoiceState,
@@ -20,40 +14,21 @@ import {
 import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
-import { Stripe } from "./stripe.ts";
+import { Metadata, Stripe, SubscriptionBody, asStripeSubscription } from "./stripe.ts";
 
 import type { StripeWebhookEvent, WebhookOutcome } from "@repo/config";
 import type { InvoiceState, QuoteState, StripeEventRecord, SubscriptionRecord } from "@repo/db";
 import type { Decodable } from "@repo/runtime/contracts";
-import type { StripeEvent } from "./stripe.ts";
+import type { StripeEvent, StripeSubscription } from "./stripe.ts";
 
 const millisecondsPerSecond = 1000;
-
-const Metadata = Schema.optionalKey(
-  Schema.Record(Schema.String, Schema.String).pipe(Schema.NullOr),
-);
 
 const CheckoutSession = Schema.Struct({
   client_reference_id: Schema.NullOr(Schema.String),
   customer: Schema.NullOr(Schema.String),
   metadata: Metadata,
   mode: Schema.String,
-  payment_status: Schema.String,
   subscription: Schema.NullOr(Schema.String),
-});
-
-const PeriodItems = Schema.Struct({
-  data: Schema.Array(Schema.Struct({ current_period_end: Schema.optionalKey(Schema.Finite) })),
-});
-
-const Subscription = Schema.Struct({
-  cancel_at_period_end: Schema.Boolean,
-  current_period_end: Schema.optionalKey(Schema.Finite),
-  customer: Schema.String,
-  id: Schema.String,
-  items: Schema.optionalKey(PeriodItems),
-  metadata: Metadata,
-  status: Schema.Literals(subscriptionStatuses),
 });
 
 const Invoice = Schema.Struct({
@@ -75,7 +50,7 @@ const FinalizedInvoice = Schema.Struct({
   amount_remaining: Schema.Finite,
   currency: Schema.String,
   customer: Schema.String,
-  hosted_invoice_url: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  hosted_invoice_url: Schema.NullOr(Schema.String),
   id: Schema.String,
   metadata: Metadata,
   status: Schema.String,
@@ -125,13 +100,19 @@ function eventRecord(event: StripeEvent): StripeEventRecord {
   };
 }
 
-function secondsToDate(seconds: number | undefined): Date | undefined {
-  return seconds === undefined
-    ? undefined
-    : DateTime.toDate(DateTime.makeUnsafe(seconds * millisecondsPerSecond));
+function subscriptionRecord(
+  memberId: string,
+  subscription: StripeSubscription,
+): SubscriptionRecord {
+  return {
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    currentPeriodEnd: subscription.currentPeriodEnd,
+    memberId,
+    status: subscription.status,
+    stripeCustomerId: subscription.customerId,
+    stripeSubscriptionId: subscription.id,
+  };
 }
-
-const paidPaymentStatuses: ReadonlySet<string> = new Set(["no_payment_required", "paid"]);
 
 const completeCheckout = Effect.fn("completeCheckout")(function* completeCheckout(
   event: StripeEvent,
@@ -146,41 +127,15 @@ const completeCheckout = Effect.fn("completeCheckout")(function* completeCheckou
   ) {
     return WEBHOOK_DISPOSITION.ignored;
   }
-  const record: SubscriptionRecord = {
-    cancelAtPeriodEnd: false,
-    currentPeriodEnd: undefined,
-    memberId,
-    status: paidPaymentStatuses.has(session.payment_status)
-      ? SUBSCRIPTION_STATUS.active
-      : SUBSCRIPTION_STATUS.incomplete,
-    stripeCustomerId: session.customer,
-    stripeSubscriptionId: session.subscription,
-  };
-  return yield* attachCheckout(eventRecord(event), record);
+  const subscription = yield* (yield* Stripe).subscription(session.subscription);
+  return yield* attachCheckout(eventRecord(event), subscriptionRecord(memberId, subscription));
 });
-
-function subscriptionRecord(
-  memberId: string,
-  subscription: typeof Subscription.Type,
-): SubscriptionRecord {
-  return {
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    currentPeriodEnd: secondsToDate(
-      subscription.current_period_end ?? subscription.items?.data[0]?.current_period_end,
-    ),
-    memberId,
-    status: subscription.status,
-    stripeCustomerId: subscription.customer,
-    stripeSubscriptionId: subscription.id,
-  };
-}
 
 const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscription(
   event: StripeEvent,
 ) {
-  const subscription = yield* readObject(Subscription, event.data.object);
-  const memberId =
-    (yield* memberOfCustomer(subscription.customer)) ?? subscription.metadata?.["member_id"];
+  const subscription = asStripeSubscription(yield* readObject(SubscriptionBody, event.data.object));
+  const memberId = (yield* memberOfCustomer(subscription.customerId)) ?? subscription.memberId;
   if (memberId === undefined) {
     return WEBHOOK_DISPOSITION.ignored;
   }
@@ -299,10 +254,7 @@ const quoteAccepted = Effect.fn("quoteAccepted")(function* quoteAccepted(event: 
   if (ledgerState.stripeSubscriptionId === undefined) {
     return yield* applyQuoteState(eventRecord(event), ledgerState);
   }
-  const subscription = yield* readObject(
-    Subscription,
-    yield* (yield* Stripe).subscription(ledgerState.stripeSubscriptionId),
-  );
+  const subscription = yield* (yield* Stripe).subscription(ledgerState.stripeSubscriptionId);
   return yield* acceptQuote(eventRecord(event), {
     quote: ledgerState,
     subscription: subscriptionRecord(ledgerState.memberId, subscription),

@@ -21,7 +21,7 @@ const planSubscription = sqliteTable(
     cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" })
       .notNull()
       .default(false),
-    currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
+    currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }).notNull(),
     memberId: text("member_id")
       .primaryKey()
       .notNull()

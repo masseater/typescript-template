@@ -53,6 +53,7 @@ const subscribe = (memberId: string) =>
     database
       .insert(planSubscription)
       .values({
+        currentPeriodEnd: DateTime.toDate(DateTime.makeUnsafe("2099-01-01T00:00:00.000Z")),
         memberId,
         status: SUBSCRIPTION_STATUS.active,
         stripeCustomerId: `cus_${memberId}`,

@@ -169,7 +169,10 @@ function checkoutCompleted(memberId: string, id = "evt_checkout"): Record<string
 }
 
 function subscriptionEvent(
-  type: "customer.subscription.deleted" | "customer.subscription.updated",
+  type:
+    | "customer.subscription.created"
+    | "customer.subscription.deleted"
+    | "customer.subscription.updated",
   status: string,
   id: string,
   offsetSeconds = 1,
@@ -276,7 +279,20 @@ function quoteEvent(
   };
 }
 
+const periodEndSeconds = nowSeconds() + monthInSeconds;
+const periodEnd = DateTime.formatIso(DateTime.makeUnsafe(periodEndSeconds * millisecondsPerSecond));
+
 const stripeHandlers = [
+  http.get(`${stripeApi}/subscriptions/${subscriptionId}`, () =>
+    HttpResponse.json({
+      cancel_at_period_end: false,
+      customer: customerId,
+      id: subscriptionId,
+      items: { data: [{ current_period_end: periodEndSeconds }] },
+      metadata: {},
+      status: "active",
+    }),
+  ),
   http.get(`${stripeApi}/subscriptions/${quoteSubscriptionId}`, () =>
     HttpResponse.json({
       cancel_at_period_end: false,
@@ -324,6 +340,7 @@ const stripeHandlers = [
             amount_due: invoiceAmount,
             amount_remaining: invoiceAmount,
             currency: "jpy",
+            hosted_invoice_url: null,
             id: invoiceId,
             status: "draft",
           })
@@ -408,10 +425,122 @@ describe("billing api", () => {
       expect(result.admitted).toBe(httpStatus.ok);
       expect(result.paidPlan).toStrictEqual({
         cancelAtPeriodEnd: false,
+        currentPeriodEnd: periodEnd,
         plan: PLAN.paid,
         status: SUBSCRIPTION_STATUS.active,
       });
       expect(result.repeated).toBe(httpStatus.conflict);
+    }));
+
+  it("records nothing and answers with a failure when Stripe cannot hand over the checked-out subscription", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        const network = yield* MockNetwork;
+        network.use(...stripeHandlers);
+        network.use(
+          http.get(
+            `${stripeApi}/subscriptions/${subscriptionId}`,
+            () => HttpResponse.json({ error: { message: "unavailable" } }, { status: 503 }),
+            { once: true },
+          ),
+        );
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        const failed = yield* deliver(app, checkoutCompleted(id));
+        const planAfterFailure = yield* json(yield* call(app, client, "/billing/plan"));
+        const redelivered = yield* json(yield* deliver(app, checkoutCompleted(id)));
+        return { failed: failed.status, planAfterFailure, redelivered };
+      }),
+    ).then((result) => {
+      expect(result.failed).toBe(httpStatus.internalServerError);
+      expect(result.planAfterFailure).toStrictEqual({ cancelAtPeriodEnd: false, plan: PLAN.free });
+      expect(result.redelivered).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+    }));
+
+  it("keeps the period end from the checkout when an older subscription event arrives after it", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        const late = yield* json(
+          yield* deliver(
+            app,
+            subscriptionEvent("customer.subscription.created", "incomplete", "evt_created", -60),
+          ),
+        );
+        const plan = yield* json(yield* call(app, client, "/billing/plan"));
+        const usage = yield* json(yield* call(app, client, "/billing/usage"));
+        return { late, plan, usage };
+      }),
+    ).then((result) => {
+      expect(result.late).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.plan).toStrictEqual({
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: periodEnd,
+        plan: PLAN.paid,
+        status: SUBSCRIPTION_STATUS.active,
+      });
+      expect(result.usage).toStrictEqual({
+        events: 0,
+        quantity: 0,
+        since: DateTime.formatIso(
+          DateTime.subtract(DateTime.makeUnsafe(periodEndSeconds * millisecondsPerSecond), {
+            months: 1,
+          }),
+        ),
+        unreported: 0,
+      });
+    }));
+
+  it("answers the usage of a member who never subscribed with the paid plan requirement", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client } = yield* member(app);
+        return (yield* call(app, client, "/billing/usage")).status;
+      }),
+    ).then((status) => {
+      expect(status).toBe(httpStatus.paymentRequired);
+    }));
+
+  it("answers a quote acceptance with a Stripe failure, not an unreadable notice, when the fetched subscription is malformed", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        const network = yield* MockNetwork;
+        network.use(...stripeHandlers);
+        network.use(
+          http.get(`${stripeApi}/subscriptions/${quoteSubscriptionId}`, () =>
+            HttpResponse.json({ customer: quoteCustomerId, id: quoteSubscriptionId }),
+          ),
+        );
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        const accepted = yield* deliver(
+          app,
+          quoteEvent("quote.accepted", {
+            id: "evt_quote_malformed",
+            memberId: id,
+            offsetSeconds: 1,
+            status: "accepted",
+          }),
+        );
+        const stillRefused = yield* call(app, client, "/members?page=1");
+        return { accepted: accepted.status, stillRefused: stillRefused.status };
+      }),
+    ).then((result) => {
+      expect(result.accepted).toBe(httpStatus.internalServerError);
+      expect(result.stillRefused).toBe(httpStatus.paymentRequired);
     }));
 
   it("asks Stripe to calculate tax, collect a tax ID and start a trial when checkout begins", ({

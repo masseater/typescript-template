@@ -6,16 +6,22 @@ import {
   STRIPE_COLLECTION_METHOD,
   stripeApiVersion,
   stripeTrialPeriodDays,
+  subscriptionStatuses,
 } from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Redirect } from "@repo/runtime/contracts";
-import { Context, Effect, Layer, Redacted, Schema } from "effect";
+import { Context, DateTime, Effect, Layer, Redacted, Schema } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 import { StripeFailure } from "./stripe-failure.ts";
 import { verifyStripeSignature } from "./stripe-signature.ts";
 
-import type { ConfigurationInvalid, PriceInterval, StripeConfig } from "@repo/config";
+import type {
+  ConfigurationInvalid,
+  PriceInterval,
+  StripeConfig,
+  SubscriptionStatus,
+} from "@repo/config";
 import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
@@ -31,6 +37,44 @@ const StripeEvent = Schema.Struct({
   type: Schema.String,
 });
 type StripeEvent = typeof StripeEvent.Type;
+
+const Metadata = Schema.optionalKey(
+  Schema.Record(Schema.String, Schema.String).pipe(Schema.NullOr),
+);
+
+const SubscriptionBody = Schema.Struct({
+  cancel_at_period_end: Schema.Boolean,
+  customer: Schema.String,
+  id: Schema.String,
+  items: Schema.Struct({
+    data: Schema.NonEmptyArray(Schema.Struct({ current_period_end: Schema.Finite })),
+  }),
+  metadata: Metadata,
+  status: Schema.Literals(subscriptionStatuses),
+});
+type SubscriptionBody = typeof SubscriptionBody.Type;
+
+interface StripeSubscription {
+  readonly cancelAtPeriodEnd: boolean;
+  readonly currentPeriodEnd: Date;
+  readonly customerId: string;
+  readonly id: string;
+  readonly memberId: string | undefined;
+  readonly status: SubscriptionStatus;
+}
+
+function asStripeSubscription(subscription: SubscriptionBody): StripeSubscription {
+  return {
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    currentPeriodEnd: DateTime.toDate(
+      DateTime.makeUnsafe(subscription.items.data[0].current_period_end * millisecondsPerSecond),
+    ),
+    customerId: subscription.customer,
+    id: subscription.id,
+    memberId: subscription.metadata?.["member_id"],
+    status: subscription.status,
+  };
+}
 
 const RecurringPrice = Schema.Struct({
   currency: Schema.String,
@@ -52,7 +96,7 @@ const IssuedInvoiceBody = Schema.Struct({
   amount_due: Schema.Finite,
   amount_remaining: Schema.Finite,
   currency: Schema.String,
-  hosted_invoice_url: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  hosted_invoice_url: Schema.NullOr(Schema.String),
   id: Schema.String,
   status: Schema.String,
 });
@@ -105,7 +149,9 @@ interface StripeShape {
     payload: string,
     signature: string | null,
   ) => Effect.Effect<StripeEvent, StripeSignatureInvalid | StripeEventUnreadable>;
-  readonly subscription: (subscriptionId: string) => Effect.Effect<unknown, StripeFailure>;
+  readonly subscription: (
+    subscriptionId: string,
+  ) => Effect.Effect<StripeSubscription, StripeFailure>;
 }
 
 function decodeStripe<Contract extends Decodable>(
@@ -236,7 +282,11 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
         Effect.flatMap((body) => decodeStripe(IssuedInvoiceBody, body)),
         Effect.map(asIssuedInvoice),
       ),
-    subscription: (subscriptionId) => send(`/subscriptions/${subscriptionId}`),
+    subscription: (subscriptionId) =>
+      send(`/subscriptions/${subscriptionId}`).pipe(
+        Effect.flatMap((body) => decodeStripe(SubscriptionBody, body)),
+        Effect.map(asStripeSubscription),
+      ),
     reportUsage: (usage) =>
       send(
         "/billing/meter_events",
@@ -300,5 +350,5 @@ class Stripe extends Context.Service<Stripe, StripeShape>()("#shared/billing/Str
   }
 }
 
-export { Stripe };
-export type { StripeEvent };
+export { Metadata, Stripe, SubscriptionBody, asStripeSubscription };
+export type { StripeEvent, StripeSubscription };
