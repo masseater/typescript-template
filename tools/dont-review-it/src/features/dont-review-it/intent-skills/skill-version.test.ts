@@ -86,6 +86,45 @@ describe("lineOfLibraryVersion", () => {
   });
 });
 
+const SKILL_WITH_AN_EXAMPLE = `---
+name: core
+metadata:
+  type: core
+  library_version: "0.1.0"
+---
+
+# a skill
+
+library_version: "9.9.9"
+
+\`\`\`yaml
+metadata:
+  library_version: "9.9.9"
+\`\`\`
+`;
+
+describe("lineOfLibraryVersion on a skill whose body shows the key first", () => {
+  const it = test.extend("lineOfSkillWithAnExampleAbove", () =>
+    lineOfLibraryVersion(
+      `---\nname: core\ndescription: >\n  library_version: shown\nmetadata:\n  library_version: "0.1.0"\n---\n`,
+    ));
+
+  it("reports the line of metadata.library_version", ({ lineOfSkillWithAnExampleAbove }) => {
+    expect(lineOfSkillWithAnExampleAbove).toBe(6);
+  });
+});
+
+describe("withLibraryVersion on a skill whose body shows the key", () => {
+  const it = test.extend("skillWithAnExampleAfterRewrite", () =>
+    withLibraryVersion({ source: SKILL_WITH_AN_EXAMPLE, version: "0.2.0" }));
+
+  it("rewrites only the frontmatter", ({ skillWithAnExampleAfterRewrite }) => {
+    expect(skillWithAnExampleAfterRewrite).toBe(
+      SKILL_WITH_AN_EXAMPLE.replace('  library_version: "0.1.0"', '  library_version: "0.2.0"'),
+    );
+  });
+});
+
 describe("withLibraryVersion", () => {
   describe("a source declaring the version under metadata", () => {
     const it = test.extend("skillSourceCarryingTheNewVersion", () =>

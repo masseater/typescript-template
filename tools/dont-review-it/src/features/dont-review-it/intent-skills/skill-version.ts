@@ -1,32 +1,45 @@
-import { attempt, isPlainObject } from "es-toolkit";
-import { parse } from "yaml";
+import { isScalar, LineCounter, parseDocument } from "yaml";
 
-const METADATA_KEY = "metadata";
-
-const LIBRARY_VERSION_KEY = "library_version";
-
-const declaredValueOf = (holder: unknown, named: string): unknown =>
-  isPlainObject(holder) ? holder[named] : null;
+const LIBRARY_VERSION_PATH = ["metadata", "library_version"] as const;
 
 const FRONTMATTER_PATTERN = /^---\n(?<frontmatter>.*?)\n---/su;
 
-export const libraryVersionOf = (source: string): string | null => {
+const FRONTMATTER_OFFSET = "---\n".length;
+
+type DeclaredVersion = Readonly<{
+  end: number;
+  line: number;
+  start: number;
+  value: unknown;
+}>;
+
+const declaredVersionOf = (source: string): DeclaredVersion | null => {
   const frontmatterText = FRONTMATTER_PATTERN.exec(source)?.groups?.frontmatter;
   if (frontmatterText === undefined) return null;
 
-  const [unparsed, frontmatter] = attempt<unknown, Error>(() => parse(frontmatterText));
-  if (unparsed !== null) return null;
+  const lineCounter = new LineCounter();
+  const frontmatter = parseDocument(frontmatterText, { lineCounter });
+  if (frontmatter.errors.length > 0) return null;
 
-  const declared = declaredValueOf(declaredValueOf(frontmatter, METADATA_KEY), LIBRARY_VERSION_KEY);
+  const declared = frontmatter.getIn(LIBRARY_VERSION_PATH, true);
+  if (!isScalar(declared) || declared.range === null || declared.range === undefined) return null;
+
+  const [start, end] = declared.range;
+  return {
+    end: FRONTMATTER_OFFSET + end,
+    line: lineCounter.linePos(start).line + 1,
+    start: FRONTMATTER_OFFSET + start,
+    value: declared.value,
+  };
+};
+
+export const libraryVersionOf = (source: string): string | null => {
+  const declared = declaredVersionOf(source)?.value;
   return typeof declared === "string" ? declared : null;
 };
 
-const LIBRARY_VERSION_LINE_PATTERN = /^(?<indent>\s*)library_version:.*$/u;
-
-export const lineOfLibraryVersion = (source: string): number | null => {
-  const found = source.split("\n").findIndex((line) => LIBRARY_VERSION_LINE_PATTERN.test(line));
-  return found === -1 ? null : found + 1;
-};
+export const lineOfLibraryVersion = (source: string): number | null =>
+  declaredVersionOf(source)?.line ?? null;
 
 export const withLibraryVersion = ({
   source,
@@ -34,11 +47,9 @@ export const withLibraryVersion = ({
 }: {
   readonly source: string;
   readonly version: string;
-}): string =>
-  source
-    .split("\n")
-    .map((line) => {
-      const indent = LIBRARY_VERSION_LINE_PATTERN.exec(line)?.groups?.indent;
-      return indent === undefined ? line : `${indent}${LIBRARY_VERSION_KEY}: "${version}"`;
-    })
-    .join("\n");
+}): string => {
+  const declared = declaredVersionOf(source);
+  return declared === null
+    ? source
+    : `${source.slice(0, declared.start)}${JSON.stringify(version)}${source.slice(declared.end)}`;
+};

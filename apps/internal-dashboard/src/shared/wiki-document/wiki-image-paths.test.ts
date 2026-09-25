@@ -38,3 +38,26 @@ describe.each(["index.md", "getting-started/first-steps.md", "plans/wiki/editing
     });
   },
 );
+
+const notImages = `本文
+
+\`![図](${editorImagePrefix}${image})\`
+
+\`\`\`md
+![図](${editorImagePrefix}${image})
+\`\`\`
+
+[画像の元](${editorImagePrefix}${other})
+`;
+
+describe("an image path that is not an image of the page", () => {
+  const published = toRepositoryImages(notImages, "index.md");
+
+  it("stays as written in code spans, code blocks and plain links", () => {
+    expect(published.markdown).toBe(notImages);
+  });
+
+  it("is not committed as an image", () => {
+    expect(published.images).toStrictEqual([]);
+  });
+});
