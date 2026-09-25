@@ -407,7 +407,7 @@ erDiagram
   }
   plan_subscription {
     integer cancel_at_period_end
-    integer current_period_end "nullable"
+    integer current_period_end
     text member_id PK, FK
     text status
     text stripe_customer_id UK

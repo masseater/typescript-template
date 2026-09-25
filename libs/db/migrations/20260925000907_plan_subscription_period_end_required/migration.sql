@@ -2,7 +2,7 @@ PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_plan_subscription` (
 	`cancel_at_period_end` integer DEFAULT false NOT NULL,
 	`current_period_end` integer NOT NULL,
-	`member_id` text PRIMARY KEY,
+	`member_id` text PRIMARY KEY NOT NULL,
 	`status` text NOT NULL,
 	`stripe_customer_id` text NOT NULL,
 	`stripe_subscription_id` text NOT NULL,
