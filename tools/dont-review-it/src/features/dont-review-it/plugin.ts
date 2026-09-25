@@ -101,6 +101,7 @@ import { requireRegisteredFile } from "./lint/oxlint/rules/toolchain/require-reg
 import { forbidNumberedSiblingFile } from "./lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.ts";
 import { forbidOversizedFile } from "./lint/oxlint/rules/writing/forbid-oversized-file--split-by-responsibility.ts";
 import { forbidUnresolvableModuleSpecifier } from "./lint/oxlint/rules/writing/forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.ts";
+import { noAbstractClass } from "./lint/oxlint/rules/writing/no-abstract-class--pass-the-varying-step-as-a-function.ts";
 import { noAmbiguousVariableName } from "./lint/oxlint/rules/writing/no-ambiguous-variable-name--rename-to-concrete-noun.ts";
 import { noBehaviorSwitchEnvironmentKey } from "./lint/oxlint/rules/writing/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag.ts";
 import { noCittyParentRun } from "./lint/oxlint/rules/writing/no-citty-parent-run--move-run-into-a-subcommand.ts";
@@ -219,6 +220,7 @@ const plugin: Plugin = {
     [noHardcodedProviderId.name]: noHardcodedProviderId,
     [noIdentityWrapper.name]: noIdentityWrapper,
     [noInterfaceDeclaration.name]: noInterfaceDeclaration,
+    [noAbstractClass.name]: noAbstractClass,
     [noWeakenedProtectedRule.name]: noWeakenedProtectedRule,
     [noLenientCoverageThreshold.name]: noLenientCoverageThreshold,
     [noLocalFileSystemMock.name]: noLocalFileSystemMock,

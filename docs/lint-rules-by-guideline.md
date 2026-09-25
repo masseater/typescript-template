@@ -20,7 +20,9 @@ Which lint rules of this repository declare each normative document as their gro
 
 ## [.claude/skills/reviews/references/forbid-excessive-code-sharing.md](../.claude/skills/reviews/references/forbid-excessive-code-sharing.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [no-abstract-class--pass-the-varying-step-as-a-function](../tools/dont-review-it/docs/lint/no-abstract-class--pass-the-varying-step-as-a-function.md) | Disallow declaring an abstract class, so shared behaviour is reached through calls a reader can follow instead of through members a subclass inherits and overrides |
 
 ## [.claude/skills/reviews/references/frontend-components-and-state.md](../.claude/skills/reviews/references/frontend-components-and-state.md)
 

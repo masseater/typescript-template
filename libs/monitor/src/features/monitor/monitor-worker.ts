@@ -2,7 +2,7 @@ import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 
 import { monitorCheckUrl } from "./binding.ts";
-import { Monitor, type Alert, type MonitorBindings, type Notify } from "./monitor-base.ts";
+import { runMonitor, type Alert, type MonitorBindings, type Notify } from "./monitor-base.ts";
 
 import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
 
@@ -50,12 +50,24 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
   readonly handler: MonitorHandler;
 } => {
   const { check, event: monitorEvent, failure } = definition;
-  class Worker extends Monitor<Bindings> {
-    protected readonly monitorEvent = monitorEvent;
-    protected readonly failure = failure;
+  class Worker {
+    private readonly durableState: DurableObjectState;
+    private readonly env: Bindings;
 
-    protected check(notify: Notify): Effect.Effect<object, unknown> {
-      return check({ ctx: this.durableState, env: this.env }, notify);
+    public constructor(durableState: DurableObjectState, env: Bindings) {
+      this.durableState = durableState;
+      this.env = env;
+    }
+
+    public fetch(): Promise<Response> {
+      const { durableState, env } = this;
+      return runMonitor({
+        check: (notify) => check({ ctx: durableState, env }, notify),
+        durableState,
+        env,
+        failure,
+        monitorEvent,
+      });
     }
   }
   return { Worker, handler: monitorHandler(monitorEvent) };

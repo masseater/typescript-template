@@ -71,93 +71,119 @@ const AlertEnvironment = Schema.Struct({
   ),
 });
 
-abstract class Monitor<Bindings extends MonitorBindings> {
-  protected abstract readonly monitorEvent: string;
-  protected abstract readonly failure: Alert;
-  protected readonly durableState: DurableObjectState;
-  protected readonly env: Bindings;
-
-  public constructor(durableState: DurableObjectState, env: Bindings) {
-    this.durableState = durableState;
-    this.env = env;
-  }
-
-  public fetch(): Promise<Response> {
-    return this.durableState.blockConcurrencyWhile(() => Effect.runPromise(this.run()));
-  }
-
-  private run(): Effect.Effect<Response, MonitorFailure> {
-    return this.notifier().pipe(
-      Effect.flatMap((notify) => {
-        const monitor = this;
-        return Effect.gen(function* runCheck() {
-          const started = yield* Clock.currentTimeMillis;
-          const outcome = yield* Effect.exit(monitor.check(notify));
-          return Exit.isSuccess(outcome)
-            ? yield* monitor.reportSuccess(outcome.value, started)
-            : yield* monitor.reportFailure(notify, started, failureReason(outcome.cause));
-        });
-      }),
-    );
-  }
-
-  private notifier(): Effect.Effect<Notify, MonitorFailure> {
-    const { EMAIL } = this.env;
-    return Schema.decodeUnknownEffect(AlertEnvironment)(this.env).pipe(
-      Effect.mapError(() => new MonitorFailure({ code: "alert_config_invalid" })),
-      Effect.map(
-        (recipients): Notify =>
-          (alert) =>
-            Effect.promise(() =>
-              Promise.resolve(
-                EMAIL.send({ from: recipients.ALERT_FROM, to: [...recipients.ALERT_TO], ...alert }),
-              ),
+const notifierOf = (env: MonitorBindings): Effect.Effect<Notify, MonitorFailure> =>
+  Schema.decodeUnknownEffect(AlertEnvironment)(env).pipe(
+    Effect.mapError(() => new MonitorFailure({ code: "alert_config_invalid" })),
+    Effect.map(
+      (recipients): Notify =>
+        (alert) =>
+          Effect.promise(() =>
+            Promise.resolve(
+              env.EMAIL.send({
+                from: recipients.ALERT_FROM,
+                to: [...recipients.ALERT_TO],
+                ...alert,
+              }),
             ),
-      ),
+          ),
+    ),
+  );
+
+const reportSuccess = ({
+  checkReport,
+  durableState,
+  monitorEvent,
+  started,
+}: {
+  readonly checkReport: object;
+  readonly durableState: DurableObjectState;
+  readonly monitorEvent: string;
+  readonly started: number;
+}): Effect.Effect<Response> =>
+  Effect.gen(function* reportSuccess() {
+    yield* Effect.promise(() => durableState.storage.delete("failureNotifiedDay"));
+    const durationMs = (yield* Clock.currentTimeMillis) - started;
+    yield* Console.log(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        event: `${monitorEvent}.checked`,
+        ...checkReport,
+        durationMs,
+      }).pipe(Effect.orDie),
     );
-  }
+    return Response.json({ ok: true, ...checkReport });
+  });
 
-  private reportSuccess(checkReport: object, started: number): Effect.Effect<Response> {
-    const { durableState, monitorEvent } = this;
-    return Effect.gen(function* reportSuccess() {
-      yield* Effect.promise(() => durableState.storage.delete("failureNotifiedDay"));
-      const durationMs = (yield* Clock.currentTimeMillis) - started;
-      yield* Console.log(
-        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
-          event: `${monitorEvent}.checked`,
-          ...checkReport,
-          durationMs,
-        }).pipe(Effect.orDie),
-      );
-      return Response.json({ ok: true, ...checkReport });
-    });
-  }
+const reportFailure = ({
+  durableState,
+  failure,
+  monitorEvent,
+  notify,
+  reason,
+  started,
+}: {
+  readonly durableState: DurableObjectState;
+  readonly failure: Alert;
+  readonly monitorEvent: string;
+  readonly notify: Notify;
+  readonly reason: string;
+  readonly started: number;
+}): Effect.Effect<Response> =>
+  Effect.gen(function* reportFailure() {
+    const durationMs = (yield* Clock.currentTimeMillis) - started;
+    yield* Console.error(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        durationMs,
+        event: `${monitorEvent}.check_failed`,
+        reason,
+      }).pipe(Effect.orDie),
+    );
+    const day = DateTime.formatIsoDateUtc(DateTime.makeUnsafe(started));
+    if (
+      (yield* Effect.promise(() => durableState.storage.get<string>("failureNotifiedDay"))) !== day
+    ) {
+      yield* notify(failure);
+      yield* Effect.promise(() => durableState.storage.put("failureNotifiedDay", day));
+    }
+    return Response.json({ ok: false, reason }, { status: httpStatus.internalServerError });
+  });
 
-  private reportFailure(notify: Notify, started: number, reason: string): Effect.Effect<Response> {
-    const { durableState, monitorEvent, failure } = this;
-    return Effect.gen(function* reportFailure() {
-      const durationMs = (yield* Clock.currentTimeMillis) - started;
-      yield* Console.error(
-        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
-          durationMs,
-          event: `${monitorEvent}.check_failed`,
-          reason,
-        }).pipe(Effect.orDie),
-      );
-      const day = DateTime.formatIsoDateUtc(DateTime.makeUnsafe(started));
-      if (
-        (yield* Effect.promise(() => durableState.storage.get<string>("failureNotifiedDay"))) !==
-        day
-      ) {
-        yield* notify(failure);
-        yield* Effect.promise(() => durableState.storage.put("failureNotifiedDay", day));
-      }
-      return Response.json({ ok: false, reason }, { status: httpStatus.internalServerError });
-    });
-  }
+const runMonitor = ({
+  check,
+  durableState,
+  env,
+  failure,
+  monitorEvent,
+}: {
+  readonly check: (notify: Notify) => Effect.Effect<object, unknown>;
+  readonly durableState: DurableObjectState;
+  readonly env: MonitorBindings;
+  readonly failure: Alert;
+  readonly monitorEvent: string;
+}): Promise<Response> =>
+  durableState.blockConcurrencyWhile(() =>
+    Effect.runPromise(
+      Effect.gen(function* runCheck() {
+        const notify = yield* notifierOf(env);
+        const started = yield* Clock.currentTimeMillis;
+        const outcome = yield* Effect.exit(check(notify));
+        return Exit.isSuccess(outcome)
+          ? yield* reportSuccess({
+              checkReport: outcome.value,
+              durableState,
+              monitorEvent,
+              started,
+            })
+          : yield* reportFailure({
+              durableState,
+              failure,
+              monitorEvent,
+              notify,
+              reason: failureReason(outcome.cause),
+              started,
+            });
+      }),
+    ),
+  );
 
-  protected abstract check(notify: Notify): Effect.Effect<object, unknown>;
-}
-
-export { AlertEnvironment, Monitor, Recipients };
+export { AlertEnvironment, Recipients, runMonitor };
 export type { Alert, MonitorBindings, Notify };
