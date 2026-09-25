@@ -59,9 +59,9 @@ describe("effect typecheck gate", () => {
     )
     .extend("canonicalBaseline", () =>
       Effect.runPromise(
-        Effect.map(filesystem.readFileString(baselinePath), (baselineText) =>
-          serializeBaseline(parseBaseline(baselineText)),
-        ),
+        filesystem
+          .readFileString(baselinePath)
+          .pipe(Effect.flatMap(parseBaseline), Effect.map(serializeBaseline)),
       ),
     )
     .extend("committedBaseline", () => Effect.runPromise(filesystem.readFileString(baselinePath)))
@@ -127,11 +127,14 @@ describe("effect typecheck gate", () => {
     )
     .extend("snapshottedExportCodes", () =>
       Effect.runPromise(
-        Effect.map(filesystem.readFileString(baselinePath), (baselineText) =>
-          Object.values(parseBaseline(baselineText).workspaces)
-            .flat()
-            .map((diagnostic) => diagnostic.code)
-            .filter((code) => missingExportCodes.some((missingCode) => missingCode === code)),
+        filesystem.readFileString(baselinePath).pipe(
+          Effect.flatMap(parseBaseline),
+          Effect.map((baseline) =>
+            Object.values(baseline.workspaces)
+              .flat()
+              .map((diagnostic) => diagnostic.code)
+              .filter((code) => missingExportCodes.some((missingCode) => missingCode === code)),
+          ),
         ),
       ),
     )

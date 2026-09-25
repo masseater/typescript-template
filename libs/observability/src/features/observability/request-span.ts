@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/config";
+import { httpStatus, webCrypto } from "@repo/config";
 import { Cause, Clock, Context, Effect, Predicate, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan, withSpan, type Attributes } from "./annotations.ts";
@@ -13,7 +13,7 @@ import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol
 import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 type Entropy = {
-  readonly requestId: () => string;
+  readonly requestId: Effect.Effect<string>;
   readonly epochMilliseconds: Effect.Effect<number>;
   readonly monotonicMilliseconds: Effect.Effect<number>;
 };
@@ -24,7 +24,7 @@ export const RequestEntropy = Context.Reference<Entropy>("@repo/observability/Re
     monotonicMilliseconds: Effect.map(Clock.monotonicTimeNanos, (monotonicNanos) =>
       Number(monotonicNanos / nanosPerMillisecond),
     ),
-    requestId: (): string => crypto.randomUUID(),
+    requestId: webCrypto.randomUUIDv4.pipe(Effect.orDie),
   }),
 });
 const incomingParent = (
@@ -36,12 +36,12 @@ const incomingParent = (
     : Tracer.externalSpan({ spanId: parent.parentSpanId, traceId: parent.traceId });
 };
 const requestContextOf = (observed: {
-  readonly entropy: Entropy;
+  readonly requestId: string;
   readonly span: Readonly<Pick<Tracer.Span, "spanId" | "traceId">>;
 }): RequestContext => {
-  const { entropy, span } = observed;
+  const { requestId, span } = observed;
   return {
-    requestId: entropy.requestId(),
+    requestId,
     spanId: span.spanId,
     traceId: span.traceId,
     traceparent: traceparentOf(span),
@@ -161,7 +161,7 @@ export const observeRequest = <Requirements>(
       entropy,
       handle,
       incoming,
-      requestContext: requestContextOf({ entropy, span }),
+      requestContext: requestContextOf({ requestId: yield* entropy.requestId, span }),
     });
   }).pipe(
     withSpan("http.server.request", {
