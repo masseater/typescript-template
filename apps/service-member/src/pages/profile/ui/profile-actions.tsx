@@ -1,5 +1,7 @@
-import { Button, ButtonLink } from "@repo/ui";
+import { Button, ButtonLink, FailureStatus } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
 
+import { visibilityOptions } from "#entities/profile/index.ts";
 import { ProfileShare } from "./profile-share.tsx";
 
 import type { ReactElement } from "react";
@@ -14,10 +16,18 @@ function ActionError({ error }: Readonly<{ error: string | undefined }>): ReactE
 }
 
 function OwnActions({ memberId }: Readonly<{ memberId: string }>): ReactElement {
+  const visibility = useQuery(visibilityOptions);
   return (
     <>
       <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>
-      <ProfileShare memberId={memberId} privateProfile={false} />
+      <FailureStatus
+        error={
+          visibility.isError
+            ? `公開範囲を読み込めませんでした。${visibility.error.message}`
+            : undefined
+        }
+      />
+      <ProfileShare memberId={memberId} visibility={visibility.data?.visibility} />
     </>
   );
 }

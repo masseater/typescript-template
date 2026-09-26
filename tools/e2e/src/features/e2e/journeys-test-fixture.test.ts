@@ -50,7 +50,7 @@ describe("アプリ全体の導線", () => {
       ),
     );
 
-  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素まで辿れる", ({
+  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素・公開範囲まで辿れる", ({
     memberJourney,
   }) => {
     expect(memberJourney).toStrictEqual({
@@ -62,6 +62,7 @@ describe("アプリ全体の導線", () => {
       reachesPlanInOneClick: true,
       showsTheBiographyWrittenEarlier: true,
       showsTheReplyOnTheThread: true,
+      warnsSharingWhilePrivate: true,
     });
   });
 

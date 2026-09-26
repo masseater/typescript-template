@@ -271,6 +271,41 @@ const revisitProfile = (
     );
   });
 
+const privateShareNotice = "公開範囲が「自分だけ」のときは、共有しても相手には見えません。";
+
+const warnsSharingAPrivateProfile = (
+  page: Page,
+  visit: { readonly origin: string; readonly profileUrl: string },
+): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* hideProfileAndShare() {
+    yield* pageStep(() => page.goto(`${visit.origin}/settings/visibility`));
+    yield* seeHeading(page, "公開範囲");
+    yield* pageStep(() =>
+      page.getByRole("combobox", { name: "プロフィールを見られる人" }).first().click(),
+    );
+    yield* pageStep(() => page.getByRole("option", { name: "自分だけ" }).first().click());
+    yield* press(page, "保存");
+    yield* seeText(page, "公開範囲を保存しました。");
+    yield* pageStep(() => page.goto(visit.profileUrl));
+    yield* seeText(page, privateShareNotice);
+    return yield* pageStep(() =>
+      page.getByText(privateShareNotice, { exact: false }).first().isVisible(),
+    );
+  });
+
+const revisitOwnProfile = (
+  page: Page,
+  written: { readonly biography: string; readonly origin: string; readonly profileUrl: string },
+): Effect.Effect<
+  { readonly showsTheBiography: boolean; readonly warnsSharingWhilePrivate: boolean },
+  JourneyFailure
+> =>
+  Effect.gen(function* revisitThenHide() {
+    const showsTheBiography = yield* revisitProfile(page, written);
+    const warnsSharingWhilePrivate = yield* warnsSharingAPrivateProfile(page, written);
+    return { showsTheBiography, warnsSharingWhilePrivate };
+  });
+
 const runMemberJourney = (
   stage: JourneyStage,
 ): Effect.Effect<
@@ -283,6 +318,7 @@ const runMemberJourney = (
     readonly reachesPlanInOneClick: boolean;
     readonly showsTheBiographyWrittenEarlier: boolean;
     readonly showsTheReplyOnTheThread: boolean;
+    readonly warnsSharingWhilePrivate: boolean;
   },
   JourneyFailure,
   Crypto.Crypto
@@ -296,8 +332,9 @@ const runMemberJourney = (
     const enrollment = yield* enrollTotp({ account, origin, page: stage.page });
     yield* signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
     const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
-    const showsTheBiographyWrittenEarlier = yield* revisitProfile(stage.page, {
+    const profile = yield* revisitOwnProfile(stage.page, {
       biography,
+      origin,
       profileUrl: `${origin}${profilePath}`,
     });
     return {
@@ -307,8 +344,9 @@ const runMemberJourney = (
       opensEveryListedSettingsItem: settings.opensEveryListedItem,
       reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
       reachesPlanInOneClick: settings.reachesPlanInOneClick,
-      showsTheBiographyWrittenEarlier,
+      showsTheBiographyWrittenEarlier: profile.showsTheBiography,
       showsTheReplyOnTheThread: board.showsTheReply,
+      warnsSharingWhilePrivate: profile.warnsSharingWhilePrivate,
     };
   });
 

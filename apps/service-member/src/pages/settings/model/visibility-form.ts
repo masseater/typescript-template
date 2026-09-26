@@ -6,7 +6,7 @@ import { Atom } from "effect/unstable/reactivity";
 
 import { saveVisibility } from "#pages/settings/api/visibility.ts";
 
-import type { Visibility } from "#pages/settings/api/visibility.ts";
+import type { Visibility } from "#entities/profile/index.ts";
 interface VisibilityForm extends Visibility {
   readonly blocked: boolean;
   readonly error: string | undefined;

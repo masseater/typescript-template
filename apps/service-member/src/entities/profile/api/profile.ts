@@ -3,12 +3,13 @@ import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
-import { ProfileView } from "#shared/contracts/index.ts";
+import { ProfileView, VisibilityView } from "#shared/contracts/index.ts";
 
 import type { ProfileUpdate } from "#shared/contracts/index.ts";
 
 type Profile = typeof ProfileView.Type;
 type ProfileDraft = typeof ProfileUpdate.Type;
+type Visibility = typeof VisibilityView.Type;
 
 function loadProfile(): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
@@ -34,5 +35,17 @@ const profileOptions = queryOptions({
   retry: false,
 });
 
-export { profileOptions, saveProfile };
-export type { Profile, ProfileDraft };
+function loadVisibility(): Promise<Visibility> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.profile.visibility.get().then((response) => apiData(VisibilityView, response)),
+  );
+}
+
+const visibilityOptions = queryOptions({
+  queryFn: loadVisibility,
+  queryKey: ["profile", "visibility"],
+  retry: false,
+});
+
+export { profileOptions, saveProfile, visibilityOptions };
+export type { Profile, ProfileDraft, Visibility };

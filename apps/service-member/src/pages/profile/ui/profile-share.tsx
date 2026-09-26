@@ -1,3 +1,4 @@
+import { PROFILE_VISIBILITY } from "@repo/config";
 import {
   Button,
   FailureStatus,
@@ -10,6 +11,7 @@ import {
 } from "@repo/ui";
 import { Effect, Option } from "effect";
 
+import type { ProfileVisibility } from "@repo/config";
 import type { ReactElement } from "react";
 
 function profileUrl(memberId: string): string {
@@ -60,8 +62,8 @@ const useQrOpen = localState(false);
 
 function ProfileShare({
   memberId,
-  privateProfile,
-}: Readonly<{ memberId: string; privateProfile: boolean }>): ReactElement {
+  visibility,
+}: Readonly<{ memberId: string; visibility: ProfileVisibility | undefined }>): ReactElement {
   const [feedback, setFeedback] = useOptionalString();
   const [qrOpen, setQrOpen] = useQrOpen();
   const sharing = useAction();
@@ -71,7 +73,7 @@ function ProfileShare({
       <Heading as="h2" size="section">
         共有
       </Heading>
-      {privateProfile && (
+      {visibility === PROFILE_VISIBILITY.self && (
         <StatusMessage variant={STATUS_VARIANT.pending}>
           公開範囲が「自分だけ」のときは、共有しても相手には見えません。
         </StatusMessage>
