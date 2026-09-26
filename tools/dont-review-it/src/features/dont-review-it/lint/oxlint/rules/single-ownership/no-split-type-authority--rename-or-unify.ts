@@ -28,7 +28,7 @@ export const createNoSplitTypeAuthority = ({
       docs: {
         description:
           "Disallow an exported type whose name carries a second shape inside its workspace, or whose non-trivial shape carries a second name inside the repository, so a name and a structure keep pointing at each other one to one",
-        relatedGuidelines: [".claude/skills/reviews/references/ownership-and-duplication.md"],
+        relatedGuidelines: [".claude/skills/reviews/references/give-every-concept-one-owner.md"],
       },
       messages: {
         [SPLIT_SHAPE_MESSAGE_ID]:

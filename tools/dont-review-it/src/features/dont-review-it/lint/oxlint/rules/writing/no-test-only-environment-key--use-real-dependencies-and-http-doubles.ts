@@ -12,7 +12,9 @@ export const noTestOnlyEnvironmentKey = createDontReviewItRule({
     docs: {
       description:
         "Disallow environment keys that exist only to change behaviour under test (`MOCK_*`, `SKIP_*`, `FAKE_*`, `STUB_*`, `DUMMY_*`, `TEST_*`), so the code under test runs the same path it runs in production",
-      relatedGuidelines: [".claude/skills/reviews/references/minimal-environment-variables.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/never-add-an-environment-variable-for-a-known-value.md",
+      ],
     },
     messages: {
       testOnlyKey:

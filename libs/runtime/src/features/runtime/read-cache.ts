@@ -31,10 +31,9 @@ type Namespace = Pick<KVNamespace, "delete" | "get" | "put">;
 const attempt = storageAttempt("cache");
 const cacheOf = (namespace: Namespace): ReadCacheShape => {
   const get = (fieldName: string): Effect.Effect<string | undefined, StorageFailed> =>
-    attempt("get", async () => {
-      const decoded = await namespace.get(fieldName);
-      return decoded ?? undefined;
-    });
+    attempt("get", () => namespace.get(fieldName)).pipe(
+      Effect.map((decoded) => decoded ?? undefined),
+    );
   const put = (
     fieldName: string,
     asked: {
@@ -44,19 +43,17 @@ const cacheOf = (namespace: Namespace): ReadCacheShape => {
       };
     },
   ): Effect.Effect<void, StorageFailed> =>
-    attempt("put", async () => {
-      await namespace.put(
+    attempt("put", () =>
+      namespace.put(
         fieldName,
         asked.decoded,
         asked.settings?.expirationTtl === undefined
           ? undefined
           : { expirationTtl: asked.settings.expirationTtl },
-      );
-    });
+      ),
+    );
   const remove = (fieldName: string): Effect.Effect<void, StorageFailed> =>
-    attempt("delete", async () => {
-      await namespace.delete(fieldName);
-    });
+    attempt("delete", () => namespace.delete(fieldName));
   return {
     get,
     getOrLoad: (fieldName, asked) =>
