@@ -23,6 +23,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
   code: Schema.Literals([
     "deployment_command_invalid",
     "account_read_unavailable",
+    "approval_handoff_unwritable",
     "database_input_invalid",
     "database_name_taken",
     "database_output_unavailable",
@@ -153,7 +154,16 @@ function workerObservability(config: SharedConfig): WorkerObservability {
 }
 
 const PlanCommand = Schema.Tuple([Schema.Literal("plan"), Schema.Literals(["all", ...stackNames])]);
-const DeployAllCommand = Schema.Tuple([Schema.Literal("deploy"), Schema.Literal("all")]);
+const DeployAllCommand = Schema.Union([
+  Schema.Tuple([Schema.Literal("deploy"), Schema.Literal("all")]),
+  Schema.Tuple([
+    Schema.Literal("deploy"),
+    Schema.Literal("all"),
+    Schema.Literal("--approve"),
+    Schema.Literals(stackNames),
+    Confirmation,
+  ]),
+]);
 const DeployCommand = Schema.Tuple([
   Schema.Literal("deploy"),
   Schema.Literals(stackNames),
@@ -169,7 +179,9 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
     Effect.mapError(() => CloudflareFailure.make({ code: "deployment_command_invalid", keys: [] })),
   );
   if (parsed[0] === "deploy" && parsed[1] === "all") {
-    return { operation: "deploy-all", stacks: stackNames } as const;
+    const approval =
+      parsed.length === 2 ? undefined : { confirmation: parsed[4], stack: parsed[3] };
+    return { approval, operation: "deploy-all", stacks: stackNames } as const;
   }
   if (parsed[0] === "deploy") {
     return { confirmation: parsed[3], operation: "deploy", stack: parsed[1] } as const;
