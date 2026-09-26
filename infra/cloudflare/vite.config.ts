@@ -15,6 +15,7 @@ import { monitorStacks } from "./src/features/cloudflare/monitors.ts";
 const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,
 );
+const deploymentPrerequisites = [...stackBuilds, "verify:account"];
 
 export default defineConfig({
   run: {
@@ -31,12 +32,12 @@ export default defineConfig({
       deploy: {
         cache: false,
         command: "./src/features/cloudflare/cli.ts deploy",
-        dependsOn: [...stackBuilds, "prerelease", "typescript-template#prerelease"],
+        dependsOn: deploymentPrerequisites,
       },
       "deploy:ordered": {
         cache: false,
         command: "./src/features/cloudflare/cli.ts deploy all",
-        dependsOn: [...stackBuilds, "verify:account"],
+        dependsOn: deploymentPrerequisites,
       },
       "materialize:env": { cache: false, command: "./src/features/cloudflare/materialize-env.ts" },
       "prepare:ci-env": { cache: false, command: "./src/features/cloudflare/prepare-ci-env.ts" },
