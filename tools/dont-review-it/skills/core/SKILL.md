@@ -64,7 +64,7 @@ The rule list is discoverable — `vp lint --print-config` prints every built-in
 
 **Tests have no hooks and one assertion each.** `vitest/no-hooks` and `forbid-test-hook--move-setup-into-fixture` reject `beforeEach`; setup arrives through a `test.extend` fixture. `forbid-multi-expect-it--split-into-separate-it` caps assertions per block, and `no-lenient-coverage-threshold--demand-full-coverage` rejects a coverage threshold below full.
 
-**A rule cannot be silenced.** `respectEslintDisableDirectives` is `false`, so an `eslint-disable` comment is inert here; `reportUnusedDisableDirectives` is an error; and `no-rule-suppression--fix-the-violation` and `no-blanket-suppression--name-and-record` close what remains.
+**A rule is silenced for one line at most.** `respectEslintDisableDirectives` is `false`, so an `eslint-disable` comment is inert here; `reportUnusedDisableDirectives` is an error; `no-blanket-suppression--name-and-record` accepts only `oxlint-disable-next-line <rule> -- <grounds>`; and `no-rule-suppression--fix-the-violation` keeps the determinism gate on in every configuration.
 
 **Size limits reject working code.** `complexity` 10, `max-depth` 4, `max-statements` 10, `max-nested-callbacks` 2, `max-classes-per-file` 1, and `max-lines-per-function` 200 in source files. Under `specs/`, `describe` nesting is capped at 1.
 

@@ -12,31 +12,36 @@ import { toPosixPath } from "../../lib/posix-path.ts";
 import type { Comment, ESTree } from "@oxlint/plugins";
 import type { RuleMessage } from "../../lib/rule-message.ts";
 
-const STATEMENT_SCOPED_SPELLINGS: ReadonlySet<string> = new Set([
-  "oxlint-disable-next-line",
-  "eslint-disable-next-line",
-]);
+const NEXT_LINE_SPELLING = "oxlint-disable-next-line";
+
+const INERT_NEXT_LINE_SPELLING = "eslint-disable-next-line";
 
 const LEDGER_FILE_NAME = "approved-lint-suppressions.json";
 
 const BEFORE_SUPPRESSING =
-  "Rewrite the code the rule reports before writing any suppression, and when the report is wrong, correct the condition that produced it instead of covering it.";
+  "Rewrite the code the rule reports first, and when the report is wrong, correct the condition that produced it.";
 
-const REGISTERED_EXCEPTION =
-  "Where an exception has to stand for a named file, register it in the lint configuration that names that file, never in a suppression comment and never in a repository ledger.";
+const NEXT_LINE_EXCEPTION = `Where the code has to stay as written, write \`${NEXT_LINE_SPELLING} <rule> -- <grounds>\` directly above that one line, and never widen the exception to a range, a file, or a package.`;
+
+const OXLINT_GROUNDS_SEPARATOR = "--";
+
+const unreadableRuleNameIn = (ruleNames: readonly string[]): string | undefined =>
+  ruleNames.find((ruleName) => ruleName.includes(OXLINT_GROUNDS_SEPARATOR));
 
 const unmetConditionFor = (directive: SuppressionDirective): RuleMessage | null => {
   const spelling = { spelling: directive.spelling };
   if (directive.ruleNames.length === 0) return { messageId: "unnamedSuppression", data: spelling };
-  if (!STATEMENT_SCOPED_SPELLINGS.has(directive.spelling)) {
+  if (directive.spelling === INERT_NEXT_LINE_SPELLING) {
+    return { messageId: "inertSuppression", data: spelling };
+  }
+  if (directive.spelling !== NEXT_LINE_SPELLING) {
     return { messageId: "wideSuppression", data: spelling };
   }
-  if (directive.carriesGrounds) {
-    return {
-      messageId: "standingSuppression",
-      data: { ruleNames: directive.ruleNames.join("`, `") },
-    };
+  const unreadableRuleName = unreadableRuleNameIn(directive.ruleNames);
+  if (unreadableRuleName !== undefined) {
+    return { messageId: "unreadableRuleName", data: { ruleName: unreadableRuleName } };
   }
+  if (directive.carriesGrounds) return null;
   return {
     messageId: "groundlessSuppression",
     data: { ruleNames: directive.ruleNames.join("`, `") },
@@ -52,15 +57,16 @@ export const noBlanketSuppression = createDontReviewItRule({
     type: "problem",
     docs: {
       description:
-        "Disallow any lint suppression comment and disallow a repository ledger of approved suppressions, so a report ends in a repair to the code or a named exception in the lint configuration and never in a comment or a side file that takes the report away",
+        "Disallow a lint suppression comment that covers more than the next line, names no rule, or carries no grounds, and disallow a repository ledger of approved suppressions, so an exception covers only the line it stands above and says why it stands",
       relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
     },
     messages: {
-      unnamedSuppression: `A \`{{spelling}}\` comment must not stand without naming the rule it stops. Delete it and rewrite the code the linter reports. ${BEFORE_SUPPRESSING} ${REGISTERED_EXCEPTION}`,
-      wideSuppression: `A \`{{spelling}}\` comment must not take a scope other than the one statement below it. Delete it and rewrite the code the linter reports. ${BEFORE_SUPPRESSING} ${REGISTERED_EXCEPTION}`,
-      groundlessSuppression: `A suppression of \`{{ruleNames}}\` must not stand. Delete it and rewrite the code that rule reports. ${BEFORE_SUPPRESSING} ${REGISTERED_EXCEPTION}`,
-      standingSuppression: `A suppression of \`{{ruleNames}}\` must not stand, grounds or no grounds. Delete it and rewrite the code that rule reports. ${BEFORE_SUPPRESSING} ${REGISTERED_EXCEPTION}`,
-      approvalLedger: `A repository must not hold \`${LEDGER_FILE_NAME}\`. Delete that file, delete every suppression comment it stood for, and rewrite the code those comments covered, or register a named-file exception in the lint configuration. ${REGISTERED_EXCEPTION}`,
+      unnamedSuppression: `A \`{{spelling}}\` comment must name the rule it stops. ${BEFORE_SUPPRESSING} ${NEXT_LINE_EXCEPTION}`,
+      wideSuppression: `A \`{{spelling}}\` comment must not take a scope wider than the next line. Delete it. ${BEFORE_SUPPRESSING} ${NEXT_LINE_EXCEPTION}`,
+      inertSuppression: `A \`{{spelling}}\` comment stops nothing, since this configuration reads only the oxlint spelling. Delete it. ${BEFORE_SUPPRESSING} ${NEXT_LINE_EXCEPTION}`,
+      groundlessSuppression: `A suppression of \`{{ruleNames}}\` must carry its grounds after \`--\` on the same line. Grounds repeating the rule name, or reading only as "false positive", count as none. ${BEFORE_SUPPRESSING} ${NEXT_LINE_EXCEPTION}`,
+      unreadableRuleName: `A suppression comment must not name \`{{ruleName}}\`. oxlint reads \`${OXLINT_GROUNDS_SEPARATOR}\` as the start of the grounds, so the comment stops nothing. Delete it, and rewrite the code that rule reports.`,
+      approvalLedger: `A repository must not hold \`${LEDGER_FILE_NAME}\`. Delete that file, and write each exception it stood for as a suppression comment above the one line it covers. ${NEXT_LINE_EXCEPTION}`,
     },
     schema: [],
   },

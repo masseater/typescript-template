@@ -6,6 +6,8 @@ import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-f
 import { path } from "../../../../platform/path.ts";
 import { noBlanketSuppression } from "./no-blanket-suppression--name-and-record.ts";
 
+const CONSOLE_RULE = "no-console";
+
 const REASSIGN_RULE = "no-reassign--use-spread-or-iife";
 
 const STATEMENT = "element.total = 1;";
@@ -52,6 +54,15 @@ describe("dont-review-it/no-blanket-suppression--name-and-record", () => {
         name: "re-enabling a rule is not a suppression",
         code: `// oxlint-enable ${REASSIGN_RULE}\n${STATEMENT}`,
       },
+      {
+        name: "a next-line directive that names its rule and carries grounds passes",
+        documented: true,
+        code: `// oxlint-disable-next-line ${CONSOLE_RULE} -- ${GROUNDS}\n${STATEMENT}`,
+      },
+      {
+        name: "a next-line directive naming its rule with the plugin prefix passes",
+        code: `// oxlint-disable-next-line eslint/${CONSOLE_RULE} -- ${GROUNDS}\n${STATEMENT}`,
+      },
     ],
     invalid: [
       {
@@ -85,38 +96,44 @@ describe("dont-review-it/no-blanket-suppression--name-and-record", () => {
       },
       {
         name: "a directive written without a grounds separator is reported",
-        code: `// oxlint-disable-next-line ${REASSIGN_RULE}\n${STATEMENT}`,
-        errors: [{ messageId: "groundlessSuppression", data: { ruleNames: REASSIGN_RULE } }],
+        documented: true,
+        code: `// oxlint-disable-next-line ${CONSOLE_RULE}\n${STATEMENT}`,
+        errors: [{ messageId: "groundlessSuppression", data: { ruleNames: CONSOLE_RULE } }],
       },
       {
         name: "grounds spelled as the rule name alone are no grounds",
-        code: `// oxlint-disable-next-line ${REASSIGN_RULE} -- ${REASSIGN_RULE}\n${STATEMENT}`,
+        code: `// oxlint-disable-next-line ${CONSOLE_RULE} -- ${CONSOLE_RULE}\n${STATEMENT}`,
         errors: [{ messageId: "groundlessSuppression" }],
       },
       {
         name: "grounds spelled as a claim of a wrong report are no grounds",
-        code: `// oxlint-disable-next-line ${REASSIGN_RULE} -- false positive\n${STATEMENT}`,
+        code: `// oxlint-disable-next-line ${CONSOLE_RULE} -- false positive\n${STATEMENT}`,
         errors: [{ messageId: "groundlessSuppression" }],
       },
       {
-        name: "a next-line directive that names its rule and carries grounds is still reported",
-        documented: true,
-        code: `// oxlint-disable-next-line ${REASSIGN_RULE} -- ${GROUNDS}\n${STATEMENT}`,
-        errors: [{ messageId: "standingSuppression", data: { ruleNames: REASSIGN_RULE } }],
+        name: "the eslint spelling of a next-line directive is reported as inert",
+        code: `// eslint-disable-next-line ${REASSIGN_RULE} -- ${GROUNDS}\n${STATEMENT}`,
+        errors: [{ messageId: "inertSuppression", data: { spelling: "eslint-disable-next-line" } }],
       },
       {
-        name: "a rule name carrying its plugin prefix is still reported",
+        name: "a range opened by a whole-file directive is reported for its scope",
+        code: `/* oxlint-disable ${REASSIGN_RULE} -- ${GROUNDS} */\n${STATEMENT}\n/* oxlint-enable ${REASSIGN_RULE} */`,
+        errors: [{ messageId: "wideSuppression", data: { spelling: "oxlint-disable" } }],
+      },
+      {
+        name: "a next-line directive naming a rule whose name holds the grounds separator is reported",
+        documented: true,
         code: `// oxlint-disable-next-line dont-review-it/${REASSIGN_RULE} -- ${GROUNDS}\n${STATEMENT}`,
         errors: [
           {
-            messageId: "standingSuppression",
-            data: { ruleNames: `dont-review-it/${REASSIGN_RULE}` },
+            messageId: "unreadableRuleName",
+            data: { ruleName: `dont-review-it/${REASSIGN_RULE}` },
           },
         ],
       },
       {
         name: "each directive in a file is reported on its own",
-        code: `// oxlint-disable-next-line ${REASSIGN_RULE}\n${STATEMENT}\n// oxlint-disable-next-line ${REASSIGN_RULE}\n${STATEMENT}`,
+        code: `// oxlint-disable-next-line ${CONSOLE_RULE}\n${STATEMENT}\n// oxlint-disable-next-line ${CONSOLE_RULE}\n${STATEMENT}`,
         errors: [{ messageId: "groundlessSuppression" }, { messageId: "groundlessSuppression" }],
       },
       {

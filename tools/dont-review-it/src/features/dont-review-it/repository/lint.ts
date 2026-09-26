@@ -564,7 +564,7 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           {
             location: "anywhere",
-            terms: ["todo", "fixme", "xxx", "eslint-disable", "oxlint-disable", "react-doctor"],
+            terms: ["todo", "fixme", "xxx", "eslint-disable", "react-doctor"],
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
