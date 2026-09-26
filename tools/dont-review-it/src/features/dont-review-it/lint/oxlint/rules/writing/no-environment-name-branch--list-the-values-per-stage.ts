@@ -12,7 +12,9 @@ export const noEnvironmentNameBranch = createDontReviewItRule({
     docs: {
       description:
         "Disallow reading or declaring an environment key that names the environment itself (`NODE_ENV`, `APP_ENV`, `STAGE`, `import.meta.env.MODE`), so the differences between environments live in one table of values per stage instead of in comparisons spread through the code",
-      relatedGuidelines: [".claude/skills/reviews/references/minimal-environment-variables.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/never-add-an-environment-variable-for-a-known-value.md",
+      ],
     },
     messages: {
       environmentName:

@@ -2,8 +2,10 @@ import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize } from "@repo/conf
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
+import { clockDate } from "./clock-date.ts";
 import { countRows } from "./count-rows.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { InquiryForbidden } from "./inquiry-forbidden.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
 import { adminInquiryColumns, inquiryColumns, inquiryThread } from "./inquiry-thread.ts";
@@ -63,12 +65,14 @@ const auditInquiryReply = (
   {
     action,
     actorId,
+    auditId,
     checkedAt,
     inquiryId,
     sessionId,
   }: Readonly<{
     action: AuditAction;
     actorId: string;
+    auditId: string;
     checkedAt: Date;
     inquiryId: string;
     sessionId: string;
@@ -78,7 +82,7 @@ const auditInquiryReply = (
     [auditEvent.action, action],
     [auditEvent.actorId, actorId],
     [auditEvent.createdAt, checkedAt.getTime()],
-    [auditEvent.id, crypto.randomUUID()],
+    [auditEvent.id, auditId],
     [auditEvent.targetId, inquiryId],
   ] as const;
   const columnNames = sql.join(
@@ -139,8 +143,8 @@ const createMemberInquiry = Effect.fn("createMemberInquiry")(function* createMem
   memberId: string,
   draft: { readonly body: string; readonly subject: string },
 ) {
-  const inquiryId = crypto.randomUUID();
-  const messageId = crypto.randomUUID();
+  const inquiryId = yield* freshId;
+  const messageId = yield* freshId;
   const openedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database.batch([
@@ -175,6 +179,7 @@ const replyAsMember = Effect.fn("replyAsMember")(function* replyAsMember({
     return yield* new InquiryForbidden();
   }
   const repliedAt = DateTime.toDate(yield* DateTime.now);
+  const messageId = yield* freshId;
   yield* query((database) =>
     database.batch([
       database.insert(inquiryMessage).values({
@@ -182,7 +187,7 @@ const replyAsMember = Effect.fn("replyAsMember")(function* replyAsMember({
         authorKind: INQUIRY_AUTHOR_KIND.member,
         body: replyBody,
         createdAt: repliedAt,
-        id: crypto.randomUUID(),
+        id: messageId,
         inquiryId,
       }),
       database
@@ -245,10 +250,11 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
   if (existing.status === INQUIRY_STATUS.closed) {
     return yield* new InquiryForbidden();
   }
-  const repliedAt = DateTime.toDate(yield* DateTime.now);
+  const [repliedAt, messageId] = yield* Effect.all([clockDate, freshId]);
   const change = {
     action: AUDIT_ACTION.inquiryReplied,
     actorId: actor.user.id,
+    auditId: yield* freshId,
     checkedAt: repliedAt,
     inquiryId,
     sessionId,
@@ -261,7 +267,7 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
         authorKind: INQUIRY_AUTHOR_KIND.admin,
         body: replyBody,
         createdAt: repliedAt,
-        id: crypto.randomUUID(),
+        id: messageId,
         inquiryId,
       }),
       database

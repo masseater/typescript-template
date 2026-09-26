@@ -117,12 +117,24 @@ it.effect(
         { confirmation, operation: "deploy", stack: "service-member" },
       );
       assert.deepStrictEqual(yield* parseDeploymentCommand(["deploy", "all"]), {
+        approval: undefined,
         operation: "deploy-all",
         stacks: [...stackNames],
       });
+      assert.deepStrictEqual(
+        yield* parseDeploymentCommand(["deploy", "all", "--approve", "flagship", confirmation]),
+        {
+          approval: { confirmation, stack: "flagship" },
+          operation: "deploy-all",
+          stacks: [...stackNames],
+        },
+      );
       for (const args of [
         ["deploy", "service-member"],
         ["deploy", "all", "--confirm-plan", confirmation],
+        ["deploy", "all", "--approve", "flagship"],
+        ["deploy", "all", "--approve", "unknown", confirmation],
+        ["deploy", "all", "--approve", "flagship", "not-a-confirmation"],
         ["deploy", "service-member", "--confirm-plan", confirmation, "--stage", "other"],
         ["deploy", "service-member", "--confirm-plan", "not-a-confirmation"],
         ["deploy", "service-member", "--yes"],

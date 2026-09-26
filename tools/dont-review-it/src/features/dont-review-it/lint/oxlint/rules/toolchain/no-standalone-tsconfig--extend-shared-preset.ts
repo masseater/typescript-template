@@ -13,7 +13,7 @@ export const noStandaloneTsconfig = createDontReviewItRule({
     docs: {
       description:
         "Require the tsconfig.json that governs a file to extend one of the shared presets, so compiler ruleOptions are decided in one place instead of being copied into every workspace",
-      relatedGuidelines: [".claude/skills/reviews/references/workspace-placement-and-tooling.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/give-every-concept-one-owner.md"],
     },
     messages: {
       standaloneTsconfig:

@@ -4,6 +4,7 @@ import { and, count, eq, gt, lte } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import {
   oauthAccessToken,
   oauthRefreshToken,
@@ -194,12 +195,13 @@ export const claimMailSlot = Effect.fn("claimMailSlot")(function* claimMailSlot(
   if (yield* hasVerificationAudience(identifier, audience)) {
     return false;
   }
+  const verificationId = yield* freshId;
   yield* query((database) =>
     database.insert(verification).values({
       audience,
       createdAt: claimedAt,
       expiresAt: until,
-      id: crypto.randomUUID(),
+      id: verificationId,
       identifier,
       updatedAt: claimedAt,
       value: "",

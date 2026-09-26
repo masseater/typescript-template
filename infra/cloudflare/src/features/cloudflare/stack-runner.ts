@@ -3,12 +3,19 @@ import { Console, Effect } from "effect";
 import { alchemistLayer } from "./alchemist.ts";
 import { ArtifactWrites } from "./artifacts.ts";
 import { stateStore } from "./deployment-access.ts";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+import {
+  acceptOrderedPlan,
+  acceptPlan,
+  planConfirmation,
+  planReport,
+  plannedStack,
+} from "./plan-confirmation.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
 import { assertStackReady } from "./stack-guards.ts";
 import { applyDeployment, planDeployment } from "./stack-route.ts";
 
 import type { ProgressEvent } from "alchemy/Alchemist";
+import type { PendingApproval } from "./approval-handoff.ts";
 import type { ArtifactMode } from "./artifacts.ts";
 import type { DeploymentRequest, SharedConfig } from "./config.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
@@ -17,6 +24,7 @@ import type { StackName } from "./stacks.ts";
 
 interface Deployment {
   readonly access: { readonly accountId: string; readonly apiToken: string };
+  readonly approvalOutput: string | undefined;
   readonly config: SharedConfig;
   readonly secrets: DeploymentSecrets;
 }
@@ -98,15 +106,26 @@ const applyStack = Effect.fn("applyStack")(function* applyStack(
 });
 
 const applyStacks = Effect.fn("applyStacks")(function* applyStacks(
-  stacks: readonly StackName[],
+  requested: {
+    readonly approval: PendingApproval | undefined;
+    readonly stacks: readonly StackName[];
+  },
   deployment: Deployment,
 ) {
-  for (const stack of stacks) {
+  const subject = deployment.access.accountId;
+  for (const stack of requested.stacks) {
     yield* assertStackReady(stack, deployment, stateStore(deployment.secrets));
     const { planned, snapshot } = yield* planStack(stack, deployment);
-    const confirmation = planConfirmation(planned, deployment.access.accountId);
-    yield* announce(planned, stack, confirmation);
-    yield* acceptPlan(planned, { confirmation, subject: deployment.access.accountId });
+    yield* announce(planned, stack, planConfirmation(planned, subject));
+    const step = yield* acceptOrderedPlan(planned, {
+      approval: requested.approval,
+      approvalOutput: deployment.approvalOutput,
+      stack,
+      subject,
+    });
+    if (step === "hold") {
+      return;
+    }
     yield* applyDeployment(snapshot, reportProgress(stack));
     yield* write({ event: "cloudflare.applied", stack });
   }
@@ -121,7 +140,7 @@ const runDeployment = Effect.fn("runDeployment")(function* runDeployment(
     request.operation === "plan"
       ? previewStacks(request.stacks, deployment)
       : request.operation === "deploy-all"
-        ? applyStacks(request.stacks, deployment)
+        ? applyStacks(request, deployment)
         : applyStack(request, deployment);
   yield* run.pipe(
     Effect.provideService(ArtifactWrites, mode),

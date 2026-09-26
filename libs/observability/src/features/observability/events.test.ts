@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Exit } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { maximumBatchSize, parseBrowserEvents } from "./events.ts";
@@ -31,7 +31,7 @@ describe("parseBrowserEvents", () => {
     ["a well-formed request event", httpEvent],
     ["a well-formed exception event", exceptionEvent],
   ] as const)("%s", ([, browserEvent]) => {
-    const it = test.extend("parsedEvents", async () =>
+    const it = test.extend("parsedEvents", () =>
       Effect.runPromise(parseBrowserEvents({ body: [browserEvent], receivedAt, routeLabels })));
     it("is accepted unchanged", ({ parsedEvents }) => {
       expect(parsedEvents).toStrictEqual([browserEvent]);
@@ -56,12 +56,13 @@ describe("parseBrowserEvents", () => {
     ],
     ["an error type on a request event", [{ ...httpEvent, errorType: "TypeError" }]],
   ] as const)("a batch carrying %s", ([, batch]) => {
-    const it = test.extend("parseSucceeded", async () => {
-      const parseExit = await Effect.runPromiseExit(
-        parseBrowserEvents({ body: batch, receivedAt, routeLabels }),
-      );
-      return parseExit._tag === "Success";
-    });
+    const it = test.extend("parseSucceeded", () =>
+      Effect.runPromise(
+        Effect.map(
+          Effect.exit(parseBrowserEvents({ body: batch, receivedAt, routeLabels })),
+          Exit.isSuccess,
+        ),
+      ));
     it("is refused", ({ parseSucceeded }) => {
       expect(parseSucceeded).toBe(false);
     });

@@ -2,7 +2,8 @@
   "name": "@repo/infra-github",
   "private": true,
   "bin": {
-    "repo-github": "./src/features/github/cli.ts"
+    "repo-github": "./src/features/github/cli.ts",
+    "repo-github-verify-removal-approval": "./src/features/github/verify-removal-approval.ts"
   },
   "type": "module",
   "exports": {
