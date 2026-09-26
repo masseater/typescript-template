@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import {
   auditEvent,
@@ -93,7 +94,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
   readonly strong?: boolean;
   readonly token?: string;
 }) {
-  const sessionId = crypto.randomUUID();
+  const sessionId = yield* freshId;
   const owners = yield* query((database) =>
     database.select().from(user).where(eq(user.id, opened.userId)),
   );
@@ -104,6 +105,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
   const expiresAt = DateTime.toDate(
     DateTime.makeUnsafe(Math.max(effectNow, wallNow) + SESSION_LIFETIME_MS),
   );
+  const token = opened.token ?? (yield* freshId);
   yield* query((database) =>
     database
       .insert(session)
@@ -117,7 +119,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
         expiresAt,
         id: sessionId,
         securityVersion,
-        token: opened.token ?? crypto.randomUUID(),
+        token,
         updatedAt: createdAt,
         userId: opened.userId,
       })

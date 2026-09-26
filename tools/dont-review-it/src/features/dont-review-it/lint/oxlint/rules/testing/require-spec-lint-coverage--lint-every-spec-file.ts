@@ -105,7 +105,9 @@ export const requireSpecLintCoverage = createDontReviewItRule({
     docs: {
       description:
         "Require every file declaring a test block to sit inside the reach of the spec discipline bundle, with those rules failing a run and their shared settings handed out from one declaration, so a run that reports nothing stands apart from a bundle that reaches nothing",
-      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/prove-every-guard-fails-on-a-violation.md",
+      ],
     },
     messages: {
       uncoveredSpecFile:

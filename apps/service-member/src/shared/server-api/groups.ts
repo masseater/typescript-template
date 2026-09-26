@@ -3,6 +3,7 @@ import {
   GROUP_JOIN_POLICY,
   GROUP_MEMBERSHIP_ROLE,
   and,
+  clockDate,
   count,
   desc,
   eq,
@@ -15,7 +16,7 @@ import { mayCreateGroup } from "#shared/messaging/index.ts";
 import { GroupInviteExpired } from "./group-invite-expired.ts";
 import { GroupLimitReached } from "./group-limit-reached.ts";
 import { GroupNotFound } from "./group-not-found.ts";
-import { clockDate, requireMessagingMember } from "./verified-member.ts";
+import { requireMessagingMember } from "./verified-member.ts";
 
 import type { MemberReference } from "./verified-member.ts";
 

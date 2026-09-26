@@ -1,5 +1,5 @@
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Effect, type PlatformError } from "effect";
+import { Effect, type PlatformError, type Schema } from "effect";
 
 import {
   parseBaseline,
@@ -39,7 +39,7 @@ const rejectedArguments = (gateArguments: readonly string[]): GateRun | undefine
   return { exitStatus: 1, transcript: `Unknown option ${rejected.join(", ")}.\n` };
 };
 
-type GateFailure = PlatformError.PlatformError | OutsideRepository;
+type GateFailure = PlatformError.PlatformError | OutsideRepository | Schema.SchemaError;
 
 const parsedDiagnostics = (
   compiled: CompilerResult,
@@ -85,9 +85,13 @@ type CheckedGate = Readonly<{
 
 const loadBaseline = (
   gate: CheckedGate,
-): Effect.Effect<ReturnType<typeof portableBaseline>, PlatformError.PlatformError> =>
-  Effect.map(gate.asked.readText(gate.asked.baselinePath), (baselineText) =>
-    portableBaseline(parseBaseline(baselineText), gate.roots),
+): Effect.Effect<
+  ReturnType<typeof portableBaseline>,
+  PlatformError.PlatformError | Schema.SchemaError
+> =>
+  gate.asked.readText(gate.asked.baselinePath).pipe(
+    Effect.flatMap(parseBaseline),
+    Effect.map((baseline) => portableBaseline(baseline, gate.roots)),
   );
 
 const snapshotBaseline = Effect.fn("snapshotBaseline")(function* snapshotBaseline(

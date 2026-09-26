@@ -22,7 +22,9 @@ export const noPartialRuleSet = createDontReviewItRule({
     docs: {
       description:
         "Require a configuration naming any rule of a declared set to name the whole set at one severity in one scope on a run carrying the type information those rules read, so a set stands whole or stands nowhere",
-      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/prove-every-guard-fails-on-a-violation.md",
+      ],
     },
     messages: {
       [PARTIAL_RULE_SET_MESSAGE_ID]:

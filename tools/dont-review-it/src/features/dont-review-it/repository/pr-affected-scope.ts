@@ -84,8 +84,6 @@ const shardDirectories = (
     .toSorted();
 };
 
-const rootText = /^(?!(?:apps|libs|infra|tools)\/)(?:.+\.md|\.textlint[^/]*)$/u;
-
 const hookFilters = (
   files: readonly string[],
   packages: readonly WorkspacePackage[],
@@ -93,18 +91,16 @@ const hookFilters = (
   if (files.length === 0) {
     return [];
   }
-  const readByWorkspaces = files.filter((file) => !rootText.test(file));
-  if (readByWorkspaces.length === 0) {
-    return ["-w"];
-  }
-  const affected = affectedTests(readByWorkspaces, packages);
-  if (affected.kind === "all") {
-    return ["-r"];
-  }
+  const changed = new Set(
+    files.flatMap((file) => {
+      const workspace = packageOf(file, packages);
+      return workspace === undefined ? [] : [workspace.name];
+    }),
+  );
   return [
     "-w",
     ...packages
-      .filter((workspace) => affected.directories.includes(workspace.directory))
+      .filter((workspace) => changed.has(workspace.name))
       .flatMap((workspace) => ["--filter", workspace.name]),
   ];
 };

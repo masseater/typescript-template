@@ -23,7 +23,7 @@ describe("wikiPublisherApp", () => {
 });
 
 describe("the deploy workflow", () => {
-  const it = test.extend("secretsMissingFromProduction", () =>
+  const it = test.extend("productionDeploy", () =>
     Effect.runPromise(
       Effect.gen(function* productionJob() {
         const fileSystem = yield* FileSystem.FileSystem;
@@ -31,20 +31,25 @@ describe("the deploy workflow", () => {
         const workflow = yield* fileSystem.readFileString(
           path.join(repositoryRoot, ".github/workflows/deploy.yml"),
         );
-        const productionSteps = workflow.slice(
-          workflow.indexOf(`environment: ${productionEnvironment}`),
+        const environmentSteps = yield* fileSystem.readFileString(
+          path.join(repositoryRoot, ".github/workflows/deploy-environment.yml"),
         );
-        return [
-          deploymentKey.wikiPublishAppId,
-          deploymentKey.wikiPublishPrivateKey,
-          deploymentKey.wikiPublishRepository,
-        ].filter((secretName) => !productionSteps.includes(`\${{ secrets.${secretName} }}`));
+        const productionCall = workflow.slice(
+          workflow.indexOf(`environment: ${productionEnvironment}`),
+          workflow.indexOf(`${productionEnvironment}-removal-approval:`),
+        );
+        return {
+          inheritsSecrets: productionCall.includes("secrets: inherit"),
+          secretsMissing: [
+            deploymentKey.wikiPublishAppId,
+            deploymentKey.wikiPublishPrivateKey,
+            deploymentKey.wikiPublishRepository,
+          ].filter((secretName) => !environmentSteps.includes(`\${{ secrets.${secretName} }}`)),
+        };
       }).pipe(Effect.provide(NodeServices.layer)),
     ));
 
-  it("hands every secret of the App to the production deploy", ({
-    secretsMissingFromProduction,
-  }) => {
-    expect(secretsMissingFromProduction).toStrictEqual([]);
+  it("hands every secret of the App to the production deploy", ({ productionDeploy }) => {
+    expect(productionDeploy).toStrictEqual({ inheritsSecrets: true, secretsMissing: [] });
   });
 });

@@ -24,7 +24,7 @@ import { DateTime, Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
-import { AgreementsView, InvoiceList, QuoteList } from "#shared/contracts/index.ts";
+import { AgreementsView, InvoiceList, QuoteList, UsageView } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
 import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
@@ -48,7 +48,8 @@ const hostedInvoiceUrl = "https://invoice.stripe.com/i/test_invoice";
 const checkoutForms: URLSearchParams[] = [];
 const invoiceKeys: string[] = [];
 const millisecondsPerSecond = 1000;
-const monthInSeconds = 30 * 24 * 60 * 60;
+const dayInSeconds = 24 * 60 * 60;
+const monthInSeconds = 30 * dayInSeconds;
 const hexRadix = 16;
 const byteWidth = 2;
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
@@ -182,7 +183,14 @@ function subscriptionEvent(
         cancel_at_period_end: false,
         customer: customerId,
         id: subscriptionId,
-        items: { data: [{ current_period_end: created + monthInSeconds }] },
+        items: {
+          data: [
+            {
+              current_period_end: created + monthInSeconds,
+              current_period_start: created - dayInSeconds,
+            },
+          ],
+        },
         metadata: {},
         status,
       },
@@ -763,6 +771,26 @@ describe("billing api", () => {
       }),
     ).then((listed) => {
       expect(listed.invoices.map((invoice) => invoice.amountCredited)).toStrictEqual([250]);
+    }));
+
+  it("counts usage from the start of the billing period Stripe reported", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        const renewed = subscriptionEvent("customer.subscription.updated", "active", "evt_period");
+        yield* deliver(app, renewed);
+        const reported = yield* Schema.decodeUnknownEffect(UsageView)(
+          yield* json(yield* call(app, client, "/billing/usage")),
+        );
+        return { renewedAt: Number(renewed["created"]), since: reported.since };
+      }),
+    ).then(({ renewedAt, since }) => {
+      expect(since).toStrictEqual(
+        DateTime.toDate(DateTime.makeUnsafe((renewedAt - dayInSeconds) * millisecondsPerSecond)),
+      );
     }));
 
   it("ignores a credit note and a refund for an invoice the ledger never recorded", ({ auth }) =>
