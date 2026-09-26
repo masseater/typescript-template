@@ -1,12 +1,17 @@
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Schema } from "effect";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, expectTypeOf, test } from "vite-plus/test";
 
 import { parseBaseline, serializeBaseline } from "./effect-typecheck-baseline.ts";
 import { compileWorkspace } from "./effect-typecheck-compiler.ts";
 import { parseTscOutput } from "./effect-typecheck-diagnostics.ts";
 import { workspaceOf } from "./effect-typecheck-path.ts";
-import { baselinePath, runTypecheckGate } from "./effect-typecheck.ts";
+import {
+  baselinePath,
+  runEffectTypecheck,
+  runTypecheckGate,
+  type GateIo,
+} from "./effect-typecheck.ts";
 import { filesystem, paths } from "./host.ts";
 
 class CompilerMissing extends Schema.TaggedError<CompilerMissing>()("CompilerMissing", {}) {
@@ -25,19 +30,31 @@ const assignabilityBaseline = serializeBaseline({
   },
 });
 const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
+const recordedGate: GateIo = {
+  cwd: "/repo",
+  repositoryRoot: "/repo",
+  gateArguments: [],
+  baselinePath: "baseline.json",
+  compile: Effect.succeed({ output: "", status: 0 }),
+  readText: () => Effect.succeed(serializeBaseline({ version: 1, workspaces: {} })),
+  writeText: () => Effect.void,
+};
 
 describe("effect typecheck gate", () => {
   const it = test
     .extend("newDiagnostic", () =>
       Effect.runPromise(
-        runTypecheckGate({ compilerTranscript: assignabilityDiagnostic, status: 1 }),
+        runEffectTypecheck({
+          ...recordedGate,
+          compile: Effect.succeed({ output: assignabilityDiagnostic, status: 1 }),
+        }),
       ))
     .extend("snapshottedDiagnostic", () =>
       Effect.runPromise(
-        runTypecheckGate({
-          baselineText: assignabilityBaseline,
-          compilerTranscript: assignabilityDiagnostic,
-          status: 1,
+        runEffectTypecheck({
+          ...recordedGate,
+          compile: Effect.succeed({ output: assignabilityDiagnostic, status: 1 }),
+          readText: () => Effect.succeed(assignabilityBaseline),
         }),
       ),
     )
@@ -82,46 +99,50 @@ describe("effect typecheck gate", () => {
       ),
     )
     .extend("unknownFlag", () =>
-      Effect.runPromise(
-        runTypecheckGate({ gateArguments: ["--rewrite"], compilerTranscript: "", status: 0 }),
-      ),
+      Effect.runPromise(runEffectTypecheck({ ...recordedGate, gateArguments: ["--rewrite"] })),
     )
     .extend("silentCompiler", () =>
       Effect.runPromise(
-        runTypecheckGate({ compilerTranscript: "effect-tsgo: not found", status: 1 }),
+        runEffectTypecheck({
+          ...recordedGate,
+          compile: Effect.succeed({ output: "effect-tsgo: not found", status: 1 }),
+        }),
       ),
     )
     .extend("portableDiagnostic", () => {
       const checkout = "/checkout";
       const compilerTranscript = `src/monitor-fixture.ts(48,7): error TS4023: Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "${checkout}/libs/monitor/src/index" but cannot be named.\n`;
       return Effect.runPromise(
-        runTypecheckGate({
+        runEffectTypecheck({
+          ...recordedGate,
           cwd: checkout,
-          repositoryRootPath: checkout,
-          compilerTranscript,
-          baselineText: serializeBaseline({
-            version: 1,
-            workspaces: {
-              ".": [
-                {
-                  file: "src/monitor-fixture.ts",
-                  code: "TS4023",
-                  message:
-                    "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
-                  count: 1,
+          repositoryRoot: checkout,
+          compile: Effect.succeed({ output: compilerTranscript, status: 1 }),
+          readText: () =>
+            Effect.succeed(
+              serializeBaseline({
+                version: 1,
+                workspaces: {
+                  ".": [
+                    {
+                      file: "src/monitor-fixture.ts",
+                      code: "TS4023",
+                      message:
+                        "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
+                      count: 1,
+                    },
+                  ],
                 },
-              ],
-            },
-          }),
+              }),
+            ),
         }),
       );
     })
     .extend("disappearedDiagnostic", () =>
       Effect.runPromise(
-        runTypecheckGate({
-          compilerTranscript: "",
-          status: 0,
-          baselineText: assignabilityBaseline,
+        runEffectTypecheck({
+          ...recordedGate,
+          readText: () => Effect.succeed(assignabilityBaseline),
         }),
       ),
     )
@@ -139,21 +160,25 @@ describe("effect typecheck gate", () => {
       const compilerTranscript =
         "src/index.ts(1,10): error TS2305: Module '\"./missing\"' has no exported member 'Gone'.\n";
       return Effect.runPromise(
-        runTypecheckGate({
-          compilerTranscript,
-          baselineText: serializeBaseline({
-            version: 1,
-            workspaces: {
-              ".": [
-                {
-                  file: "src/index.ts",
-                  code: "TS2305",
-                  message: "Module '\"./missing\"' has no exported member 'Gone'.",
-                  count: 1,
+        runEffectTypecheck({
+          ...recordedGate,
+          compile: Effect.succeed({ output: compilerTranscript, status: 1 }),
+          readText: () =>
+            Effect.succeed(
+              serializeBaseline({
+                version: 1,
+                workspaces: {
+                  ".": [
+                    {
+                      file: "src/index.ts",
+                      code: "TS2305",
+                      message: "Module '\"./missing\"' has no exported member 'Gone'.",
+                      count: 1,
+                    },
+                  ],
                 },
-              ],
-            },
-          }),
+              }),
+            ),
         }),
       );
     });
@@ -257,5 +282,11 @@ describe("effect typecheck gate", () => {
       transcript:
         "src/index.ts(1,10): error TS2305: Module '\"./missing\"' has no exported member 'Gone'.\ntypecheck gate: 1 missing-export errors\nsrc/index.ts: error TS2305: Module '\"./missing\"' has no exported member 'Gone'.\ntypecheck gate: 1 baselined diagnostics are gone; rewrite the snapshot\nsrc/index.ts: error TS2305: Module '\"./missing\"' has no exported member 'Gone'.\n",
     });
+  });
+
+  it("accepts only the working directory and the gate arguments", () => {
+    expectTypeOf<Parameters<typeof runTypecheckGate>[0]>().toEqualTypeOf<
+      Readonly<{ cwd: string; gateArguments: readonly string[] }>
+    >();
   });
 });

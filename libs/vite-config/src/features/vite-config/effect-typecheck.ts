@@ -171,41 +171,8 @@ const defaultGate = (
 });
 
 const runTypecheckGate = (
-  asked: Readonly<{
-    cwd?: string;
-    gateArguments?: readonly string[];
-    repositoryRootPath?: string;
-    baselinePath?: string;
-    baselineText?: string;
-    compilerTranscript?: string;
-    status?: number;
-  }>,
-): Effect.Effect<GateRun, GateFailure> => {
-  const cwd = asked.cwd ?? "/repo";
-  const gateArguments = asked.gateArguments ?? [];
-  if (
-    asked.baselineText !== undefined ||
-    asked.compilerTranscript !== undefined ||
-    asked.status !== undefined ||
-    asked.baselinePath !== undefined ||
-    asked.repositoryRootPath !== undefined
-  ) {
-    return runEffectTypecheck({
-      cwd,
-      repositoryRoot: asked.repositoryRootPath ?? "/repo",
-      gateArguments,
-      baselinePath: asked.baselinePath ?? "baseline.json",
-      compile: Effect.sync(() => ({
-        output: asked.compilerTranscript ?? "",
-        status: asked.status ?? 0,
-      })),
-      readText: () =>
-        Effect.sync(() => asked.baselineText ?? serializeBaseline({ version: 1, workspaces: {} })),
-      writeText: () => Effect.void,
-    });
-  }
-  return runEffectTypecheck(defaultGate({ cwd, gateArguments }));
-};
+  asked: Readonly<{ cwd: string; gateArguments: readonly string[] }>,
+): Effect.Effect<GateRun, GateFailure> => runEffectTypecheck(defaultGate(asked));
 
-export { baselinePath, runTypecheckGate };
-export type { GateFailure, GateRun };
+export { baselinePath, runEffectTypecheck, runTypecheckGate };
+export type { GateFailure, GateIo, GateRun };
