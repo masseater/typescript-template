@@ -40,12 +40,7 @@ import { Cause, Console, Effect, Equal, Schema } from "effect";
 import { loadArtifacts } from "./artifacts.ts";
 import { hstsSetting, observabilitySampling } from "./config.ts";
 import { assertCoreNotPublic } from "./core-guard.ts";
-import {
-  applyVerificationEnvironment,
-  bindsSendEmail,
-  compileStack,
-  describeInventoryCause,
-} from "./inventory.ts";
+import { bindsSendEmail, compileStack, describeInventoryCause } from "./inventory.ts";
 import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { encodeJson } from "./platform.ts";
 import {
@@ -556,8 +551,6 @@ const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: 
   }
   return staticExpected[stack];
 });
-
-applyVerificationEnvironment();
 
 function onboards(inventory: StackInventory): boolean {
   return Object.values(inventory.resources).some((resource) => resource.type === SENDING_SUBDOMAIN);

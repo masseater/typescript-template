@@ -2,7 +2,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Stage, inMemoryState } from "alchemy";
 import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
-import { Effect, Predicate, References, Result, Schema } from "effect";
+import { ConfigProvider, Effect, Predicate, References, Result, Schema } from "effect";
 
 import { path } from "./platform.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
@@ -129,8 +129,14 @@ function declaredValue(value: unknown): unknown {
   );
 }
 
-function applyVerificationEnvironment(): void {
-  Object.assign(process.env, verificationEnvironment);
+function withVerificationEnvironment<Value, Failure, Requirements>(
+  program: Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<Value, Failure, Requirements> {
+  return Effect.provideService(
+    program,
+    ConfigProvider.ConfigProvider,
+    ConfigProvider.fromEnvRecord(verificationEnvironment),
+  );
 }
 
 const BINDING_IDENTITY_KEYS: ReadonlySet<string> = new Set(["name", "type"]);
@@ -272,12 +278,11 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
       "default export is not an Effect",
     );
   }
-  const compiled: unknown = yield* toEffect(
-    Effect.provideService(program, Stage, verificationSettings.prefix),
-    {
+  const compiled: unknown = yield* withVerificationEnvironment(
+    toEffect(Effect.provideService(program, Stage, verificationSettings.prefix), {
       providers: stackProviders,
       state: inMemoryState(),
-    },
+    }),
   ).pipe(
     Effect.provideService(References.MinimumLogLevel, "Warn"),
     Effect.mapError((cause) => inventoryFailure("stack_compilation_failed", stack, cause)),
@@ -291,5 +296,5 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
   return inventoryOf(shape);
 });
 
-export { applyVerificationEnvironment, bindsSendEmail, compileStack, describeInventoryCause };
+export { bindsSendEmail, compileStack, describeInventoryCause, withVerificationEnvironment };
 export type { ResourceInventory, StackInventory };

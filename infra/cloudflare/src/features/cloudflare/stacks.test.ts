@@ -3,7 +3,7 @@ import { toEffect } from "alchemy/Test/Core";
 import { Cause, Effect, Exit, Predicate } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { applyVerificationEnvironment } from "./inventory.ts";
+import { withVerificationEnvironment } from "./inventory.ts";
 import { path } from "./platform.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
 import {
@@ -32,10 +32,12 @@ function defaultExport(module: unknown): unknown {
 function refusal(definition: unknown): Effect.Effect<string> {
   return isStackProgram(definition)
     ? Effect.exit(
-        toEffect(Effect.provideService(definition, Stage, foreignStage), {
-          providers: stackProviders,
-          state: inMemoryState(),
-        }),
+        withVerificationEnvironment(
+          toEffect(Effect.provideService(definition, Stage, foreignStage), {
+            providers: stackProviders,
+            state: inMemoryState(),
+          }),
+        ),
       ).pipe(Effect.map((exit) => (Exit.isFailure(exit) ? Cause.pretty(exit.cause) : "")))
     : Effect.succeed("");
 }
@@ -115,7 +117,6 @@ describe("alchemy stacks", () => {
     Effect.runPromise(
       Effect.gen(function* program() {
         expect.hasAssertions();
-        applyVerificationEnvironment();
         const location = yield* path.toFileUrl(stackEntrypoint(stack));
         const module: unknown = yield* Effect.promise(() => import(location.href));
         expect(yield* refusal(defaultExport(module))).toContain(

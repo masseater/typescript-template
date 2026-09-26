@@ -3,7 +3,7 @@ import { Stage, inMemoryState } from "alchemy";
 import { toEffect } from "alchemy/Test/Core";
 import { Cause, Effect, Exit, Predicate } from "effect";
 
-import { applyVerificationEnvironment } from "./inventory.ts";
+import { withVerificationEnvironment } from "./inventory.ts";
 import { prefixedStack } from "./prefixed-stack.ts";
 import { stackName, stackProviders } from "./stacks.ts";
 import { verificationSettings } from "./verification-settings.ts";
@@ -11,11 +11,14 @@ import { verificationSettings } from "./verification-settings.ts";
 const { prefix } = verificationSettings;
 
 function compiledAt(stage: string): Effect.Effect<Exit.Exit<unknown, unknown>> {
-  applyVerificationEnvironment();
   const deployment = prefixedStack("zone", Effect.succeed({})).pipe(
     Effect.provideService(Stage, stage),
   );
-  return Effect.exit(toEffect(deployment, { providers: stackProviders, state: inMemoryState() }));
+  return Effect.exit(
+    withVerificationEnvironment(
+      toEffect(deployment, { providers: stackProviders, state: inMemoryState() }),
+    ),
+  );
 }
 
 function compiledName(exit: Exit.Exit<unknown, unknown>): unknown {
