@@ -397,3 +397,49 @@ describe("a worker exporting telemetry", () => {
     });
   });
 });
+
+describe("a worker reached over plain http", () => {
+  const it = test.extend("redirected", ({}, { onCleanup }) =>
+    Effect.runPromise(
+      Effect.gen(function* redirectedProgram() {
+        const runtime = workerRuntime(() =>
+          Layer.orDie(
+            Telemetry.layer({
+              release: "test",
+              routes: { "/": "home" },
+              serviceName: "service-member",
+            }),
+          ),
+        );
+        onCleanup(() => runtime.dispose());
+        const worker = serveWorker({
+          reporting: { log: recordingSink().sink, service: "service-member" },
+          route: () => Effect.succeed(new Response("reached the route")),
+          runtime,
+        });
+        const invocation = createExecutionContext();
+        const answered = yield* Effect.promise(() =>
+          worker.fetch(new Request("http://user.example.test/notes?page=2"), {}, invocation),
+        );
+        const local = yield* Effect.promise(() =>
+          worker.fetch(new Request(fixtureOrigin), {}, invocation),
+        );
+        yield* Effect.promise(() => waitOnExecutionContext(invocation));
+        return {
+          localStatus: local.status,
+          location: answered.headers.get("location"),
+          status: answered.status,
+        };
+      }),
+    ));
+
+  it("sends the request to the same url over https, and serves loopback as is", ({
+    redirected,
+  }) => {
+    expect(redirected).toStrictEqual({
+      localStatus: httpStatus.ok,
+      location: "https://user.example.test/notes?page=2",
+      status: httpStatus.permanentRedirect,
+    });
+  });
+});

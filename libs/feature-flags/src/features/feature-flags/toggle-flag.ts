@@ -48,7 +48,7 @@ const toggleFlagRemote = Effect.fn("toggleFlagRemote")(function* toggleFlagRemot
   return {
     description: "",
     enabled: flagshipWrite.enabled,
-    key: flagshipWrite.flagKey,
+    key: change.key,
   };
 });
 

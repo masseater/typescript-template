@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { appEnvKey, type Application, grants } from "@repo/config";
+import { APPLICATION, appEnvKey, type Application, grants } from "@repo/config";
 import { Crypto, Effect, FileSystem, Path } from "effect";
 
 import { failed, type JourneyFailure } from "./journey-failure.ts";
@@ -50,7 +50,9 @@ const serialize = (application: Application, devVars: DevVars): string => {
     [appEnvKey.authSecret, devVars.authSecret],
     [appEnvKey.emailFrom, "no-reply@example.test"],
     [appEnvKey.mailpitUrl, devVars.mailOrigin],
-    [appEnvKey.opsEmail, "ops@example.test"],
+    ...(application === APPLICATION.user
+      ? [[appEnvKey.opsEmail, "ops@example.test"] as const]
+      : []),
     ...(grants(application, "billing") ? stripeTestPlaceholders : []),
   ];
   return `${assignments.map(([variable, assigned]) => `${variable}=${JSON.stringify(assigned)}`).join("\n")}\n`;

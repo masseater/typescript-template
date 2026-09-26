@@ -175,7 +175,28 @@ it.effect("refuses a plan that removes, replaces, adopts or drops a binding", ()
   }),
 );
 
-it.effect("lets a plan adopt Cloudflare zone settings that always exist", () =>
+it.effect("lets a plan drop only the bindings named as retired for that stack", () =>
+  Effect.gen(function* program() {
+    const retiring = (name: string, sid: string): PlannedStack => ({
+      ...planned([resource("update", "Worker", [{ action: "delete", sid }])]),
+      stack: { ...stack, name },
+    });
+    const core = retiring("template-core", "AUTH_SECRET");
+    assert.isUndefined(yield* acceptPlan(core, { confirmation: token(core), subject: accountId }));
+    for (const kept of [
+      retiring("template-service-member", "AUTH_SECRET"),
+      retiring("template-core", "DB"),
+    ]) {
+      const failure = yield* acceptPlan(kept, {
+        confirmation: token(kept),
+        subject: accountId,
+      }).pipe(Effect.flip);
+      assert.strictEqual(failure.code, "plan_removes_bindings");
+    }
+  }),
+);
+
+it.effect("refuses a plan that adopts zone settings every zone already has", () =>
   Effect.gen(function* program() {
     const settings = planned([
       {
@@ -193,9 +214,12 @@ it.effect("lets a plan adopt Cloudflare zone settings that always exist", () =>
         resourceType: "Cloudflare.Zone.Setting",
       },
     ]);
-    assert.isUndefined(
-      yield* acceptPlan(settings, { confirmation: token(settings), subject: accountId }),
-    );
+    const failure = yield* acceptPlan(settings, {
+      confirmation: token(settings),
+      subject: accountId,
+    }).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "plan_adopts_existing_resources");
+    assert.deepStrictEqual([...failure.keys], ["AlwaysUseHttps", "SecurityHeader"]);
   }),
 );
 

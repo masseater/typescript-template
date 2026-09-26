@@ -54,7 +54,6 @@ const sharedBindings = {
   }),
   EMAIL: binding<SendEmail>({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
   EMAIL_FROM: settings.mailFrom,
-  FLAGSHIP_ACCOUNT_ID: settings.accountId,
   FLAGS: binding<Flagship.App>({
     appId: "flagship-app-id",
     getBooleanValue: (): Promise<boolean> => Promise.resolve(false),
@@ -62,7 +61,6 @@ const sharedBindings = {
     getObjectValue: (): Promise<object> => Promise.resolve({}),
     getStringValue: (): Promise<string> => Promise.resolve(""),
   }),
-  OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
 const adminBindings: AppBindings<"service-admin"> = sharedBindings;
@@ -81,6 +79,7 @@ const userBindings: AppBindings<"service-member"> = {
     put: (): Promise<null> => Promise.resolve(null),
   }),
   JOBS: binding({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
+  OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
   PROCESS: binding({
     create: (): Promise<{ id: string }> => Promise.resolve({ id: "job" }),
     get: (): Promise<{ status: () => Promise<{ status: string }> }> =>

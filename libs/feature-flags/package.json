@@ -17,8 +17,10 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
     "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

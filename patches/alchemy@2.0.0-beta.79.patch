@@ -1,0 +1,89 @@
+diff --git a/lib/Cloudflare/Flagship/Flag.d.ts b/lib/Cloudflare/Flagship/Flag.d.ts
+index d6ad012c101825a6532185e01987d14a55ae36e2..036b5e3eb97a050919d9d2a080615aaf09945d6d 100644
+--- a/lib/Cloudflare/Flagship/Flag.d.ts
++++ b/lib/Cloudflare/Flagship/Flag.d.ts
+@@ -124,6 +124,7 @@ export type FlagProps = {
+      * Human readable description of the flag.
+      */
+     description?: string;
++    retainLiveDefaultVariation?: boolean;
+     /**
+      * Value type of the flag's variations. Inferred from the variation values
+      * on write, so it can usually be omitted.
+diff --git a/lib/Cloudflare/Flagship/Flag.js b/lib/Cloudflare/Flagship/Flag.js
+index 2276fd38d7ba453649a255ce211b8c0692cb3103..a62760e8c294ad22ee4aee8d46f2e9c7aaa41107 100644
+--- a/lib/Cloudflare/Flagship/Flag.js
++++ b/lib/Cloudflare/Flagship/Flag.js
+@@ -174,6 +174,9 @@ export const FlagProvider = () => Provider.succeed(Flag, {
+         // a PUT that takes the full body, so send everything, but skip the
+         // call entirely on a no-op.
+         const live = observed ?? (yield* getFlag(accountId, appId, key));
++        const synced = live && news.retainLiveDefaultVariation
++            ? { ...desired, defaultVariation: live.defaultVariation }
++            : desired;
+         if (live) {
+             const observedShape = {
+                 enabled: live.enabled,
+@@ -183,8 +186,8 @@ export const FlagProvider = () => Provider.succeed(Flag, {
+                 description: live.description ?? undefined,
+             };
+             const desiredShape = {
+-                ...desired,
+-                rules: normalizeRules(desired.rules),
++                ...synced,
++                rules: normalizeRules(synced.rules),
+             };
+             if (deepEqual(observedShape, desiredShape)) {
+                 return toAttributes(live, accountId, appId);
+@@ -195,7 +198,7 @@ export const FlagProvider = () => Provider.succeed(Flag, {
+             appId,
+             flagKey: key,
+             key,
+-            ...desired,
++            ...synced,
+             type: news.type,
+         });
+         return toAttributes(updated, accountId, appId);
+diff --git a/src/Cloudflare/Flagship/Flag.ts b/src/Cloudflare/Flagship/Flag.ts
+index 58ff9c43e57f6657182f5693ab702a6306576c51..7f5a6c30e923569abdda3d0eead92d9c5f32f337 100644
+--- a/src/Cloudflare/Flagship/Flag.ts
++++ b/src/Cloudflare/Flagship/Flag.ts
+@@ -153,6 +153,7 @@ export type FlagProps = {
+    * Human readable description of the flag.
+    */
+   description?: string;
++  retainLiveDefaultVariation?: boolean;
+   /**
+    * Value type of the flag's variations. Inferred from the variation values
+    * on write, so it can usually be omitted.
+@@ -400,6 +401,10 @@ export const FlagProvider = () =>
+       // a PUT that takes the full body, so send everything, but skip the
+       // call entirely on a no-op.
+       const live = observed ?? (yield* getFlag(accountId, appId, key));
++      const synced =
++        live && news.retainLiveDefaultVariation
++          ? { ...desired, defaultVariation: live.defaultVariation }
++          : desired;
+       if (live) {
+         const observedShape = {
+           enabled: live.enabled,
+@@ -409,8 +414,8 @@ export const FlagProvider = () =>
+           description: live.description ?? undefined,
+         };
+         const desiredShape = {
+-          ...desired,
+-          rules: normalizeRules(desired.rules),
++          ...synced,
++          rules: normalizeRules(synced.rules),
+         };
+         if (deepEqual(observedShape, desiredShape)) {
+           return toAttributes(live, accountId, appId);
+@@ -421,7 +426,7 @@ export const FlagProvider = () =>
+         appId,
+         flagKey: key,
+         key,
+-        ...desired,
++        ...synced,
+         type: news.type,
+       });
+       return toAttributes(updated, accountId, appId);

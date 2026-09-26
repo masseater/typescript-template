@@ -35,6 +35,7 @@ import { accountTokenRef } from "./tokens.ts";
 import { wikiWorkerRef } from "./wiki-program.ts";
 
 import type { Application } from "@repo/config";
+import type { Flagship } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 import type { BillingEnv, DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
@@ -94,8 +95,10 @@ function telemetryEnv(
   };
 }
 
-function operationsEmail(config: SharedConfig): string {
-  return config.budget.recipients[0] ?? config.mailFrom;
+function operationsEnv(target: Application, config: SharedConfig): Partial<SharedEnv> {
+  return target === APPLICATION.user
+    ? { OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom }
+    : {};
 }
 
 const optionalJobsQueue = Effect.fn("optionalJobsQueue")(function* optionalJobsQueue(
@@ -107,15 +110,16 @@ const optionalJobsQueue = Effect.fn("optionalJobsQueue")(function* optionalJobsQ
 const targetEnv = Effect.fn("targetEnv")(function* targetEnv(
   target: Application,
   shared: DeclaredEnv,
-  flags: Effect.Success<ReturnType<typeof flagshipAppRef>>,
+  flags: { readonly accountId: string; readonly app: Flagship.App },
 ) {
   if (target !== APPLICATION.wiki) {
     return shared;
   }
   return {
     ...shared,
+    FLAGSHIP_ACCOUNT_ID: flags.accountId,
     FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
-    FLAGSHIP_APP_ID: flags.appId,
+    FLAGSHIP_APP_ID: flags.app.appId,
     ...(yield* wikiBindings()),
     ...(yield* Effect.orDie(wikiPublishSettings)),
   };
@@ -165,16 +169,15 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       DB: database,
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
-      FLAGSHIP_ACCOUNT_ID: config.accountId,
       FLAGS: flags,
-      OPS_EMAIL: operationsEmail(config),
+      ...operationsEnv(target, config),
       ...analyticsEnv(target, config),
       ...telemetryEnv(config, authorization),
     },
     billing,
   );
   const env = {
-    ...(yield* targetEnv(target, shared, flags)),
+    ...(yield* targetEnv(target, shared, { accountId: config.accountId, app: flags })),
     ...jobsEnv(jobsQueue),
   };
   const worker = yield* Worker("Worker", {

@@ -11,7 +11,6 @@ import { workerCompatibility } from "@repo/config/worker";
 import { Recipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";
 import { deploymentKey } from "@repo/observability/deployment-keys";
-import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
 import { Effect, Schema } from "effect";
 
 import { stackNames } from "./stacks.ts";
@@ -107,16 +106,6 @@ function deriveOrigins(prefix: string, appDomain: string): SharedConfig["origins
     "service-member": origin(ROLE.member),
   };
 }
-
-const hstsSetting = {
-  strict_transport_security: {
-    enabled: true,
-    include_subdomains: hstsIncludesSubdomains,
-    max_age: hstsMaxAgeSeconds,
-    nosniff: true,
-    preload: false,
-  },
-} as const;
 
 const workerSubdomain = { enabled: false, previewsEnabled: false };
 const workerCompatibilityOptions = {
@@ -219,7 +208,6 @@ export {
   SharedSettings,
   checkSharedConfig,
   deriveOrigins,
-  hstsSetting,
   observabilitySampling,
   parseDeploymentCommand,
   sendingDomain,

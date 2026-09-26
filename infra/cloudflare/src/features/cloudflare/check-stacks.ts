@@ -38,8 +38,9 @@ import { apiRoot } from "@repo/runtime/http";
 import { Cause, Console, Effect, Equal, Schema } from "effect";
 
 import { loadArtifacts } from "./artifacts.ts";
-import { hstsSetting, observabilitySampling } from "./config.ts";
+import { observabilitySampling } from "./config.ts";
 import { assertCoreNotPublic } from "./core-guard.ts";
+import { alertAddressResource } from "./email.ts";
 import {
   applyVerificationEnvironment,
   bindsSendEmail,
@@ -94,16 +95,6 @@ function plainText(name: string, value: number | string): string {
   return `${name}:plain_text:text=${value}`;
 }
 
-function zoneSetting(settingId: string, value: unknown): ResourceInventory {
-  return {
-    adopt: false,
-    bindings: [],
-    declared: { settingId, value, zoneId: verificationSettings.zoneId },
-    removalPolicy: "destroy",
-    type: "Cloudflare.Zone.Setting",
-  };
-}
-
 function tokenValue(name: string, resource: string): string {
   return `${name}:deferred:${stackName("tokens")}.${resource}.value`;
 }
@@ -111,6 +102,7 @@ function tokenValue(name: string, resource: string): string {
 function wikiBindings(app: Application): readonly string[] {
   return app === APPLICATION.wiki
     ? [
+        plainText(appEnvKey.flagshipAccountId, accountId),
         tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
         `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
         `${wikiApiBinding}:service:entrypoint=${wikiApiEntrypoint}:service=${stackName(wikiWorker)}.Worker.workerName`,
@@ -122,13 +114,14 @@ function wikiBindings(app: Application): readonly string[] {
     : [];
 }
 
-function analyticsBindings(app: Application): readonly string[] {
+function userBindings(app: Application): readonly string[] {
   return app === APPLICATION.user
     ? [
         plainText(
           appEnvKey.googleAnalyticsMeasurementId,
           verificationSettings.googleAnalyticsMeasurementId,
         ),
+        plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       ]
     : [];
 }
@@ -246,11 +239,9 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
-      plainText(appEnvKey.flagshipAccountId, accountId),
       `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
       ...wikiBindings(app),
-      ...analyticsBindings(app),
-      plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
+      ...userBindings(app),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...grantedBindings(app),
@@ -416,12 +407,7 @@ const staticExpected: Readonly<
   core: declaredStack("core", {
     Worker: {
       adopt: false,
-      bindings: [
-        `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
-        `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
-        `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
-        plainText(appEnvKey.emailFrom, mailFrom),
-      ].toSorted(),
+      bindings: [`DB:d1:databaseId=${stackName("database")}.Database.databaseId`],
       declared: {
         ...sharedWorker,
         bundle: false,
@@ -456,8 +442,8 @@ const staticExpected: Readonly<
   }),
   email: declaredStack("email", {
     ...Object.fromEntries(
-      budget.recipients.map((recipient, index) => [
-        `Alert${index + 1}`,
+      budget.recipients.map((recipient) => [
+        alertAddressResource(recipient),
         {
           adopt: false,
           bindings: [],
@@ -537,10 +523,6 @@ const staticExpected: Readonly<
       id: "521a41dc78f94eaba5e643528846cb7b",
     }),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
-  }),
-  zone: declaredStack("zone", {
-    AlwaysUseHttps: zoneSetting("always_use_https", "on"),
-    SecurityHeader: zoneSetting("security_header", hstsSetting),
   }),
 };
 

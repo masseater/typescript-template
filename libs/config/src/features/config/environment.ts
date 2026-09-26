@@ -63,7 +63,6 @@ const Scalars = Schema.Struct({
   [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
   [appEnvKey.googleAnalyticsMeasurementId]: Schema.optionalKey(GoogleAnalyticsMeasurementId),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
-  [appEnvKey.opsEmail]: Email,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });

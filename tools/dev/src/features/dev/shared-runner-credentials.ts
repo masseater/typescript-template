@@ -1,4 +1,4 @@
-import { appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
+import { APPLICATION, appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
 import { optionalSetting } from "@repo/config/process-environment";
 import { receiverOrigin } from "@repo/local";
 import { Crypto, Effect } from "effect";
@@ -57,7 +57,7 @@ function appVariables(
     [appEnvKey.authSecret]: credentials.authSecret,
     [appEnvKey.emailFrom]: "no-reply@example.test",
     [appEnvKey.mailpitUrl]: mailpitOrigin,
-    [appEnvKey.opsEmail]: "ops@example.test",
+    ...(app === APPLICATION.user ? { [appEnvKey.opsEmail]: "ops@example.test" } : {}),
     [appEnvKey.otlpEndpoint]: receiverOrigin("otlp"),
     ...billingVariables(app, credentials),
   };

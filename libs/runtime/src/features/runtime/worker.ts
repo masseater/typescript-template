@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/config";
+import { httpStatus, loopbackHostSet } from "@repo/config";
 import {
   flushTelemetry,
   observeRequest,
@@ -36,6 +36,17 @@ const unavailableResponse = (
       ),
     ),
   );
+const httpsRedirect = (httpRequest: Request): Response | undefined => {
+  const url = new URL(httpRequest.url);
+  if (url.protocol !== "http:" || loopbackHostSet.has(url.hostname)) {
+    return undefined;
+  }
+  url.protocol = "https:";
+  return new Response(undefined, {
+    headers: { location: url.href },
+    status: httpStatus.permanentRedirect,
+  });
+};
 type FetchWorker = {
   readonly fetch: (
     httpRequest: Request,
@@ -51,8 +62,12 @@ const serveWorker = <Requirements>(asked: {
   readonly reporting: Reporting;
 }): FetchWorker => {
   return {
-    fetch: (httpRequest, _environment, runtimeContext): Promise<Response> =>
-      Effect.runPromise(
+    fetch: (httpRequest, _environment, runtimeContext): Promise<Response> => {
+      const redirect = httpsRedirect(httpRequest);
+      if (redirect !== undefined) {
+        return Promise.resolve(unindexedResponse(redirect));
+      }
+      return Effect.runPromise(
         Effect.gen(function* serveFetch() {
           runtimeContext.waitUntil(asked.runtime.built());
           const exit = yield* Effect.promise(() =>
@@ -71,7 +86,8 @@ const serveWorker = <Requirements>(asked: {
             ),
           );
         }),
-      ),
+      );
+    },
   };
 };
 const requestPath = (httpRequest: Request): string | undefined => {

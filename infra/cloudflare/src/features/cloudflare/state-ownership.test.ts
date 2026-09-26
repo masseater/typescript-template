@@ -44,7 +44,7 @@ it.effect("reads workers from stacks that exist when another stack has no stage"
     };
     const names = yield* recordedWorkerNames(
       InMemoryService({
-        [stackName("zone")]: { [prefix]: { Worker: worker } },
+        [stackName("email")]: { [prefix]: { Worker: worker } },
       }),
       prefix,
     );

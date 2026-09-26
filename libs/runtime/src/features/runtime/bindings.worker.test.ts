@@ -31,7 +31,6 @@ describe("readWorkerConfig", () => {
         DB: env.DB,
         EMAIL: workerEnvironment["EMAIL"],
         EMAIL_FROM: "sender@example.test",
-        OPS_EMAIL: "ops@example.test",
         local: true,
       });
     });
@@ -68,7 +67,6 @@ describe("readWorkerConfig", () => {
         DB: env.DB,
         EMAIL: workerEnvironment["EMAIL"],
         EMAIL_FROM: "sender@example.test",
-        OPS_EMAIL: "ops@example.test",
         local: true,
       });
     });

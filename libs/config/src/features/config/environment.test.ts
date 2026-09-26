@@ -9,7 +9,6 @@ const localBindings = {
   AUTH_SECRET: "test-environment-secret-not-for-any-deployment",
   EMAIL_FROM: "sender@example.test",
   MAILPIT_URL: "http://127.0.0.1:8025",
-  OPS_EMAIL: "ops@example.test",
 };
 
 describe("readEnvironment", () => {
@@ -84,7 +83,6 @@ describe("readEnvironment", () => {
         APP_RELEASE: "1.2.3",
         AUTH_SECRET: localBindings.AUTH_SECRET,
         EMAIL_FROM: localBindings.EMAIL_FROM,
-        OPS_EMAIL: localBindings.OPS_EMAIL,
         local: false,
       });
     });
@@ -321,7 +319,6 @@ describe("an analytics measurement id beside a public origin", () => {
       AUTH_SECRET: localBindings.AUTH_SECRET,
       EMAIL_FROM: localBindings.EMAIL_FROM,
       GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
-      OPS_EMAIL: localBindings.OPS_EMAIL,
       local: false,
     });
   });

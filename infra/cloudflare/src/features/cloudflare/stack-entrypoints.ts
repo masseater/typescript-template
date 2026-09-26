@@ -27,7 +27,6 @@ const cloudflareEntrypoints = {
   observability: fileUrlPath(new URL("./observability.ts", import.meta.url)),
   storage: fileUrlPath(new URL("./storage.ts", import.meta.url)),
   tokens: fileUrlPath(new URL("./tokens.ts", import.meta.url)),
-  zone: fileUrlPath(new URL("./zone.ts", import.meta.url)),
 } as const satisfies Readonly<Record<Exclude<StackName, PackageStack | MonitorStack>, string>>;
 
 const entrypoints = {

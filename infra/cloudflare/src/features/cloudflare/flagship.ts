@@ -13,13 +13,14 @@ const stack = prefixedStack(
   Effect.gen(function* flagship() {
     const config = yield* Effect.orDie(settings);
     const app = yield* Flagship.App(appResource, { name: `${config.prefix}-flags` });
-    for (const [index, definition] of flagDefinitions.entries()) {
-      yield* Flagship.Flag(`Flag${index}`, {
+    for (const definition of flagDefinitions) {
+      yield* Flagship.Flag(`Flag-${String(definition.key)}`, {
         appId: app.appId,
         defaultVariation: definition.defaultVariation,
         description: definition.description,
         enabled: definition.enabled,
         key: definition.key,
+        retainLiveDefaultVariation: true,
         variations: definition.variations,
       });
     }

@@ -27,7 +27,6 @@ const stackReferences = {
   "service-member": memberServed,
   "internal-dashboard": wikiServed,
   "internal-wiki": [],
-  zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
     Record<typeof APPLICATION.admin, typeof servedApplication> &
@@ -60,7 +59,6 @@ function stackDependencies(stack: StackName): readonly StackName[] {
 }
 
 const stackNames = [
-  "zone",
   "email",
   "database",
   "flagship",
@@ -77,7 +75,6 @@ const stackNames = [
 
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
-  "core",
   ...monitorStacks,
   APPLICATION.user,
   APPLICATION.admin,

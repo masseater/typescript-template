@@ -3,6 +3,7 @@ import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
 import { Crypto, Effect, Predicate, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
+import { stackName } from "./stacks.ts";
 
 import type { Stack as StackRoute } from "alchemy/Alchemist";
 import type { Plan } from "alchemy/Plan";
@@ -169,23 +170,32 @@ function refused(code: CloudflareFailure["code"] | undefined, id: string): reado
   return code === undefined ? [] : [{ code, id }];
 }
 
-function refusedBindings(row: PlanRow): readonly Refusal[] {
-  return row.bindings.flatMap((binding) =>
-    refused(bindingDisposition[binding.action], `${row.id}.${binding.sid}`),
-  );
+const retiredBindings: ReadonlySet<string> = new Set([
+  `${stackName("core")}:Worker.AUTH_SECRET`,
+  `${stackName("core")}:Worker.EMAIL`,
+  `${stackName("core")}:Worker.EMAIL_FROM`,
+  `${stackName("internal-dashboard")}:Worker.OPS_EMAIL`,
+  `${stackName("service-admin")}:Worker.FLAGSHIP_ACCOUNT_ID`,
+  `${stackName("service-admin")}:Worker.OPS_EMAIL`,
+  `${stackName("service-member")}:Worker.FLAGSHIP_ACCOUNT_ID`,
+]);
+
+function retired(stack: string, binding: PlannedBinding, id: string): boolean {
+  return binding.action === "delete" && retiredBindings.has(`${stack}:${id}`);
 }
 
-function adoptedZoneSetting(row: PlanRow): boolean {
-  return row.action === "adopted" && row.type === "Cloudflare.Zone.Setting";
+function refusedBindings(row: PlanRow, stack: string): readonly Refusal[] {
+  return row.bindings.flatMap((binding) => {
+    const id = `${row.id}.${binding.sid}`;
+    return retired(stack, binding, id) ? [] : refused(bindingDisposition[binding.action], id);
+  });
 }
 
 function refusedRows(planned: PlannedStack): readonly Refusal[] {
   const rows = planRows(planned);
   return [
-    ...rows.flatMap((row) =>
-      adoptedZoneSetting(row) ? [] : refused(rowDisposition[row.action], row.id),
-    ),
-    ...rows.flatMap((row) => refusedBindings(row)),
+    ...rows.flatMap((row) => refused(rowDisposition[row.action], row.id)),
+    ...rows.flatMap((row) => refusedBindings(row, planned.stack.name)),
   ];
 }
 

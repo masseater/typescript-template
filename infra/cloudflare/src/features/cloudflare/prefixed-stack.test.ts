@@ -12,7 +12,7 @@ const { prefix } = verificationSettings;
 
 function compiledAt(stage: string): Effect.Effect<Exit.Exit<unknown, unknown>> {
   applyVerificationEnvironment();
-  const deployment = prefixedStack("zone", Effect.succeed({})).pipe(
+  const deployment = prefixedStack("email", Effect.succeed({})).pipe(
     Effect.provideService(Stage, stage),
   );
   return Effect.exit(toEffect(deployment, { providers: stackProviders, state: inMemoryState() }));
@@ -28,7 +28,7 @@ describe("a stack built through the deployment prefix", () => {
   it.effect("compiles when it runs under the stage named after the deployment prefix", () =>
     Effect.gen(function* compiledUnderPrefix() {
       const exit = yield* compiledAt(prefix);
-      assert.strictEqual(compiledName(exit), stackName("zone"));
+      assert.strictEqual(compiledName(exit), stackName("email"));
     }),
   );
 

@@ -7,18 +7,14 @@ import {
   type HttpClientError,
 } from "effect/unstable/http";
 
-import {
-  booleanForVariation,
-  flagDefinitionFor,
-  flagVariations,
-  variationForBoolean,
-  type FlagKey,
-} from "./definitions.ts";
+import { booleanForVariation, flagVariations, variationForBoolean } from "./definitions.ts";
 
 const RemoteFlag = Schema.Struct({
-  defaultVariation: Schema.Literals(flagVariations),
+  default_variation: Schema.Literals(flagVariations),
+  description: Schema.optional(Schema.NullOr(Schema.String)),
   enabled: Schema.Boolean,
   key: Schema.String,
+  rules: Schema.Array(Schema.Unknown),
   variations: Schema.Record(Schema.String, Schema.Boolean),
 });
 const RemotePayload = Schema.Struct({
@@ -37,8 +33,8 @@ const FlagshipWriteConfig = Schema.Struct({
   authToken: Schema.Redacted(Schema.String),
 });
 
-const flagshipFlagUrl = (config: FlagshipWriteConfig, flagKey: FlagKey): string =>
-  `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/flagship/apps/${config.appId}/flags/${String(flagKey)}`;
+const flagshipFlagUrl = (config: FlagshipWriteConfig, flagKey: string): string =>
+  `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/flagship/apps/${config.appId}/flags/${flagKey}`;
 
 const authorization = (config: FlagshipWriteConfig): { readonly Authorization: string } => ({
   Authorization: `Bearer ${Redacted.value(config.authToken)}`,
@@ -70,7 +66,7 @@ const acceptedResponse = (
 
 const readFlag = Effect.fn("readFlag")(function* readFlag(
   config: FlagshipWriteConfig,
-  flagKey: FlagKey,
+  flagKey: string,
 ) {
   const httpResponse = yield* acceptedResponse(
     "read",
@@ -89,17 +85,15 @@ const readFlag = Effect.fn("readFlag")(function* readFlag(
 const writeFlag = Effect.fn("writeFlag")(function* writeFlag(change: {
   readonly config: FlagshipWriteConfig;
   readonly enabled: boolean;
-  readonly flagKey: FlagKey;
+  readonly flagKey: string;
 }) {
-  const definition = flagDefinitionFor(change.flagKey);
   const remoteFlag = yield* readFlag(change.config, change.flagKey);
   const defaultVariation = variationForBoolean(change.enabled);
+  const { description, ...kept } = remoteFlag;
   const requestBody = yield* HttpBody.json({
-    defaultVariation,
-    enabled: definition.enabled,
-    key: change.flagKey,
-    rules: [],
-    variations: definition.variations,
+    ...kept,
+    ...(typeof description === "string" ? { description } : {}),
+    default_variation: defaultVariation,
   }).pipe(Effect.mapError(asFlagshipFailure));
   yield* acceptedResponse(
     "write",
@@ -111,7 +105,7 @@ const writeFlag = Effect.fn("writeFlag")(function* writeFlag(change: {
   return {
     enabled: booleanForVariation(defaultVariation),
     flagKey: change.flagKey,
-    previous: booleanForVariation(remoteFlag.defaultVariation),
+    previous: booleanForVariation(remoteFlag.default_variation),
   };
 });
 
