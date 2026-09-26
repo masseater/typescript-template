@@ -44,7 +44,7 @@ it.effect("reports a defect as a defect instead of an unknown failure", () =>
       code: "defect",
       reason: "state store unreachable",
     });
-    const taken = new CloudflareFailure({
+    const taken = CloudflareFailure.make({
       code: "database_name_taken",
       keys: ["TEMPLATE_PREFIX"],
     });

@@ -99,10 +99,10 @@ const capture = (
       return HttpServerResponse.empty({ status: httpStatus.notFound });
     }
     const raw = yield* incoming.text.pipe(
-      Effect.mapError((error) => new ReceiverCheckFailure({ reason: describeError(error) })),
+      Effect.mapError((error) => ReceiverCheckFailure.make({ reason: describeError(error) })),
     );
     const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(raw).pipe(
-      Effect.mapError(() => new ReceiverCheckFailure({ reason: "response_invalid" })),
+      Effect.mapError(() => ReceiverCheckFailure.make({ reason: "response_invalid" })),
     );
     yield* Ref.update(inbox, (current) => ({
       ...current,
@@ -118,7 +118,7 @@ const openReceiver = Effect.gen(function* openReceiverProgram() {
   const scope = yield* Scope.make();
   const built = yield* Layer.build(NodeHttpServer.layerTest).pipe(
     Scope.provide(scope),
-    Effect.mapError((error) => new ReceiverCheckFailure({ reason: describeError(error) })),
+    Effect.mapError((error) => ReceiverCheckFailure.make({ reason: describeError(error) })),
   );
   const server = Context.get(built, HttpServer.HttpServer);
   const inbox = yield* Ref.make<Inbox>({ failure: undefined, logs: [], traces: [] });
@@ -139,7 +139,7 @@ const openReceiver = Effect.gen(function* openReceiverProgram() {
     .pipe(Scope.provide(scope));
   if (server.address._tag === "UnixPathAddress") {
     yield* Scope.close(scope, Exit.succeed(undefined));
-    return yield* new ReceiverCheckFailure({ reason: "receiver did not bind" });
+    return yield* ReceiverCheckFailure.make({ reason: "receiver did not bind" });
   }
   const opened: OpenedReceiver = {
     inbox,
@@ -172,7 +172,7 @@ const deliver = Effect.fn("deliver")(function* deliver(origin: string) {
         serviceName: APPLICATION.user,
       }),
     ),
-    Effect.mapError((invalid) => new ReceiverCheckFailure({ reason: invalid.reason })),
+    Effect.mapError((invalid) => ReceiverCheckFailure.make({ reason: invalid.reason })),
   );
   return lines;
 });
@@ -182,7 +182,7 @@ function decode<Decoded extends Schema.Top & { readonly DecodingServices: never 
   body: unknown,
 ): Effect.Effect<Decoded["Type"], ReceiverCheckFailure> {
   return Schema.decodeUnknownEffect(schema)(body).pipe(
-    Effect.mapError(() => new ReceiverCheckFailure({ reason: "response_invalid" })),
+    Effect.mapError(() => ReceiverCheckFailure.make({ reason: "response_invalid" })),
   );
 }
 
@@ -223,7 +223,7 @@ const matched = Effect.fn("matched")(function* matched(inbox: Inbox, lines: read
       inbox.failure ??
       exportFailure ??
       `receiver returned no match (logs=${inbox.logs.length}, traces=${inbox.traces.length})`;
-    return yield* new ReceiverCheckFailure({ reason });
+    return yield* ReceiverCheckFailure.make({ reason });
   }
   const arrival: ExportedArrival = { log: log.body, span: span.body, traceId: span.traceId };
   return arrival;

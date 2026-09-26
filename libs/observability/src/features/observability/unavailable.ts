@@ -93,12 +93,11 @@ const unavailableLog = (
 const reportUnavailable = (
   cause: Readonly<Cause.Cause<unknown>>,
   reporting: Reporting,
-): Effect.Effect<void> => {
-  return Effect.gen(function* reportUnavailableProgram() {
+): Effect.Effect<void> =>
+  Effect.gen(function* reportUnavailableProgram() {
     const sink = reporting.log ?? (yield* Console.Console);
     sink.error(JSON.stringify(unavailableLog(cause, reporting.service)));
   });
-};
 
 export { reportUnavailable };
 export type { Reporting };

@@ -48,7 +48,7 @@ const git = Effect.fn("git")(function* git(
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
+    : yield* GitFixtureRefused.make({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -368,7 +368,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
     it.effect("refuses a checkout that holds neither the integration branch nor a merge", () =>
       Effect.gen(function* program() {
         expect(yield* guessworkRefusal).toStrictEqual(
-          new ComparisonUnresolved({
+          ComparisonUnresolved.make({
             message:
               "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor the parents of a pull request merge, and no GitHub API to read the merge through. Fetch the integration branch or the merge with its parents before checking.",
           }),

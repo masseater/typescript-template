@@ -66,7 +66,7 @@ const publishToGitHub = Effect.fn("publishWikiToGitHub")(function* publishToGitH
     ),
   );
   if ((current?.sha ?? null) !== publication.baseRevision) {
-    return yield* new WikiPublishStale();
+    return yield* WikiPublishStale.make();
   }
   const images = yield* Effect.forEach(
     publication.images,

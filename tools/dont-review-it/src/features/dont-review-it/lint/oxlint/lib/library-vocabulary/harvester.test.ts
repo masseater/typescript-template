@@ -417,7 +417,7 @@ layer(NodeServices.layer)("createLibraryVocabularyLoader", (it) => {
           );
           return createLibraryVocabularyLoader({
             openApi: () => {
-              throw new RuntimeRefusal({ code: "EACCES" });
+              throw RuntimeRefusal.make({ code: "EACCES" });
             },
           })({
             filename: paths.join(packageDirectory, "src", "reader.ts"),

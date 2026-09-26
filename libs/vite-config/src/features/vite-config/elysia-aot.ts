@@ -33,7 +33,7 @@ const elysiaAot = (appRoot: string): Plugin => {
           Effect.tryPromise({
             try: () => Promise.resolve(compiled.buildStart()),
             catch: (cause) =>
-              new AotStartFailed({
+              AotStartFailed.make({
                 cause,
                 message: cause instanceof Error ? cause.message : String(cause),
               }),

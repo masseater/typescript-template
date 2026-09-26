@@ -89,21 +89,21 @@ const publishedJwks = (
   Effect.gen(function* publishedJwks() {
     const { handler } = issuer;
     if (typeof handler !== "function") {
-      return yield* new JwksUnavailable();
+      return yield* JwksUnavailable.make();
     }
     const published: unknown = yield* Effect.tryPromise({
-      catch: () => new JwksUnavailable(),
+      catch: () => JwksUnavailable.make(),
       try: () => Promise.resolve(handler(new Request(`${origin}/api/auth/jwks`))),
     });
     if (!(published instanceof Response) || !published.ok) {
-      return yield* new JwksUnavailable();
+      return yield* JwksUnavailable.make();
     }
     const keySet: unknown = yield* Effect.tryPromise({
-      catch: () => new JwksUnavailable(),
+      catch: () => JwksUnavailable.make(),
       try: () => published.json(),
     });
     return yield* Schema.decodeUnknownEffect(Jwks)(keySet).pipe(
-      Effect.mapError(() => new JwksUnavailable()),
+      Effect.mapError(() => JwksUnavailable.make()),
     );
   });
 

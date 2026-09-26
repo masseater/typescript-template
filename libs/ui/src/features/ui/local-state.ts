@@ -13,9 +13,7 @@ const localState = <Value>(initial: Value): LocalState<Value> => {
     void slotId;
     return Atom.make(initial);
   });
-  const useLocalState = (): ReturnType<LocalState<Value>> => {
-    return useAtom(stateAtom(useId()));
-  };
+  const useLocalState = (): ReturnType<LocalState<Value>> => useAtom(stateAtom(useId()));
   return useLocalState;
 };
 

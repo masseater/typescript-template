@@ -45,7 +45,7 @@ const buildIndex = Effect.fn("buildIndex")(function* buildIndex(
   const documents = loadDocuments();
   const vectors = yield* embed(documents.map((document) => `${document.title}\n${document.text}`));
   if (vectors.length !== documents.length) {
-    return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+    return yield* EmbeddingFailed.make({ reason: "count_mismatch" });
   }
   const index: SemanticIndex = { documents, vectors: vectors.map((vector) => normalize(vector)) };
   return index;
@@ -70,18 +70,18 @@ function createSemanticIndex(loadDocuments: () => readonly SemanticDocument[]): 
       concurrency: "unbounded",
     });
     if (queryVectors.length !== 1 || vectors.length !== documents.length) {
-      return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+      return yield* EmbeddingFailed.make({ reason: "count_mismatch" });
     }
     const [queryVector] = queryVectors;
     if (queryVector === undefined) {
-      return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+      return yield* EmbeddingFailed.make({ reason: "count_mismatch" });
     }
     const target = normalize(queryVector);
     const matches: SemanticMatch[] = [];
     for (const [index, document] of documents.entries()) {
       const vector = vectors[index];
       if (vector === undefined) {
-        return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+        return yield* EmbeddingFailed.make({ reason: "count_mismatch" });
       }
       matches.push({ document, score: similarity(vector, target) });
     }

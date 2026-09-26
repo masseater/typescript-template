@@ -47,7 +47,7 @@ function inventoryFailure(
   stack: string,
   cause: unknown,
 ): InventoryFailure {
-  return new InventoryFailure({ code, detail: describeInventoryCause(cause), stack });
+  return InventoryFailure.make({ code, detail: describeInventoryCause(cause), stack });
 }
 
 const BindingEntry = Schema.Struct({

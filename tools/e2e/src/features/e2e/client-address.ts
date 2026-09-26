@@ -8,8 +8,7 @@ const syntheticClientAddress = (): string => {
   return `${documentationPrefix}.${(octet % hostCount) + 1}`;
 };
 
-const browserHeaders = (): Readonly<Record<string, string>> => {
-  return agentBrowserHeaders(syntheticClientAddress());
-};
+const browserHeaders = (): Readonly<Record<string, string>> =>
+  agentBrowserHeaders(syntheticClientAddress());
 
 export { browserHeaders };

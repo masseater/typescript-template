@@ -12,10 +12,10 @@ class SharedTaskCacheUnset extends Schema.TaggedError<SharedTaskCacheUnset>()(
 const readSharedTaskCache: Effect.Effect<string, SharedTaskCacheUnset> = Config.String(
   sharedTaskCacheEnv,
 ).pipe(
-  Effect.mapError(() => new SharedTaskCacheUnset()),
+  Effect.mapError(() => SharedTaskCacheUnset.make()),
   Effect.filterOrFail(
     (value) => value.trim() !== "",
-    () => new SharedTaskCacheUnset(),
+    () => SharedTaskCacheUnset.make(),
   ),
 );
 

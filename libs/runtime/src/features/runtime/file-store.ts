@@ -47,50 +47,46 @@ const removeListed = (
       yield* removeListed(bucket, { cursor: listed.cursor, prefix: listing.prefix });
     }
   });
-const storeOf = (bucket: Bucket): FileStoreShape => {
-  return {
-    get: (fieldName) =>
-      Effect.gen(function* getFile() {
-        const shape = yield* attempt("get", () => bucket.get(fieldName));
-        if (shape === null) {
-          return undefined;
-        }
-        const fileBytes = yield* attempt("get", () => shape.arrayBuffer());
-        return {
-          bytes: new Uint8Array(fileBytes),
-          contentType: shape.httpMetadata?.contentType,
-        };
-      }),
-    open: (fieldName) =>
-      attempt("open", () => bucket.get(fieldName)).pipe(
-        Effect.map((shape) =>
-          shape === null
-            ? undefined
-            : {
-                body: shape.body,
-                contentType: shape.httpMetadata?.contentType,
-                size: shape.size,
-              },
-        ),
+const storeOf = (bucket: Bucket): FileStoreShape => ({
+  get: (fieldName) =>
+    Effect.gen(function* getFile() {
+      const shape = yield* attempt("get", () => bucket.get(fieldName));
+      if (shape === null) {
+        return undefined;
+      }
+      const fileBytes = yield* attempt("get", () => shape.arrayBuffer());
+      return {
+        bytes: new Uint8Array(fileBytes),
+        contentType: shape.httpMetadata?.contentType,
+      };
+    }),
+  open: (fieldName) =>
+    attempt("open", () => bucket.get(fieldName)).pipe(
+      Effect.map((shape) =>
+        shape === null
+          ? undefined
+          : {
+              body: shape.body,
+              contentType: shape.httpMetadata?.contentType,
+              size: shape.size,
+            },
       ),
-    put: (fieldName, file) =>
-      attempt("put", () => bucket.put(fieldName, file.bytes, uploadOptions(file.contentType))),
-    putStream: (fieldName, file) => {
-      const { body } = file;
-      return isBucketStream(body)
-        ? attempt("put", () => bucket.put(fieldName, body, uploadOptions(file.contentType)))
-        : Effect.fail(new StorageFailed({ reason: "operation_failed" }));
-    },
-    remove: (fieldNames) =>
-      fieldNames.length === 0
-        ? Effect.void
-        : attempt("delete", () => bucket.delete([...fieldNames])),
-    removePrefix: (prefix) =>
-      prefix.length === 0
-        ? Effect.fail(new StorageFailed({ reason: "operation_failed" }))
-        : removeListed(bucket, { prefix }),
-  };
-};
+    ),
+  put: (fieldName, file) =>
+    attempt("put", () => bucket.put(fieldName, file.bytes, uploadOptions(file.contentType))),
+  putStream: (fieldName, file) => {
+    const { body } = file;
+    return isBucketStream(body)
+      ? attempt("put", () => bucket.put(fieldName, body, uploadOptions(file.contentType)))
+      : Effect.fail(new StorageFailed({ reason: "operation_failed" }));
+  },
+  remove: (fieldNames) =>
+    fieldNames.length === 0 ? Effect.void : attempt("delete", () => bucket.delete([...fieldNames])),
+  removePrefix: (prefix) =>
+    prefix.length === 0
+      ? Effect.fail(new StorageFailed({ reason: "operation_failed" }))
+      : removeListed(bucket, { prefix }),
+});
 const unavailableStore: FileStoreShape = {
   get: () => storageUnavailable,
   open: () => storageUnavailable,
@@ -99,7 +95,9 @@ const unavailableStore: FileStoreShape = {
   remove: () => storageUnavailable,
   removePrefix: () => storageUnavailable,
 };
-class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runtime/FileStore") {
+class FileStore extends Context.Service<FileStore, FileStoreShape>()(
+  "@repo/runtime/features/runtime/file-store/FileStore",
+) {
   public static layer(bucket: Bucket | undefined): Layer.Layer<FileStore> {
     return Layer.succeed(
       FileStore,

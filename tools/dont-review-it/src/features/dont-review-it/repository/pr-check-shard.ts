@@ -42,7 +42,7 @@ const shardOutput = (
         !/^(?:apps|libs|infra|tools)\/[\w-]+$/u.test(directory) ||
         !/^@repo\/[\w-]+$/u.test(workspace.name)
       ) {
-        return Effect.fail(new NotAWorkspaceFilter({ directory }));
+        return Effect.fail(NotAWorkspaceFilter.make({ directory }));
       }
       return Effect.succeed(workspace.name);
     });

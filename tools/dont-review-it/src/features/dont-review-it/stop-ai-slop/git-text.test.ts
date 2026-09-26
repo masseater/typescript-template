@@ -31,7 +31,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("runGitText",
     it.effect("fails with the text Git wrote to stderr", () =>
       Effect.gen(function* program() {
         expect(yield* Effect.flip(aliasRun("printf notice >&2"))).toStrictEqual(
-          new GitCommandFailed({ message: "Git command wrote to stderr: notice" }),
+          GitCommandFailed.make({ message: "Git command wrote to stderr: notice" }),
         );
       }),
     );
@@ -42,7 +42,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("runGitText",
       Effect.gen(function* program() {
         const executable = gitExecutablePath(yield* Config.String("PATH"));
         expect(yield* Effect.flip(aliasRun("printf refused >&2; exit 3"))).toStrictEqual(
-          new GitCommandFailed({
+          GitCommandFailed.make({
             message: `Command failed: ${executable} -c alias.probe=!printf refused >&2; exit 3 probe\nrefused`,
           }),
         );

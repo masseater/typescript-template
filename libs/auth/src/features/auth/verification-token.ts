@@ -17,11 +17,11 @@ const tokenClaims = (
 ): Result.Result<typeof VerificationClaims.Type, VerificationTokenInvalid> => {
   const [, claims] = token.split(".");
   if (claims === undefined) {
-    return Result.fail(new VerificationTokenInvalid());
+    return Result.fail(VerificationTokenInvalid.make());
   }
   const decoded = Result.flatMap(Encoding.decodeBase64UrlString(claims), decodeClaims);
   if (Result.isFailure(decoded)) {
-    return Result.fail(new VerificationTokenInvalid());
+    return Result.fail(VerificationTokenInvalid.make());
   }
   return Result.succeed(decoded.success);
 };

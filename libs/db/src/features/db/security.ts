@@ -138,7 +138,7 @@ export const markSessionStrong = Effect.fn("markSessionStrong")(
         .returning({ id: session.id }),
     );
     if (!strongSession) {
-      return yield* new SessionRevoked();
+      return yield* SessionRevoked.make();
     }
   },
 );

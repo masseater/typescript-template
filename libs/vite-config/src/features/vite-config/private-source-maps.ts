@@ -13,17 +13,15 @@ const repositoryRoot = paths.resolve(import.meta.dirname, "../../../../..");
 
 const BROKEN_SOURCE_MAP = "SOURCEMAP_BROKEN";
 
-const failOnBrokenSourceMaps = (): Plugin => {
-  return {
-    apply: "build",
-    name: "template-fail-on-broken-source-maps",
-    onLog(_level, log) {
-      if (log.code === BROKEN_SOURCE_MAP && log.plugin !== "elysia-aot") {
-        this.error(log);
-      }
-    },
-  };
-};
+const failOnBrokenSourceMaps = (): Plugin => ({
+  apply: "build",
+  name: "template-fail-on-broken-source-maps",
+  onLog(_level, log) {
+    if (log.code === BROKEN_SOURCE_MAP && log.plugin !== "elysia-aot") {
+      this.error(log);
+    }
+  },
+});
 
 const moveMap = (source: string, destination: string): Effect.Effect<void> =>
   Effect.gen(function* moveMapProgram() {

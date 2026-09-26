@@ -95,19 +95,19 @@ const loadedScalarsMatch = (
   }>,
 ): ConfigurationInvalid | undefined => {
   if (Redacted.value(loaded.AUTH_SECRET) !== Redacted.value(scalars.AUTH_SECRET)) {
-    return new ConfigurationInvalid({ reason: "AUTH_SECRET" });
+    return ConfigurationInvalid.make({ reason: "AUTH_SECRET" });
   }
   if (
     revealedOrUndefined(loaded.OTLP_AUTHORIZATION) !==
     revealedOrUndefined(scalars.OTLP_AUTHORIZATION)
   ) {
-    return new ConfigurationInvalid({ reason: "OTLP_AUTHORIZATION" });
+    return ConfigurationInvalid.make({ reason: "OTLP_AUTHORIZATION" });
   }
   if (scalars.MAILPIT_URL === undefined && loaded.EMAIL === undefined) {
-    return new ConfigurationInvalid({ reason: "An email delivery binding is required" });
+    return ConfigurationInvalid.make({ reason: "An email delivery binding is required" });
   }
   if (loaded.FLAGS !== undefined && !isFlagship(loaded.FLAGS)) {
-    return new ConfigurationInvalid({ reason: "FLAGS" });
+    return ConfigurationInvalid.make({ reason: "FLAGS" });
   }
   return undefined;
 };
@@ -137,7 +137,7 @@ const workerAppConfig = (
 };
 const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfig(env: unknown) {
   if (!isWorkerEnv(env)) {
-    return yield* new ConfigurationInvalid({ reason: "WorkerEnvironment object" });
+    return yield* ConfigurationInvalid.make({ reason: "WorkerEnvironment object" });
   }
   const scalars = yield* readEnvironment(env);
   const loaded: {
@@ -149,7 +149,7 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
     readonly OTLP_AUTHORIZATION: Redacted.Redacted | undefined;
   } = yield* loadedBinding.pipe(
     Effect.provide(bindingsFor(env)),
-    Effect.mapError((cause) => new ConfigurationInvalid({ reason: bindingReason(cause) })),
+    Effect.mapError((cause) => ConfigurationInvalid.make({ reason: bindingReason(cause) })),
   );
   const mismatch = loadedScalarsMatch(scalars, { ...loaded, FLAGS: Reflect.get(env, "FLAGS") });
   if (mismatch !== undefined) {
@@ -167,8 +167,8 @@ const appLayer = (asked: {
   readonly env: unknown;
   readonly audience: Exclude<Application, "internal-dashboard">;
   readonly routes: Readonly<Record<string, string>>;
-}): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> => {
-  return Layer.unwrap(
+}): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> =>
+  Layer.unwrap(
     readWorkerConfig(asked.env).pipe(
       Effect.flatMap((config) =>
         Effect.gen(function* withStorage() {
@@ -183,6 +183,5 @@ const appLayer = (asked: {
       ),
     ),
   );
-};
 export { appLayer, readAppStorage, readWorkerConfig };
 export type { WorkerModel };

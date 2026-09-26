@@ -102,7 +102,7 @@ const requireClientSourceMaps = Effect.fn("requireClientSourceMaps")(
       .readFileString(sourceMapManifest(repositoryRoot, target))
       .pipe(
         Effect.flatMap(Schema.decodeEffect(EmittedMaps)),
-        Effect.mapError(() => new ArtifactFailure({ code: "source_maps_missing" })),
+        Effect.mapError(() => ArtifactFailure.make({ code: "source_maps_missing" })),
       );
     const present = yield* Effect.forEach(declared, (file) => fileExists(path.join(client, file)), {
       concurrency: "unbounded",

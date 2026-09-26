@@ -45,7 +45,7 @@ function fail(
   code: CloudflareFailure["code"],
   keys: readonly string[] = [],
 ): Effect.Effect<never, CloudflareFailure> {
-  return Effect.fail(new CloudflareFailure({ code, keys }));
+  return Effect.fail(CloudflareFailure.make({ code, keys }));
 }
 
 const MIN_AUTH_SECRET_VARIETY = 16;
@@ -166,7 +166,7 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   args: readonly string[],
 ) {
   const parsed = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
-    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid", keys: [] })),
+    Effect.mapError(() => CloudflareFailure.make({ code: "deployment_command_invalid", keys: [] })),
   );
   if (parsed[0] === "deploy" && parsed[1] === "all") {
     return { operation: "deploy-all", stacks: stackNames } as const;

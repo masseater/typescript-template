@@ -6,18 +6,16 @@ import type { ReactElement } from "react";
 
 const TOTP_LENGTH = 6;
 
-const TotpField = ({ code }: Readonly<{ code: TextInput }>): ReactElement => {
-  return (
-    <Field
-      label="認証アプリの確認コード"
-      name={CHALLENGE_MODE.totp}
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      maxLength={TOTP_LENGTH}
-      value={code.value}
-      onValueChange={code.handleChange}
-    />
-  );
-};
+const TotpField = ({ code }: Readonly<{ code: TextInput }>): ReactElement => (
+  <Field
+    label="認証アプリの確認コード"
+    name={CHALLENGE_MODE.totp}
+    inputMode="numeric"
+    autoComplete="one-time-code"
+    maxLength={TOTP_LENGTH}
+    value={code.value}
+    onValueChange={code.handleChange}
+  />
+);
 
 export { TotpField };

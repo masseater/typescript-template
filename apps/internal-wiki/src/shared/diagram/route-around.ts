@@ -247,7 +247,7 @@ const routeAround = (request: RouteRequest): readonly Point[] => {
     });
   }
   if (reached === undefined) {
-    throw new DiagramCrowded({
+    throw DiagramCrowded.make({
       reason: "no orthogonal route leads around the shapes between these ends",
     });
   }

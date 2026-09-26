@@ -56,7 +56,7 @@ const readAgreementVersion = Effect.fn("readAgreementVersion")(function* readAgr
       .limit(1),
   );
   if (!found) {
-    return yield* new AgreementVersionUnavailable();
+    return yield* AgreementVersionUnavailable.make();
   }
   return { ...found, canPublish: yield* canPublishAgreements(sessionId) };
 });
@@ -92,7 +92,7 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
         .returning({ id: agreementVersion.id, version: agreementVersion.version }),
     );
     if (!createdDraft) {
-      return yield* new AgreementVersionTaken();
+      return yield* AgreementVersionTaken.make();
     }
     return createdDraft;
   },
@@ -114,7 +114,7 @@ const reviseAgreementDraft = Effect.fn("reviseAgreementDraft")(
         .returning({ id: agreementVersion.id, version: agreementVersion.version }),
     );
     if (!revised) {
-      return yield* new AgreementVersionUnavailable();
+      return yield* AgreementVersionUnavailable.make();
     }
     return revised;
   },
@@ -157,7 +157,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     });
     const [version] = publishedVersions;
     if (!version) {
-      return yield* new AgreementVersionUnavailable();
+      return yield* AgreementVersionUnavailable.make();
     }
     return version;
   },

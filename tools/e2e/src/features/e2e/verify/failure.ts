@@ -12,9 +12,8 @@ class VerifyCommandFailure extends Schema.TaggedError<VerifyCommandFailure>()(
   },
 ) {}
 
-const failure = (reason: VerifyCommandFailure["reason"]): VerifyCommandFailure => {
-  return new VerifyCommandFailure({ reason });
-};
+const failure = (reason: VerifyCommandFailure["reason"]): VerifyCommandFailure =>
+  new VerifyCommandFailure({ reason });
 
 export { failure };
 export type { VerifyCommandFailure };

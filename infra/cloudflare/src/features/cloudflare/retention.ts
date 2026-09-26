@@ -19,7 +19,7 @@ const generations = Effect.fn("generations")(function* generations(parent: strin
     .readDirectory(parent)
     .pipe(
       Effect.mapError((cause) =>
-        isMissing(cause) ? new ArtifactFailure({ code: "generations_missing" }) : ioFailed(),
+        isMissing(cause) ? ArtifactFailure.make({ code: "generations_missing" }) : ioFailed(),
       ),
     );
   const listed = yield* Effect.forEach(

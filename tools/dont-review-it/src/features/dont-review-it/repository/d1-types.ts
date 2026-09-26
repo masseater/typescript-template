@@ -17,8 +17,8 @@ type D1Reference = {
   readonly path: readonly string[];
 };
 
-const d1Property = (references: readonly D1Reference[], segment: string): D1Reference[] => {
-  return references.flatMap((reference): D1Reference[] => {
+const d1Property = (references: readonly D1Reference[], segment: string): D1Reference[] =>
+  references.flatMap((reference): D1Reference[] => {
     if (reference.path.length > 0) {
       return reference.path[0] === segment ? [{ ...reference, path: reference.path.slice(1) }] : [];
     }
@@ -30,18 +30,14 @@ const d1Property = (references: readonly D1Reference[], segment: string): D1Refe
     }
     return d1Methods[reference.kind].has(segment) ? [{ ...reference, method: segment }] : [];
   });
-};
 
-const followPath = (references: readonly D1Reference[], path: readonly string[]): D1Reference[] => {
-  return path.reduce<D1Reference[]>(
-    (reached, segment) => d1Property(reached, segment),
-    [...references],
-  );
-};
+const followPath = (references: readonly D1Reference[], path: readonly string[]): D1Reference[] =>
+  path.reduce<D1Reference[]>((reached, segment) => d1Property(reached, segment), [...references]);
 
-const prefixPath = (reference: D1Reference, segment: string): D1Reference => {
-  return { ...reference, path: [segment, ...reference.path] };
-};
+const prefixPath = (reference: D1Reference, segment: string): D1Reference => ({
+  ...reference,
+  path: [segment, ...reference.path],
+});
 
 const memberD1Types = (
   inspection: LintContext,
@@ -49,8 +45,8 @@ const memberD1Types = (
     readonly members: NodeOf<"TSTypeLiteral">["members"];
     readonly resolve: Resolve<D1Reference[]>;
   },
-): D1Reference[] => {
-  return lookup.members.flatMap((member): D1Reference[] => {
+): D1Reference[] =>
+  lookup.members.flatMap((member): D1Reference[] => {
     if (member.type !== "TSPropertySignature" || !member.typeAnnotation) {
       return [];
     }
@@ -59,7 +55,6 @@ const memberD1Types = (
       ? []
       : lookup.resolve(member.typeAnnotation).map((reference) => prefixPath(reference, memberName));
   });
-};
 
 type D1TypeLookup<Inspected extends Node = Node> = {
   readonly node: Inspected;

@@ -24,11 +24,11 @@ const decodeMessagesSearch = Schema.decodeUnknownOption(MessagesSearchParams);
 const decodeConversationSearch = Schema.decodeUnknownOption(ConversationSearchParams);
 
 function normalizeMessagesSearch(raw: unknown): MessagesSearch {
-  return Option.getOrThrowWith(decodeMessagesSearch(raw), () => new InvalidMessagesSearch());
+  return Option.getOrThrowWith(decodeMessagesSearch(raw), () => InvalidMessagesSearch.make());
 }
 
 function normalizeConversationSearch(raw: unknown): ConversationSearch {
-  return Option.getOrThrowWith(decodeConversationSearch(raw), () => new InvalidMessagesSearch());
+  return Option.getOrThrowWith(decodeConversationSearch(raw), () => InvalidMessagesSearch.make());
 }
 
 export { InvalidMessagesSearch, normalizeConversationSearch, normalizeMessagesSearch };

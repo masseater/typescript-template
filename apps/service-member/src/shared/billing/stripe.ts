@@ -113,7 +113,7 @@ function decodeStripe<Contract extends Decodable>(
   input: unknown,
 ): Effect.Effect<Contract["Type"], StripeFailure> {
   return Schema.decodeUnknownEffect(schema)(input).pipe(
-    Effect.mapError((cause) => new StripeFailure({ cause, reason: "response_invalid" })),
+    Effect.mapError((cause) => StripeFailure.make({ cause, reason: "response_invalid" })),
   );
 }
 
@@ -125,7 +125,7 @@ function request(
   idempotencyKey: string | undefined,
 ): Effect.Effect<unknown, StripeFailure> {
   return Effect.tryPromise({
-    catch: (cause) => new StripeFailure({ cause, reason: "request_failed" }),
+    catch: (cause) => StripeFailure.make({ cause, reason: "request_failed" }),
     try: () =>
       fetchImpl(`${stripeApi}${path}`, {
         ...(form === undefined ? {} : { body: form }),
@@ -141,14 +141,14 @@ function request(
     Effect.flatMap((response) =>
       response.ok
         ? Effect.tryPromise({
-            catch: (cause) => new StripeFailure({ cause, reason: "response_invalid" }),
+            catch: (cause) => StripeFailure.make({ cause, reason: "response_invalid" }),
             try: (): Promise<unknown> => response.json(),
           })
-        : Effect.fail(new StripeFailure({ reason: "request_failed", status: response.status })),
+        : Effect.fail(StripeFailure.make({ reason: "request_failed", status: response.status })),
     ),
     Effect.timeoutOrElse({
       duration: patience,
-      orElse: () => Effect.fail(new StripeFailure({ reason: "timed_out" })),
+      orElse: () => Effect.fail(StripeFailure.make({ reason: "timed_out" })),
     }),
     withSpan("stripe.request", { attributes: { "stripe.path": path } }),
   );
@@ -278,19 +278,21 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
       verifyStripeSignature(config.webhookSecret, payload, signature).pipe(
         Effect.flatMap(() =>
           Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(payload).pipe(
-            Effect.mapError(() => new StripeEventUnreadable()),
+            Effect.mapError(() => StripeEventUnreadable.make()),
           ),
         ),
         Effect.flatMap((json) =>
           Schema.decodeUnknownEffect(StripeEvent)(json).pipe(
-            Effect.mapError(() => new StripeEventUnreadable()),
+            Effect.mapError(() => StripeEventUnreadable.make()),
           ),
         ),
       ),
   };
 }
 
-class Stripe extends Context.Service<Stripe, StripeShape>()("#shared/billing/Stripe") {
+class Stripe extends Context.Service<Stripe, StripeShape>()(
+  "@repo/service-member/shared/billing/stripe",
+) {
   public static layer(config: StripeConfig): Layer.Layer<Stripe> {
     return Layer.succeed(Stripe, Stripe.of(stripeService(fetch, config)));
   }

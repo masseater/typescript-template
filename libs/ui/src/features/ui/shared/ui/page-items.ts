@@ -5,9 +5,8 @@ const pagesKeptBesideAnEdge = 2;
 
 type PageItem = Readonly<{ kind: "gap"; after: number }> | Readonly<{ kind: "page"; page: number }>;
 
-const pages = (first: number, last: number): PageItem[] => {
-  return range(first, last + 1).map((page) => ({ kind: "page", page }));
-};
+const pages = (first: number, last: number): PageItem[] =>
+  range(first, last + 1).map((page) => ({ kind: "page", page }));
 
 const pageItems = ({ current, last }: Readonly<{ current: number; last: number }>): PageItem[] => {
   if (last <= MAX_PAGES_WITHOUT_GAPS) {

@@ -41,11 +41,10 @@ const isSpanId = Schema.is(SpanId);
 export const isRequestId = Schema.is(RequestId);
 const isHttpMethod = Schema.is(Schema.Literals(httpMethods));
 export const isRoutes = Schema.is(Routes);
-export const randomHex = (bytes: number): string => {
-  return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
+export const randomHex = (bytes: number): string =>
+  Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
     byte.toString(hexRadix).padStart(hexByteWidth, "0"),
   ).join("");
-};
 export const traceparentOf = (span: {
   readonly spanId: string;
   readonly traceId: string;
@@ -70,9 +69,8 @@ export const parentContext = (
     ? { parentSpanId: spanId, traceId }
     : undefined;
 };
-export const httpMethod = (method: string): HttpMethod => {
-  return isHttpMethod(method) ? method : otherHttpMethod;
-};
+export const httpMethod = (method: string): HttpMethod =>
+  isHttpMethod(method) ? method : otherHttpMethod;
 export const routeLabel = (pathname: string, routes: Readonly<Record<string, string>>): string => {
   if (Object.hasOwn(routes, pathname)) {
     return routes[pathname] ?? unmatchedRoute;

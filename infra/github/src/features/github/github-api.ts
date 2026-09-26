@@ -45,8 +45,8 @@ const gitHubResponse = (
     Effect.timeout(gitHubRequestTimeout),
     Effect.provide(FetchHttpClient.layer),
     Effect.provideService(FetchHttpClient.Fetch, globalThis.fetch),
-    Effect.mapError(
-      (cause) => new GitHubAppFailure({ cause, code: "github_unreachable", step: call.step }),
+    Effect.mapError((cause) =>
+      GitHubAppFailure.make({ cause, code: "github_unreachable", step: call.step }),
     ),
   );
 
@@ -57,7 +57,7 @@ const refused = (
   call: GitHubCall,
   refusal: Readonly<{ cause?: unknown; status: number }>,
 ): GitHubAppFailure =>
-  new GitHubAppFailure({
+  GitHubAppFailure.make({
     cause: refusal.cause,
     code: "github_refused",
     status: refusal.status,

@@ -207,7 +207,7 @@ const markNotificationRead = Effect.fn("markNotificationRead")(function* markRea
         .limit(1),
     );
     if (existing === undefined) {
-      return yield* new NotificationNotFound();
+      return yield* NotificationNotFound.make();
     }
   }
 });

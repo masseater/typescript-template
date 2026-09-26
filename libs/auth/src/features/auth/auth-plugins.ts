@@ -37,8 +37,8 @@ const passkeyPlugin = ({
   audience,
   origin,
   run,
-}: Readonly<{ audience: Application; origin: string; run: Run }>): ReturnType<typeof passkey> => {
-  return passkey({
+}: Readonly<{ audience: Application; origin: string; run: Run }>): ReturnType<typeof passkey> =>
+  passkey({
     authentication: {
       afterVerification: ({
         clientData,
@@ -63,72 +63,63 @@ const passkeyPlugin = ({
     origin,
     rpID: passkeyRpId(origin),
   });
-};
 
-const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
-  return [
-    jwt({ disableSettingJwtHeader: true }),
-    mcp({
-      allowDynamicClientRegistration: true,
-      allowUnauthenticatedClientRegistration: true,
-      clientRegistrationAllowedScopes: [...wikiScopes],
-      clientRegistrationDefaultScopes: [...wikiScopes],
-      consentPage: "/consent",
-      loginPage: "/login",
-      resource: `${origin}/mcp`,
-      scopes: [...wikiScopes],
-    }),
-  ];
-};
+const wikiAuthorizationServer = (origin: string): AuthPlugin[] => [
+  jwt({ disableSettingJwtHeader: true }),
+  mcp({
+    allowDynamicClientRegistration: true,
+    allowUnauthenticatedClientRegistration: true,
+    clientRegistrationAllowedScopes: [...wikiScopes],
+    clientRegistrationDefaultScopes: [...wikiScopes],
+    consentPage: "/consent",
+    loginPage: "/login",
+    resource: `${origin}/mcp`,
+    scopes: [...wikiScopes],
+  }),
+];
 
-const adminAuthorizationServer = (origin: string): AuthPlugin[] => {
-  return [
-    jwt({ disableSettingJwtHeader: true }),
-    mcp({
-      allowDynamicClientRegistration: true,
-      allowUnauthenticatedClientRegistration: true,
-      clientRegistrationAllowedScopes: [...adminScopes],
-      clientRegistrationDefaultScopes: [...adminScopes],
-      consentPage: "/consent",
-      loginPage: "/login",
-      resource: `${origin}/mcp`,
-      scopes: [...adminScopes],
-    }),
-  ];
-};
+const adminAuthorizationServer = (origin: string): AuthPlugin[] => [
+  jwt({ disableSettingJwtHeader: true }),
+  mcp({
+    allowDynamicClientRegistration: true,
+    allowUnauthenticatedClientRegistration: true,
+    clientRegistrationAllowedScopes: [...adminScopes],
+    clientRegistrationDefaultScopes: [...adminScopes],
+    consentPage: "/consent",
+    loginPage: "/login",
+    resource: `${origin}/mcp`,
+    scopes: [...adminScopes],
+  }),
+];
 
-const memberAuthorizationServer = (origin: string): AuthPlugin[] => {
-  return [
-    jwt({ disableSettingJwtHeader: true }),
-    mcp({
-      allowDynamicClientRegistration: true,
-      allowUnauthenticatedClientRegistration: true,
-      clientRegistrationAllowedScopes: [...memberScopes],
-      clientRegistrationDefaultScopes: [...memberScopes],
-      consentPage: "/consent",
-      loginPage: "/login",
-      resource: `${origin}/mcp`,
-      scopes: [...memberScopes],
-    }),
-  ];
-};
+const memberAuthorizationServer = (origin: string): AuthPlugin[] => [
+  jwt({ disableSettingJwtHeader: true }),
+  mcp({
+    allowDynamicClientRegistration: true,
+    allowUnauthenticatedClientRegistration: true,
+    clientRegistrationAllowedScopes: [...memberScopes],
+    clientRegistrationDefaultScopes: [...memberScopes],
+    consentPage: "/consent",
+    loginPage: "/login",
+    resource: `${origin}/mcp`,
+    scopes: [...memberScopes],
+  }),
+];
 
 const authPlugins = ({
   audience,
   origin,
   run,
-}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] => {
-  return [
-    verificationAudiencePlugin(audience),
-    twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
-    passkeyPlugin({ audience, origin, run }),
-    ...(audience === APPLICATION.user
-      ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
-      : []),
-    ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
-    ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
-  ];
-};
+}: Readonly<{ audience: Application; origin: string; run: Run }>): AuthPlugin[] => [
+  verificationAudiencePlugin(audience),
+  twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
+  passkeyPlugin({ audience, origin, run }),
+  ...(audience === APPLICATION.user
+    ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
+    : []),
+  ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
+  ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
+];
 
 export { authPlugins };
 export type { AuthPlugin };

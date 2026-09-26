@@ -36,7 +36,7 @@ const probeMonitor = monitorWorker<MonitorBindings>({
     return Effect.gen(function* probe() {
       const recordedProbe = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
       if (recordedProbe === probeOutcomes[1]) {
-        return yield* new MonitorFailure({ code: "alert_config_invalid" });
+        return yield* MonitorFailure.make({ code: "alert_config_invalid" });
       }
       if (recordedProbe === probeOutcomes[0]) {
         return yield* Effect.die("the probe was asked to defect");

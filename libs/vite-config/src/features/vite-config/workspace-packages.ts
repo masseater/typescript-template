@@ -57,7 +57,7 @@ const packageDirectoriesMatching = Effect.fn("packageDirectoriesMatching")(
   function* packageDirectoriesMatching(root: string, pattern: string) {
     const parent = pattern.slice(0, -"/*".length);
     if (!pattern.endsWith("/*") || parent === "" || /[*?[\]{}!]/u.test(parent)) {
-      return yield* new UnlistableWorkspace({
+      return yield* UnlistableWorkspace.make({
         definition: paths.join(root, "pnpm-workspace.yaml"),
         reason: `${pattern} is not a <directory>/* package pattern`,
       });
@@ -90,7 +90,7 @@ const workspaceMembers = Effect.fn("workspaceMembers")(function* workspaceMember
   const definition = paths.join(root, "pnpm-workspace.yaml");
   const definitionYaml = yield* filesystem.readFileString(definition);
   const decoded = yield* Effect.try({
-    catch: () => new UnlistableWorkspace({ definition, reason: "it is not YAML" }),
+    catch: () => UnlistableWorkspace.make({ definition, reason: "it is not YAML" }),
     try: (): unknown => parse(definitionYaml),
   }).pipe(Effect.flatMap(Schema.decodeUnknownEffect(WorkspaceDefinition)));
   const directories = yield* Effect.forEach(decoded.packages, (pattern) =>
@@ -149,7 +149,7 @@ const workspaceDependencyRanges = Effect.fn("workspaceDependencyRanges")(
     const byPackageName = new Map(members.map((member) => [member.packageName, member]));
     const unprovided = unprovidedDependencies(members, byPackageName);
     if (unprovided.length > 0) {
-      return yield* new UnlistableWorkspace({
+      return yield* UnlistableWorkspace.make({
         definition: paths.join(root, "pnpm-workspace.yaml"),
         reason: unprovided.join("; "),
       });

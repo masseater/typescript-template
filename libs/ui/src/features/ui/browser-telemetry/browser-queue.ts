@@ -71,7 +71,7 @@ export const makeEventQueue = (
     });
   const delivered = (batch: readonly BrowserEvent[]): Effect.Effect<void, DeliveryRefused> =>
     Effect.tryPromise({
-      catch: (cause) => new DeliveryRefused({ cause }),
+      catch: (cause) => DeliveryRefused.make({ cause }),
       try: () => deliver(batch),
     }).pipe(
       Effect.tapError(() => giveUpOrRetry(batch)),
@@ -113,7 +113,7 @@ export const makeEventQueue = (
         Effect.runFork(
           settled(
             Effect.tryPromise({
-              catch: (cause) => new DeliveryRefused({ cause }),
+              catch: (cause) => DeliveryRefused.make({ cause }),
               try: () => delivery,
             }),
           ),

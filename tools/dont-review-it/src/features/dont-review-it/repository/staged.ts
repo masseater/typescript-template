@@ -44,7 +44,7 @@ const gitOutput = (
 ): IndexRead<string> => {
   const command = args.join(" ");
   return capturedProcess(ChildProcess.make("git", [...args], { cwd: root, stdin: "ignore" })).pipe(
-    Effect.mapError(() => new IndexUnreadable({ command, reason: "git-command-failed" })),
+    Effect.mapError(() => IndexUnreadable.make({ command, reason: "git-command-failed" })),
     Effect.flatMap(({ exitCode, stdout }) => {
       if (exitCode === 0) {
         return Effect.succeed(stdout);
@@ -52,21 +52,19 @@ const gitOutput = (
       if (emptyOnNoMatch && exitCode === NO_MATCH_EXIT_CODE) {
         return Effect.succeed("");
       }
-      return Effect.fail(new IndexUnreadable({ command, exitCode, reason: "git-command-failed" }));
+      return Effect.fail(IndexUnreadable.make({ command, exitCode, reason: "git-command-failed" }));
     }),
   );
 };
 
-const zeroSeparated = (listing: string): string[] => {
-  return listing.split("\0").filter((entry) => entry !== "");
-};
+const zeroSeparated = (listing: string): string[] =>
+  listing.split("\0").filter((entry) => entry !== "");
 
-const listCachedFiles = (root: string): IndexRead<readonly string[]> => {
-  return Effect.map(gitOutput(root, ["ls-files", "--cached", "-z"], false), zeroSeparated);
-};
+const listCachedFiles = (root: string): IndexRead<readonly string[]> =>
+  Effect.map(gitOutput(root, ["ls-files", "--cached", "-z"], false), zeroSeparated);
 
-const refuseUnmerged = (root: string): IndexRead<void> => {
-  return Effect.flatMap(gitOutput(root, ["ls-files", "--unmerged", "-z"], false), (listing) => {
+const refuseUnmerged = (root: string): IndexRead<void> =>
+  Effect.flatMap(gitOutput(root, ["ls-files", "--unmerged", "-z"], false), (listing) => {
     const files = [
       ...new Set(zeroSeparated(listing).map((entry) => entry.split("\t").at(-1) ?? entry)),
     ];
@@ -74,28 +72,24 @@ const refuseUnmerged = (root: string): IndexRead<void> => {
       ? Effect.fail(new IndexUnreadable({ files, reason: "unmerged-index" }))
       : Effect.void;
   });
-};
 
-const filesMatchingFixed = (root: string, value: string): IndexRead<readonly string[]> => {
-  return Effect.map(
+const filesMatchingFixed = (root: string, value: string): IndexRead<readonly string[]> =>
+  Effect.map(
     gitOutput(root, ["grep", "--cached", "-l", "-z", "-F", "-e", value], true),
     zeroSeparated,
   );
-};
 
-const filesMatchingPerl = (root: string, pattern: string): IndexRead<readonly string[]> => {
-  return Effect.map(
+const filesMatchingPerl = (root: string, pattern: string): IndexRead<readonly string[]> =>
+  Effect.map(
     gitOutput(root, ["grep", "--cached", "-l", "-z", "-P", "-e", pattern], true),
     zeroSeparated,
   );
-};
 
-const showCached = (root: string, filename: string): IndexRead<string> => {
-  return gitOutput(root, ["show", `:${filename}`], false);
-};
+const showCached = (root: string, filename: string): IndexRead<string> =>
+  gitOutput(root, ["show", `:${filename}`], false);
 
-const addedText = (root: string): IndexRead<ReadonlyMap<string, string>> => {
-  return Effect.map(
+const addedText = (root: string): IndexRead<ReadonlyMap<string, string>> =>
+  Effect.map(
     gitOutput(root, ["diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff"], true),
     (diff) => {
       const added = new Map<string, string[]>();
@@ -115,7 +109,6 @@ const addedText = (root: string): IndexRead<ReadonlyMap<string, string>> => {
       return new Map([...added.entries()].map(([name, lines]) => [name, lines.join("\n")]));
     },
   );
-};
 
 const prefixScanForIndex = Effect.fn("prefixScanForIndex")(function* prefixScanForIndex(
   root: string,

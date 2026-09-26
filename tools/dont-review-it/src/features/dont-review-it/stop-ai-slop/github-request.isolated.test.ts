@@ -53,13 +53,13 @@ const contentsWith = (answer: () => Response) =>
   });
 
 const unexpectedCompare = (message: string) =>
-  new GitHubAnswerUnexpected({
+  GitHubAnswerUnexpected.make({
     message: `Do not read a GitHub API answer of an unexpected shape on /repos/owner/name/compare/a...b: ${message}`,
     cause: expect.any(Schema.SchemaError),
   });
 
 const unexpectedContents = (message: string) =>
-  new GitHubAnswerUnexpected({
+  GitHubAnswerUnexpected.make({
     message: `Do not read a GitHub API answer of an unexpected shape on /repos/owner/name/contents/src/with%20space.ts?ref=headsha: ${message}`,
     cause: expect.any(Schema.SchemaError),
   });
@@ -142,7 +142,7 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
         expect(
           yield* Effect.flip(contentsWith(() => new HttpResponse("no", { status: 404 }))),
         ).toStrictEqual(
-          new GitHubRequestFailed({
+          GitHubRequestFailed.make({
             message:
               "Do not read past a GitHub API failure: 404 on /repos/owner/name/contents/src/with%20space.ts?ref=headsha.",
             cause: expect.any(HttpClientError.HttpClientError),
@@ -156,7 +156,7 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
     it.effect("refuses to read past an unanswered request", () =>
       Effect.gen(function* program() {
         expect(yield* Effect.flip(comparedWith(() => HttpResponse.error()))).toStrictEqual(
-          new GitHubRequestFailed({
+          GitHubRequestFailed.make({
             message:
               "Do not read past an unanswered GitHub API request: Transport error (GET https://api.github.com/repos/owner/name/compare/a...b)",
             cause: expect.any(HttpClientError.HttpClientError),
@@ -172,7 +172,7 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
         expect(
           yield* Effect.flip(comparedWith(() => new HttpResponse("<html>", { status: 200 }))),
         ).toStrictEqual(
-          new GitHubAnswerUnexpected({
+          GitHubAnswerUnexpected.make({
             message:
               "Do not read a GitHub API answer that is not JSON: /repos/owner/name/compare/a...b.",
             cause: expect.any(HttpClientError.HttpClientError),

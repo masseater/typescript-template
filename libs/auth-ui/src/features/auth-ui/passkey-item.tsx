@@ -8,11 +8,10 @@ import { requireSuccess } from "./protocol";
 import type { ReactElement } from "react";
 import type { PasskeySummary } from "./mfa-types";
 
-const passkeyLabel = (storedName: string | null | undefined): string => {
-  return storedName === undefined || storedName === null || storedName === ""
+const passkeyLabel = (storedName: string | null | undefined): string =>
+  storedName === undefined || storedName === null || storedName === ""
     ? "名前のないパスキー"
     : storedName;
-};
 
 const deleteStoredPasskey = (passkeyId: string): Effect.Effect<void> =>
   authTask(() => authClient.passkey.deletePasskey({ id: passkeyId })).pipe(

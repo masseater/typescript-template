@@ -15,10 +15,10 @@ interface PhotoStoreShape {
 }
 
 const mapFailure = (cause: StorageFailed): PhotoStorageFailed =>
-  new PhotoStorageFailed({ cause, reason: cause.reason });
+  PhotoStorageFailed.make({ cause, reason: cause.reason });
 
 class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
-  "#shared/photo/PhotoStore",
+  "@repo/service-member/shared/photo/photo-store/PhotoStore",
 ) {
   public static fromFileStore(): Layer.Layer<PhotoStore, never, FileStore> {
     return Layer.effect(
@@ -35,7 +35,7 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
                 }
                 if (!isPhotoContentType(stored.contentType)) {
                   return Effect.fail(
-                    new PhotoStorageFailed({
+                    PhotoStorageFailed.make({
                       cause: new TypeError(
                         `stored photo ${key} has content type ${String(stored.contentType)}`,
                       ),

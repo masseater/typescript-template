@@ -38,13 +38,12 @@ const mentionsLastAdmin = (cause: unknown): boolean =>
 
 const protectLastAdmin = <Value, Requirements>(
   effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
-): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> => {
-  return effect.pipe(
+): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> =>
+  effect.pipe(
     Effect.mapError((failure) =>
       mentionsLastAdmin(failure.cause) ? new LastAdminRequired() : failure,
     ),
   );
-};
 
 const matchesPage = (page: typeof UserPage.Type): SQL | undefined => {
   const { accountState, emailVerified, keyword } = page;

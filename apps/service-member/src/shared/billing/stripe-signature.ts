@@ -63,15 +63,15 @@ const verifyStripeSignature = Effect.fn("verifyStripeSignature")(function* verif
 ) {
   const parsed = header === null ? undefined : parseSignatureHeader(header);
   if (parsed === undefined) {
-    return yield* new StripeSignatureInvalid({ reason: "header_malformed" });
+    return yield* StripeSignatureInvalid.make({ reason: "header_malformed" });
   }
   const expected = yield* signPayload(secret, `${parsed.timestamp}.${payload}`);
   if (!parsed.signatures.some((signature) => sameDigest(expected, signature))) {
-    return yield* new StripeSignatureInvalid({ reason: "mismatch" });
+    return yield* StripeSignatureInvalid.make({ reason: "mismatch" });
   }
   const nowSeconds = Math.floor((yield* Clock.currentTimeMillis) / millisecondsPerSecond);
   if (Math.abs(nowSeconds - parsed.timestamp) > signatureToleranceSeconds) {
-    return yield* new StripeSignatureInvalid({ reason: "stale" });
+    return yield* StripeSignatureInvalid.make({ reason: "stale" });
   }
 });
 

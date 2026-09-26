@@ -36,11 +36,11 @@ const builtVariables = (app: Application): Effect.Effect<string, EnvironmentUnus
     const paths = yield* Path.Path;
     const variablesPath = paths.join(repositoryRoot, "apps", app, "dist/server/.dev.vars");
     if (!(yield* filesystem.exists(variablesPath).pipe(Effect.orElseSucceed(() => false)))) {
-      return yield* new EnvironmentUnusable({ reason: "build_missing" });
+      return yield* EnvironmentUnusable.make({ reason: "build_missing" });
     }
     return yield* filesystem
       .readFileString(variablesPath)
-      .pipe(Effect.mapError(() => new EnvironmentUnusable({ reason: "file_io_failed" })));
+      .pipe(Effect.mapError(() => EnvironmentUnusable.make({ reason: "file_io_failed" })));
   }).pipe(Effect.provide(NodeServices.layer));
 
 const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;
@@ -51,13 +51,13 @@ const requireLoopbackOrigin = Effect.fn("requireLoopbackOrigin")(function* requi
   const origin = applicationOrigins[app];
   const variables = yield* builtVariables(app);
   if (appOrigin.exec(variables)?.groups?.origin !== origin) {
-    return yield* new EnvironmentUnusable({ reason: "origin_mismatch" });
+    return yield* EnvironmentUnusable.make({ reason: "origin_mismatch" });
   }
   return origin;
 });
 
-const awaitReady = (app: Application): Effect.Effect<void, EnvironmentUnusable> => {
-  return waitUntilResponds({
+const awaitReady = (app: Application): Effect.Effect<void, EnvironmentUnusable> =>
+  waitUntilResponds({
     accept: respondedSuccessfully,
     method: "GET",
     onStatus: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
@@ -65,17 +65,15 @@ const awaitReady = (app: Application): Effect.Effect<void, EnvironmentUnusable> 
     retry: { interval: readinessInterval, times: readinessChecks },
     url: `${applicationOrigins[app]}${applicationReadyPaths[app]}`,
   }).pipe(Effect.asVoid);
-};
 
-const clearTraces = (origin: string): Effect.Effect<void, EnvironmentUnusable> => {
-  return waitUntilResponds({
+const clearTraces = (origin: string): Effect.Effect<void, EnvironmentUnusable> =>
+  waitUntilResponds({
     accept: respondedSuccessfully,
     method: "POST",
     onStatus: () => new EnvironmentUnusable({ reason: "traces_not_cleared" }),
     onUnreachable: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
     url: `${origin}/cdn-cgi/local/explorer/api/local/observability/clear`,
   }).pipe(Effect.asVoid);
-};
 
 export {
   EnvironmentUnusable,

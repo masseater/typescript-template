@@ -19,10 +19,10 @@ const assertAccountUnused = Effect.fn("assertAccountUnused")(function* assertAcc
   access: AccountAccess,
 ) {
   if ((yield* workerNames(access)).includes(STATE_STORE_SCRIPT_NAME)) {
-    return yield* new CloudflareFailure({ code: "state_store_name_taken", keys: [ADOPT_FLAG] });
+    return yield* CloudflareFailure.make({ code: "state_store_name_taken", keys: [ADOPT_FLAG] });
   }
   if ((yield* secretsStoreCount(access)) > 0) {
-    return yield* new CloudflareFailure({
+    return yield* CloudflareFailure.make({
       code: "secrets_store_already_present",
       keys: [ADOPT_FLAG],
     });
@@ -45,7 +45,7 @@ runDeploymentCommand(
         secrets.filename,
       ];
       if ((yield* runAlchemy(args, confidential)) !== OK_EXIT_CODE) {
-        return yield* new AlchemyFailure({ code: "alchemy_command_failed" });
+        return yield* AlchemyFailure.make({ code: "alchemy_command_failed" });
       }
       yield* Console.info(
         yield* encodeJson({ adopted: adopting, event: "cloudflare.state_store_ready" }),

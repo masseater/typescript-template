@@ -49,31 +49,29 @@ const serveWorker = <Requirements>(asked: {
     httpRequest: Request,
   ) => Effect.Effect<Response, never, Requirements | Telemetry | CurrentRequest>;
   readonly reporting: Reporting;
-}): FetchWorker => {
-  return {
-    fetch: (httpRequest, _environment, runtimeContext): Promise<Response> =>
-      Effect.runPromise(
-        Effect.gen(function* serveFetch() {
-          runtimeContext.waitUntil(asked.runtime.built());
-          const exit = yield* Effect.promise(() =>
-            asked.runtime.runPromiseExit(observeRequest(httpRequest, asked.route)),
-          );
-          if (exit._tag === "Success") {
-            runtimeContext.waitUntil(asked.runtime.runPromise(flushTelemetry));
-            return unindexedResponse(exit.value);
-          }
-          return unindexedResponse(
-            yield* Effect.promise(() =>
-              unavailableResponse(httpRequest, {
-                cause: exit.cause,
-                reporting: asked.reporting,
-              }),
-            ),
-          );
-        }),
-      ),
-  };
-};
+}): FetchWorker => ({
+  fetch: (httpRequest, _environment, runtimeContext): Promise<Response> =>
+    Effect.runPromise(
+      Effect.gen(function* serveFetch() {
+        runtimeContext.waitUntil(asked.runtime.built());
+        const exit = yield* Effect.promise(() =>
+          asked.runtime.runPromiseExit(observeRequest(httpRequest, asked.route)),
+        );
+        if (exit._tag === "Success") {
+          runtimeContext.waitUntil(asked.runtime.runPromise(flushTelemetry));
+          return unindexedResponse(exit.value);
+        }
+        return unindexedResponse(
+          yield* Effect.promise(() =>
+            unavailableResponse(httpRequest, {
+              cause: exit.cause,
+              reporting: asked.reporting,
+            }),
+          ),
+        );
+      }),
+    ),
+});
 const requestPath = (httpRequest: Request): string | undefined => {
   const pathname = URL.parse(httpRequest.url)?.pathname;
   if (pathname === undefined) {
@@ -82,12 +80,11 @@ const requestPath = (httpRequest: Request): string | undefined => {
   const decoded = Result.try(() => decodeURIComponent(pathname));
   return Result.isSuccess(decoded) ? decoded.success : undefined;
 };
-const fetchAsset = (httpRequest: Request): Effect.Effect<Response, never, Assets> => {
-  return Effect.gen(function* fetchAssetProgram() {
+const fetchAsset = (httpRequest: Request): Effect.Effect<Response, never, Assets> =>
+  Effect.gen(function* fetchAssetProgram() {
     const assets = yield* Assets;
     return yield* Effect.promise(() => assets.fetch(httpRequest));
   });
-};
 const assetRequest = (httpRequest: Request, assetBase: string): Request => {
   if (assetBase === "") {
     return httpRequest;
@@ -150,14 +147,13 @@ const appServerEntry = <Requirements>(asked: {
   readonly reporting: Reporting;
   readonly googleAnalytics?: boolean;
   readonly assetBase?: string | undefined;
-}): FetchWorker => {
-  return serveApp({
+}): FetchWorker =>
+  serveApp({
     runtime: asked.runtime,
     reporting: asked.reporting,
     route: startRoute(asked.routeHandler, { googleAnalytics: asked.googleAnalytics ?? false }),
     assetBase: asked.assetBase,
   });
-};
 const withQueue = (
   worker: FetchWorker,
   queue: (
@@ -167,9 +163,7 @@ const withQueue = (
   ) => Promise<void>,
 ): FetchWorker & {
   readonly queue: typeof queue;
-} => {
-  return { ...worker, queue };
-};
+} => ({ ...worker, queue });
 export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
 export { configuredSiteLayer } from "./site.ts";
 export type { SiteServices } from "./site.ts";

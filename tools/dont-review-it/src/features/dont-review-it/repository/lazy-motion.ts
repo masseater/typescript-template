@@ -24,19 +24,17 @@ const reportComponents = (inspection: LintContext, specifiers: readonly Node[]):
   }
 };
 
-const lazyMotionVisitor = (inspection: LintContext): Visitor => {
-  return {
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type === "ExportNamedDeclaration" && node.source?.value === motionEntry) {
-        reportComponents(inspection, node.specifiers);
-      }
-    },
-    ImportDeclaration(node: Node): void {
-      if (node.type === "ImportDeclaration" && node.source.value === motionEntry) {
-        reportComponents(inspection, node.specifiers);
-      }
-    },
-  };
-};
+const lazyMotionVisitor = (inspection: LintContext): Visitor => ({
+  ExportNamedDeclaration(node: Node): void {
+    if (node.type === "ExportNamedDeclaration" && node.source?.value === motionEntry) {
+      reportComponents(inspection, node.specifiers);
+    }
+  },
+  ImportDeclaration(node: Node): void {
+    if (node.type === "ImportDeclaration" && node.source.value === motionEntry) {
+      reportComponents(inspection, node.specifiers);
+    }
+  },
+});
 
 export { lazyMotionVisitor };

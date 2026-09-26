@@ -43,7 +43,7 @@ describe.for([
 
   it("refuses the configuration", ({ configFailure }) => {
     expect(configFailure).toStrictEqual(
-      new HealthMonitorFailure({ code: "health_monitor_config_invalid" }),
+      HealthMonitorFailure.make({ code: "health_monitor_config_invalid" }),
     );
   });
 });
@@ -63,7 +63,7 @@ describe("shared origins", () => {
     configFailure,
   }) => {
     expect(configFailure).toStrictEqual(
-      new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" }),
+      HealthMonitorFailure.make({ code: "health_monitor_origins_must_differ" }),
     );
   });
 });

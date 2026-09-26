@@ -17,8 +17,8 @@ const startPreview = (
   void,
   LoadCiFailure,
   ChildProcessSpawner.ChildProcessSpawner | Path.Path | Scope.Scope
-> => {
-  return Effect.gen(function* launchPreview() {
+> =>
+  Effect.gen(function* launchPreview() {
     const paths = yield* Path.Path;
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     yield* spawner.spawn(
@@ -30,13 +30,12 @@ const startPreview = (
       }),
     );
   }).pipe(Effect.mapError(() => new LoadCiFailure({ reason: "preview_failed" })));
-};
 
 const runLoad = (
   app: (typeof loadCiArguments.Type)["app"],
   profile: (typeof loadCiArguments.Type)["profile"],
-): Effect.Effect<void, LoadCiFailure, ChildProcessSpawner.ChildProcessSpawner | Path.Path> => {
-  return Effect.gen(function* measureLoad() {
+): Effect.Effect<void, LoadCiFailure, ChildProcessSpawner.ChildProcessSpawner | Path.Path> =>
+  Effect.gen(function* measureLoad() {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const paths = yield* Path.Path;
     const loadCli = yield* paths.fromFileUrl(new URL("./cli.ts", import.meta.url));
@@ -52,7 +51,6 @@ const runLoad = (
       return yield* new LoadCiFailure({ reason: "load_failed" });
     }
   }).pipe(Effect.mapError(() => new LoadCiFailure({ reason: "load_failed" })));
-};
 
 const runWithPreview = (
   selection: typeof loadCiArguments.Type,

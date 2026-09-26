@@ -45,7 +45,7 @@ describe("verifySession", () => {
       .extend("enrollment", ({ auth, client }) => runWith(auth, () => client.verify(true)));
 
     it("is refused outside factor enrollment", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new AdminMfaRequired());
+      expect(refusal).toStrictEqual(AdminMfaRequired.make());
     });
 
     it("is a weak session while enrolling a factor", ({ enrollment }) => {
@@ -125,7 +125,7 @@ describe("verifySession", () => {
       );
 
     it("has no session before the second factor", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new SessionRequired());
+      expect(refusal).toStrictEqual(SessionRequired.make());
     });
 
     it("rejects a wrong code", ({ wrongCode }) => {
@@ -219,7 +219,7 @@ describe("verifySession", () => {
     );
 
     it("is not a session of the admin app", ({ replayed }) => {
-      expect(replayed).toStrictEqual(new SessionInvalid());
+      expect(replayed).toStrictEqual(SessionInvalid.make());
     });
   });
 
@@ -249,7 +249,7 @@ describe("verifySession", () => {
 
     it("loses the session it held and cannot sign in again", ({ suspension }) => {
       expect(suspension).toStrictEqual({
-        lostSession: new SessionRequired(),
+        lostSession: SessionRequired.make(),
         signInStatus: 403,
       });
     });
@@ -311,7 +311,7 @@ describe("verifySession", () => {
     );
 
     it("loses the wiki session", ({ demoted }) => {
-      expect(demoted).toStrictEqual(new SessionRequired());
+      expect(demoted).toStrictEqual(SessionRequired.make());
     });
   });
 });

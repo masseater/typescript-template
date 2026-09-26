@@ -39,7 +39,7 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
     if (config.local) {
       return yield* toggleFlag({ actorId: user.id, enabled: change.enabled, key: change.key });
     }
-    return yield* new ConfigurationInvalid({ reason: "FLAGSHIP write credentials" });
+    return yield* ConfigurationInvalid.make({ reason: "FLAGSHIP write credentials" });
   }
   return yield* toggleFlagRemote(
     {

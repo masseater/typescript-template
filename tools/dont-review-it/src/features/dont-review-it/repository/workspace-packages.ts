@@ -71,7 +71,7 @@ const workspacePackages = Effect.gen(function* workspacePackages() {
             ),
           );
           if (manifest.name === undefined) {
-            return yield* new UnnamedWorkspace({ directory });
+            return yield* UnnamedWorkspace.make({ directory });
           }
           const toolchainSource = yield* textOrNull(
             paths.join(repositoryRoot, root, entry.name, TOOLCHAIN_CONFIG),

@@ -53,7 +53,7 @@ export const saveWikiDraft = Effect.fn("saveWikiDraft")(function* saveWikiDraft(
           .returning({ version: wikiDraft.version }),
   );
   if (saved === undefined) {
-    return yield* new WikiDraftConflict();
+    return yield* WikiDraftConflict.make();
   }
   return saved.version;
 });
@@ -69,7 +69,7 @@ export const discardWikiDraft = Effect.fn("discardWikiDraft")(function* discardW
       .returning({ path: wikiDraft.path }),
   );
   if (discarded === undefined) {
-    return yield* new WikiDraftConflict();
+    return yield* WikiDraftConflict.make();
   }
 });
 
@@ -89,7 +89,7 @@ export const markWikiDraftPublished = Effect.fn("markWikiDraftPublished")(
         .returning({ path: wikiDraft.path }),
     );
     if (marked === undefined) {
-      return yield* new WikiDraftConflict();
+      return yield* WikiDraftConflict.make();
     }
   },
 );

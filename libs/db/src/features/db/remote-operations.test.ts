@@ -78,7 +78,7 @@ describe("migrateD1", () => {
       ));
 
     it("fails as a query failure", { timeout: 60_000 }, ({ migrationFailure }) => {
-      expect(migrationFailure).toStrictEqual(new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }));
+      expect(migrationFailure).toStrictEqual(RemoteFailure.make({ code: "REMOTE_QUERY_FAILED" }));
     });
   });
 
@@ -122,7 +122,7 @@ describe("migrateD1", () => {
           const [first] = yield* loadRemoteMigrations();
           yield* migrateD1(binding);
           if (first === undefined) {
-            return new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" });
+            return RemoteFailure.make({ code: "REMOTE_MIGRATIONS_INVALID" });
           }
           yield* filesystem.writeFileString(paths.join(folder, first.name, "migration.sql"), "\n", {
             flag: "a",
@@ -133,7 +133,7 @@ describe("migrateD1", () => {
 
     it("are refused", { timeout: 60_000 }, ({ migrationFailure }) => {
       expect(migrationFailure).toStrictEqual(
-        new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISMATCH" }),
+        RemoteFailure.make({ code: "REMOTE_MIGRATION_HISTORY_MISMATCH" }),
       );
     });
   });
@@ -149,7 +149,7 @@ describe("migrateD1", () => {
 
     it("is refused", { timeout: 60_000 }, ({ migrationFailure }) => {
       expect(migrationFailure).toStrictEqual(
-        new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISSING" }),
+        RemoteFailure.make({ code: "REMOTE_MIGRATION_HISTORY_MISSING" }),
       );
     });
   });
@@ -190,7 +190,7 @@ describe("bootstrapDatabase", () => {
 
     it("is refused", { timeout: 60_000 }, ({ bootstrapFailure }) => {
       expect(bootstrapFailure).toStrictEqual(
-        new RemoteFailure({ code: "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN" }),
+        RemoteFailure.make({ code: "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN" }),
       );
     });
   });
@@ -258,7 +258,7 @@ describe("bootstrapDatabase", () => {
       ));
 
     it("is unavailable", { timeout: 60_000 }, ({ bootstrapFailure }) => {
-      expect(bootstrapFailure).toStrictEqual(new BootstrapUnavailable());
+      expect(bootstrapFailure).toStrictEqual(BootstrapUnavailable.make());
     });
   });
 });

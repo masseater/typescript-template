@@ -33,7 +33,7 @@ const manifestAt = (
     const text = yield* textOrNull(file);
     if (text === null) return null;
     return yield* decodeManifest(text).pipe(
-      Effect.mapError((unparsable) => new ManifestUnparsable({ file, cause: unparsable })),
+      Effect.mapError((unparsable) => ManifestUnparsable.make({ file, cause: unparsable })),
     );
   });
 

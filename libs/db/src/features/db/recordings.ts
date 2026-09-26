@@ -129,7 +129,7 @@ const findRecording = Effect.fn("findRecording")(function* findRecording(recordi
       .limit(1),
   );
   if (found === undefined) {
-    return yield* new RecordingNotFound();
+    return yield* RecordingNotFound.make();
   }
   const [segments, speakers] = yield* Effect.all(
     [
@@ -248,7 +248,7 @@ const retryRecording = Effect.fn("retryRecording")(function* retryRecording(
       .returning({ id: recording.id }),
   );
   if (retried === undefined) {
-    return yield* new RecordingNotRetryable();
+    return yield* RecordingNotRetryable.make();
   }
 });
 
@@ -262,7 +262,7 @@ const deleteRecording = Effect.fn("deleteRecording")(function* deleteRecording(
       .returning({ objectKey: recording.objectKey }),
   );
   if (deleted === undefined) {
-    return yield* new RecordingNotFound();
+    return yield* RecordingNotFound.make();
   }
   return deleted.objectKey;
 });
@@ -280,7 +280,7 @@ const assignSpeaker = Effect.fn("assignSpeaker")(function* assignSpeaker(
         .limit(1),
     );
     if (person === undefined) {
-      return yield* new SpeakerPersonNotFound();
+      return yield* SpeakerPersonNotFound.make();
     }
   }
   const [assigned] = yield* query((database) =>
@@ -296,7 +296,7 @@ const assignSpeaker = Effect.fn("assignSpeaker")(function* assignSpeaker(
       .returning({ label: recordingSpeaker.label }),
   );
   if (assigned === undefined) {
-    return yield* new RecordingNotFound();
+    return yield* RecordingNotFound.make();
   }
 });
 
@@ -336,7 +336,7 @@ const removePerson = Effect.fn("removePerson")(function* removePerson(personId: 
       .returning({ id: speakerPerson.id }),
   );
   if (removed === undefined) {
-    return yield* new SpeakerPersonNotFound();
+    return yield* SpeakerPersonNotFound.make();
   }
 });
 

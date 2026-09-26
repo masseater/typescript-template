@@ -21,39 +21,37 @@ const ConfirmDialog = ({
   open: boolean;
   title: string;
   variant?: "danger" | "primary" | undefined;
-}>): ReactElement => {
-  return (
-    <Modal
-      data-slot="confirm-dialog"
-      isOpen={open}
-      animate
-      closeable
-      role={ROLE.alertdialog}
-      size={SIZE.default}
-      onClose={() => {
-        onOpenChange(false);
-      }}
-    >
-      <ModalHeader>{title}</ModalHeader>
-      <ModalBody>{description}</ModalBody>
-      <ModalFooter>
-        <ModalButton
-          kind={KIND.tertiary}
-          onClick={() => {
-            onOpenChange(false);
-          }}
-        >
-          {cancelLabel}
-        </ModalButton>
-        <ModalButton
-          kind={variant === "danger" ? KIND.dangerPrimary : KIND.primary}
-          onClick={onConfirm}
-        >
-          {confirmLabel}
-        </ModalButton>
-      </ModalFooter>
-    </Modal>
-  );
-};
+}>): ReactElement => (
+  <Modal
+    data-slot="confirm-dialog"
+    isOpen={open}
+    animate
+    closeable
+    role={ROLE.alertdialog}
+    size={SIZE.default}
+    onClose={() => {
+      onOpenChange(false);
+    }}
+  >
+    <ModalHeader>{title}</ModalHeader>
+    <ModalBody>{description}</ModalBody>
+    <ModalFooter>
+      <ModalButton
+        kind={KIND.tertiary}
+        onClick={() => {
+          onOpenChange(false);
+        }}
+      >
+        {cancelLabel}
+      </ModalButton>
+      <ModalButton
+        kind={variant === "danger" ? KIND.dangerPrimary : KIND.primary}
+        onClick={onConfirm}
+      >
+        {confirmLabel}
+      </ModalButton>
+    </ModalFooter>
+  </Modal>
+);
 
 export { ConfirmDialog };

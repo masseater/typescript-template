@@ -19,7 +19,7 @@ function databaseSource(accountId: string): Endpoint {
 }
 
 function unavailable(keys: readonly string[]): CloudflareFailure {
-  return new CloudflareFailure({ code: "database_output_unavailable", keys });
+  return CloudflareFailure.make({ code: "database_output_unavailable", keys });
 }
 
 const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(

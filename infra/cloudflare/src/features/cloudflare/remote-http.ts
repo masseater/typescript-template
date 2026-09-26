@@ -17,9 +17,7 @@ const RawResponse = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-const queryFailed = (): RemoteFailure => {
-  return new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
-};
+const queryFailed = (): RemoteFailure => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
 
 const d1Http = Layer.merge(
   FetchHttpClient.layer,
@@ -30,8 +28,8 @@ const readJson = (
   endpoint: string,
   apiToken: string,
   body: unknown,
-): Effect.Effect<unknown, RemoteFailure> => {
-  return Effect.gen(function* responseBody() {
+): Effect.Effect<unknown, RemoteFailure> =>
+  Effect.gen(function* responseBody() {
     const requestPayload = yield* HttpBody.json(body).pipe(Effect.mapError(queryFailed));
     const d1Response = yield* HttpClient.post(endpoint, {
       body: requestPayload,
@@ -48,7 +46,6 @@ const readJson = (
       Effect.mapError(queryFailed),
     );
   });
-};
 
 const postRaw = (
   endpoint: string,

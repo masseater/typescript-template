@@ -55,7 +55,7 @@ function complete(
 ): Effect.Effect<ProfileLayoutData, LayoutFailed> {
   return Effect.tryPromise({
     catch: (cause) =>
-      new LayoutFailed({
+      LayoutFailed.make({
         cause,
         reason: "model_failed",
       }),
@@ -77,7 +77,7 @@ function complete(
       duration: patience,
       orElse: () =>
         Effect.fail(
-          new LayoutFailed({
+          LayoutFailed.make({
             reason: "timed_out",
           }),
         ),
@@ -89,7 +89,7 @@ interface AssemblerShape {
   readonly assemble: (sheet: SheetData) => Effect.Effect<ProfileLayoutData, LayoutFailed>;
 }
 class ProfileLayoutAssembler extends Context.Service<ProfileLayoutAssembler, AssemblerShape>()(
-  "#shared/profile-layout/ProfileLayoutAssembler",
+  "@repo/service-member/shared/profile-layout/assembler/ProfileLayoutAssembler",
 ) {
   public static layer(access?: ModelAccess): Layer.Layer<ProfileLayoutAssembler> {
     return Layer.succeed(
@@ -98,7 +98,7 @@ class ProfileLayoutAssembler extends Context.Service<ProfileLayoutAssembler, Ass
         assemble: (sheet) =>
           access === undefined
             ? Effect.fail(
-                new LayoutFailed({
+                LayoutFailed.make({
                   reason: "unavailable",
                 }),
               )

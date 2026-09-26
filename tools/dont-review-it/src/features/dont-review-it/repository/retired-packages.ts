@@ -66,9 +66,7 @@ const retiredEntries: Readonly<Record<string, string>> = {
   "effect/unstable/reactivity/": "effect/unstable/reactivity の root",
 };
 
-const isPrefix = (retired: string): boolean => {
-  return retired.endsWith("/");
-};
+const isPrefix = (retired: string): boolean => retired.endsWith("/");
 
 const replacementIn = (
   table: Readonly<Record<string, string>>,
@@ -82,17 +80,13 @@ const replacementIn = (
   return matched === undefined ? undefined : table[matched];
 };
 
-const replacementFor = (specifier: string): string | undefined => {
-  return replacementIn(retiredPackages, specifier);
-};
+const replacementFor = (specifier: string): string | undefined =>
+  replacementIn(retiredPackages, specifier);
 
-const replacementForImport = (specifier: string): string | undefined => {
-  return replacementIn({ ...retiredPackages, ...retiredEntries }, specifier);
-};
+const replacementForImport = (specifier: string): string | undefined =>
+  replacementIn({ ...retiredPackages, ...retiredEntries }, specifier);
 
-const replacementMessage = (replacement: string): string => {
-  return `${replacement}を使ってください。`;
-};
+const replacementMessage = (replacement: string): string => `${replacement}を使ってください。`;
 
 const retiredImportGuidance = Object.entries({ ...retiredPackages, ...retiredEntries })
   .map(([retired, replacement]) => `${retired} は${replacementMessage(replacement)}`)

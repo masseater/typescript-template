@@ -104,7 +104,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   private notifier(): Effect.Effect<Notify, MonitorFailure> {
     const { EMAIL } = this.env;
     return Schema.decodeUnknownEffect(AlertEnvironment)(this.env).pipe(
-      Effect.mapError(() => new MonitorFailure({ code: "alert_config_invalid" })),
+      Effect.mapError(() => MonitorFailure.make({ code: "alert_config_invalid" })),
       Effect.map(
         (recipients): Notify =>
           (alert) =>

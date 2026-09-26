@@ -39,8 +39,9 @@ const withDocPointers = (
     ]),
   );
 
-export const createWorkspaceLintRule = ({ workspaceDir }: { readonly workspaceDir: string }) => {
-  return <DefinedRule extends WorkspaceLintRule>(rule: DefinedRule): DefinedRule => {
+export const createWorkspaceLintRule =
+  ({ workspaceDir }: { readonly workspaceDir: string }) =>
+  <DefinedRule extends WorkspaceLintRule>(rule: DefinedRule): DefinedRule => {
     const identity = { workspaceDir, ruleName: rule.name };
     return {
       ...rule,
@@ -53,4 +54,3 @@ export const createWorkspaceLintRule = ({ workspaceDir }: { readonly workspaceDi
         measureVisitor({ ruleName: rule.name, visitor: rule.create(inspection) }),
     };
   };
-};

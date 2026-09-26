@@ -37,7 +37,7 @@ const PASSWORD = "test-password-safe-123";
 const authTestSecret = "integration-test-secret-at-least-32-characters-long";
 
 class AuthApps extends Context.Service<AuthApps, Readonly<Record<Application, Auth["Service"]>>>()(
-  "@repo/auth/AuthApps",
+  "@repo/auth/features/auth/auth-test-fixture/AuthApps",
 ) {}
 
 const sequentialIdentifiers = Layer.effect(
@@ -129,7 +129,7 @@ const requireStatus = Effect.fn("requireStatus")(function* requireStatus(
 ) {
   const receivedStatus = yield* client.status(endpoint, jsonFields);
   if (receivedStatus !== expectedStatus) {
-    return yield* new UnexpectedStatus({ endpoint, status: receivedStatus });
+    return yield* UnexpectedStatus.make({ endpoint, status: receivedStatus });
   }
 });
 
@@ -177,9 +177,8 @@ const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* boo
   yield* bootstrapVerifiedAdmin(email, BOOTSTRAP_KIND.staff);
 });
 
-const signIn = (client: BrowserClient, email: string): Effect.Effect<number> => {
-  return client.status("/sign-in/email", { email, password: PASSWORD });
-};
+const signIn = (client: BrowserClient, email: string): Effect.Effect<number> =>
+  client.status("/sign-in/email", { email, password: PASSWORD });
 
 const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application, email: string) {
   const client = yield* clientOf(audience);
@@ -273,9 +272,8 @@ const absentFields = ({
   readonly columns: readonly string[];
   readonly fields: readonly string[];
   readonly model: string;
-}): string[] => {
-  return fields.filter((field) => !columns.includes(field)).map((field) => `${model}.${field}`);
-};
+}): string[] =>
+  fields.filter((field) => !columns.includes(field)).map((field) => `${model}.${field}`);
 
 const missingSchemaFields = Effect.fn("missingSchemaFields")(function* missingSchemaFields(
   audience: Application,

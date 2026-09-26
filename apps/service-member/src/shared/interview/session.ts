@@ -103,7 +103,7 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
 ) {
   const { state, version } = yield* current(userId);
   if (!accepts(state, utterance)) {
-    return yield* new TurnRejected();
+    return yield* TurnRejected.make();
   }
   const { source, understanding }: Reading = yield* understood(state, utterance, {
     userId,
@@ -139,7 +139,7 @@ const finishSaving = Effect.fn("interview.finishSaving")(function* finishSaving(
 const saveInterview = Effect.fn("interview.save")(function* saveInterview(userId: string) {
   const { state, version } = yield* current(userId);
   if (state.phase !== "summary") {
-    return yield* new TurnRejected();
+    return yield* TurnRejected.make();
   }
   return yield* finishSaving(userId, version, state);
 });
@@ -148,7 +148,7 @@ const respondHistoryConsent = Effect.fn("interview.respondHistoryConsent")(
   function* respondHistoryConsent(userId: string, accept: boolean) {
     const { state, version } = yield* current(userId);
     if (state.phase !== "history_consent") {
-      return yield* new TurnRejected();
+      return yield* TurnRejected.make();
     }
     if (accept) {
       const [pending] = (yield* pendingAgreements(userId)).filter(

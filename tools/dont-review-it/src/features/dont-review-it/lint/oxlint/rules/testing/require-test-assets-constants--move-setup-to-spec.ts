@@ -15,9 +15,7 @@ type Reading = {
   readonly reached: ReadonlySet<string>;
 };
 
-const writtenOut = (node: ESTree.Expression): ESTree.Expression => {
-  return unwrapExpression(node);
-};
+const writtenOut = (node: ESTree.Expression): ESTree.Expression => unwrapExpression(node);
 
 type AssetsFinding = RuleMessage & { readonly node: ESTree.Node };
 

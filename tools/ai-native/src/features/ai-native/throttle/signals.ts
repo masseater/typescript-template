@@ -16,11 +16,12 @@ const raiseSignal = (signal: NodeJS.Signals): void => {
   process.kill(process.pid, signal);
 };
 
-export const makeWaitingInterruptHandler = (input: {
-  entryPath: string;
-  removeEntry: (entryPath: string) => Effect.Effect<void, Error>;
-}): ((signal: NodeJS.Signals) => void) => {
-  return (signal) => {
+export const makeWaitingInterruptHandler =
+  (input: {
+    entryPath: string;
+    removeEntry: (entryPath: string) => Effect.Effect<void, Error>;
+  }): ((signal: NodeJS.Signals) => void) =>
+  (signal) => {
     Effect.runFork(
       input.removeEntry(input.entryPath).pipe(
         Effect.ensuring(
@@ -31,7 +32,6 @@ export const makeWaitingInterruptHandler = (input: {
       ),
     );
   };
-};
 
 const raiseAfterRelease = (
   dependencies: {
@@ -75,12 +75,13 @@ export const makeHeldInterrupt = (dependencies: {
   };
 };
 
-export const makeRunningInterruptHandler = (dependencies: {
-  childPid: number;
-  signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Effect.Effect<Error | null>;
-  reportFailure: (failure: Error) => void;
-}): ((signal: NodeJS.Signals) => void) => {
-  return (signal) => {
+export const makeRunningInterruptHandler =
+  (dependencies: {
+    childPid: number;
+    signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Effect.Effect<Error | null>;
+    reportFailure: (failure: Error) => void;
+  }): ((signal: NodeJS.Signals) => void) =>
+  (signal) => {
     Effect.runFork(
       dependencies.signalTree({ pid: dependencies.childPid, signal }).pipe(
         Effect.map((failure) => {
@@ -89,4 +90,3 @@ export const makeRunningInterruptHandler = (dependencies: {
       ),
     );
   };
-};

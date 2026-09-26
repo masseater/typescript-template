@@ -26,13 +26,10 @@ const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor
 const browserOrNodeOnly =
   /\/libs\/(?:ui|auth-ui)\/|\/libs\/runtime\/src\/features\/runtime\/client\.ts$|\/libs\/db\/src\/features\/db\/remote[^/]*\.ts$|\/libs\/db-local\/src\/features\/db-local\/testing-node[^/]*\.ts$/u;
 
-const runsInWorkerRuntime = (inspected: string): boolean => {
-  return (
-    deployedToWorkers.test(inspected) &&
-    !browserOrNodeOnly.test(inspected) &&
-    (!testFile.test(inspected) || workerTestFile.test(inspected))
-  );
-};
+const runsInWorkerRuntime = (inspected: string): boolean =>
+  deployedToWorkers.test(inspected) &&
+  !browserOrNodeOnly.test(inspected) &&
+  (!testFile.test(inspected) || workerTestFile.test(inspected));
 
 export {
   devServerTests,

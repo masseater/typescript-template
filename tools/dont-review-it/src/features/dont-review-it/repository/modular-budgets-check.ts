@@ -77,7 +77,7 @@ const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
 const modularPackage = Effect.gen(function* modularPackage() {
   const cwd = process.cwd().replaceAll("\\", "/");
   if (!isModularWorkspace(cwd)) {
-    return yield* new NotAModularPackage({ cwd });
+    return yield* NotAModularPackage.make({ cwd });
   }
   return cwd;
 });

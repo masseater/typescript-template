@@ -63,8 +63,8 @@ const wrappedRouteOf = ({
 const boundRoutesIn = (
   statement: AstFields,
   routes: ImportRoutes,
-): readonly (readonly [string, string])[] => {
-  return constBindingsIn(statement).flatMap(({ named, bound }) => {
+): readonly (readonly [string, string])[] =>
+  constBindingsIn(statement).flatMap(({ named, bound }) => {
     const specifier = requiredSpecifierOf(bound);
     if (specifier !== null) return takenRoutesOf({ named, specifier });
 
@@ -72,7 +72,6 @@ const boundRoutesIn = (
     if (wrapped === null || nodeTypeOf(named) !== "Identifier") return [];
     return [[String(named.name), wrapped] as const];
   });
-};
 
 export const spawnRoutesIn = ({
   body,

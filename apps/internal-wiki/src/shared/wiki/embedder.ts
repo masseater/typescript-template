@@ -23,14 +23,14 @@ const embedBatch = Effect.fn("embedBatch")(function* embedBatch(
   text: readonly string[],
 ) {
   const output = yield* Effect.tryPromise({
-    catch: () => new EmbeddingFailed({ reason: "unavailable" }),
+    catch: () => EmbeddingFailed.make({ reason: "unavailable" }),
     try: () => ai.run(embeddingModel, { text: [...text] }),
   });
   const { data } = yield* decodeOutput(output).pipe(
-    Effect.mapError(() => new EmbeddingFailed({ reason: "invalid_output" })),
+    Effect.mapError(() => EmbeddingFailed.make({ reason: "invalid_output" })),
   );
   if (data.length !== text.length) {
-    return yield* new EmbeddingFailed({ reason: "count_mismatch" });
+    return yield* EmbeddingFailed.make({ reason: "count_mismatch" });
   }
   return data;
 });
@@ -44,14 +44,14 @@ function batches(texts: readonly string[]): readonly (readonly string[])[] {
 function embedWith(ai: WorkerModel | undefined): EmbedderShape["embed"] {
   return (texts) =>
     ai === undefined
-      ? Effect.fail(new EmbeddingFailed({ reason: "unavailable" }))
+      ? Effect.fail(EmbeddingFailed.make({ reason: "unavailable" }))
       : Effect.forEach(batches(texts), (text) => embedBatch(ai, text)).pipe(
           Effect.map((vectors) => vectors.flat()),
         );
 }
 
 class Embedder extends Context.Service<Embedder, EmbedderShape>()(
-  "@repo/internal-dashboard/Embedder",
+  "@repo/internal-wiki/shared/wiki/embedder",
 ) {}
 
 export { Embedder, embedWith };

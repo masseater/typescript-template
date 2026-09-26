@@ -77,23 +77,22 @@ const runScenario = (
           },
         ),
       )
-      .pipe(Effect.mapError(() => new LoadTestFailure({ reason: "scenario_failed" })));
+      .pipe(Effect.mapError(() => LoadTestFailure.make({ reason: "scenario_failed" })));
     if (exitCode !== 0 && exitCode !== thresholdsExitCode) {
-      return yield* new LoadTestFailure({ code: exitCode, reason: "scenario_failed" });
+      return yield* LoadTestFailure.make({ code: exitCode, reason: "scenario_failed" });
     }
     return exitCode === thresholdsExitCode;
   }).pipe(Effect.provide(NodeServices.layer));
 };
 
-const requireMeasurement = (): Effect.Effect<Report, LoadTestFailure> => {
-  return readSummary(summaryFile).pipe(
+const requireMeasurement = (): Effect.Effect<Report, LoadTestFailure> =>
+  readSummary(summaryFile).pipe(
     Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
     Effect.filterOrFail(
       (report) => report.requests > 0,
       () => new LoadTestFailure({ reason: "measurement_empty" }),
     ),
   );
-};
 
 const profiles = {
   peak: { LOAD_HOLD: "40s", LOAD_PEAK_USERS: "20", LOAD_RAMP: "20s" },
@@ -103,13 +102,11 @@ const profiles = {
 const scenarioEnvironment = (
   profile: keyof typeof profiles,
   origin: string,
-): Readonly<Record<string, string>> => {
-  return {
-    ...profiles[profile],
-    LOAD_MAILPIT_ORIGIN: mailpitOrigin,
-    LOAD_TARGET_ORIGIN: origin,
-  };
-};
+): Readonly<Record<string, string>> => ({
+  ...profiles[profile],
+  LOAD_MAILPIT_ORIGIN: mailpitOrigin,
+  LOAD_TARGET_ORIGIN: origin,
+});
 
 type Measured = {
   readonly app: string;

@@ -57,11 +57,8 @@ export const contextualOriginSymbol = (input: {
   readonly checker: ts.TypeChecker;
   readonly contextualType: ts.Type;
   readonly node: ts.Node;
-}): ts.Symbol | undefined => {
-  return (
-    input.contextualType.aliasSymbol ?? input.contextualType.getSymbol() ?? enclosingHolder(input)
-  );
-};
+}): ts.Symbol | undefined =>
+  input.contextualType.aliasSymbol ?? input.contextualType.getSymbol() ?? enclosingHolder(input);
 
 const DEPENDENCY_PATH_SEGMENT = "/node_modules/";
 

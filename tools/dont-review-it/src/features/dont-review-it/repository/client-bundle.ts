@@ -50,7 +50,7 @@ const clientBuild = (
     const appRoot = paths.join(repositoryRoot, "apps", application);
     const probeModule = paths.join(appRoot, probeModules[application]);
     return yield* Effect.tryPromise({
-      catch: (error) => new BuildDenied({ reason: denialReason(error) }),
+      catch: (error) => BuildDenied.make({ reason: denialReason(error) }),
       try: () =>
         build({
           build: { emptyOutDir: true, outDir: outDirectory },

@@ -26,7 +26,7 @@ const uploadPhoto = Effect.fn("uploadPhoto")(function* uploadPhoto(
 ) {
   const sanitized = sanitizeImage(bytes);
   if (sanitized === undefined) {
-    return yield* new PhotoUnsupported();
+    return yield* PhotoUnsupported.make();
   }
   const store = yield* PhotoStore;
   const key = photoKey(memberId, slot, crypto.randomUUID());
@@ -47,11 +47,11 @@ const readPhoto = Effect.fn("readPhoto")(function* readPhoto(
 ) {
   const key = yield* visiblePhotoKey({ memberId, slot, viewerId });
   if (key === undefined) {
-    return yield* new PhotoNotFound();
+    return yield* PhotoNotFound.make();
   }
   const photo = yield* (yield* PhotoStore).get(key);
   if (photo === undefined) {
-    return yield* new PhotoNotFound();
+    return yield* PhotoNotFound.make();
   }
   return photo;
 });

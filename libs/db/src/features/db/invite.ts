@@ -36,7 +36,7 @@ const rejectConsumed = <Value, Requirements>(
 ): Effect.Effect<Value, DatabaseFailure | InviteRejected, Requirements> =>
   effect.pipe(
     Effect.mapError((failure) =>
-      mentionsConsumed(failure.cause) ? new InviteRejected({ reason: "missing" }) : failure,
+      mentionsConsumed(failure.cause) ? InviteRejected.make({ reason: "missing" }) : failure,
     ),
   );
 
@@ -54,7 +54,7 @@ const rejectTaken = Effect.fn("rejectTaken")(function* rejectTaken(
   candidate: Readonly<{ audience: Application; checkedAt: Date; email: string }>,
 ) {
   if ((yield* findRegistered(candidate.email)) !== undefined) {
-    return yield* new InviteRejected({ reason: "registered" });
+    return yield* InviteRejected.make({ reason: "registered" });
   }
   const [pending] = yield* query((database) =>
     database
@@ -66,7 +66,7 @@ const rejectTaken = Effect.fn("rejectTaken")(function* rejectTaken(
       .limit(1),
   );
   if (pending !== undefined) {
-    return yield* new InviteRejected({ reason: "pending" });
+    return yield* InviteRejected.make({ reason: "pending" });
   }
 });
 
@@ -131,10 +131,10 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
 }) {
   const open = yield* previewInvite(accepted.rawToken, accepted.audience);
   if (open === undefined) {
-    return yield* new InviteRejected({ reason: "missing" });
+    return yield* InviteRejected.make({ reason: "missing" });
   }
   if ((yield* findRegistered(open.email)) !== undefined) {
-    return yield* new InviteRejected({ reason: "registered" });
+    return yield* InviteRejected.make({ reason: "registered" });
   }
   const userId = crypto.randomUUID();
   const acceptedAt = DateTime.toDate(yield* DateTime.now);

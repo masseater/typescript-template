@@ -136,7 +136,7 @@ const openManifestPage = Effect.fn("openGitHubAppManifestPage")(function* openMa
     Effect.filterOrFail(
       (bound): bound is NetAddress.InetAddressV4 | NetAddress.InetAddressV6 =>
         bound._tag !== "UnixPathAddress",
-      () => new GitHubAppFailure({ code: "github_unreachable", step: "local-server" }),
+      () => GitHubAppFailure.make({ code: "github_unreachable", step: "local-server" }),
     ),
   );
   const manifestState = yield* (yield* Crypto.Crypto).randomUUIDv4.pipe(Effect.orDie);
@@ -159,7 +159,7 @@ const awaitCreatedApp = Effect.fn("awaitCreatedGitHubApp")(function* awaitCreate
     Effect.timeoutOrElse({
       duration: registration.manifestTimeout,
       orElse: () =>
-        Effect.fail(new GitHubAppFailure({ code: "manifest_timeout", step: "manifest" })),
+        Effect.fail(GitHubAppFailure.make({ code: "manifest_timeout", step: "manifest" })),
     }),
   );
   const createdApp = yield* gitHubRequest(Conversion, {

@@ -8,8 +8,8 @@ import type { ReactElement } from "react";
 const ChallengeCodeField = ({
   backup,
   code,
-}: Readonly<{ backup: boolean; code: TextInput }>): ReactElement => {
-  return backup ? (
+}: Readonly<{ backup: boolean; code: TextInput }>): ReactElement =>
+  backup ? (
     <Field
       label="バックアップコード"
       name="backup-code"
@@ -21,6 +21,5 @@ const ChallengeCodeField = ({
   ) : (
     <TotpField code={code} />
   );
-};
 
 export { ChallengeCodeField };

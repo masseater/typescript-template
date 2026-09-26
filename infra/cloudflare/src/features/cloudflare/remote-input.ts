@@ -49,7 +49,7 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRem
   const { confirmation, execute, operation } = yield* parseCommand(commandArguments);
   const remoteTarget = yield* Schema.decodeUnknownEffect(RemoteTarget)(input, {
     onExcessProperty: "error",
-  }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
+  }).pipe(Effect.mapError(() => RemoteFailure.make({ code: "REMOTE_INPUT_INVALID" })));
   if (remoteTarget.email === undefined || (execute && remoteTarget.apiToken === undefined)) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }

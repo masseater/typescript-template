@@ -94,7 +94,7 @@ function decodeInput<Contract extends Decodable>(
   input: unknown,
 ): Effect.Effect<Contract["Type"], InputInvalid> {
   return Schema.decodeUnknownEffect(schema, { onExcessProperty: "error" })(input).pipe(
-    Effect.mapError(() => new InputInvalid()),
+    Effect.mapError(() => InputInvalid.make()),
   );
 }
 

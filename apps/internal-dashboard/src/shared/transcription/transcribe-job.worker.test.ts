@@ -100,7 +100,7 @@ describe("transcribeJob", () => {
       assert.strictEqual(found.recording.failure, "model_rejected");
     }).pipe(
       Effect.provide(
-        services(() => Effect.fail(new TranscriptionFailed({ reason: "model_rejected" }))),
+        services(() => Effect.fail(TranscriptionFailed.make({ reason: "model_rejected" }))),
       ),
     ),
   );

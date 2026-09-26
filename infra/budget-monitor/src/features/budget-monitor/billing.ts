@@ -115,7 +115,7 @@ const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(aske
 }) {
   const { result: usageRows } = yield* Schema.decodeUnknownEffect(UsageEnvelope)(
     asked.payload,
-  ).pipe(Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })));
+  ).pipe(Effect.mapError(() => BudgetFailure.make({ code: "billing_response_invalid" })));
   const periodStart = yield* billingPeriodStart(usageRows);
   const invalid = usageRows
     .map((usageRow) =>
@@ -143,7 +143,7 @@ const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(aske
   return snapshot;
 });
 
-const httpFailed = (): BudgetFailure => new BudgetFailure({ code: "billing_http_failed" });
+const httpFailed = (): BudgetFailure => BudgetFailure.make({ code: "billing_http_failed" });
 
 const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
   readonly accountId: string;
@@ -161,7 +161,7 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
   }
   const billingPayload = yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(
     billingResponse,
-  ).pipe(Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })));
+  ).pipe(Effect.mapError(() => BudgetFailure.make({ code: "billing_response_invalid" })));
   return yield* summarizeUsage({
     accountId: asked.accountId,
     observedAt: asked.observedAt,

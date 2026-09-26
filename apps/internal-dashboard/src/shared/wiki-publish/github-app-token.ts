@@ -12,7 +12,7 @@ const installationToken = Effect.fn("gitHubInstallationToken")(function* install
   config: WikiPublishConfig,
 ) {
   const jwt = yield* signGitHubAppJwt(config).pipe(
-    Effect.mapError(({ cause }) => new WikiPublishKeyInvalid({ cause })),
+    Effect.mapError(({ cause }) => WikiPublishKeyInvalid.make({ cause })),
   );
   const installation = yield* gitHubRequest(GitHubInstallation, {
     method: "GET",

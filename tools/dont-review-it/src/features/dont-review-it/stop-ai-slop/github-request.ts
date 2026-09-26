@@ -59,20 +59,20 @@ const refusalOf = (
 ): GitHubFailure => {
   switch (failure.reason._tag) {
     case "StatusCodeError":
-      return new GitHubRequestFailed({
+      return GitHubRequestFailed.make({
         message: `Do not read past a GitHub API failure: ${failure.reason.response.status} on ${requestPath}.`,
         cause: failure,
       });
     case "DecodeError":
     case "EmptyBodyError":
-      return new GitHubAnswerUnexpected({
+      return GitHubAnswerUnexpected.make({
         message: `Do not read a GitHub API answer that is not JSON: ${requestPath}.`,
         cause: failure,
       });
     case "TransportError":
     case "EncodeError":
     case "InvalidUrlError":
-      return new GitHubRequestFailed({
+      return GitHubRequestFailed.make({
         message: `Do not read past an unanswered GitHub API request: ${failure.message}`,
         cause: failure,
       });
@@ -97,7 +97,7 @@ const answeredBody =
           HttpClientError: (failure) => Effect.fail(refusalOf(requestPath, failure)),
           SchemaError: (mismatch) =>
             Effect.fail(
-              new GitHubAnswerUnexpected({
+              GitHubAnswerUnexpected.make({
                 message: `Do not read a GitHub API answer of an unexpected shape on ${requestPath}: ${mismatch.message}`,
                 cause: mismatch,
               }),

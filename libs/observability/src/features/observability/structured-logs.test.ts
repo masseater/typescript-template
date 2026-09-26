@@ -185,7 +185,9 @@ describe("a failure whose cause carries a secret", () => {
     }) {
       public override readonly stack = `BrokenTable: no such table: jwks (AUTH_SECRET=${leaked})\n    at readJwks`;
     }
-    const brokenTable = new BrokenTable({ message: `no such table: jwks (AUTH_SECRET=${leaked})` });
+    const brokenTable = BrokenTable.make({
+      message: `no such table: jwks (AUTH_SECRET=${leaked})`,
+    });
     return Effect.runPromise(
       Effect.andThen(
         logCause({ cause: Cause.fail(brokenTable), eventName: "application.error" }).pipe(

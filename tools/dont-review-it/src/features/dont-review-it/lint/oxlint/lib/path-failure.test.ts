@@ -10,7 +10,7 @@ class RuntimeRefusal extends Schema.TaggedError<RuntimeRefusal>()("RuntimeRefusa
 describe("isEnvironmentFailure", () => {
   describe("a failure carrying a code", () => {
     const it = test.extend("cameFromTheEnvironment", () =>
-      isEnvironmentFailure(new RuntimeRefusal({ code: "EROFS" })));
+      isEnvironmentFailure(RuntimeRefusal.make({ code: "EROFS" })));
 
     it("came from the environment", ({ cameFromTheEnvironment }) => {
       expect(cameFromTheEnvironment).toBe(true);

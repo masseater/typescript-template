@@ -24,7 +24,7 @@ const spelled = (cause: unknown): string => {
 };
 
 const failed = (reason: string, cause?: unknown): JourneyFailure =>
-  new JourneyFailure({
+  JourneyFailure.make({
     ...(cause === undefined ? {} : { detail: spelled(cause) }),
     reason,
   });

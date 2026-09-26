@@ -6,7 +6,9 @@ import type { AppConfig } from "@repo/config";
 interface OpsMailShape extends MailSettings {
   readonly OPS_EMAIL: string;
 }
-class OpsMail extends Context.Service<OpsMail, OpsMailShape>()("@repo/service-member/OpsMail") {}
+class OpsMail extends Context.Service<OpsMail, OpsMailShape>()(
+  "@repo/service-member/shared/server-api/ops-mail/OpsMail",
+) {}
 
 function opsMailLayer(config: AppConfig): Layer.Layer<OpsMail> {
   return Layer.succeed(OpsMail, {

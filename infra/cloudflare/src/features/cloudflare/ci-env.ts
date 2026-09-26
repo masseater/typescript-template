@@ -45,7 +45,7 @@ function presentRetiredKeys(
 }
 
 function unwritable(): PrepareCiEnvFailure {
-  return new PrepareCiEnvFailure({ code: "ci_env_unwritable", keys: [] });
+  return PrepareCiEnvFailure.make({ code: "ci_env_unwritable", keys: [] });
 }
 
 const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecretsFile(
@@ -63,13 +63,13 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
     return { status: "unconfigured" } as const satisfies CiEnvPreparation;
   }
   if (retired.length > 0) {
-    return yield* new PrepareCiEnvFailure({
+    return yield* PrepareCiEnvFailure.make({
       code: "ci_env_retired_keys",
       keys: missing.includes(APP_DOMAIN_KEY) ? [APP_DOMAIN_KEY, ...retired] : [...retired],
     });
   }
   if (missing.length > 0) {
-    return yield* new PrepareCiEnvFailure({ code: "ci_env_incomplete", keys: missing });
+    return yield* PrepareCiEnvFailure.make({ code: "ci_env_incomplete", keys: missing });
   }
   const lines = [
     ...required.flatMap(({ key, value }) => (value === undefined ? [] : [dotenvLine(key, value)])),
@@ -82,7 +82,7 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
   const filename =
     destination ??
     (runnerTemp === undefined
-      ? yield* new PrepareCiEnvFailure({ code: "ci_env_incomplete", keys: ["RUNNER_TEMP"] })
+      ? yield* PrepareCiEnvFailure.make({ code: "ci_env_incomplete", keys: ["RUNNER_TEMP"] })
       : path.join(runnerTemp, "template-cloudflare", "cloudflare.env"));
   const filesystem = yield* FileSystem.FileSystem;
   const directory = path.dirname(filename);
@@ -115,7 +115,7 @@ function writeConfiguredOutput(
 ): Effect.Effect<void, PrepareCiEnvFailure> {
   const output = environment["GITHUB_OUTPUT"];
   if (output === undefined || output === "") {
-    return Effect.fail(new PrepareCiEnvFailure({ code: "ci_env_output_missing", keys: [] }));
+    return Effect.fail(PrepareCiEnvFailure.make({ code: "ci_env_output_missing", keys: [] }));
   }
   return Effect.gen(function* appendOutput() {
     const filesystem = yield* FileSystem.FileSystem;

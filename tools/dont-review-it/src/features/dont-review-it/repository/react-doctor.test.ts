@@ -41,15 +41,13 @@ const manifests: Readonly<Record<string, unknown>> = import.meta.glob(
 const scripts = field(rootManifests["../../../../../../package.json"], "scripts");
 const runStep = /^\s*- run: (?<command>.+)$/gmu;
 
-const workflowRuns = (): string[] => {
-  return Object.values(workflows).flatMap((workflow) =>
+const workflowRuns = (): string[] =>
+  Object.values(workflows).flatMap((workflow) =>
     [...workflow.matchAll(runStep)].map((match) => match.groups?.command ?? ""),
   );
-};
 
-const scriptCommands = (): string[] => {
-  return typeof scripts === "object" && scripts !== null ? Object.values(scripts).map(String) : [];
-};
+const scriptCommands = (): string[] =>
+  typeof scripts === "object" && scripts !== null ? Object.values(scripts).map(String) : [];
 
 const suppressedFiles = (): string[] => {
   const suppressed: string[] = [];

@@ -7,9 +7,8 @@ interface DeploymentValue {
   readonly value: string;
 }
 
-const byKey = (left: DeploymentValue, right: DeploymentValue): number => {
-  return left.key.localeCompare(right.key);
-};
+const byKey = (left: DeploymentValue, right: DeploymentValue): number =>
+  left.key.localeCompare(right.key);
 
 const deploymentValues = (content: string): DeploymentValue[] => {
   const provider = ConfigProvider.fromDotEnvContents(content);
@@ -25,17 +24,14 @@ type PrefixScan = "separated" | "word";
 
 const quoted = (value: string): string => RegExp.escape(value);
 
-const wordPattern = (value: string): RegExp => {
-  return new RegExp(`(?<![0-9A-Za-z])${quoted(value)}(?![0-9A-Za-z])`, "u");
-};
+const wordPattern = (value: string): RegExp =>
+  new RegExp(`(?<![0-9A-Za-z])${quoted(value)}(?![0-9A-Za-z])`, "u");
 
-const separatedPattern = (value: string): RegExp => {
-  return new RegExp(`(?<![0-9A-Za-z_-])${quoted(value)}(?=[-/])`, "u");
-};
+const separatedPattern = (value: string): RegExp =>
+  new RegExp(`(?<![0-9A-Za-z_-])${quoted(value)}(?=[-/])`, "u");
 
-const prefixPattern = (value: string, scan: PrefixScan): RegExp => {
-  return scan === "word" ? wordPattern(value) : separatedPattern(value);
-};
+const prefixPattern = (value: string, scan: PrefixScan): RegExp =>
+  scan === "word" ? wordPattern(value) : separatedPattern(value);
 
 const PREFIX_KEY = deploymentKey.prefix;
 
@@ -69,9 +65,8 @@ const contentRules: Readonly<Record<string, RegExp>> = {
   "private-key": /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/u,
 };
 
-const leaks = (content: string, { key, value }: DeploymentValue, scan: PrefixScan): boolean => {
-  return key === PREFIX_KEY ? prefixPattern(value, scan).test(content) : content.includes(value);
-};
+const leaks = (content: string, { key, value }: DeploymentValue, scan: PrefixScan): boolean =>
+  key === PREFIX_KEY ? prefixPattern(value, scan).test(content) : content.includes(value);
 
 export { contentRules, deploymentValues, leaks, PREFIX_KEY, prefixScan, privateFile };
 export type { DeploymentValue, PrefixScan };

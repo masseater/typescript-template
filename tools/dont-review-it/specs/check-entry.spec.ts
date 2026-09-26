@@ -18,7 +18,7 @@ layer(NodeServices.layer)("リポジトリ検査の入口", (it) => {
         Effect.tryPromise({
           try: () => runCommand(dontReviewItCommand, { rawArgs: ["deploy"] }),
           catch: (rejected) =>
-            new CommandRejected({
+            CommandRejected.make({
               reason: rejected instanceof Error ? rejected.message : String(rejected),
             }),
         }),

@@ -123,17 +123,15 @@ type Recorder = {
 
 const documentFields = (
   recorder: Recorder,
-): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> => {
-  return {
-    ...recorder.documentContext,
-    duration: 0,
-    method: httpMethod("GET"),
-    route: routeLabel(globalThis.location.pathname, recorder.routes),
-    spanId: randomHex(spanIdBytes),
-    start: DateTime.toEpochMillis(DateTime.nowUnsafe()),
-    status: 0,
-  };
-};
+): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> => ({
+  ...recorder.documentContext,
+  duration: 0,
+  method: httpMethod("GET"),
+  route: routeLabel(globalThis.location.pathname, recorder.routes),
+  spanId: randomHex(spanIdBytes),
+  start: DateTime.toEpochMillis(DateTime.nowUnsafe()),
+  status: 0,
+});
 
 const recordException = (
   recorder: Recorder,

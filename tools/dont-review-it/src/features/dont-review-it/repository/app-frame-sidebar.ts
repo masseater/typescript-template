@@ -4,13 +4,10 @@ import type { Visitor } from "vite-plus/lint/plugins";
 
 const sidebarModule = /(?:^|\/)sidebar(?:\.[cm]?[jt]sx?)?$/u;
 
-const isIntrinsic = (node: Node, tagName: string): boolean => {
-  return (
-    node.type === "JSXElement" &&
-    node.openingElement.name.type === "JSXIdentifier" &&
-    node.openingElement.name.name === tagName
-  );
-};
+const isIntrinsic = (node: Node, tagName: string): boolean =>
+  node.type === "JSXElement" &&
+  node.openingElement.name.type === "JSXIdentifier" &&
+  node.openingElement.name.name === tagName;
 
 const rendersNavigation = (node: Node): boolean => {
   if (isIntrinsic(node, "nav")) {
@@ -35,33 +32,31 @@ const containsNavigation = (node: Node): boolean => {
   return false;
 };
 
-const appFrameSidebarVisitor = (inspection: LintContext): Visitor => {
-  return {
-    ExportAllDeclaration(node: Node): void {
-      if (node.type === "ExportAllDeclaration" && sidebarModule.test(node.source.value)) {
-        reportViolation(inspection, node);
-      }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (
-        node.type === "ExportNamedDeclaration" &&
-        node.source &&
-        sidebarModule.test(node.source.value)
-      ) {
-        reportViolation(inspection, node);
-      }
-    },
-    ImportDeclaration(node: Node): void {
-      if (node.type === "ImportDeclaration" && sidebarModule.test(node.source.value)) {
-        reportViolation(inspection, node);
-      }
-    },
-    JSXElement(node: Node): void {
-      if (isIntrinsic(node, "aside") && containsNavigation(node)) {
-        reportViolation(inspection, node);
-      }
-    },
-  };
-};
+const appFrameSidebarVisitor = (inspection: LintContext): Visitor => ({
+  ExportAllDeclaration(node: Node): void {
+    if (node.type === "ExportAllDeclaration" && sidebarModule.test(node.source.value)) {
+      reportViolation(inspection, node);
+    }
+  },
+  ExportNamedDeclaration(node: Node): void {
+    if (
+      node.type === "ExportNamedDeclaration" &&
+      node.source &&
+      sidebarModule.test(node.source.value)
+    ) {
+      reportViolation(inspection, node);
+    }
+  },
+  ImportDeclaration(node: Node): void {
+    if (node.type === "ImportDeclaration" && sidebarModule.test(node.source.value)) {
+      reportViolation(inspection, node);
+    }
+  },
+  JSXElement(node: Node): void {
+    if (isIntrinsic(node, "aside") && containsNavigation(node)) {
+      reportViolation(inspection, node);
+    }
+  },
+});
 
 export { appFrameSidebarVisitor };

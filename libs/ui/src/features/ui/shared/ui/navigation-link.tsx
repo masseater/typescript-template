@@ -23,17 +23,15 @@ const NavigationAnchor = ({
   className,
   variant,
   ...anchor
-}: Readonly<ComponentProps<"a"> & { variant?: "brand" | "item" | "side" }>): ReactElement => {
-  return (
-    <a
-      {...anchor}
-      data-slot="navigation-link"
-      className={cn(navigationLinkVariants({ variant }), className)}
-    >
-      {children}
-    </a>
-  );
-};
+}: Readonly<ComponentProps<"a"> & { variant?: "brand" | "item" | "side" }>): ReactElement => (
+  <a
+    {...anchor}
+    data-slot="navigation-link"
+    className={cn(navigationLinkVariants({ variant }), className)}
+  >
+    {children}
+  </a>
+);
 
 const NavigationLink = createLink(NavigationAnchor);
 

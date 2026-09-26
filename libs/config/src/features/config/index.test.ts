@@ -98,7 +98,9 @@ describe("an AI binding with no run", () => {
     Effect.runPromise(readAi({ ...local, AI: {} }).pipe(Effect.flip)));
 
   it("names the AI binding", ({ refusal }) => {
-    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: 'Expected Ai\n  at ["AI"]' }));
+    expect(refusal).toStrictEqual(
+      ConfigurationInvalid.make({ reason: 'Expected Ai\n  at ["AI"]' }),
+    );
   });
 });
 
@@ -124,7 +126,7 @@ describe("jobs without a queue", () => {
 
   it("names the jobs queue", ({ refusal }) => {
     expect(refusal).toStrictEqual(
-      new ConfigurationInvalid({ reason: 'Missing key\n  at ["JOBS"]' }),
+      ConfigurationInvalid.make({ reason: 'Missing key\n  at ["JOBS"]' }),
     );
   });
 });
@@ -134,7 +136,7 @@ describe.for(brokenBindings)("%s", ([, broken, reasonText]) => {
     Effect.runPromise(readConfig({ ...local, ...workerBindings, ...broken }).pipe(Effect.flip)));
 
   it("names the binding it rejects", ({ refusal }) => {
-    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: reasonText }));
+    expect(refusal).toStrictEqual(ConfigurationInvalid.make({ reason: reasonText }));
   });
 });
 
@@ -203,7 +205,7 @@ describe("mail delivery", () => {
 
   it("requires a way to deliver mail", ({ refusal }) => {
     expect(refusal).toStrictEqual(
-      new ConfigurationInvalid({ reason: "An email delivery binding is required" }),
+      ConfigurationInvalid.make({ reason: "An email delivery binding is required" }),
     );
   });
 });
@@ -232,13 +234,13 @@ describe("wiki worker environment", () => {
 
   it("requires the release", ({ missingRelease }) => {
     expect(missingRelease).toStrictEqual(
-      new ConfigurationInvalid({ reason: 'Missing key\n  at ["APP_RELEASE"]' }),
+      ConfigurationInvalid.make({ reason: 'Missing key\n  at ["APP_RELEASE"]' }),
     );
   });
 
   it("requires HTTPS for the collector outside localhost", ({ insecureCollector }) => {
     expect(insecureCollector).toStrictEqual(
-      new ConfigurationInvalid({ reason: "HTTPS is required outside localhost" }),
+      ConfigurationInvalid.make({ reason: "HTTPS is required outside localhost" }),
     );
   });
 });
@@ -258,7 +260,7 @@ describe("dashboard wiki bindings", () => {
 
   it("refuses without the RPC binding", ({ missingApi }) => {
     expect(missingApi).toStrictEqual(
-      new ConfigurationInvalid({ reason: 'Missing key\n  at ["WIKI_API"]' }),
+      ConfigurationInvalid.make({ reason: 'Missing key\n  at ["WIKI_API"]' }),
     );
   });
 });

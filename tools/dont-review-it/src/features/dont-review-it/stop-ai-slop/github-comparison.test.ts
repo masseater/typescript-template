@@ -19,7 +19,7 @@ const apiAnswering = (
     const written = writtenContents[`${repository}/${sourcePath}@${revision}`];
     return written === undefined
       ? Effect.fail(
-          new GitHubRequestFailed({ message: `no contents for ${sourcePath}@${revision}` }),
+          GitHubRequestFailed.make({ message: `no contents for ${sourcePath}@${revision}` }),
         )
       : Effect.succeed(written);
   },
@@ -167,7 +167,7 @@ describe("compareGitHubPullRequest", () => {
     it.effect("refuses a head source the API answered as undecodable bytes", () =>
       Effect.gen(function* program() {
         expect(yield* failureFromReadingAnUndecodableHeadSource).toStrictEqual(
-          new UndecodableSource({
+          UndecodableSource.make({
             message: "Source blob does not decode as UTF-8: src/legacy.ts",
             cause: expect.any(TypeError),
           }),
@@ -199,7 +199,7 @@ describe("compareGitHubPullRequest", () => {
     it.effect("fails with the refusal the contents API answered", () =>
       Effect.gen(function* program() {
         expect(yield* failureFromARefusedSource).toStrictEqual(
-          new GitHubRequestFailed({ message: "no contents for src/added.ts@headsha" }),
+          GitHubRequestFailed.make({ message: "no contents for src/added.ts@headsha" }),
         );
       }),
     );
@@ -309,7 +309,7 @@ describe("compareGitHubPullRequest", () => {
     it.effect("refuses a compare that answered no changed files", () =>
       Effect.gen(function* program() {
         expect(yield* refusalOf({ merge_base_commit: { sha: "basesha" } })).toStrictEqual(
-          new GitHubComparisonIncomplete({
+          GitHubComparisonIncomplete.make({
             message:
               "Do not pass a change the GitHub compare answered without its changed files: fetch the merge with its parents so the checkout compares it locally.",
           }),
@@ -325,7 +325,7 @@ describe("compareGitHubPullRequest", () => {
             files: Array.from({ length: 300 }, (_, index) => addedFile(index)),
           }),
         ).toStrictEqual(
-          new GitHubComparisonIncomplete({
+          GitHubComparisonIncomplete.make({
             message:
               "Do not pass a change the GitHub compare may have cut short: it lists at most 300 files and answered 300. Fetch the merge with its parents so the checkout compares it locally.",
           }),
@@ -358,7 +358,7 @@ describe("compareGitHubPullRequest", () => {
             ],
           }),
         ).toStrictEqual(
-          new GitHubComparisonIncomplete({
+          GitHubComparisonIncomplete.make({
             message:
               "Do not pass a change whose diff the GitHub compare left out: src/large.ts. Fetch the merge with its parents so the checkout compares it locally.",
           }),

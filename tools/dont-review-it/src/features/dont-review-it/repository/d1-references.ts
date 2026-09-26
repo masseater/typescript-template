@@ -18,8 +18,8 @@ const objectD1References = (
     readonly node: NodeOf<"ObjectExpression">;
     readonly resolve: Resolve<D1Reference[]>;
   },
-): D1Reference[] => {
-  return lookup.node.properties.flatMap((property): D1Reference[] => {
+): D1Reference[] =>
+  lookup.node.properties.flatMap((property): D1Reference[] => {
     if (property.type === "SpreadElement") {
       return lookup.resolve(property.argument);
     }
@@ -28,7 +28,6 @@ const objectD1References = (
       ? []
       : lookup.resolve(property.value).map((reference) => prefixPath(reference, memberName));
   });
-};
 
 const boundCallReferences = (reference: D1Reference, bound: boolean): D1Reference[] => {
   if (bound) {
@@ -75,9 +74,7 @@ const callD1References = (
   ];
 };
 
-const markDynamic = (reference: D1Reference): D1Reference => {
-  return { ...reference, method: "dynamic" };
-};
+const markDynamic = (reference: D1Reference): D1Reference => ({ ...reference, method: "dynamic" });
 
 const memberD1References = (
   inspection: LintContext,
@@ -283,15 +280,13 @@ const d1ReferencesSeenFrom = (
   });
 };
 
-const d1References = (inspection: LintContext, node: Node): D1Reference[] => {
-  return d1ReferencesSeenFrom(inspection, { node, visited: new Set() });
-};
+const d1References = (inspection: LintContext, node: Node): D1Reference[] =>
+  d1ReferencesSeenFrom(inspection, { node, visited: new Set() });
 
-const isD1Operation = (inspection: LintContext, node: Node): boolean => {
-  return d1References(inspection, node).some(
+const isD1Operation = (inspection: LintContext, node: Node): boolean =>
+  d1References(inspection, node).some(
     (reference) => reference.path.length === 0 && reference.method !== undefined,
   );
-};
 
 const destructuredOperation = (
   inspection: LintContext,
@@ -324,11 +319,10 @@ const destructuredOperation = (
 const destructuresD1Operation = (
   inspection: LintContext,
   destructuring: { readonly input: Node; readonly pattern: Node },
-): boolean => {
-  return destructuredOperation(inspection, {
+): boolean =>
+  destructuredOperation(inspection, {
     node: destructuring.pattern,
     references: d1References(inspection, destructuring.input),
   });
-};
 
 export { destructuresD1Operation, isD1Operation };

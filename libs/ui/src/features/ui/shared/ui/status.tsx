@@ -30,18 +30,16 @@ const StatusMessage = ({
 }: Readonly<{
   variant?: StatusVariant;
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-}>): ReactElement => {
-  return (
-    <p
-      data-slot="status"
-      role={variant === STATUS_VARIANT.failure ? "alert" : "status"}
-      aria-live={variant === STATUS_VARIANT.failure ? "assertive" : "polite"}
-      className={cn("inline-flex items-start gap-1 text-base leading-normal", tones[variant])}
-    >
-      {icons[variant]}
-      <span>{children}</span>
-    </p>
-  );
-};
+}>): ReactElement => (
+  <p
+    data-slot="status"
+    role={variant === STATUS_VARIANT.failure ? "alert" : "status"}
+    aria-live={variant === STATUS_VARIANT.failure ? "assertive" : "polite"}
+    className={cn("inline-flex items-start gap-1 text-base leading-normal", tones[variant])}
+  >
+    {icons[variant]}
+    <span>{children}</span>
+  </p>
+);
 
 export { StatusMessage };

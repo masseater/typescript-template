@@ -25,7 +25,7 @@ const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: 
   readonly release: string;
 }) {
   const decoded = yield* Schema.decodeEffect(SymbolicateInput)(input).pipe(
-    Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })),
+    Effect.mapError(() => SymbolicateFailure.make({ reason: "arguments_invalid" })),
   );
   const repositoryRoot = yield* urlPath(new URL("../../../../../", import.meta.url));
   const frames = yield* symbolicate(

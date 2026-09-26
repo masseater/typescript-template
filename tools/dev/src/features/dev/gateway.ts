@@ -54,7 +54,7 @@ function proxyConnection(target: number, client: Socket): Effect.Effect<void, ne
 
 const program = Effect.gen(function* gateway() {
   const target = yield* Schema.decodeEffect(ProxyPort)(Number(process.argv[2])).pipe(
-    Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
+    Effect.mapError(() => GatewayFailure.make({ reason: "proxy_port_invalid" })),
   );
   const server = yield* SocketServer;
   yield* Console.info(
@@ -76,7 +76,7 @@ const program = Effect.gen(function* gateway() {
 }).pipe(
   Effect.scoped,
   Effect.provide(NodeSocketServer.layer({ host: "::", port: 443 })),
-  Effect.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
+  Effect.mapError(() => GatewayFailure.make({ reason: "listen_failed" })),
 ) as Effect.Effect<void, GatewayFailure, never>;
 
 runCli(program, (cause) => causeRecord("local.gateway_failed", { cause }));

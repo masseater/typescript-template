@@ -4,13 +4,11 @@ import { PaginationLink } from "./pagination-link";
 
 import type { ReactElement } from "react";
 
-const renderLink = (pageTarget: Readonly<PageTarget>): ReactElement => {
-  return (
-    <PaginationLink to="/" aria-label={pageTarget.label} current={pageTarget.current}>
-      {pageTarget.text}
-    </PaginationLink>
-  );
-};
+const renderLink = (pageTarget: Readonly<PageTarget>): ReactElement => (
+  <PaginationLink to="/" aria-label={pageTarget.label} current={pageTarget.current}>
+    {pageTarget.text}
+  </PaginationLink>
+);
 
 const meta = preview.meta({
   args: { current: 1, last: 12, renderLink },

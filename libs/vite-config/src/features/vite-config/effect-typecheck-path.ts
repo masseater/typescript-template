@@ -52,7 +52,7 @@ const workspaceOf = (
   const relativePath = paths.relative(resolvedRoot, resolvedCwd);
   if (relativePath.startsWith("..") || paths.isAbsolute(relativePath)) {
     return Effect.fail(
-      new OutsideRepository({ directory: resolvedCwd, repositoryRoot: resolvedRoot }),
+      OutsideRepository.make({ directory: resolvedCwd, repositoryRoot: resolvedRoot }),
     );
   }
   return Effect.succeed(relativePath === "" ? "." : relativePath.split(paths.sep).join("/"));

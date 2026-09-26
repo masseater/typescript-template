@@ -15,21 +15,21 @@ const readLiveSession = Effect.fn("readLiveSession")(function* readLiveSession(h
   const cookiePrefix = instance.options.advanced?.cookiePrefix;
   const secret = instance.options.secret;
   if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
-    return yield* new SessionRequired();
+    return yield* SessionRequired.make();
   }
   const token = yield* sessionTokenFrom({ cookiePrefix, headers, secret });
   if (token === undefined) {
-    return yield* new SessionRequired();
+    return yield* SessionRequired.make();
   }
   const sessionRecord = yield* lookupSessionByToken(token);
   if (
     sessionRecord === undefined ||
     sessionRecord.session.expiresAt.getTime() <= DateTime.toEpochMillis(yield* DateTime.now)
   ) {
-    return yield* new SessionRequired();
+    return yield* SessionRequired.make();
   }
   if (!sessionIsLive(sessionRecord, audience)) {
-    return yield* new SessionInvalid();
+    return yield* SessionInvalid.make();
   }
   return sessionRecord;
 });
@@ -46,10 +46,10 @@ const verifyPrivileged = Effect.fn("verifyPrivileged")(function* verifyPrivilege
   readonly strong: boolean;
 }) {
   if (role !== audienceRoles[audience]) {
-    return yield* new AdminRequired();
+    return yield* AdminRequired.make();
   }
   if (!allowEnrollment && !strong) {
-    return yield* new AdminMfaRequired();
+    return yield* AdminMfaRequired.make();
   }
 });
 

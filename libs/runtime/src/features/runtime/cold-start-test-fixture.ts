@@ -5,7 +5,9 @@ import { Context, Effect, Layer } from "effect";
 import { workerRuntime } from "./worker-runtime.ts";
 import { serveWorker } from "./worker.ts";
 
-class Slow extends Context.Service<Slow, { readonly value: string }>()("Slow") {}
+class Slow extends Context.Service<Slow, { readonly value: string }>()(
+  "@repo/runtime/features/runtime/cold-start-test-fixture/Slow",
+) {}
 
 const buildTime = "300 millis";
 const slowBuild = Effect.sleep(buildTime).pipe(Effect.as({ value: "built" }));

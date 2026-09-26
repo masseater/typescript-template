@@ -13,7 +13,7 @@ describe("reportUnavailable nested tag", () => {
     const logs = recordingSink();
     await Effect.runPromise(
       reportUnavailable(
-        Cause.fail(new LayerFailed({ cause: new LayerFailed({ cause: "select 1" }) })),
+        Cause.fail(LayerFailed.make({ cause: LayerFailed.make({ cause: "select 1" }) })),
         {
           log: logs.sink,
           service: "internal-dashboard",
@@ -34,7 +34,7 @@ describe("reportUnavailable wrapped plain error", () => {
     const logs = recordingSink();
     await Effect.runPromise(
       reportUnavailable(
-        Cause.fail(new LayerFailed({ cause: new Error("D1_ERROR: no such table: jwks") })),
+        Cause.fail(LayerFailed.make({ cause: new Error("D1_ERROR: no such table: jwks") })),
         {
           log: logs.sink,
           service: "internal-dashboard",
@@ -57,7 +57,9 @@ describe("reportUnavailable secret in message", () => {
     const logs = recordingSink();
     await Effect.runPromise(
       reportUnavailable(
-        Cause.fail(new LayerFailed({ cause: new Error('AUTH_SECRET="leaked-value" is rejected') })),
+        Cause.fail(
+          LayerFailed.make({ cause: new Error('AUTH_SECRET="leaked-value" is rejected') }),
+        ),
         { log: logs.sink, service: "internal-dashboard" },
       ),
     );
@@ -78,7 +80,7 @@ describe("reportUnavailable secret under key", () => {
     await Effect.runPromise(
       reportUnavailable(
         Cause.fail(
-          new LayerFailed({ cause: { AUTH_SECRET: "leaked-value", reason: "too short" } }),
+          LayerFailed.make({ cause: { AUTH_SECRET: "leaked-value", reason: "too short" } }),
         ),
         { log: logs.sink, service: "internal-dashboard" },
       ),

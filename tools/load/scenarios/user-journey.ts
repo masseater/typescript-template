@@ -78,13 +78,15 @@ const documentationRange = "203.0.113.";
 
 const hosts = 254;
 
-const client = (): Readonly<Record<string, string>> => {
-  return { "cf-connecting-ip": `${documentationRange}${1 + (exec.vu.idInTest % hosts)}` };
-};
+const client = (): Readonly<Record<string, string>> => ({
+  "cf-connecting-ip": `${documentationRange}${1 + (exec.vu.idInTest % hosts)}`,
+});
 
-const json = (): Readonly<Record<string, string>> => {
-  return { ...client(), "content-type": "application/json", origin: targetOrigin };
-};
+const json = (): Readonly<Record<string, string>> => ({
+  ...client(),
+  "content-type": "application/json",
+  origin: targetOrigin,
+});
 
 const register = (email: string): void => {
   const signUp = http.post(
@@ -107,14 +109,13 @@ const register = (email: string): void => {
 
 const setCookies = (answered: {
   readonly cookies: Readonly<Record<string, readonly { readonly value: string }[]>>;
-}): Readonly<Record<string, string>> => {
-  return Object.fromEntries(
+}): Readonly<Record<string, string>> =>
+  Object.fromEntries(
     Object.entries(answered.cookies).flatMap(([cookieName, cookieValues]) => {
       const carried = cookieValues[0]?.value;
       return carried === undefined ? [] : [[cookieName, carried] as const];
     }),
   );
-};
 
 type Session = {
   readonly cookies: Readonly<Record<string, string>>;
@@ -156,9 +157,7 @@ const readLoginPage = (): void => {
 
 const jar = new http.CookieJar();
 
-const read = (tagName: string): Params => {
-  return { headers: client(), jar, tags: { name: tagName } };
-};
+const read = (tagName: string): Params => ({ headers: client(), jar, tags: { name: tagName } });
 
 const readMemberDirectory = (): void => {
   const answered = http.get(`${targetOrigin}/users`, { ...read("users-page"), redirects: 0 });
@@ -198,9 +197,10 @@ const readProfile = (): void => {
   });
 };
 
-const paidOnly = (tagName: string): Params => {
-  return { ...read(tagName), responseCallback: http.expectedStatuses(paymentRequired) };
-};
+const paidOnly = (tagName: string): Params => ({
+  ...read(tagName),
+  responseCallback: http.expectedStatuses(paymentRequired),
+});
 
 const readMembers = (): void => {
   const answered = http.get(`${targetOrigin}/api/members?page=1`, paidOnly("members"));

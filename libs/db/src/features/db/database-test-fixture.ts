@@ -30,7 +30,7 @@ const runStatement = (
   ...statementParams: readonly (string | number | null)[]
 ): Effect.Effect<D1Result, DatabaseFailure> =>
   Effect.tryPromise({
-    catch: (cause) => new DatabaseFailure({ cause }),
+    catch: (cause) => DatabaseFailure.make({ cause }),
     try: async () =>
       env.DB.prepare(sql)
         .bind(...statementParams)

@@ -103,7 +103,7 @@ const lintedConsumer = (consumerPath: string) =>
       { concurrency: "unbounded" },
     ).pipe(Effect.timeout(PROCESS_TIMEOUT));
     const report = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(stdout).pipe(
-      Effect.mapError((unparsable) => new LintReportUnparsable({ stderr, cause: unparsable })),
+      Effect.mapError((unparsable) => LintReportUnparsable.make({ stderr, cause: unparsable })),
     );
     return { exitCode, stdout, report };
   });

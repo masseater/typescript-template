@@ -49,7 +49,7 @@ const readGitHub = Effect.gen(function* readGitHub() {
         },
       });
       if (answered.status < 200 || answered.status >= 300) {
-        return yield* new GitHubApiFailure({ status: answered.status, url });
+        return yield* GitHubApiFailure.make({ status: answered.status, url });
       }
       return yield* HttpClientResponse.schemaBodyJson(Schema.Array(item))(answered);
     });

@@ -103,7 +103,7 @@ describe("readVisibility", () => {
       Effect.runPromise(readVisibility("nobody").pipe(Effect.flip, Effect.provide(TestDatabase))));
 
     it("is refused as not found", ({ visibilityFailure }) => {
-      expect(visibilityFailure).toStrictEqual(new UserNotFound());
+      expect(visibilityFailure).toStrictEqual(UserNotFound.make());
     });
   });
 });

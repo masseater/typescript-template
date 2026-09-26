@@ -110,7 +110,7 @@ const requireAgreementsWhere = (
     const pendingKinds = yield* pendingAgreementKinds(userId);
     const missing = pendingKinds.filter((pendingKind) => applies(agreementPolicies[pendingKind]));
     if (missing.length > 0) {
-      return yield* new AgreementRequired({ kinds: missing });
+      return yield* AgreementRequired.make({ kinds: missing });
     }
   });
 
@@ -134,7 +134,7 @@ const acceptAgreementVersions = Effect.fn("acceptAgreementVersions")(
   }) {
     const requested = [...new Set(accepted.versionIds)];
     if (requested.length === 0) {
-      return yield* new AgreementVersionUnavailable();
+      return yield* AgreementVersionUnavailable.make();
     }
     const published = yield* query((database) =>
       database
@@ -145,7 +145,7 @@ const acceptAgreementVersions = Effect.fn("acceptAgreementVersions")(
         ),
     );
     if (published.length !== requested.length) {
-      return yield* new AgreementVersionUnavailable();
+      return yield* AgreementVersionUnavailable.make();
     }
     const acceptances = requested.map((versionId) => ({
       acceptedAt: accepted.acceptedAt,
@@ -197,14 +197,14 @@ const withdrawAgreementKind = Effect.fn("withdrawAgreementKind")(
     readonly userId: string;
   }) {
     if (!agreementPolicies[withdrawn.kind].withdrawable) {
-      return yield* new AgreementWithdrawalUnavailable();
+      return yield* AgreementWithdrawalUnavailable.make();
     }
     const accepted = yield* acceptedAgreements(withdrawn.userId);
     const versionIds = accepted
       .filter((agreement) => agreement.kind === withdrawn.kind)
       .map((agreement) => agreement.versionId);
     if (versionIds.length === 0) {
-      return yield* new AgreementWithdrawalUnavailable();
+      return yield* AgreementWithdrawalUnavailable.make();
     }
     yield* query((database) =>
       database

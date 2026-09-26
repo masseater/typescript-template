@@ -25,12 +25,10 @@ const StyletronSheets = ({ slotId }: Readonly<{ slotId: string }>): ReactElement
   const [sheets, setSheets] = useAtom(styleSheetsAtom(slotId));
   const rendered =
     engine instanceof StyletronServer
-      ? engine.getStylesheets().map((sheet) => {
-          return {
-            css: sheet.css,
-            hydrate: sheet.attrs["data-hydrate"] ?? "",
-          };
-        })
+      ? engine.getStylesheets().map((sheet) => ({
+          css: sheet.css,
+          hydrate: sheet.attrs["data-hydrate"] ?? "",
+        }))
       : sheets;
   if (engine instanceof StyletronServer && !sheetsMatch(sheets, rendered)) {
     setSheets(rendered);

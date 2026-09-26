@@ -33,11 +33,10 @@ const errorCode = (error: unknown): string | undefined =>
   failureCodeOf(error instanceof PlatformError.PlatformError ? error.reason.cause : error) ??
   undefined;
 
-const unavailable = (
-  reason: CredentialsUnavailable["reason"],
-): ((error: unknown) => CredentialsUnavailable) => {
-  return (error) => new CredentialsUnavailable({ code: errorCode(error), reason });
-};
+const unavailable =
+  (reason: CredentialsUnavailable["reason"]): ((error: unknown) => CredentialsUnavailable) =>
+  (error) =>
+    new CredentialsUnavailable({ code: errorCode(error), reason });
 
 const projectName = (
   root: string,

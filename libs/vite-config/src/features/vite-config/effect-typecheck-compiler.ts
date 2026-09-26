@@ -25,7 +25,7 @@ const effectTsgoBin = Effect.gen(function* effectTsgoBin() {
   );
   const relativeBin = manifest.bin?.["effect-tsgo"];
   if (relativeBin === undefined) {
-    return yield* new CompilerUnavailable({
+    return yield* CompilerUnavailable.make({
       transcript: "typecheck gate: @effect/tsgo is missing the effect-tsgo bin",
     });
   }
@@ -82,7 +82,7 @@ const locateCompiler = Effect.gen(function* locateCompiler() {
   });
   const executable = resolution.stdout.trim();
   if (resolution.status !== 0 || executable === "") {
-    return yield* new CompilerUnavailable({
+    return yield* CompilerUnavailable.make({
       transcript: combinedOutput(resolution).output || "typecheck gate: compiler not found",
     });
   }

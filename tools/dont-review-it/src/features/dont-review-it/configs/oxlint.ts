@@ -46,12 +46,16 @@ const EFFECT_PLUGIN = "effecttsgo";
 
 const EFFECT_RULES_BEYOND_RECOMMENDED = [
   "any-unknown-in-error-context",
+  "deterministic-keys",
   "effect-do-notation",
   "missed-pipeable-opportunity",
   "missing-effect-service-dependency",
+  "nested-effect-gen-yield",
+  "new-schema-class",
   "prefer-schema-type-property",
   "schema-union-of-literals",
   "service-not-as-class",
+  "unnecessary-arrow-block",
   "unsafe-effect-type-assertion",
 ];
 

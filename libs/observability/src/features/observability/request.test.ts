@@ -63,7 +63,7 @@ describe("readJson", () => {
       ));
 
     it("is invalid JSON", ({ decoded }) => {
-      expect(decoded).toStrictEqual(Exit.fail(new RequestRejected({ reason: "invalid_json" })));
+      expect(decoded).toStrictEqual(Exit.fail(RequestRejected.make({ reason: "invalid_json" })));
     });
   });
 
@@ -74,7 +74,7 @@ describe("readJson", () => {
       ));
 
     it("is required", ({ decoded }) => {
-      expect(decoded).toStrictEqual(Exit.fail(new RequestRejected({ reason: "body_required" })));
+      expect(decoded).toStrictEqual(Exit.fail(RequestRejected.make({ reason: "body_required" })));
     });
   });
 
@@ -89,7 +89,7 @@ describe("readJson", () => {
       ));
 
     it("is too large", ({ decoded }) => {
-      expect(decoded).toStrictEqual(Exit.fail(new RequestRejected({ reason: "body_too_large" })));
+      expect(decoded).toStrictEqual(Exit.fail(RequestRejected.make({ reason: "body_too_large" })));
     });
   });
 
@@ -123,7 +123,7 @@ describe("readJson", () => {
       ));
 
     it("is refused before the body is read", ({ decoded }) => {
-      expect(decoded).toStrictEqual(Exit.fail(new RequestRejected({ reason })));
+      expect(decoded).toStrictEqual(Exit.fail(RequestRejected.make({ reason })));
     });
   });
 });

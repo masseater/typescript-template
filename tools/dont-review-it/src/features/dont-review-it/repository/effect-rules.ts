@@ -10,13 +10,10 @@ import { origins, propertyName, staticText, type Origin } from "./references.ts"
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const definesFileRoute = (inspection: LintContext, node: Node): boolean => {
-  return (
-    node.type === "CallExpression" &&
-    node.callee.type === "CallExpression" &&
-    origins(inspection, node.callee.callee).some((origin) => origin[1] === "createFileRoute")
-  );
-};
+const definesFileRoute = (inspection: LintContext, node: Node): boolean =>
+  node.type === "CallExpression" &&
+  node.callee.type === "CallExpression" &&
+  origins(inspection, node.callee.callee).some((origin) => origin[1] === "createFileRoute");
 
 const routeOptions = (node: Node): NodeOf<"ObjectExpression">["properties"] => {
   const [routeOption] = node.type === "CallExpression" ? node.arguments : [];
@@ -110,14 +107,11 @@ const isEffectScope = (inspected: string): boolean => {
   );
 };
 
-const isApiErrorThrow = (node: Node): boolean => {
-  return (
-    node.type === "ThrowStatement" &&
-    node.argument.type === "NewExpression" &&
-    node.argument.callee.type === "Identifier" &&
-    node.argument.callee.name === "APIError"
-  );
-};
+const isApiErrorThrow = (node: Node): boolean =>
+  node.type === "ThrowStatement" &&
+  node.argument.type === "NewExpression" &&
+  node.argument.callee.type === "Identifier" &&
+  node.argument.callee.name === "APIError";
 
 const enclosingProgram = (node: Node): Node => {
   const { parent } = node;
@@ -188,34 +182,32 @@ const isForbiddenState = (origin: Origin): boolean => {
   return apis !== undefined && members.some((member) => apis.includes(member));
 };
 
-const atomStateVisitor = (inspection: LintContext): Visitor => {
-  return {
-    ...originVisitor(inspection, isForbiddenState),
-    ExportAllDeclaration(node: Node): void {
-      if (
-        node.type === "ExportAllDeclaration" &&
-        Object.hasOwn(forbiddenStateApis, node.source.value)
-      ) {
-        reportViolation(inspection, node);
+const atomStateVisitor = (inspection: LintContext): Visitor => ({
+  ...originVisitor(inspection, isForbiddenState),
+  ExportAllDeclaration(node: Node): void {
+    if (
+      node.type === "ExportAllDeclaration" &&
+      Object.hasOwn(forbiddenStateApis, node.source.value)
+    ) {
+      reportViolation(inspection, node);
+    }
+  },
+  ExportNamedDeclaration(node: Node): void {
+    if (node.type !== "ExportNamedDeclaration" || !node.source) {
+      return;
+    }
+    const apis = forbiddenStateApis[node.source.value];
+    if (apis === undefined) {
+      return;
+    }
+    for (const specifier of node.specifiers) {
+      const exported =
+        specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
+      if (apis.includes(exported)) {
+        reportViolation(inspection, specifier);
       }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type !== "ExportNamedDeclaration" || !node.source) {
-        return;
-      }
-      const apis = forbiddenStateApis[node.source.value];
-      if (apis === undefined) {
-        return;
-      }
-      for (const specifier of node.specifiers) {
-        const exported =
-          specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
-        if (apis.includes(exported)) {
-          reportViolation(inspection, specifier);
-        }
-      }
-    },
-  };
-};
+    }
+  },
+});
 
 export { atomStateVisitor, effectFailuresVisitor, effectStackVisitor, forbiddenStateList };

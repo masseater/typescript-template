@@ -363,7 +363,7 @@ const placeLabels = (
         spot = spotWith(count);
       }
       if (spot === undefined) {
-        throw new DiagramCrowded({
+        throw DiagramCrowded.make({
           reason: `no place along ${label.route.from}->${label.route.to} keeps its label clear of the rest (label centred at ${JSON.stringify(center(label.box))})`,
         });
       }

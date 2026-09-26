@@ -27,9 +27,8 @@ const fnvOffsetBasis = 2166136261;
 const fnvPrime = 16777619;
 const locationSource = String.raw`(?:\/assets\/)?[\w.-]+\.[cm]?[jt]sx?:\d+:\d+`;
 const identifierPattern = /^[A-Za-z]{1,64}$/u;
-const errorType = (decoded: unknown): ErrorType | undefined => {
-  return errorTypes.find((candidate) => candidate === decoded);
-};
+const errorType = (decoded: unknown): ErrorType | undefined =>
+  errorTypes.find((candidate) => candidate === decoded);
 const errorLocations = (stack: string | undefined): string => {
   const locationPattern = new RegExp(locationSource, "gu");
   return Array.from(
@@ -85,9 +84,7 @@ const errorAttributes = (caughtError: unknown): ErrorAttributes => {
   };
   return typedTag === undefined ? attributes : { ...attributes, "error.type": typedTag };
 };
-const wireErrorType = (typedTag: string | undefined): ErrorType => {
-  return errorType(typedTag) ?? "Error";
-};
+const wireErrorType = (typedTag: string | undefined): ErrorType => errorType(typedTag) ?? "Error";
 export {
   ErrorLocations,
   errorAttributes,

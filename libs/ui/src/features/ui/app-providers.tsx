@@ -12,18 +12,16 @@ import type { Children } from "./shared/ui/types";
 const AppProviders = ({
   children,
   fieldValidationMessages,
-}: Children & Readonly<{ fieldValidationMessages: FieldValidationMessages }>): ReactElement => {
-  return (
-    <BaseWebProvider>
-      <RegistryProvider>
-        <MotionProvider>
-          <FieldValidationMessageProvider messages={fieldValidationMessages}>
-            <ToastProvider>{children}</ToastProvider>
-          </FieldValidationMessageProvider>
-        </MotionProvider>
-      </RegistryProvider>
-    </BaseWebProvider>
-  );
-};
+}: Children & Readonly<{ fieldValidationMessages: FieldValidationMessages }>): ReactElement => (
+  <BaseWebProvider>
+    <RegistryProvider>
+      <MotionProvider>
+        <FieldValidationMessageProvider messages={fieldValidationMessages}>
+          <ToastProvider>{children}</ToastProvider>
+        </FieldValidationMessageProvider>
+      </MotionProvider>
+    </RegistryProvider>
+  </BaseWebProvider>
+);
 
 export { AppProviders };

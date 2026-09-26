@@ -11,7 +11,7 @@ import type { AccountAccess } from "./account-read.ts";
 import type { DeploymentTarget } from "./config.ts";
 
 function nameTaken(): CloudflareFailure {
-  return new CloudflareFailure({ code: "database_name_taken", keys: [deploymentKey.prefix] });
+  return CloudflareFailure.make({ code: "database_name_taken", keys: [deploymentKey.prefix] });
 }
 
 const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<
@@ -42,7 +42,7 @@ const assertDatabaseUnclaimed = Effect.fn("assertDatabaseUnclaimed")(
   ) {
     const verdict = yield* databaseVerdict(access, target, store);
     if (isUnreadable(verdict)) {
-      return yield* new CloudflareFailure({
+      return yield* CloudflareFailure.make({
         code: "account_read_unavailable",
         keys: verdict.unreadable,
       });

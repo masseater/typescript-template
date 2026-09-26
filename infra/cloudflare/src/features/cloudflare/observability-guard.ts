@@ -20,7 +20,7 @@ const assertTraceDestinationApplied = Effect.fn("assertTraceDestinationApplied")
     if (applied.includes(destination.name)) {
       return;
     }
-    return yield* new CloudflareFailure({
+    return yield* CloudflareFailure.make({
       code: "trace_destination_not_applied",
       keys: [traceDestinationStack],
     });

@@ -21,14 +21,11 @@ const componentsConfigs: readonly ComponentsConfig[] = Object.entries(configModu
   ([key, config]: readonly [string, unknown]) => ({ config, file: repositoryRelative(key) }),
 );
 
-const registriesOf = (config: unknown): unknown => {
-  return isRecord(config)
-    ? Object.getOwnPropertyDescriptor(config, "registries")?.value
-    : undefined;
-};
+const registriesOf = (config: unknown): unknown =>
+  isRecord(config) ? Object.getOwnPropertyDescriptor(config, "registries")?.value : undefined;
 
-const registryViolations = (configs: readonly ComponentsConfig[]): string[] => {
-  return configs.flatMap(({ config, file }) => {
+const registryViolations = (configs: readonly ComponentsConfig[]): string[] =>
+  configs.flatMap(({ config, file }) => {
     const registries = registriesOf(config);
     if (registries === undefined) {
       return [];
@@ -54,7 +51,6 @@ const registryViolations = (configs: readonly ComponentsConfig[]): string[] => {
       return [];
     });
   });
-};
 
 export { approvedRegistries, componentsConfigs, registryViolations };
 export type { ComponentsConfig };

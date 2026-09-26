@@ -13,7 +13,7 @@ const authPromise = <Value>(
   Effect.gen(function* authPromiseProgram() {
     const { instance: authInstance } = yield* Auth;
     return yield* Effect.tryPromise({
-      catch: (cause) => new AuthFailure({ cause }),
+      catch: (cause) => AuthFailure.make({ cause }),
       try: () => run(authInstance),
     });
   });
@@ -28,7 +28,7 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   const { instance: authInstance } = yield* Auth;
   const baseURL = authInstance.options.baseURL;
   if (typeof baseURL !== "string") {
-    return yield* new EmailVerificationFailed({ rateLimited: false });
+    return yield* EmailVerificationFailed.make({ rateLimited: false });
   }
   const verification = new URL("/api/auth/verify-email", baseURL);
   verification.searchParams.set("token", token);
@@ -40,7 +40,7 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
     yield* Effect.promise(() => responseBody.cancel());
   }
   if (!authResponse.ok) {
-    return yield* new EmailVerificationFailed({
+    return yield* EmailVerificationFailed.make({
       rateLimited: authResponse.status === httpStatus.tooManyRequests,
     });
   }

@@ -28,10 +28,10 @@ interface WikiPublisherShape {
 }
 
 const unavailable = (): Effect.Effect<never, WikiPublishUnavailable> =>
-  Effect.fail(new WikiPublishUnavailable());
+  Effect.fail(WikiPublishUnavailable.make());
 
 class WikiPublisher extends Context.Service<WikiPublisher, WikiPublisherShape>()(
-  "#shared/wiki-publish/WikiPublisher",
+  "@repo/internal-dashboard/shared/wiki-publish/wiki-publisher/WikiPublisher",
 ) {
   public static layer(config: WikiPublishConfig | undefined): Layer.Layer<WikiPublisher> {
     return Layer.succeed(

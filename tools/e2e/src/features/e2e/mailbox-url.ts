@@ -12,16 +12,13 @@ type MailboxDelivery = {
   readonly recipient: string;
 };
 
-const isMailboxDelivery = (candidate: unknown): candidate is MailboxDelivery => {
-  return (
-    typeof candidate === "object" &&
-    candidate !== null &&
-    "link" in candidate &&
-    "recipient" in candidate &&
-    typeof candidate.link === "string" &&
-    typeof candidate.recipient === "string"
-  );
-};
+const isMailboxDelivery = (candidate: unknown): candidate is MailboxDelivery =>
+  typeof candidate === "object" &&
+  candidate !== null &&
+  "link" in candidate &&
+  "recipient" in candidate &&
+  typeof candidate.link === "string" &&
+  typeof candidate.recipient === "string";
 
 const parseMailboxDeliveries = (mailboxJson: unknown): readonly MailboxDelivery[] => {
   if (!Array.isArray(mailboxJson)) {

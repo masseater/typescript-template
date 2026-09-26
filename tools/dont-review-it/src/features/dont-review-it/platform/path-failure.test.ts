@@ -82,7 +82,7 @@ layer(NodeServices.layer)("readUnlessMissing", (it) => {
 
 describe("readUnlessMissing", () => {
   describe("a path that exists but cannot be read", () => {
-    const refusal = new RuntimeRefusal({ code: "EACCES" });
+    const refusal = RuntimeRefusal.make({ code: "EACCES" });
     const it = test.extend("raisedRefusal", () => raisedBy(refusal));
 
     it("is raised instead of becoming an absence", ({ raisedRefusal }) => {
@@ -91,7 +91,7 @@ describe("readUnlessMissing", () => {
   });
 
   describe("a failure the runtime did not raise", () => {
-    const uncoded = new UncodedFailure();
+    const uncoded = UncodedFailure.make();
     const it = test.extend("raisedUncoded", () => raisedBy(uncoded));
 
     it("is passed on untouched", ({ raisedUncoded }) => {
@@ -100,7 +100,7 @@ describe("readUnlessMissing", () => {
   });
 
   describe("a failure whose code is not a word", () => {
-    const numbered = new RuntimeRefusal({ code: 7 });
+    const numbered = RuntimeRefusal.make({ code: 7 });
     const it = test.extend("raisedNumbered", () => raisedBy(numbered));
 
     it("is raised rather than becoming an absence", ({ raisedNumbered }) => {
@@ -111,7 +111,7 @@ describe("readUnlessMissing", () => {
 
 describe("failureCodeOf", () => {
   describe("a failure carrying a worded code", () => {
-    const it = test.extend("code", () => failureCodeOf(new RuntimeRefusal({ code: "EROFS" })));
+    const it = test.extend("code", () => failureCodeOf(RuntimeRefusal.make({ code: "EROFS" })));
 
     it("hands the code back", ({ code }) => {
       expect(code).toBe("EROFS");

@@ -4,11 +4,9 @@ import { type CallExpression } from "oxc-parser";
 import { type UnknownFields } from "../../lint-rule-authoring/index.ts";
 
 const objectPatternBindingsIn = (properties: readonly UnknownFields[]): readonly string[] =>
-  properties.flatMap((fields) => {
-    return fields.type === "RestElement"
-      ? namesBoundBy(fields.argument)
-      : namesBoundBy(fields.value);
-  });
+  properties.flatMap((fields) =>
+    fields.type === "RestElement" ? namesBoundBy(fields.argument) : namesBoundBy(fields.value),
+  );
 
 const namesBoundBy = (pattern: unknown): readonly string[] => {
   if (!isPlainObject(pattern)) return [];
@@ -31,11 +29,10 @@ const functionBindingsOf = (node: UnknownFields): readonly string[] => {
   return [...functionName, ...parameters];
 };
 
-const namespaceNamesBoundBy = (fields: UnknownFields): readonly string[] => {
-  return fields.type === "TSQualifiedName"
+const namespaceNamesBoundBy = (fields: UnknownFields): readonly string[] =>
+  fields.type === "TSQualifiedName"
     ? namespaceNamesBoundBy(fields.left as UnknownFields)
     : namesBoundBy(fields);
-};
 
 const typescriptValueBindingsOf = (fields: UnknownFields): readonly string[] => {
   if (fields.type === "TSEnumDeclaration") return namesBoundBy(fields.id);

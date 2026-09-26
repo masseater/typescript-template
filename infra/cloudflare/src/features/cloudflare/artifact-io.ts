@@ -29,11 +29,11 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
 }) {}
 
 function fail(code: ArtifactFailure["code"]): Effect.Effect<never, ArtifactFailure> {
-  return new ArtifactFailure({ code });
+  return ArtifactFailure.make({ code });
 }
 
 function ioFailed(): ArtifactFailure {
-  return new ArtifactFailure({ code: "artifact_io_failed" });
+  return ArtifactFailure.make({ code: "artifact_io_failed" });
 }
 
 function isMissing(cause: unknown): boolean {

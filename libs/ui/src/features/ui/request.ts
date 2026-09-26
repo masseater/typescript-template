@@ -7,22 +7,17 @@ class RequestFailed extends Schema.TaggedError<RequestFailed>()("RequestFailed",
 
 type RequestResult<Value> = AsyncResult.AsyncResult<Value, RequestFailed>;
 
-const requestErrorMessage = (failure: unknown): string => {
-  return failure instanceof Error
-    ? failure.message
-    : "操作に失敗しました。もう一度お試しください。";
-};
+const requestErrorMessage = (failure: unknown): string =>
+  failure instanceof Error ? failure.message : "操作に失敗しました。もう一度お試しください。";
 
-const requestEffect = <Value>(task: () => Promise<Value>): Effect.Effect<Value, RequestFailed> => {
-  return Effect.tryPromise({
+const requestEffect = <Value>(task: () => Promise<Value>): Effect.Effect<Value, RequestFailed> =>
+  Effect.tryPromise({
     catch: (cause) => new RequestFailed({ message: requestErrorMessage(cause) }),
     try: task,
   });
-};
 
-const requestAtom = <Value>(task: () => Promise<Value>): Atom.Atom<RequestResult<Value>> => {
-  return Atom.make(requestEffect(task)).pipe(Atom.withServerValueInitial);
-};
+const requestAtom = <Value>(task: () => Promise<Value>): Atom.Atom<RequestResult<Value>> =>
+  Atom.make(requestEffect(task)).pipe(Atom.withServerValueInitial);
 
 const resultError = (asyncState: object): string | undefined => {
   const settled = asyncState as RequestResult<unknown>;

@@ -15,7 +15,7 @@ export class Auth extends Context.Service<
     readonly instance: BetterAuthInstance;
     readonly mail: MailSettings;
   }
->()("@repo/auth/Auth") {
+>()("@repo/auth/features/auth/auth") {
   public static layer(authOptions: AuthOptions): Layer.Layer<Auth, AuthFailure, Database> {
     return Layer.effect(
       Auth,
@@ -29,7 +29,7 @@ export class Auth extends Context.Service<
           run: Effect.runPromiseWith(databaseContext),
         });
         yield* Effect.tryPromise({
-          catch: (cause) => new AuthFailure({ cause }),
+          catch: (cause) => AuthFailure.make({ cause }),
           try: () => betterAuthInstance.$context,
         });
         return Auth.of({

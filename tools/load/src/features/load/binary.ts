@@ -31,32 +31,32 @@ class BinaryUnavailable extends Schema.TaggedError<BinaryUnavailable>()("BinaryU
 const selectRelease = (): Effect.Effect<Release, BinaryUnavailable> => {
   const found = releases.get(`${process.platform}-${process.arch}`);
   return found === undefined
-    ? Effect.fail(new BinaryUnavailable({ reason: "platform_unsupported" }))
+    ? Effect.fail(BinaryUnavailable.make({ reason: "platform_unsupported" }))
     : Effect.succeed(found);
 };
 
 const fetchArchive = Effect.fn("fetchArchive")(function* fetchArchive(release: Release) {
   const downloaded = yield* HttpClient.get(downloadUrl(release.archive)).pipe(
     Effect.provide(FetchHttpClient.layer),
-    Effect.mapError(() => new BinaryUnavailable({ reason: "download_failed" })),
+    Effect.mapError(() => BinaryUnavailable.make({ reason: "download_failed" })),
   );
   if (downloaded.status < 200 || downloaded.status >= 300) {
-    return yield* new BinaryUnavailable({ reason: "download_failed" });
+    return yield* BinaryUnavailable.make({ reason: "download_failed" });
   }
   const archived = new Uint8Array(
     yield* downloaded.arrayBuffer.pipe(
-      Effect.mapError(() => new BinaryUnavailable({ reason: "download_failed" })),
+      Effect.mapError(() => BinaryUnavailable.make({ reason: "download_failed" })),
     ),
   );
   const crypto = yield* Crypto.Crypto;
   const digest = hexOf(
     yield* crypto
       .digest("SHA-256", archived)
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "archive_corrupted" }))),
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "archive_corrupted" }))),
   );
   return digest === release.digest
     ? archived
-    : yield* new BinaryUnavailable({ reason: "archive_corrupted" });
+    : yield* BinaryUnavailable.make({ reason: "archive_corrupted" });
 });
 
 const writeArchive = (placed: {
@@ -69,14 +69,14 @@ const writeArchive = (placed: {
     const filesystem = yield* FileSystem.FileSystem;
     yield* filesystem
       .remove(placed.directory, { force: true, recursive: true })
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "file_io_failed" })));
     yield* filesystem
       .makeDirectory(placed.directory, { mode: ownerOnlyDirectory, recursive: true })
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "file_io_failed" })));
     const archive = paths.join(placed.directory, placed.release.archive);
     yield* filesystem
       .writeFile(archive, placed.archived, { mode: ownerOnlyFile })
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "file_io_failed" })));
     return archive;
   });
 
@@ -95,16 +95,16 @@ const unpackArchive = (placed: {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const extracted = yield* spawner
       .exitCode(ChildProcess.make("tar", ["-xf", placed.archive], { cwd: placed.directory }))
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "extraction_failed" })));
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "extraction_failed" })));
     if (extracted !== 0) {
-      return yield* new BinaryUnavailable({ reason: "extraction_failed" });
+      return yield* BinaryUnavailable.make({ reason: "extraction_failed" });
     }
     yield* filesystem
       .remove(placed.archive, { force: true })
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "file_io_failed" })));
     yield* filesystem
       .chmod(paths.join(placed.directory, placed.member), executableMode)
-      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+      .pipe(Effect.mapError(() => BinaryUnavailable.make({ reason: "file_io_failed" })));
   });
 
 const extract = Effect.fn("extract")(function* extract(directory: string, release: Release) {

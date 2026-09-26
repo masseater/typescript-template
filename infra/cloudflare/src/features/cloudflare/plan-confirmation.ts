@@ -224,13 +224,13 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   const refusals = refusedRows(planned);
   const code = refusals[0]?.code;
   if (code !== undefined) {
-    return yield* new CloudflareFailure({
+    return yield* CloudflareFailure.make({
       code,
       keys: refusals.filter((row) => row.code === code).map((row) => row.id),
     });
   }
   if (planConfirmation(planned, approval.subject) !== approval.confirmation) {
-    return yield* new CloudflareFailure({
+    return yield* CloudflareFailure.make({
       code: "plan_confirmation_mismatch",
       keys: [planned.stack.name],
     });

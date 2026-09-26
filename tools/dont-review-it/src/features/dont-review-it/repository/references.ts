@@ -40,9 +40,7 @@ type Resolve<Resolved> = (node: Node) => Resolved;
 const concatenatedText = (
   left: string | undefined,
   right: string | undefined,
-): string | undefined => {
-  return left === undefined || right === undefined ? undefined : left + right;
-};
+): string | undefined => (left === undefined || right === undefined ? undefined : left + right);
 
 const derivedText = (
   inspection: LintContext,
@@ -91,17 +89,14 @@ const staticText = (inspection: LintContext, node: Node): string | undefined => 
 const propertyName = (
   inspection: LintContext,
   property: NodeOf<"Property" | "TSPropertySignature">,
-): string | undefined => {
-  return !property.computed && property.key.type === "Identifier"
+): string | undefined =>
+  !property.computed && property.key.type === "Identifier"
     ? property.key.name
     : staticText(inspection, property.key);
-};
 
 type Origin = readonly string[];
 
-const extendOrigin = (origin: Origin, suffix: readonly string[]): Origin => {
-  return [...origin, ...suffix];
-};
+const extendOrigin = (origin: Origin, suffix: readonly string[]): Origin => [...origin, ...suffix];
 
 const destructuredOrigins = (
   inspection: LintContext,
@@ -290,9 +285,8 @@ const memberOrigins = (
     : lookup.resolve(lookup.node.object).map((origin) => extendOrigin(origin, [member]));
 };
 
-const metaOrigins = (node: NodeOf<"MetaProperty">): Origin[] => {
-  return node.meta.name === "import" && node.property.name === "meta" ? [["import.meta"]] : [];
-};
+const metaOrigins = (node: NodeOf<"MetaProperty">): Origin[] =>
+  node.meta.name === "import" && node.property.name === "meta" ? [["import.meta"]] : [];
 
 const importedModuleOrigins = (
   inspection: LintContext,
@@ -350,9 +344,8 @@ const originsSeenFrom = (
     : originsSeenFrom(inspection, { node: unwrapped, visited: deepened });
 };
 
-const origins = (inspection: LintContext, node: Node): Origin[] => {
-  return originsSeenFrom(inspection, { node, visited: new Set() });
-};
+const origins = (inspection: LintContext, node: Node): Origin[] =>
+  originsSeenFrom(inspection, { node, visited: new Set() });
 
 export {
   bindingPath,

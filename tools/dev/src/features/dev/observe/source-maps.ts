@@ -65,11 +65,11 @@ const Payload = Schema.Struct({
 });
 
 function unreadable(): SourceMapFailure {
-  return new SourceMapFailure({ reason: "source_map_unreadable" });
+  return SourceMapFailure.make({ reason: "source_map_unreadable" });
 }
 
 function invalid(): SourceMapFailure {
-  return new SourceMapFailure({ reason: "source_map_invalid" });
+  return SourceMapFailure.make({ reason: "source_map_invalid" });
 }
 
 function directoryEntries(

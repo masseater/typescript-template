@@ -45,7 +45,7 @@ const git = Effect.fn("git")(function* git(
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
+    : yield* GitFixtureRefused.make({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -698,7 +698,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevis
       Effect.gen(function* program() {
         const executable = gitExecutablePath(yield* Config.String("PATH"));
         expect(yield* missingRevisionRefusal).toStrictEqual(
-          new GitCommandFailed({
+          GitCommandFailed.make({
             message: `Command failed: ${executable} rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n`,
           }),
         );
@@ -728,7 +728,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevis
     it.effect("refuses the head source and names its path", () =>
       Effect.gen(function* program() {
         expect(yield* undecodableRefusal).toStrictEqual(
-          new UndecodableSource({
+          UndecodableSource.make({
             message: "Source blob does not decode as UTF-8: src/binary.ts",
             cause: expect.any(TypeError),
           }),
@@ -811,7 +811,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevis
       Effect.gen(function* program() {
         const { headTree, refusal } = yield* gitlinkRefusal;
         expect(refusal).toStrictEqual(
-          new BlobUnreadable({ message: `Git holds no blob at ${headTree}:vendor/linked.ts` }),
+          BlobUnreadable.make({ message: `Git holds no blob at ${headTree}:vendor/linked.ts` }),
         );
       }),
     );

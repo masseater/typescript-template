@@ -9,13 +9,11 @@ import type { Children } from "./shared/ui/types";
 const AppBody = ({
   children,
   fieldValidationMessages,
-}: Children & Readonly<{ fieldValidationMessages: FieldValidationMessages }>): ReactElement => {
-  return (
-    <body>
-      <AppProviders fieldValidationMessages={fieldValidationMessages}>{children}</AppProviders>
-      <Scripts />
-    </body>
-  );
-};
+}: Children & Readonly<{ fieldValidationMessages: FieldValidationMessages }>): ReactElement => (
+  <body>
+    <AppProviders fieldValidationMessages={fieldValidationMessages}>{children}</AppProviders>
+    <Scripts />
+  </body>
+);
 
 export { AppBody };

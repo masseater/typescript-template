@@ -63,7 +63,7 @@ class InvalidSearch extends Schema.TaggedError<InvalidSearch>()("InvalidSearch",
 
 const searchNormalizer = <T>(schema: Schema.Decoder<T>): ((raw: unknown) => T) => {
   const decode = Schema.decodeUnknownOption(schema);
-  return (raw) => Option.getOrThrowWith(decode(raw), () => new InvalidSearch());
+  return (raw) => Option.getOrThrowWith(decode(raw), () => InvalidSearch.make());
 };
 
 export {

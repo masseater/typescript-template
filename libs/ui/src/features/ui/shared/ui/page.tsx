@@ -15,15 +15,13 @@ const Page = ({
   title: string;
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
   layout?: keyof typeof layoutClassNames;
-}>): ReactElement => {
-  return (
-    <main data-slot="page" className={layoutClassNames[layout]}>
-      <Heading as="h1" size="page">
-        {title}
-      </Heading>
-      {children}
-    </main>
-  );
-};
+}>): ReactElement => (
+  <main data-slot="page" className={layoutClassNames[layout]}>
+    <Heading as="h1" size="page">
+      {title}
+    </Heading>
+    {children}
+  </main>
+);
 
 export { Page };

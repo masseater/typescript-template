@@ -40,7 +40,7 @@ const VerifyInput = Schema.Struct({
 });
 
 function fail(reason: VerificationFailure["reason"]): VerificationFailure {
-  return new VerificationFailure({ reason });
+  return VerificationFailure.make({ reason });
 }
 
 const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {

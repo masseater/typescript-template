@@ -28,19 +28,16 @@ const isLegacyApi = (origin: Origin): boolean => {
   return apis !== undefined && members.some((member) => apis.includes(member));
 };
 
-const isCreateContextValue = (inspection: LintContext, expression: Node): boolean => {
-  return origins(inspection, expression).some(
+const isCreateContextValue = (inspection: LintContext, expression: Node): boolean =>
+  origins(inspection, expression).some(
     (origin) => origin[0] === "react" && origin[1] === "createContext" && origin.length === 2,
   );
-};
 
-const isEffectHook = (origin: Origin): boolean => {
-  return origin[0] === "react" && effectHooks.has(origin[1] ?? "");
-};
+const isEffectHook = (origin: Origin): boolean =>
+  origin[0] === "react" && effectHooks.has(origin[1] ?? "");
 
-const isEffectEventValue = (origin: Origin): boolean => {
-  return origin[0] === "react" && origin[1] === "useEffectEvent" && origin.length === 2;
-};
+const isEffectEventValue = (origin: Origin): boolean =>
+  origin[0] === "react" && origin[1] === "useEffectEvent" && origin.length === 2;
 
 const isStringRef = (expression: Node): boolean => {
   if (expression.type === "Literal") {
@@ -54,9 +51,8 @@ const variableNamed = (
   node: Node,
   declaredName: string,
 ): Variable | undefined => {
-  const declaredIn = (scope: ScopeLink | null): Variable | undefined => {
-    return scope === null ? undefined : (scope.set.get(declaredName) ?? declaredIn(scope.upper));
-  };
+  const declaredIn = (scope: ScopeLink | null): Variable | undefined =>
+    scope === null ? undefined : (scope.set.get(declaredName) ?? declaredIn(scope.upper));
   return declaredIn(scopeOf(inspection, node));
 };
 
@@ -91,88 +87,82 @@ const attributeExpression = (attribute: Node): Node | undefined => {
 
 const exportedName = (
   specifier: Extract<Node, { type: "ExportNamedDeclaration" }>["specifiers"][number],
-): string => {
-  return specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
-};
+): string => (specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value);
 
-const reactLegacyVisitor = (inspection: LintContext): Visitor => {
-  return {
-    ...originVisitor(inspection, isLegacyApi),
-    AssignmentExpression(node: Node): void {
-      if (node.type !== "AssignmentExpression" || node.left.type !== "MemberExpression") {
-        return;
+const reactLegacyVisitor = (inspection: LintContext): Visitor => ({
+  ...originVisitor(inspection, isLegacyApi),
+  AssignmentExpression(node: Node): void {
+    if (node.type !== "AssignmentExpression" || node.left.type !== "MemberExpression") {
+      return;
+    }
+    const property = propertyKey(inspection, node.left);
+    if (property !== undefined && legacyProperties.has(property)) {
+      reportViolation(inspection, node.left);
+    }
+  },
+  ExportAllDeclaration(node: Node): void {
+    if (node.type === "ExportAllDeclaration" && node.source.value === testRenderer) {
+      reportViolation(inspection, node);
+    }
+  },
+  ExportNamedDeclaration(node: Node): void {
+    if (node.type !== "ExportNamedDeclaration" || !node.source) {
+      return;
+    }
+    if (node.source.value === testRenderer) {
+      reportViolation(inspection, node);
+      return;
+    }
+    const apis = legacyApis[node.source.value];
+    if (apis === undefined) {
+      return;
+    }
+    for (const specifier of node.specifiers) {
+      if (apis.includes(exportedName(specifier))) {
+        reportViolation(inspection, specifier);
       }
-      const property = propertyKey(inspection, node.left);
-      if (property !== undefined && legacyProperties.has(property)) {
-        reportViolation(inspection, node.left);
-      }
-    },
-    ExportAllDeclaration(node: Node): void {
-      if (node.type === "ExportAllDeclaration" && node.source.value === testRenderer) {
-        reportViolation(inspection, node);
-      }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type !== "ExportNamedDeclaration" || !node.source) {
-        return;
-      }
-      if (node.source.value === testRenderer) {
-        reportViolation(inspection, node);
-        return;
-      }
-      const apis = legacyApis[node.source.value];
-      if (apis === undefined) {
-        return;
-      }
-      for (const specifier of node.specifiers) {
-        if (apis.includes(exportedName(specifier))) {
-          reportViolation(inspection, specifier);
-        }
-      }
-    },
-    JSXAttribute(node: Node): void {
-      if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") {
-        return;
-      }
-      const expression = attributeExpression(node);
-      if (node.name.name === "ref" && expression !== undefined && isStringRef(expression)) {
-        reportViolation(inspection, node);
-      }
-    },
-    JSXOpeningElement(node: Node): void {
-      if (node.type !== "JSXOpeningElement") {
-        return;
-      }
-      const provider = contextProviderName(node.name);
-      if (provider === undefined) {
-        return;
-      }
-      const binding = variableNamed(inspection, node, provider);
-      const initializer = binding === undefined ? undefined : initializerOf(binding);
-      if (initializer !== undefined && isCreateContextValue(inspection, initializer)) {
-        reportViolation(inspection, node.name);
-      }
-    },
-  };
-};
+    }
+  },
+  JSXAttribute(node: Node): void {
+    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") {
+      return;
+    }
+    const expression = attributeExpression(node);
+    if (node.name.name === "ref" && expression !== undefined && isStringRef(expression)) {
+      reportViolation(inspection, node);
+    }
+  },
+  JSXOpeningElement(node: Node): void {
+    if (node.type !== "JSXOpeningElement") {
+      return;
+    }
+    const provider = contextProviderName(node.name);
+    if (provider === undefined) {
+      return;
+    }
+    const binding = variableNamed(inspection, node, provider);
+    const initializer = binding === undefined ? undefined : initializerOf(binding);
+    if (initializer !== undefined && isCreateContextValue(inspection, initializer)) {
+      reportViolation(inspection, node.name);
+    }
+  },
+});
 
-const effectEventDependencyVisitor = (inspection: LintContext): Visitor => {
-  return {
-    CallExpression(node: Node): void {
-      if (node.type !== "CallExpression" || !origins(inspection, node.callee).some(isEffectHook)) {
-        return;
+const effectEventDependencyVisitor = (inspection: LintContext): Visitor => ({
+  CallExpression(node: Node): void {
+    if (node.type !== "CallExpression" || !origins(inspection, node.callee).some(isEffectHook)) {
+      return;
+    }
+    const dependencies = node.arguments[1];
+    if (dependencies?.type !== "ArrayExpression") {
+      return;
+    }
+    for (const dependency of dependencies.elements) {
+      if (dependency !== null && origins(inspection, dependency).some(isEffectEventValue)) {
+        reportViolation(inspection, dependency);
       }
-      const dependencies = node.arguments[1];
-      if (dependencies?.type !== "ArrayExpression") {
-        return;
-      }
-      for (const dependency of dependencies.elements) {
-        if (dependency !== null && origins(inspection, dependency).some(isEffectEventValue)) {
-          reportViolation(inspection, dependency);
-        }
-      }
-    },
-  };
-};
+    }
+  },
+});
 
 export { effectEventDependencyVisitor, reactLegacyVisitor };

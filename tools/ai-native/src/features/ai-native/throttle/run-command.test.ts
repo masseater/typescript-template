@@ -286,8 +286,8 @@ describe("runWithSlot", () => {
 
   describe("a fast command under a long timeout", () => {
     const it = test
-      .extend("theCodeOfAFastCommandUnderALongTimeout", () => {
-        return runWithSlot({
+      .extend("theCodeOfAFastCommandUnderALongTimeout", () =>
+        runWithSlot({
           invocation: {
             timeoutSec: 30,
             executable: process.execPath,
@@ -303,8 +303,7 @@ describe("runWithSlot", () => {
               }),
             signalTree: () => Effect.succeed(null),
           },
-        });
-      })
+        }))
       .extend("theSpawnOfAFastCommandUnderALongTimeout", () =>
         Effect.runPromise(
           Effect.gen(function* () {

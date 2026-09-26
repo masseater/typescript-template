@@ -100,7 +100,7 @@ const openInvite = Effect.fn("openInvite")(function* openInvite(
 ) {
   const preview = yield* previewInvitation(query.token);
   if (preview === undefined) {
-    return yield* new InviteRejected({ reason: "missing" });
+    return yield* InviteRejected.make({ reason: "missing" });
   }
   return { email: preview.email, permission: preview.permission };
 });

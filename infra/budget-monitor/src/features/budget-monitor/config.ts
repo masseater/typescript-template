@@ -23,7 +23,7 @@ class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure",
 }) {}
 
 const fail = (failureCode: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> =>
-  Effect.fail(new BudgetFailure({ code: failureCode }));
+  Effect.fail(BudgetFailure.make({ code: failureCode }));
 
 const DecimalText = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/u));
 const FiniteNumber = Schema.Number.check(Schema.isFinite());
@@ -44,7 +44,7 @@ const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetCo
   input: unknown,
 ) {
   return yield* Schema.decodeUnknownEffect(BudgetEnvironment)(input).pipe(
-    Effect.mapError(() => new BudgetFailure({ code: "budget_config_invalid" })),
+    Effect.mapError(() => BudgetFailure.make({ code: "budget_config_invalid" })),
   );
 });
 

@@ -24,7 +24,7 @@ const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: (user) =>
     grantsStaffLevel(user.permission, STAFF_PERMISSION.editor)
       ? Effect.void
-      : Effect.fail(new FlagEditorRequired()),
+      : Effect.fail(FlagEditorRequired.make()),
 });
 
 function wikiLayer(

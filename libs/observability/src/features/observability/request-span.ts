@@ -95,8 +95,8 @@ export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Eff
     eventName: "application.error",
   });
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
-const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> => {
-  return reportFailure(cause).pipe(
+const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> =>
+  reportFailure(cause).pipe(
     Effect.as(
       Response.json(
         { error: failureMessage },
@@ -104,7 +104,6 @@ const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<R
       ),
     ),
   );
-};
 const recordRequest = (served: {
   readonly incoming: Readonly<Pick<Request, "method" | "url">>;
   readonly responseStatus: number;
@@ -153,8 +152,8 @@ const respond = <Requirements>(served: {
 export const observeRequest = <Requirements>(
   incoming: Request,
   handle: (incoming: Request) => Effect.Effect<Response, never, Requirements | CurrentRequest>,
-): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> => {
-  return Effect.gen(function* observe() {
+): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> =>
+  Effect.gen(function* observe() {
     const entropy = yield* RequestEntropy;
     const span = yield* Effect.orDie(Effect.currentSpan);
     return yield* respond({
@@ -169,4 +168,3 @@ export const observeRequest = <Requirements>(
       parent: incomingParent(incoming.headers),
     }),
   );
-};

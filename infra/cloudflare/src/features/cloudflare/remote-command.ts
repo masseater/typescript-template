@@ -22,16 +22,14 @@ type PlanReport = {
 const planReport = (
   { operation, target }: Readonly<RemoteInput>,
   migrations: Migrations,
-): PlanReport => {
-  return {
-    databaseId: target.databaseId,
-    event: "database.remote_plan",
-    migrations: migrations.map((migration) => ({ hash: migration.hash, name: migration.name })),
-    ok: true,
-    operation,
-    remoteStateVerified: false,
-  };
-};
+): PlanReport => ({
+  databaseId: target.databaseId,
+  event: "database.remote_plan",
+  migrations: migrations.map((migration) => ({ hash: migration.hash, name: migration.name })),
+  ok: true,
+  operation,
+  remoteStateVerified: false,
+});
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   target,

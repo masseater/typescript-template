@@ -12,7 +12,7 @@ const handlers = WikiRpcs.toLayer({
   readWikiPage: ({ url }: Readonly<{ url: string }>) => {
     const page = source.getPageByUrl(url);
     return page === undefined
-      ? Effect.fail(new WikiPageNotFound({ url }))
+      ? Effect.fail(WikiPageNotFound.make({ url }))
       : Effect.promise(() => wikiLlms.page(page));
   },
   searchWiki: ({ query }: Readonly<{ query: string }>) =>

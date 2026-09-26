@@ -33,19 +33,17 @@ const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifest
   },
 );
 
-const applicationNames = (workspaces: readonly WorkspaceManifest[]): string[] => {
-  return workspaces.flatMap(({ area, manifest }) => {
+const applicationNames = (workspaces: readonly WorkspaceManifest[]): string[] =>
+  workspaces.flatMap(({ area, manifest }) => {
     const name = field(manifest, "name");
     return area === "apps" && typeof name === "string" ? [name] : [];
   });
-};
 
-const declaredDependencies = (manifest: unknown): string[] => {
-  return dependencyFields.flatMap((key) => {
+const declaredDependencies = (manifest: unknown): string[] =>
+  dependencyFields.flatMap((key) => {
     const value = field(manifest, key);
     return typeof value === "object" && value !== null ? Object.keys(value) : [];
   });
-};
 
 const applicationDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   const applications = applicationNames(workspaces);
@@ -59,8 +57,8 @@ const applicationDependencyViolations = (workspaces: readonly WorkspaceManifest[
   );
 };
 
-const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
-  return workspaces.flatMap(({ file, manifest }) =>
+const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] =>
+  workspaces.flatMap(({ file, manifest }) =>
     declaredDependencies(manifest).flatMap((dependency) => {
       const replacement = replacementFor(dependency);
       return replacement === undefined
@@ -68,7 +66,6 @@ const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): 
         : [`${file}: ${dependency} は置き換え済みです。${replacementMessage(replacement)}`];
     }),
   );
-};
 
 const rootOnlyPackages: Readonly<
   Record<string, { readonly owners: readonly string[]; readonly runner: string }>
@@ -79,10 +76,8 @@ const developmentOnlyPackages: Readonly<Record<string, string>> = {
   wrangler: "ローカル DB の構築とマイグレーション",
 };
 
-const developmentOnlyDependencyViolations = (
-  workspaces: readonly WorkspaceManifest[],
-): string[] => {
-  return workspaces.flatMap(({ area, file, manifest }) => {
+const developmentOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] =>
+  workspaces.flatMap(({ area, file, manifest }) => {
     if (area !== "apps" && area !== "libs") {
       return [];
     }
@@ -100,10 +95,9 @@ const developmentOnlyDependencyViolations = (
           `${file}: ${dependency} は ${developmentOnlyPackages[dependency]}用です。配布物側の dependencies に置かず、ローカル実行を所有するパッケージへ移してください。`,
       );
   });
-};
 
-const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
-  return workspaces.flatMap(({ area, file, manifest }) => {
+const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[]): string[] =>
+  workspaces.flatMap(({ area, file, manifest }) => {
     if (area !== "libs") {
       return [];
     }
@@ -120,10 +114,9 @@ const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[])
       `${file}: ${typeof name === "string" ? name : file} は取り込み面（exports）とコマンド面（bin）を同時に宣言しています。コマンド入口は tools/ 側の所有パッケージへ移してください。`,
     ];
   });
-};
 
-const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
-  return workspaces.flatMap(({ file, manifest }) => {
+const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] =>
+  workspaces.flatMap(({ file, manifest }) => {
     const declared = declaredDependencies(manifest);
     return Object.entries(rootOnlyPackages)
       .filter(([dependency, { owners }]) => declared.includes(dependency) && !owners.includes(file))
@@ -132,7 +125,6 @@ const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]):
           `${file}: ${dependency} はリポジトリ全体の検査なので ${owners.join(" / ")} だけが宣言します。${runner} から実行してください。`,
       );
   });
-};
 
 export {
   applicationDependencyViolations,

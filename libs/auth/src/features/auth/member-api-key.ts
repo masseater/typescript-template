@@ -27,17 +27,17 @@ const apiKeyFromHeaders = (headers: Headers): string | undefined => {
 const apiKeyOwnerId = Effect.fn("apiKeyOwnerId")(function* apiKeyOwnerId(presented: string) {
   const { instance } = yield* Auth;
   const verifyApiKey = yield* Effect.fromNullishOr(instance.api.verifyApiKey).pipe(
-    Effect.mapError(() => new SessionRequired()),
+    Effect.mapError(() => SessionRequired.make()),
   );
   const verified = yield* Effect.tryPromise({
-    catch: () => new SessionRequired(),
+    catch: () => SessionRequired.make(),
     try: () =>
       verifyApiKey({
         body: { key: presented, permissions: memberApiKeyReadPermissions },
       }),
   });
   if (!verified.valid || verified.key === null) {
-    return yield* new SessionRequired();
+    return yield* SessionRequired.make();
   }
   return verified.key.referenceId;
 });
@@ -47,7 +47,7 @@ const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMembe
 ) {
   const presented = apiKeyFromHeaders(headers);
   if (presented === undefined) {
-    return yield* new SessionRequired();
+    return yield* SessionRequired.make();
   }
   const { audience } = yield* Auth;
   const owner = (yield* findUser(yield* apiKeyOwnerId(presented))) ?? undefined;
@@ -85,7 +85,7 @@ const verifySessionWriter = Effect.fn("verifySessionWriter")(function* verifySes
   allowEnrollment?: boolean,
 ) {
   if (apiKeyFromHeaders(headers) !== undefined) {
-    return yield* new ApiKeyWriteForbidden();
+    return yield* ApiKeyWriteForbidden.make();
   }
   return yield* verifySession(headers, allowEnrollment);
 });

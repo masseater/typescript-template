@@ -28,7 +28,7 @@ const protectLastEditor = <Value, Requirements>(
 ): Effect.Effect<Value, DatabaseFailure | LastEditorRequired, Requirements> =>
   effect.pipe(
     Effect.mapError((failure) =>
-      mentionsLastEditor(failure.cause) ? new LastEditorRequired() : failure,
+      mentionsLastEditor(failure.cause) ? LastEditorRequired.make() : failure,
     ),
   );
 
@@ -108,7 +108,7 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
     }).pipe(protectLastEditor);
     const [changed] = changedStaff;
     if (!changed) {
-      return yield* new TargetUnavailable();
+      return yield* TargetUnavailable.make();
     }
     return { id: changed.id, permission: staffPermissionOf(changed.permission) };
   },
@@ -120,7 +120,7 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
 ) {
   const actor = yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
   if (actor.user.id === staffId) {
-    return yield* new TargetUnavailable();
+    return yield* TargetUnavailable.make();
   }
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [, removedStaff] = yield* query((database) => {
@@ -139,7 +139,7 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
   }).pipe(protectLastEditor);
   const [removed] = removedStaff;
   if (!removed) {
-    return yield* new TargetUnavailable();
+    return yield* TargetUnavailable.make();
   }
   return removed;
 });

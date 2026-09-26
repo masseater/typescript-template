@@ -40,7 +40,7 @@ const cruiseModules = (
 ): Effect.Effect<ICruiseResult, CruiseFailed | CruiseReportedText> =>
   Effect.gen(function* cruiseModules() {
     const { output } = yield* Effect.tryPromise({
-      catch: (cause) => new CruiseFailed({ cause }),
+      catch: (cause) => CruiseFailed.make({ cause }),
       try: () =>
         cruise(
           [...directories],
@@ -54,7 +54,7 @@ const cruiseModules = (
         ),
     });
     if (typeof output === "string") {
-      return yield* new CruiseReportedText();
+      return yield* CruiseReportedText.make();
     }
     return output;
   });
