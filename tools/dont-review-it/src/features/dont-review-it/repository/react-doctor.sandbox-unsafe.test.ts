@@ -74,8 +74,8 @@ const aiOperableDoctorRules = [
   "react-doctor/base-ui-dialog-popup-requires-title",
 ] as const;
 
-const compilerOptions: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../tsconfig.base.json",
+const workspaceTsconfigs: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../../../{apps,libs}/*/tsconfig.json",
   { eager: true, import: "default" },
 );
 
@@ -199,8 +199,19 @@ describe("react-doctor integration", () => {
 
   it("leaves React in scope off only while the automatic JSX runtime is on", () => {
     expect.hasAssertions();
-    const base = compilerOptions["../../../../../../tsconfig.base.json"];
-    expect(field(field(base, "compilerOptions"), "jsx")).toStrictEqual("react-jsx");
+    const doctorWorkspaces = Object.keys(workspaceConfigs).map((file) =>
+      file.replace(/\/doctor\.config\.json$/u, ""),
+    );
+    expect(doctorWorkspaces).not.toStrictEqual([]);
+    expect(
+      doctorWorkspaces.filter(
+        (workspace) =>
+          field(
+            field(workspaceTsconfigs[`${workspace}/tsconfig.json`], "compilerOptions"),
+            "jsx",
+          ) !== "react-jsx",
+      ),
+    ).toStrictEqual([]);
     expect(field(rootRules(), "react-doctor/react-in-jsx-scope")).toStrictEqual("off");
   });
 
