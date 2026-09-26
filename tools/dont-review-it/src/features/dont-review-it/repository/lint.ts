@@ -502,9 +502,7 @@ const apiBoundaryFiles = [
 ];
 
 const authUiServerReadsAwaitingQuery = [
-  "libs/auth-ui/src/features/auth-ui/email-change-confirmation.tsx",
   "libs/auth-ui/src/features/auth-ui/email-change-verification.tsx",
-  "libs/auth-ui/src/features/auth-ui/email-verification.tsx",
   "libs/auth-ui/src/features/auth-ui/use-passkeys.ts",
   "libs/auth-ui/src/features/auth-ui/use-session.ts",
 ];

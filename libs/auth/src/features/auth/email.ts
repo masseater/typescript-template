@@ -159,7 +159,7 @@ export const sendEmailChangeVerification = (
     linked: verification,
     settings,
     template: {
-      lead: "このメールアドレスへの変更が申請されました。次のリンクを開くと変更が確定します。心当たりがない場合は、このメールを破棄してください。",
+      lead: "このメールアドレスへの変更が申請されました。次のリンクを開き、確定のボタンを押すと変更が確定します。心当たりがない場合は、このメールを破棄してください。",
       span: "email.email_change_verification",
       subject: mailSubjects.emailChangeVerification,
     },
