@@ -36,6 +36,14 @@ Put the specification directory in `test.coverage.exclude`, and secure the cover
 Code this rule rejects.
 
 ```ts
+// coverage handed over as a value that is not the owner is reported
+// in vite.config.ts
+import { coverage } from "./shared.ts";
+export default { test: { coverage } };
+
+```
+
+```ts
 // a coverage block without an exclusion list is reported
 // in vite.config.ts
 import { defineConfig } from "vite-plus";
@@ -52,6 +60,15 @@ export default defineConfig({ test: { coverage: { exclude: ["dist/**"], threshol
 ```
 
 Code this rule accepts.
+
+```ts
+// coverage taken from the configured owner passes
+// in vite.config.ts
+import { toolTest } from "@repo/vite-config";
+import { defineConfig } from "vite-plus";
+export default defineConfig({ test: { ...toolTest, testTimeout: 60000 } });
+
+```
 
 ```ts
 // a coverage block leaving the specification directory out passes

@@ -15,6 +15,15 @@ import {
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
 
+const sharedTestConfig = [{ source: "@repo/vite-config", name: "toolTest" }];
+
+const workspaceConfigsOutsideTestProjects = [
+  "apps/*/vite.config.ts",
+  "infra/*/vite.config.ts",
+  "libs/*/vite.config.ts",
+  "tools/load/vite.config.ts",
+];
+
 const softPresetPackages = [
   "apps/service-admin/**",
   "apps/service-member/**",
@@ -61,7 +70,6 @@ const softPresetRules = Object.fromEntries(
     "dont-review-it/no-shared-double-state--reset-doubles-between-tests",
     "dont-review-it/no-single-use-local-type--inline-at-the-use-site",
     "dont-review-it/no-spec-file-helper-function--inline-or-use-fixture",
-    "dont-review-it/no-standalone-tsconfig--extend-shared-preset",
     "dont-review-it/no-sut-independent-assertion--assert-fixture-subject",
     "dont-review-it/no-test-context-escape--destructure-fixtures-by-name",
     "dont-review-it/no-twin-declaration--merge-into-one-owner",
@@ -736,6 +744,15 @@ const lintOptions = {
       },
     },
     {
+      files: workspaceConfigsOutsideTestProjects,
+      rules: {
+        "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": LINT_SEVERITY.OFF,
+        "dont-review-it/no-shared-double-state--reset-doubles-between-tests": LINT_SEVERITY.OFF,
+        "dont-review-it/require-spec-directory-outside-coverage--exclude-it-from-the-measurement":
+          LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: softPresetPackages,
       rules: softPresetRules,
     },
@@ -756,7 +773,15 @@ const lintOptions = {
     "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }],
     "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
       LINT_SEVERITY.ERROR,
-      { branches: 50, functions: 50, lines: 50, statements: 50 },
+      { branches: 50, functions: 50, lines: 50, statements: 50, configOwners: sharedTestConfig },
+    ],
+    "dont-review-it/no-shared-double-state--reset-doubles-between-tests": [
+      LINT_SEVERITY.ERROR,
+      { configOwners: sharedTestConfig },
+    ],
+    "dont-review-it/require-spec-directory-outside-coverage--exclude-it-from-the-measurement": [
+      LINT_SEVERITY.ERROR,
+      { configOwners: sharedTestConfig },
     ],
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
