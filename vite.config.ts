@@ -52,7 +52,6 @@ const rootOwnedPaths = [
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "renovate.json",
-  "tsconfig.base.json",
   "tsconfig.json",
   "vite.config.ts",
   "vitest.mutation.config.ts",

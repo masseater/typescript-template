@@ -1,8 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repo/dont-review-it/tsconfig/app.json",
   "compilerOptions": {
-    "lib": ["ES2025", "DOM"],
-    "types": ["vite-plus/client", "@cloudflare/workers-types", "node"]
+    "types": ["vite-plus/client", "@cloudflare/workers-types", "node"],
+    "jsx": "react-jsx",
+    "noPropertyAccessFromIndexSignature": true
   },
   "include": [
     "src/**/*.ts",

@@ -61,7 +61,6 @@ const softPresetRules = Object.fromEntries(
     "dont-review-it/no-shared-double-state--reset-doubles-between-tests",
     "dont-review-it/no-single-use-local-type--inline-at-the-use-site",
     "dont-review-it/no-spec-file-helper-function--inline-or-use-fixture",
-    "dont-review-it/no-standalone-tsconfig--extend-shared-preset",
     "dont-review-it/no-sut-independent-assertion--assert-fixture-subject",
     "dont-review-it/no-test-context-escape--destructure-fixtures-by-name",
     "dont-review-it/no-twin-declaration--merge-into-one-owner",
