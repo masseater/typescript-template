@@ -30,7 +30,7 @@ function RecordingView({
   return (
     <Page title={title}>
       <StatusMessage
-        variant={status === RECORDING_STATUS.failed ? STATUS_VARIANT.failure : STATUS_VARIANT.empty}
+        variant={status === RECORDING_STATUS.transcriptionFailed ? STATUS_VARIANT.failure : STATUS_VARIANT.empty}
       >
         {statusLabels[status]}
         {durationMs === null ? "" : `（${clockOf(durationMs)}）`}
@@ -40,7 +40,7 @@ function RecordingView({
         <Button type="button" disabled={actions.blocked} action={onRefresh}>
           状態を更新する
         </Button>
-        {status === RECORDING_STATUS.failed ? (
+        {status === RECORDING_STATUS.transcriptionFailed ? (
           <Button
             type="button"
             variant="primary"

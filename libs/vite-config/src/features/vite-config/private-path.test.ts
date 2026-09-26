@@ -7,7 +7,7 @@ const repositoryRoot = "/repo";
 
 describe("privatePath", () => {
   const it = test
-    .extend("foreignApplications", () => applicationsExcept(APPLICATION.user))
+    .extend("foreignApplications", () => applicationsExcept(APPLICATION.serviceMember))
     .extend("privateCandidates", () =>
       [
         "infra/cloudflare/src/features/cloudflare/cli.ts",
@@ -20,7 +20,7 @@ describe("privatePath", () => {
         "certs/app.pem",
       ].map((candidatePath) =>
         privatePath({
-          application: APPLICATION.user,
+          application: APPLICATION.serviceMember,
           candidatePath: `${repositoryRoot}/${candidatePath}`,
           repositoryRoot,
         }),
@@ -28,14 +28,14 @@ describe("privatePath", () => {
     )
     .extend("ownApplicationEntry", () =>
       privatePath({
-        application: APPLICATION.user,
+        application: APPLICATION.serviceMember,
         candidatePath: `${repositoryRoot}/apps/service-member/src/entry.ts`,
         repositoryRoot,
       }),
     )
     .extend("adminDatabaseModule", () =>
       privatePath({
-        application: APPLICATION.admin,
+        application: APPLICATION.serviceAdmin,
         candidatePath: `${repositoryRoot}/libs/db/src/features/db/admin.ts`,
         repositoryRoot,
       }),
@@ -44,7 +44,7 @@ describe("privatePath", () => {
       ["content/docs/index.md", "src/shared/server-api/mcp.ts"].map((candidatePath) =>
         privatePath({
           application: wikiWorker,
-          candidatePath: `${repositoryRoot}/apps/${APPLICATION.wiki}/${candidatePath}`,
+          candidatePath: `${repositoryRoot}/apps/${APPLICATION.internalDashboard}/${candidatePath}`,
           repositoryRoot,
         }),
       ),
@@ -53,7 +53,7 @@ describe("privatePath", () => {
     .extend("readmeFile", () => isSecretFileName("readme.md"));
 
   it("keeps the other applications off the member surface", ({ foreignApplications }) => {
-    expect(foreignApplications).toStrictEqual([APPLICATION.admin, APPLICATION.wiki, wikiWorker]);
+    expect(foreignApplications).toStrictEqual([APPLICATION.serviceAdmin, APPLICATION.internalDashboard, wikiWorker]);
   });
 
   it("keeps infra, tools, secrets, and other apps off the member surface", ({

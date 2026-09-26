@@ -47,14 +47,14 @@ function CreateGroupForm(): ReactElement {
             type="button"
             variant="primary"
             disabled={form.blocked}
-            onClick={() => form.submit(GROUP_JOIN_POLICY.invite)}
+            onClick={() => form.submit(GROUP_JOIN_POLICY.inviteOnly)}
           >
             招待制で作る
           </Button>
           <Button
             type="button"
             disabled={form.blocked}
-            onClick={() => form.submit(GROUP_JOIN_POLICY.open)}
+            onClick={() => form.submit(GROUP_JOIN_POLICY.openJoin)}
           >
             自由参加で作る
           </Button>

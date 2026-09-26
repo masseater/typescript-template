@@ -20,7 +20,7 @@ const secretFileName = /^(?:\.env.*|\.dev\.vars.*|.*\.(?:pem|key))$/u;
 const isSecretFileName = (fileName: string): boolean => secretFileName.test(fileName);
 
 const privateAdminPath = (slashedPath: string, application: BuildTarget): boolean =>
-  application !== APPLICATION.admin &&
+  application !== APPLICATION.serviceAdmin &&
   (/(?:^|\/)libs\/db\/src\/features\/db\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
     /@repo\/db\/admin(?:\/|$)/u.test(slashedPath));
 

@@ -98,7 +98,7 @@ const adminActor = (
 ): Omit<AuditEntry, "targetId"> => ({
   action,
   actorId: actor.user.id,
-  actorKind: ROLE.administrator,
+  actorKind: ROLE.admin,
 });
 
 const adminEntry = (
@@ -247,7 +247,7 @@ export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId
       .from(user)
       .where(
         and(
-          eq(user.role, ROLE.administrator),
+          eq(user.role, ROLE.admin),
           liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.owner, sessionId }),
         ),
       )
@@ -265,7 +265,7 @@ export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft:
   const actor = yield* requireAdmin(draft.sessionId, ADMIN_PERMISSION.owner);
   const channel = draft.channel;
   return yield* issueInvite({
-    audience: APPLICATION.admin,
+    audience: APPLICATION.serviceAdmin,
     audit: {
       ...adminActor(actor, AUDIT_ACTION.adminInvited),
       ...(channel === undefined ? {} : { channel }),
@@ -295,7 +295,7 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
       const transition = database
         .update(user)
         .set({ permission, updatedAt })
-        .where(and(eq(user.id, adminId), eq(user.role, ROLE.administrator), live))
+        .where(and(eq(user.id, adminId), eq(user.role, ROLE.admin), live))
         .returning({ id: user.id, permission: user.permission });
       return database.batch([audit, transition] as const);
     }).pipe(protectLastAdmin);
@@ -336,7 +336,7 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
     const transition = database
       .update(user)
       .set({ accountState, updatedAt })
-      .where(and(eq(user.id, adminId), eq(user.role, ROLE.administrator), live))
+      .where(and(eq(user.id, adminId), eq(user.role, ROLE.admin), live))
       .returning({ accountState: user.accountState, id: user.id });
     return database.batch([audit, transition] as const);
   }).pipe(protectLastAdmin);

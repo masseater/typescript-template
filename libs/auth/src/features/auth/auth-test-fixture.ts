@@ -70,9 +70,9 @@ const authFor = (
 const authApps = Layer.effect(
   AuthApps,
   Effect.all({
-    [APPLICATION.admin]: authFor(APPLICATION.admin),
-    [APPLICATION.user]: authFor(APPLICATION.user),
-    [APPLICATION.wiki]: authFor(APPLICATION.wiki),
+    [APPLICATION.serviceAdmin]: authFor(APPLICATION.serviceAdmin),
+    [APPLICATION.serviceMember]: authFor(APPLICATION.serviceMember),
+    [APPLICATION.internalDashboard]: authFor(APPLICATION.internalDashboard),
   }),
 ).pipe(Layer.provide(sequentialIdentifiers));
 
@@ -141,7 +141,7 @@ const clientOf = Effect.fn("clientOf")(function* clientOf(
 });
 
 const register = Effect.fn("register")(function* register(email: string) {
-  const client = yield* clientOf(APPLICATION.user);
+  const client = yield* clientOf(APPLICATION.serviceMember);
   yield* requireStatus(httpStatus.ok, {
     client,
     endpoint: "/sign-up/email",
@@ -151,7 +151,7 @@ const register = Effect.fn("register")(function* register(email: string) {
 });
 
 const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string) {
-  const member = (yield* AuthApps)[APPLICATION.user];
+  const member = (yield* AuthApps)[APPLICATION.serviceMember];
   const link = yield* verificationLink(email);
   const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
   yield* Effect.promise(() => member.instance.api.verifyEmail({ query: { token } }));
@@ -234,7 +234,7 @@ const spendSignInWindow = Effect.fn("spendSignInWindow")(function* spendSignInWi
   readonly network: Readonly<Record<string, string>>;
 }) {
   yield* registerVerified(email);
-  const client = yield* clientOf(APPLICATION.user, network);
+  const client = yield* clientOf(APPLICATION.serviceMember, network);
   return yield* Effect.replicateEffect(signIn(client, email), SIGN_IN_WINDOW);
 });
 
@@ -297,7 +297,7 @@ const audienceInputs = Effect.fn("audienceInputs")(function* audienceInputs(audi
 });
 
 const topPermission: Readonly<Record<Role, AccountPermission | null>> = {
-  [ROLE.administrator]: ADMIN_PERMISSION.owner,
+  [ROLE.admin]: ADMIN_PERMISSION.owner,
   [ROLE.member]: null,
   [ROLE.staff]: STAFF_PERMISSION.editor,
 };

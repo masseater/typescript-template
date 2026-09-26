@@ -34,13 +34,13 @@ describe("withdrawMember", () => {
       Effect.runPromise(
         Effect.gen(function* leaveMember() {
           yield* addUser({ userId: "leaver" });
-          yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
+          yield* addSession({ audience: APPLICATION.serviceMember, userId: "leaver" });
           yield* addOAuthGrant("leaver");
-          const sessionId = yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
+          const sessionId = yield* addSession({ audience: APPLICATION.serviceMember, userId: "leaver" });
           yield* withdrawMember("leaver", { immediate: false, removePhotos: keepPhotos });
           return {
             grants: yield* oauthGrantCounts("leaver"),
-            liveSession: yield* getSessionSecurity(sessionId, APPLICATION.user),
+            liveSession: yield* getSessionSecurity(sessionId, APPLICATION.serviceMember),
           };
         }).pipe(Effect.provide(TestDatabase)),
       ));
@@ -58,9 +58,9 @@ describe("withdrawMember", () => {
       Effect.runPromise(
         Effect.gen(function* leaveDirectory() {
           yield* addUser({ userId: "leaver" });
-          yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
+          yield* addSession({ audience: APPLICATION.serviceMember, userId: "leaver" });
           yield* addOAuthGrant("leaver");
-          yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
+          yield* addSession({ audience: APPLICATION.serviceMember, userId: "leaver" });
           yield* withdrawMember("leaver", { immediate: false, removePhotos: keepPhotos });
           return {
             member: yield* findUser("leaver"),
@@ -383,7 +383,7 @@ describe("liveSessionCount", () => {
       Effect.runPromise(
         Effect.gen(function* countSessions() {
           yield* addUser({ role: ROLE.member, userId: "leaver" });
-          yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
+          yield* addSession({ audience: APPLICATION.serviceMember, userId: "leaver" });
           yield* withdrawMember("leaver", { immediate: false, removePhotos: keepPhotos });
           return yield* liveSessionCount("leaver");
         }).pipe(Effect.provide(TestDatabase)),

@@ -48,7 +48,7 @@ const routes = {
   "/api/jobs": "jobs-api",
   "/api/jobs/*": "jobs-api",
 };
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 const password = "test-password-safe-123";
 const decodeAccepted = Schema.decodeUnknownEffect(Schema.Struct({ id: Schema.String }));
@@ -57,7 +57,7 @@ type App = ReturnType<typeof jobsApp>;
 
 function jobsApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes })),
+    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.serviceMember, routes })),
   );
   const api = apiRoutes(runtime, reporting);
   return createApi(apiRoot).use(accountApi(api)).use(jobsApi(api));

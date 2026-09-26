@@ -10,7 +10,7 @@ class Slow extends Context.Service<Slow, { readonly value: string }>()("Slow") {
 const buildTime = "300 millis";
 const slowBuild = Effect.sleep(buildTime).pipe(Effect.as({ value: "built" }));
 const telemetry = Layer.orDie(
-  Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: APPLICATION.user }),
+  Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: APPLICATION.serviceMember }),
 );
 const runtime = workerRuntime(() => Layer.merge(Layer.effect(Slow, slowBuild), telemetry));
 
@@ -20,7 +20,7 @@ const respondBuilt = Effect.gen(function* respond() {
 });
 
 const coldStartWorker = serveWorker({
-  reporting: { service: APPLICATION.user },
+  reporting: { service: APPLICATION.serviceMember },
   route: () => respondBuilt,
   runtime,
 });

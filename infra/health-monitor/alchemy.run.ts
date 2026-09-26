@@ -13,9 +13,9 @@ export default prefixedStack(
     name: healthMonitorWorker.name,
     variables: (config: SharedConfig) =>
       Effect.succeed({
-        [healthOriginKey[APPLICATION.admin]]: config.origins[APPLICATION.admin],
-        [healthOriginKey[APPLICATION.user]]: config.origins[APPLICATION.user],
-        [healthOriginKey[APPLICATION.wiki]]: config.origins[APPLICATION.wiki],
+        [healthOriginKey[APPLICATION.serviceAdmin]]: config.origins[APPLICATION.serviceAdmin],
+        [healthOriginKey[APPLICATION.serviceMember]]: config.origins[APPLICATION.serviceMember],
+        [healthOriginKey[APPLICATION.internalDashboard]]: config.origins[APPLICATION.internalDashboard],
       }),
   }),
 );

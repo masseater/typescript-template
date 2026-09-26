@@ -33,9 +33,9 @@ const tokenId = "a".repeat(32);
 const databaseId = "22222222-2222-4222-8222-222222222222";
 const hosts = Object.values(config.origins).map((origin) => new URL(origin).hostname);
 const workers = [
-  APPLICATION.user,
-  APPLICATION.admin,
-  APPLICATION.wiki,
+  APPLICATION.serviceMember,
+  APPLICATION.serviceAdmin,
+  APPLICATION.internalDashboard,
   "budget",
   "errors",
   "health",
@@ -58,9 +58,9 @@ function row(resourceType: string, attr: Readonly<Record<string, string>>): Crea
 }
 
 const deployedUnits = [
-  [APPLICATION.user, APPLICATION.user],
-  [APPLICATION.admin, APPLICATION.admin],
-  [APPLICATION.wiki, APPLICATION.wiki],
+  [APPLICATION.serviceMember, APPLICATION.serviceMember],
+  [APPLICATION.serviceAdmin, APPLICATION.serviceAdmin],
+  [APPLICATION.internalDashboard, APPLICATION.internalDashboard],
   ["budget-monitor", "budget"],
   ["error-monitor", "errors"],
   ["health-monitor", "health"],

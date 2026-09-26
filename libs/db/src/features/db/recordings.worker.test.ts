@@ -72,7 +72,7 @@ describe("a transcribed recording", () => {
         { label: 1, person: null },
       ],
       startedKey: "recordings/meeting",
-      status: RECORDING_STATUS.done,
+      status: RECORDING_STATUS.transcribed,
     });
   });
 });

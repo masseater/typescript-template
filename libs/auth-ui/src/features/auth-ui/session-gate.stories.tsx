@@ -27,7 +27,7 @@ const weakAdministrator: SessionView = {
     id: "user-a",
     name: "A",
     permission: null,
-    role: ROLE.administrator,
+    role: ROLE.admin,
     twoFactorEnabled: false,
   },
 };
@@ -107,7 +107,7 @@ export const WikiReloadsWeakSessionIntoSecurity = meta.story({
 });
 
 const adminWeak = redirectingVisit(
-  <SessionGate role={ROLE.administrator}>{signedInPage}</SessionGate>,
+  <SessionGate role={ROLE.admin}>{signedInPage}</SessionGate>,
   { from: "/users", landing: "/security", to: "/security" },
 );
 
@@ -149,7 +149,7 @@ export const WikiReloadsSignedOutVisitorIntoLogin = meta.story({
 });
 
 const adminSignedOut = redirectingVisit(
-  <SessionGate role={ROLE.administrator}>{signedInPage}</SessionGate>,
+  <SessionGate role={ROLE.admin}>{signedInPage}</SessionGate>,
   { from: "/users", landing: "/login?redirect=%2Fusers", to: "/login?redirect=%2Fusers" },
 );
 
@@ -177,7 +177,7 @@ export const DashboardNavigatesSignedOutVisitorToLoginInApp = meta.story({
 
 const adminOnSecurity = gatedVisit(
   "/security",
-  <SessionGate role={ROLE.administrator}>{signedInPage}</SessionGate>,
+  <SessionGate role={ROLE.admin}>{signedInPage}</SessionGate>,
 );
 
 export const AdminKeepsWeakSessionOnTheSecurityPage = meta.story({

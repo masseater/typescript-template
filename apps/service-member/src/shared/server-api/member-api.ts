@@ -49,7 +49,7 @@ function memberApi(
   >,
 ) {
   return createApi(apiRoot)
-    .use(apiDocs(APPLICATION.user))
+    .use(apiDocs(APPLICATION.serviceMember))
     .use(accountApi(api))
     .use(contactApi(api))
     .use(agreementApi(api))

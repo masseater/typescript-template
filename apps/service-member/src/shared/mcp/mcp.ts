@@ -67,7 +67,7 @@ const requireMemberSession = Effect.fn("requireMemberSession")(function* require
   );
   if (
     row === undefined ||
-    row.audience !== APPLICATION.user ||
+    row.audience !== APPLICATION.serviceMember ||
     row.expiresAt.getTime() <= now ||
     row.sessionSecurityVersion !== row.securityVersion ||
     row.role !== ROLE.member ||
@@ -82,7 +82,7 @@ const requireMemberSession = Effect.fn("requireMemberSession")(function* require
 const denied = (scope: string): ToolFailure => toolFailure(`permission_required:${scope}`);
 
 function createServer(actor: MemberMcpActor, runMember: RunApp): McpServer {
-  const server = new McpServer({ name: APPLICATION.user, version: mcpVersion });
+  const server = new McpServer({ name: APPLICATION.serviceMember, version: mcpVersion });
   const run = toolRunner(runMember, failureCodes);
   const signedInMember = requireMemberSession(actor);
 

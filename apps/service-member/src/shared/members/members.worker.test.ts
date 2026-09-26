@@ -47,7 +47,7 @@ const community = Effect.gen(function* community() {
   yield* addUser({ id: "viewer" });
   yield* addUser({ id: "active" });
   yield* addUser({ accountState: ACCOUNT_STATE.suspended, id: "suspended" });
-  yield* addUser({ id: "operator", role: ROLE.administrator });
+  yield* addUser({ id: "operator", role: ROLE.admin });
   yield* addUser({ id: "editor", role: ROLE.staff });
   yield* followMember("viewer", "active");
   yield* followMember("viewer", "suspended");

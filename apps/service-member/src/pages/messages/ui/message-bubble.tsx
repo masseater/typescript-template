@@ -18,7 +18,7 @@ const peerBubble = {
 };
 
 function reportSubject(kind: ConversationKind): ReportSubject {
-  return kind === "group" ? REPORT_SUBJECT.groupMessage : REPORT_SUBJECT.message;
+  return kind === "group" ? REPORT_SUBJECT.groupMessage : REPORT_SUBJECT.directMessage;
 }
 
 function SenderName({ message }: Readonly<{ message: Message }>): ReactElement | undefined {

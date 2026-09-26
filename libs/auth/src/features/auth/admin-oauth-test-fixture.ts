@@ -13,7 +13,7 @@ import {
 import { origins } from "./browser-client-test-fixture.ts";
 import { startClientAuthorization } from "./oauth-client-test-fixture.ts";
 
-const adminOrigin = origins[APPLICATION.admin];
+const adminOrigin = origins[APPLICATION.serviceAdmin];
 const adminRedirectUri = "http://127.0.0.1:43124/callback";
 
 const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
@@ -22,11 +22,11 @@ const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
 ) {
   yield* bootstrapVerifiedAdmin("keeper@example.com");
   yield* registerVerified(email);
-  yield* assignRoleByEmail(email, ROLE.administrator);
+  yield* assignRoleByEmail(email, ROLE.admin);
   if (permission !== ADMIN_PERMISSION.owner) {
     yield* assignAdminPermissionByEmail(email, permission);
   }
-  const client = yield* signInAs(APPLICATION.admin, email);
+  const client = yield* signInAs(APPLICATION.serviceAdmin, email);
   yield* enableTotp(client);
   return client;
 });
@@ -34,7 +34,7 @@ const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
 const startAdminAuthorization = Effect.fn("startAdminAuthorization")(
   function* startAdminAuthorization() {
     return yield* startClientAuthorization({
-      application: APPLICATION.admin,
+      application: APPLICATION.serviceAdmin,
       clientName: "Test admin MCP client",
       redirectUri: adminRedirectUri,
       scope: "admin:read offline_access",

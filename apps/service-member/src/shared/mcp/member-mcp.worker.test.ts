@@ -23,11 +23,11 @@ import {
 
 const { user } = schema;
 const secretBody = "MCP_SECRET_BODY_NOT_FOR_OTHER_TOOLS";
-const reporting = { service: APPLICATION.user } as const;
+const reporting = { service: APPLICATION.serviceMember } as const;
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
-  const member = (yield* AuthApps)[APPLICATION.user];
+  const member = (yield* AuthApps)[APPLICATION.serviceMember];
   const handler = member.instance.handler;
   if (typeof handler !== "function") {
     return yield* Effect.die("MEMBER_HANDLER_UNAVAILABLE");
@@ -47,13 +47,13 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
   fetchMcp: FetchMcp;
   stop: Effect.Effect<void>;
 } {
-  const memberAuth = Context.get(auth, AuthApps)[APPLICATION.user];
+  const memberAuth = Context.get(auth, AuthApps)[APPLICATION.serviceMember];
   const runtime = workerRuntime(() =>
     Layer.orDie(
       Layer.merge(
         Layer.succeed(Auth, memberAuth),
         appLayer({
-          audience: APPLICATION.user,
+          audience: APPLICATION.serviceMember,
           env: appEnvironment({ APP_ORIGIN: memberOrigin, AUTH_SECRET: authTestSecret }),
           routes,
         }),

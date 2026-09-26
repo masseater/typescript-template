@@ -35,7 +35,7 @@ export default defineProject({
     elysiaWorkerdJit(),
     cloudflareTest({
       additionalExports: {
-        [coreEntrypoints[APPLICATION.wiki]]: "WorkerEntrypoint",
+        [coreEntrypoints[APPLICATION.internalDashboard]]: "WorkerEntrypoint",
         [jobsWorkflowClass]: "WorkflowEntrypoint",
         [mailRecorder]: "WorkerEntrypoint",
       },
@@ -62,7 +62,7 @@ export default defineProject({
         queueProducers: { [jobsQueueBinding]: jobsQueueName },
         r2Buckets: { [localFileBucket.binding]: localFileBucket.bucket_name },
         serviceBindings: {
-          CORE: { entrypoint: coreEntrypoints[APPLICATION.wiki], name: kCurrentWorker },
+          CORE: { entrypoint: coreEntrypoints[APPLICATION.internalDashboard], name: kCurrentWorker },
           EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker },
         },
         workflows: {

@@ -33,7 +33,7 @@ const greeting = secretBody;
 const reply = "こちらこそ。";
 
 const permissionFor = (role: Role): AccountPermission | undefined => {
-  if (role === ROLE.administrator) {
+  if (role === ROLE.admin) {
     return ADMIN_PERMISSION.viewer;
   }
   if (role === ROLE.staff) {
@@ -106,7 +106,7 @@ const startConversation = Effect.fn("startConversation")(function* startConversa
 describe("who may use direct messages", () => {
   it.effect.each([
     { emailVerified: false, role: ROLE.member, userId: "unverified" },
-    { emailVerified: true, role: ROLE.administrator, userId: "operator" },
+    { emailVerified: true, role: ROLE.admin, userId: "operator" },
     { emailVerified: true, role: ROLE.staff, userId: "staff" },
   ])("refuses $userId for reading and writing", ({ emailVerified, role, userId }) =>
     Effect.gen(function* program() {
@@ -229,7 +229,7 @@ describe("conversation access", () => {
     Effect.gen(function* program() {
       yield* addUser({ userId: "paid" });
       yield* addUser({ userId: "free" });
-      yield* addUser({ role: ROLE.administrator, userId: "operator" });
+      yield* addUser({ role: ROLE.admin, userId: "operator" });
       yield* addUser({ role: ROLE.staff, userId: "staff" });
       yield* makePaid("paid");
       const opened = yield* startConversation("paid", "free", greeting);

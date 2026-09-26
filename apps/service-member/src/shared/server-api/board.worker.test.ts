@@ -52,7 +52,7 @@ const openThread = Effect.fn("openThread")(function* openThread(authorId: string
 describe("who may use the board", () => {
   it.effect.each([
     { emailVerified: false, role: ROLE.member, userId: "unverified" },
-    { emailVerified: true, role: ROLE.administrator, userId: "operator" },
+    { emailVerified: true, role: ROLE.admin, userId: "operator" },
   ])("refuses $userId for reading and writing", ({ emailVerified, role, userId }) =>
     Effect.gen(function* program() {
       yield* addUser({ emailVerified, role, userId });

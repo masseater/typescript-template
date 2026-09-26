@@ -130,7 +130,7 @@ type ReportSnapshot = Readonly<{
 const messageSnapshot = Effect.fn("messageSnapshot")(function* messageSnapshot(reported: {
   readonly messageId: string;
   readonly reporterId: string;
-  readonly subjectKind: typeof REPORT_SUBJECT.message | typeof REPORT_SUBJECT.groupMessage;
+  readonly subjectKind: typeof REPORT_SUBJECT.directMessage | typeof REPORT_SUBJECT.groupMessage;
 }) {
   const { messageId, reporterId, subjectKind } = reported;
   const conversationKind =

@@ -212,7 +212,7 @@ describe("bootstrapDatabase", () => {
               updatedAt: new Date(),
             });
             await database.insert(session).values({
-              audience: APPLICATION.user,
+              audience: APPLICATION.serviceMember,
               authenticationMethod: AUTHENTICATION_METHOD.password,
               createdAt: new Date(),
               expiresAt: new Date(Date.now() + 60_000),
@@ -224,7 +224,7 @@ describe("bootstrapDatabase", () => {
             });
           });
           yield* bootstrapDatabase({ database: database, email: "FIRST@example.test" });
-          return yield* getSessionSecurity("old-session", APPLICATION.user);
+          return yield* getSessionSecurity("old-session", APPLICATION.serviceMember);
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 

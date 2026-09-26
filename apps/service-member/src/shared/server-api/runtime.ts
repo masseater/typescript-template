@@ -9,7 +9,7 @@ import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 import type { Reporting } from "@repo/observability";
 
-const service = APPLICATION.user;
+const service = APPLICATION.serviceMember;
 const reporting: Reporting = { service };
 const runtime = workerRuntime(() => {
   const base = appLayer({ env: env, audience: service, routes: routes });

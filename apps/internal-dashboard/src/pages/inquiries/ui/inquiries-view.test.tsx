@@ -39,7 +39,7 @@ const answered = {
     messages: [
       {
         authorId: "admin-1",
-        authorKind: ROLE.administrator,
+        authorKind: ROLE.admin,
         body: "確認します。",
         createdAt: openedAt,
         id: "message-1",

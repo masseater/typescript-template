@@ -7,7 +7,7 @@ import { routes } from "#shared/telemetry/index.ts";
 
 import type { Reporting } from "@repo/observability";
 
-const service = APPLICATION.admin;
+const service = APPLICATION.serviceAdmin;
 const reporting: Reporting = { service };
 const runtime = workerRuntime(() => appLayer({ env: env, audience: service, routes: routes }));
 

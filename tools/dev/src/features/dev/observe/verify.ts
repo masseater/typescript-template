@@ -159,7 +159,7 @@ runCli(verifyCommand, (cause) =>
   causeRecord("observability.verification_failed", {
     cause,
     fields: {
-      remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.user]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+      remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.serviceMember]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
     },
   }),
 );

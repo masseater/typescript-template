@@ -71,7 +71,7 @@ export const inviteStaff = Effect.fn("inviteStaff")(function* inviteStaff(draft:
 }) {
   const actor = yield* requireStaff(draft.sessionId, STAFF_PERMISSION.editor);
   return yield* issueInvite({
-    audience: APPLICATION.wiki,
+    audience: APPLICATION.internalDashboard,
     audit: staffActor(actor, AUDIT_ACTION.staffInvited),
     email: draft.email,
     permission: draft.permission,

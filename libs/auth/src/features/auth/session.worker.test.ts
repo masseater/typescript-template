@@ -37,7 +37,7 @@ describe("verifySession", () => {
         runWith(auth, () =>
           Effect.gen(function* signInPasswordOnly() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
-            return yield* signInAs(APPLICATION.admin, "admin@example.com");
+            return yield* signInAs(APPLICATION.serviceAdmin, "admin@example.com");
           }),
         ),
       )
@@ -57,7 +57,7 @@ describe("verifySession", () => {
           id: "user-1",
           name: "admin@example.com",
           permission: ADMIN_PERMISSION.owner,
-          role: ROLE.administrator,
+          role: ROLE.admin,
           twoFactorEnabled: false,
         },
       });
@@ -69,7 +69,7 @@ describe("verifySession", () => {
       runWith(auth, () =>
         Effect.gen(function* enrollTotp() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
-          const client = yield* signInAs(APPLICATION.admin, "admin@example.com");
+          const client = yield* signInAs(APPLICATION.serviceAdmin, "admin@example.com");
           yield* enableTotp(client);
           return yield* client.verify();
         }),
@@ -85,7 +85,7 @@ describe("verifySession", () => {
           id: "user-1",
           name: "admin@example.com",
           permission: ADMIN_PERMISSION.owner,
-          role: ROLE.administrator,
+          role: ROLE.admin,
           twoFactorEnabled: true,
         },
       });
@@ -99,7 +99,7 @@ describe("verifySession", () => {
           Effect.gen(function* awaitSecondFactor() {
             yield* registerVerified("totp@example.com");
             return yield* signInAgainAfterTotp({
-              audience: APPLICATION.user,
+              audience: APPLICATION.serviceMember,
               email: "totp@example.com",
             });
           }),
@@ -154,16 +154,16 @@ describe("verifySession", () => {
         Effect.gen(function* recover() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
           const { backupCodes } = yield* enableTotp(
-            yield* signInAs(APPLICATION.admin, "admin@example.com"),
+            yield* signInAs(APPLICATION.serviceAdmin, "admin@example.com"),
           );
-          const client = yield* pendingSecondFactor(APPLICATION.admin, "admin@example.com");
+          const client = yield* pendingSecondFactor(APPLICATION.serviceAdmin, "admin@example.com");
           yield* requireStatus(200, {
             client,
             endpoint: "/two-factor/verify-backup-code",
             jsonFields: { code: backupCodes[0] },
           });
           const verified = yield* client.verify(true);
-          const security = yield* getSessionSecurity(verified.session.id, APPLICATION.admin);
+          const security = yield* getSessionSecurity(verified.session.id, APPLICATION.serviceAdmin);
           return {
             authenticationMethod: security?.session.authenticationMethod,
             verified,
@@ -183,7 +183,7 @@ describe("verifySession", () => {
             id: "user-1",
             name: "admin@example.com",
             permission: ADMIN_PERMISSION.owner,
-            role: ROLE.administrator,
+            role: ROLE.admin,
             twoFactorEnabled: true,
           },
         },
@@ -196,7 +196,7 @@ describe("verifySession", () => {
       runWith(auth, () =>
         Effect.gen(function* crossOver() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
-          return yield* signIn(yield* clientOf(APPLICATION.user), "admin@example.com");
+          return yield* signIn(yield* clientOf(APPLICATION.serviceMember), "admin@example.com");
         }),
       ),
     );
@@ -211,8 +211,8 @@ describe("verifySession", () => {
       runWith(auth, () =>
         Effect.gen(function* replay() {
           yield* registerVerified("member@example.com");
-          const client = yield* signInAs(APPLICATION.user, "member@example.com");
-          const admin = (yield* AuthApps)[APPLICATION.admin];
+          const client = yield* signInAs(APPLICATION.serviceMember, "member@example.com");
+          const admin = (yield* AuthApps)[APPLICATION.serviceAdmin];
           return yield* Effect.flip(client.transferTo(admin).verify(true));
         }),
       ),
@@ -228,11 +228,11 @@ describe("verifySession", () => {
       runWith(auth, () =>
         Effect.gen(function* suspend() {
           yield* bootstrapVerifiedAdmin("owner@example.com");
-          const owner = yield* signInAs(APPLICATION.admin, "owner@example.com");
+          const owner = yield* signInAs(APPLICATION.serviceAdmin, "owner@example.com");
           yield* enableTotp(owner);
           const authority = yield* owner.verify();
           yield* registerVerified("target@example.com");
-          const memberClient = yield* signInAs(APPLICATION.user, "target@example.com");
+          const memberClient = yield* signInAs(APPLICATION.serviceMember, "target@example.com");
           const member = yield* memberClient.verify();
           yield* setMemberState({
             accountState: ACCOUNT_STATE.suspended,
@@ -241,7 +241,7 @@ describe("verifySession", () => {
           });
           return {
             lostSession: yield* Effect.flip(memberClient.verify()),
-            signInStatus: yield* signIn(yield* clientOf(APPLICATION.user), "target@example.com"),
+            signInStatus: yield* signIn(yield* clientOf(APPLICATION.serviceMember), "target@example.com"),
           };
         }),
       ),
@@ -260,14 +260,14 @@ describe("verifySession", () => {
       runWith(auth, () =>
         Effect.gen(function* selfAssign() {
           yield* registerVerified("reader@example.com");
-          const client = yield* signInAs(APPLICATION.user, "reader@example.com");
-          yield* client.status("/update-user", { role: ROLE.administrator, securityVersion: 99 });
+          const client = yield* signInAs(APPLICATION.serviceMember, "reader@example.com");
+          yield* client.status("/update-user", { role: ROLE.admin, securityVersion: 99 });
           yield* client.status("/update-session", {
-            audience: APPLICATION.admin,
+            audience: APPLICATION.serviceAdmin,
             authenticationMethod: "passkey_uv",
           });
           const verified = yield* client.verify();
-          const security = yield* getSessionSecurity(verified.session.id, APPLICATION.user);
+          const security = yield* getSessionSecurity(verified.session.id, APPLICATION.serviceMember);
           return {
             audience: security?.session.audience,
             authenticationMethod: security?.session.authenticationMethod,
@@ -279,7 +279,7 @@ describe("verifySession", () => {
 
     it("keeps the member role, the user audience and the password method", ({ selfAssigned }) => {
       expect(selfAssigned).toStrictEqual({
-        audience: APPLICATION.user,
+        audience: APPLICATION.serviceMember,
         authenticationMethod: AUTHENTICATION_METHOD.password,
         verified: {
           session: { id: "session-1" },

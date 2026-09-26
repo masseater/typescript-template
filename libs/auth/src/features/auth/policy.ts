@@ -65,7 +65,7 @@ const sessionIsLive = (
 const isPrivilegedRole = (role: string): boolean => role !== ROLE.member;
 
 const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
-  ["/passkey/verify-authentication", AUTHENTICATION_METHOD.passkey],
+  ["/passkey/verify-authentication", AUTHENTICATION_METHOD.passkeyUv],
   ["/two-factor/verify-totp", AUTHENTICATION_METHOD.passwordTotp],
   ["/two-factor/verify-backup-code", AUTHENTICATION_METHOD.recovery],
 ]);
