@@ -221,4 +221,48 @@ describe("jobs api", () => {
       });
     }),
   );
+
+  it.effect("refuses to show a job whose workflow output is not a job result", () =>
+    Effect.gen(function* program() {
+      yield* migrated;
+      const jobs = yield* readJobs(env);
+      const app = jobsApp();
+      const owner = yield* signedInMember(app, "owner@example.test");
+      const ownerId = yield* sessionUserId(app, owner);
+
+      const created = yield* send(app, "/jobs", { body: {}, cookie: owner });
+      const { id } = yield* decodeAccepted(yield* jsonOf(created));
+      const payload = yield* Schema.decodeEffect(JobPayload)({ jobId: id, ownerId });
+
+      const instance = yield* Effect.promise(() =>
+        introspectWorkflowInstance(env[jobsWorkflowBinding], `${ownerId}-${id}`),
+      );
+      const status = yield* Effect.gen(function* observe() {
+        yield* Effect.promise(() =>
+          instance.modify(
+            (modifier: {
+              readonly mockStepResult: (
+                step: { readonly name: string },
+                stepResult: unknown,
+              ) => Promise<void>;
+            }) => modifier.mockStepResult({ name: "finalize" }, { jobId: id, stage: "executed" }),
+          ),
+        );
+        const batch = createMessageBatch(jobsQueueName, [
+          {
+            attempts: 1,
+            body: payload,
+            id,
+            timestamp: DateTime.toDate(DateTime.nowUnsafe()),
+          },
+        ]);
+        yield* Effect.promise(() => consumeJobs(batch, jobs));
+        yield* Effect.promise(() => instance.waitForStatus("complete"));
+        const ownView = yield* send(app, `/jobs/${id}`, { cookie: owner });
+        return ownView.status;
+      }).pipe(Effect.ensuring(Effect.promise(() => instance.dispose())));
+
+      assert.strictEqual(status, httpStatus.internalServerError);
+    }),
+  );
 });

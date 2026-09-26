@@ -175,6 +175,7 @@ export {
 } from "./recording-schemas.ts";
 export {
   JobPayload,
+  JobResult,
   jobsQueueBinding,
   jobsQueueName,
   jobsWorkflowBinding,
@@ -182,7 +183,7 @@ export {
   jobsWorkflowName,
   readJobs,
 } from "./jobs.ts";
-export type { JobResult, JobsBindings } from "./jobs.ts";
+export type { JobsBindings } from "./jobs.ts";
 export { effectTsgoNoEmit } from "./effect-typecheck.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type {

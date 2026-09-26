@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { JobPayload, readJobs, httpStatus } from "@repo/config";
+import { JobPayload, JobResult, readJobs, httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { CreatedResource } from "@repo/runtime/contracts";
 import { createApi, readJsonBody } from "@repo/runtime/http";
@@ -17,7 +17,7 @@ const JobAccepted = CreatedResource;
 const JobStatusView = Schema.Struct({
   id: Schema.String,
   status: Schema.String,
-  output: Schema.optionalKey(Schema.Unknown),
+  output: Schema.optionalKey(JobResult),
   error: Schema.optionalKey(Schema.NullOr(Schema.Struct({ message: Schema.String }))),
 });
 

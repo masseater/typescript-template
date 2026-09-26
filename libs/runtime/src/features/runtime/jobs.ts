@@ -1,9 +1,9 @@
 import {
   JobPayload,
+  JobResult,
   jobsQueueBinding,
   jobsWorkflowBinding,
   readJobs,
-  type JobResult,
   type JobsBindings,
   webCrypto,
 } from "@repo/config";
@@ -13,14 +13,12 @@ import { Effect, Schema } from "effect";
 import { JobLookupFailed } from "./job-lookup-failed.ts";
 import { JobNotFound } from "./job-not-found.ts";
 
+import type { WorkflowEvent, WorkflowStep } from "cloudflare:workers";
+
 class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
   override run(
-    logEvent: Readonly<{
-      payload: JobPayload;
-    }>,
-    step: Readonly<{
-      do: <Value>(spelled: string, work: () => Promise<Value>) => Promise<Value>;
-    }>,
+    logEvent: Readonly<WorkflowEvent<JobPayload>>,
+    step: WorkflowStep,
   ): Promise<JobResult> {
     return Effect.runPromise(
       Effect.gen(function* processJob() {
@@ -93,6 +91,17 @@ const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
         : new JobLookupFailed({ cause }),
     try: () => env[jobsWorkflowBinding].get(instanceId(packet)),
   });
-  return yield* Effect.promise(() => runtimeInstance.status());
+  const reported = yield* Effect.promise(() => runtimeInstance.status());
+  const output =
+    reported.output === undefined
+      ? undefined
+      : yield* Schema.decodeUnknownEffect(JobResult)(reported.output).pipe(
+          Effect.mapError((cause) => new JobLookupFailed({ cause })),
+        );
+  return {
+    status: reported.status,
+    ...(output === undefined ? {} : { output }),
+    ...(reported.error === undefined ? {} : { error: reported.error }),
+  };
 });
 export { Process, consumeJobBatch, consumeJobs, enqueueJob, jobStatus };

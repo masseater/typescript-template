@@ -2,6 +2,8 @@ import { Effect, Schema } from "effect";
 
 import { bindingWith, decode } from "./environment.ts";
 
+import type { Queue, Workflow } from "@cloudflare/workers-types";
+
 const jobsQueueBinding = "JOBS";
 const jobsWorkflowBinding = "PROCESS";
 const jobsWorkflowClass = "Process";
@@ -15,28 +17,16 @@ const JobPayload = Schema.Struct({
 
 type JobPayload = typeof JobPayload.Type;
 
-type JobResult = {
-  readonly jobId: string;
-  readonly stage: "complete";
-};
+const JobResult = Schema.Struct({
+  jobId: JobPayload.fields.jobId,
+  stage: Schema.Literal("complete"),
+});
+
+type JobResult = typeof JobResult.Type;
 
 const JobsBindings = Schema.Struct({
-  [jobsQueueBinding]: bindingWith<{
-    readonly send: (message: JobPayload) => Promise<unknown>;
-  }>("Queue", ["send"]),
-  [jobsWorkflowBinding]: bindingWith<{
-    readonly create: (options: {
-      readonly id?: string;
-      readonly params?: JobPayload;
-    }) => Promise<{ readonly id: string }>;
-    readonly get: (id: string) => Promise<{
-      readonly status: () => Promise<{
-        readonly status: string;
-        readonly output?: unknown;
-        readonly error?: { readonly message: string } | null;
-      }>;
-    }>;
-  }>("Workflow", ["create", "get"]),
+  [jobsQueueBinding]: bindingWith<Queue<JobPayload>>("Queue", ["send"]),
+  [jobsWorkflowBinding]: bindingWith<Workflow<JobPayload>>("Workflow", ["create", "get"]),
 });
 
 type JobsBindings = typeof JobsBindings.Type;
@@ -47,6 +37,7 @@ const readJobs = Effect.fn("readJobs")(function* readJobs(input: unknown) {
 
 export {
   JobPayload,
+  JobResult,
   jobsQueueBinding,
   jobsQueueName,
   jobsWorkflowBinding,
