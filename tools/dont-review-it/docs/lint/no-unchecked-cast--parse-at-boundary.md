@@ -19,11 +19,11 @@ Disallow handing a concrete type to a value the source declares as `any` or `unk
 
 ## Violation
 
-A concrete type handed to a value the source declares as `any` or `unknown`, in three shapes: an assertion placing a concrete type on such a value, an annotation doing the same to a value declared `any`, and a type predicate whose body never reads the parameter it claims to narrow.
+A concrete type handed to a value the source declares as `any` or `unknown`, in three shapes: an assertion placing a concrete type on such a value, an annotation doing the same to a value declared `any`, and a type predicate whose body never reads the parameter it claims to narrow. Two assertions are rejected whatever the value is declared as: an assertion to `never`, and an assertion placing a concrete type on an indexed read.
 
 ## Fix
 
-Parse the value at the boundary it enters through and take the concrete type from the return type of that parse. Where a predicate stands, read the parameter in the body and return what that reading settles.
+Parse the value at the boundary it enters through and take the concrete type from the return type of that parse. Where a predicate stands, read the parameter in the body and return what that reading settles. Where an indexed read is asserted, check that it holds a value and narrow on that check. Where `never` silences a mismatch, build the value in the shape the receiver declares.
 
 <!-- BEGIN GENERATED examples -->
 

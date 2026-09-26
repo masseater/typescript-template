@@ -87,6 +87,7 @@ export default defineConfig({
       "src/features/dont-review-it/cli.ts",
       "src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
       "src/features/dont-review-it/index.ts",
+      "src/features/dont-review-it/vitest/standard-io-test.ts",
     ],
     external: [/^vite-plus/],
     dts: { generator: "tsgo" },

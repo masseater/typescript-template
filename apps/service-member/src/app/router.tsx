@@ -23,7 +23,7 @@ function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
       input: ({ url }) => deLocalizeUrl(url),
       output: ({ url }) => localizeUrl(url),
     },
-    routerContext: { queryClient },
+    context: { queryClient },
   });
   setupRouterSsrQueryIntegration({ queryClient, router });
   return router;

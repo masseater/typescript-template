@@ -39,6 +39,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/features/dont-review-it/workspace-entry.ts",
+    "./vitest": "./src/features/dont-review-it/vitest/standard-io-test.ts",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json"
   },
@@ -51,6 +52,10 @@
       ".": {
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
+      },
+      "./vitest": {
+        "types": "./dist/vitest/standard-io-test.d.mts",
+        "default": "./dist/vitest/standard-io-test.mjs"
       },
       "./tsconfig/*": "./tsconfig/*",
       "./package.json": "./package.json"

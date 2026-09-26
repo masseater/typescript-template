@@ -23,17 +23,24 @@ const syncBaseEventOf = (hookEventName: string): SyncBaseEvent | undefined => {
   return undefined;
 };
 
-export type SyncBaseDecision = {
-  readonly event: SyncBaseEvent;
+type EventDecision<Event extends SyncBaseEvent> = {
+  readonly event: Event;
   readonly output: {
     readonly hookSpecificOutput: {
       readonly additionalContext: string;
-      readonly hookEventName: SyncBaseEvent;
+      readonly hookEventName: Event;
     };
   };
 };
 
-const decisionFor = (hookEvent: SyncBaseEvent, instruction: string): SyncBaseDecision => ({
+export type SyncBaseDecision = {
+  readonly [Event in SyncBaseEvent]: EventDecision<Event>;
+}[SyncBaseEvent];
+
+const eventDecision = <Event extends SyncBaseEvent>(
+  hookEvent: Event,
+  instruction: string,
+): EventDecision<Event> => ({
   event: hookEvent,
   output: {
     hookSpecificOutput: {
@@ -42,6 +49,20 @@ const decisionFor = (hookEvent: SyncBaseEvent, instruction: string): SyncBaseDec
     },
   },
 });
+
+const decisionFor = (hookEvent: SyncBaseEvent, instruction: string): SyncBaseDecision => {
+  switch (hookEvent) {
+    case "SessionStart": {
+      return eventDecision("SessionStart", instruction);
+    }
+    case "Stop": {
+      return eventDecision("Stop", instruction);
+    }
+    case "UserPromptSubmit": {
+      return eventDecision("UserPromptSubmit", instruction);
+    }
+  }
+};
 
 export const decisionOf = (
   inquiry: DecisionInquiry,

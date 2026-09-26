@@ -42,6 +42,10 @@ describe("dont-review-it/no-unchecked-cast--parse-at-boundary", () => {
         code: `${ANY_BINDING}\nconst row = loose ${THROUGH_UNKNOWN} as Row;`,
       },
       {
+        name: "a const assertion on an indexed read names no type of its own",
+        code: "const names: readonly string[] = read();\nconst first = names[0] as const;",
+      },
+      {
         name: "a value a parse hands back is bound to the type that parse returns",
         documented: true,
         code: "const row: Row = parseRow(given);",
@@ -188,6 +192,28 @@ describe("dont-review-it/no-unchecked-cast--parse-at-boundary", () => {
         name: "an any value carried by an arrow without a block is reported",
         code: `const read = (loose${ANY_ANNOTATION}): Row => loose;`,
         errors: [{ messageId: "uncheckedTypeClaim" }],
+      },
+      {
+        name: "an assertion to never is reported",
+        documented: true,
+        code: "handle(request, Context.empty() as never);",
+        errors: [{ messageId: "neverCast" }],
+      },
+      {
+        name: "an assertion to never on a declared value is reported",
+        code: "const input: string = read();\nconsume(input as never);",
+        errors: [{ messageId: "neverCast" }],
+      },
+      {
+        name: "an assertion on an indexed read is reported",
+        documented: true,
+        code: "const names: readonly string[] = read();\nconst first = names[0] as string;",
+        errors: [{ messageId: "indexedCast" }],
+      },
+      {
+        name: "an assertion on a keyed read is reported",
+        code: "const counts: Record<string, number> = read();\nconst total = counts[key] as number;",
+        errors: [{ messageId: "indexedCast" }],
       },
       {
         name: "a predicate whose body never reads the parameter is reported",

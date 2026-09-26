@@ -3,7 +3,7 @@ import { describe } from "vite-plus/test";
 import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { requireStandardIoSnapshot } from "./require-standard-io-snapshot--pin-both-streams.ts";
 
-const FIXTURE_IMPORT = `import { standardIoTest } from "@repo/dont-review-it";`;
+const FIXTURE_IMPORT = `import { standardIoTest } from "@repo/dont-review-it/vitest";`;
 
 const STDOUT_SNAPSHOT = `standardIoTest("pins stdout", ({ stdout }) => {
   expect(stdout.text).toMatchInlineSnapshot();
@@ -151,7 +151,7 @@ it("pins stderr", ({ stderr }) => {
       },
       {
         name: "a renamed fixture import is followed to its call sites",
-        code: `import { standardIoTest as ioTest } from "@repo/dont-review-it";
+        code: `import { standardIoTest as ioTest } from "@repo/dont-review-it/vitest";
 ioTest("pins stdout", ({ stdout }) => {
   expect(stdout.text).toMatchInlineSnapshot();
 });

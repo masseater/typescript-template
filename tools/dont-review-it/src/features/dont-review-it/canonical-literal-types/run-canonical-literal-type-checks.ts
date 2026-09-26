@@ -245,11 +245,14 @@ const problemsInGroup = (input: {
   readonly catalog: CanonicalValuesCatalog;
   readonly repositoryRoot: string;
 }): readonly RepositoryProblem[] => {
-  const rootNames = input.candidates.map((candidate) => candidate.absolutePath);
+  const [firstCandidate] = input.candidates;
+  if (firstCandidate === undefined) {
+    return [];
+  }
   const program = createCanonicalValuesTypeScriptProgram({
     repositoryRoot: input.repositoryRoot,
-    rootNames,
-    searchDirectory: path.dirname(rootNames[0] as string),
+    rootNames: input.candidates.map((candidate) => candidate.absolutePath),
+    searchDirectory: path.dirname(firstCandidate.absolutePath),
   });
   const checker = program.getTypeChecker();
   return input.candidates.flatMap((candidate) => {

@@ -1,4 +1,4 @@
-import { standardIoTest } from "@repo/dont-review-it";
+import { standardIoTest } from "@repo/dont-review-it/vitest";
 import { DateTime, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 

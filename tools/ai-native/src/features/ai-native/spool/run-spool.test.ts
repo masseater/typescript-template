@@ -1,4 +1,4 @@
-import { standardIoTest } from "@repo/dont-review-it";
+import { standardIoTest } from "@repo/dont-review-it/vitest";
 import { DateTime, Effect, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, vi } from "vite-plus/test";

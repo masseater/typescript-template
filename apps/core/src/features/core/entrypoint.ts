@@ -9,7 +9,9 @@ import type { CoreBindings } from "./bindings.ts";
 
 const entrypointClass = <Rpcs extends Rpc.Any>(
   rpcContract: RpcGroup.RpcGroup<Rpcs>,
-  handlerLayer: (bindings: CoreBindings) => Layer.Layer<Rpc.ToHandler<Rpcs>>,
+  handlerLayer: (
+    bindings: CoreBindings,
+  ) => Layer.Layer<Rpc.Middleware<Rpcs> | Rpc.ServicesServer<Rpcs> | Rpc.ToHandler<Rpcs>>,
 ): new (ctx: ExecutionContext, env: CoreBindings) => WorkerEntrypoint<CoreBindings> =>
   class extends WorkerEntrypoint<CoreBindings> {
     public override fetch(httpRequest: Request): Promise<Response> {

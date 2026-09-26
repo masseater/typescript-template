@@ -228,9 +228,8 @@ const identifierBinding = (input: {
   readonly line: number;
   readonly variable: VariableDeclarationFields;
 }): ValidationResult<{ readonly binding: string; readonly bindingStart: number }> => {
-  const declarator = input.variable
-    .declarations[0] as VariableDeclarationFields["declarations"][number];
-  if (declarator.init === null) {
+  const [declarator] = input.variable.declarations;
+  if (declarator === undefined || declarator.init === null) {
     return {
       problem: invalidDeclaration({
         ...input,
@@ -330,7 +329,7 @@ const canonicalRuleSuppressionProblemsIn = (
     const targetsCanonicalRule = suppressedRules.some((suppressedRule) => {
       const diagnosticRule = /^[^()]+\(([^()]+)\)$/u.exec(suppressedRule)?.[1] ?? suppressedRule;
       const segments = diagnosticRule.split("/");
-      return CANONICAL_RULE_BASENAMES.has(segments[segments.length - 1] as string);
+      return CANONICAL_RULE_BASENAMES.has(segments.at(-1) ?? diagnosticRule);
     });
     if (suppressedRules.length !== 0 && !suppressedRules.includes("all") && !targetsCanonicalRule) {
       return [];

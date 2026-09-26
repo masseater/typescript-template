@@ -66,6 +66,10 @@ export const noUncheckedCast = createDontReviewItRule({
         "A value declared `{{looseType}}` must not be handed a concrete type by assertion. Parse `{{claimed}}` at the boundary it enters through and take the concrete type from the return type of that parse.",
       uncheckedTypeClaim:
         "A value declared `any` must not be handed a concrete type by annotation. Parse `{{claimed}}` at the boundary it enters through and take the concrete type from the return type of that parse.",
+      neverCast:
+        "A value must not be asserted to `never` to silence a type mismatch. Build `{{claimed}}` in the shape the receiver declares, or narrow it with a check that reads the value.",
+      indexedCast:
+        "An indexed read must not be handed a concrete type by assertion. Check that `{{claimed}}` holds a value and narrow on that check instead of asserting it away.",
       unexaminedTypePredicate:
         "A type predicate must not stand on a body that leaves `{{parameter}}` unread. Read `{{parameter}}` in the body and return what that reading settles.",
     },
@@ -77,8 +81,24 @@ export const noUncheckedCast = createDontReviewItRule({
 
     const reportUncheckedCast = (node: ESTree.TSAsExpression | ESTree.TSTypeAssertion): void => {
       const asserted = unwrappedValueOf(node.expression);
+      if (node.typeAnnotation.type === "TSNeverKeyword") {
+        inspection.report({
+          node,
+          messageId: "neverCast",
+          data: { claimed: inspection.sourceCode.getText(asserted) },
+        });
+        return;
+      }
       if (isTypeAssertion(asserted)) return;
       if (!isConcreteTypeClaim(node.typeAnnotation)) return;
+      if (asserted.type === "MemberExpression" && asserted.computed) {
+        inspection.report({
+          node,
+          messageId: "indexedCast",
+          data: { claimed: inspection.sourceCode.getText(asserted) },
+        });
+        return;
+      }
 
       const loose = looseNodeOfExpression(asserted, resolution);
       if (loose === null) return;

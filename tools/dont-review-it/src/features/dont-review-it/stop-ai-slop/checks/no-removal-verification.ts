@@ -98,7 +98,6 @@ const addedVerificationsIn = (
   beforeVerifications: readonly VerificationOccurrence[],
 ): readonly VerificationOccurrence[] => {
   const beforeCounts = countBy(beforeVerifications, (verification) => verification.locator);
-  const afterCounts = countBy(afterVerifications, (verification) => verification.locator);
   const prioritizedVerifications = [
     ...afterVerifications.filter((verification) => verification.isAdded),
     ...afterVerifications.filter((verification) => !verification.isAdded),
@@ -107,7 +106,9 @@ const addedVerificationsIn = (
     const precedingCount = prioritizedVerifications
       .slice(0, position)
       .filter((preceding) => preceding.locator === verification.locator).length;
-    const afterCount = afterCounts[verification.locator] as number;
+    const afterCount = prioritizedVerifications.filter(
+      (counted) => counted.locator === verification.locator,
+    ).length;
     const addedCount = afterCount - (beforeCounts[verification.locator] ?? 0);
     return precedingCount < addedCount;
   });

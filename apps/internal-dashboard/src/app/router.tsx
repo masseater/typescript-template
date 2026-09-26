@@ -12,7 +12,7 @@ declare module "@tanstack/react-router" {
 
 function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
   const queryClient = sessionQueryClient(loadBrowserSession);
-  const router = createAppRouter(routeTree, { routerContext: { queryClient } });
+  const router = createAppRouter(routeTree, { context: { queryClient } });
   setupRouterSsrQueryIntegration({ queryClient, router });
   return router;
 }

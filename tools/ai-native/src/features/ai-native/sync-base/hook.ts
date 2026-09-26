@@ -18,9 +18,7 @@ export const hook: ReturnType<
         hookEventName: hookContext.input.hook_event_name,
       }).pipe(
         Effect.map((decision) =>
-          decision === undefined
-            ? hookContext.success({})
-            : hookContext.json(decision as Parameters<(typeof hookContext)["json"]>[0]),
+          decision === undefined ? hookContext.success({}) : hookContext.json(decision),
         ),
       ),
     ),
