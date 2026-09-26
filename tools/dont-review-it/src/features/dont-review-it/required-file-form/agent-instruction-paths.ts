@@ -58,7 +58,7 @@ export const agentInstructionPathsIn = ({
     const references = inlineCodesIn(remark().parse(instructions)).filter((code) =>
       isFilePathShaped(code.value),
     );
-    const unresolved = yield* Effect.filter(
+    const resolvable = yield* Effect.forEach(
       references,
       (code) =>
         Effect.map(
@@ -66,9 +66,12 @@ export const agentInstructionPathsIn = ({
             pathExists(path.join(repositoryRoot, packageRoot, code.value)),
             pathExists(path.join(repositoryRoot, code.value)),
           ]),
-          ([fromPackage, fromRoot]) => !fromPackage && !fromRoot,
+          ([fromPackage, fromRoot]) => fromPackage || fromRoot,
         ),
       { concurrency: "unbounded" },
+    );
+    const unresolved = references.flatMap((code, index) =>
+      resolvable[index] === true ? [] : [code],
     );
 
     return unresolved.map((code): RepositoryProblem => ({

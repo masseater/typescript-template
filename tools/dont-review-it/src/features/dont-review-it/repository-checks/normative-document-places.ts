@@ -86,10 +86,14 @@ const documentsDirectlyIn = ({
     const filesystem = yield* FileSystem.FileSystem;
     const directoryPath = path.join(repositoryRoot, directory);
     const listedNames = yield* unlessMissing(filesystem.readDirectory(directoryPath));
-    const documentNames = yield* Effect.filter(
-      (listedNames ?? []).filter((name) => name.endsWith(DOCUMENT_SUFFIX)),
+    const candidateNames = (listedNames ?? []).filter((name) => name.endsWith(DOCUMENT_SUFFIX));
+    const unlinkedFiles = yield* Effect.forEach(
+      candidateNames,
       (name) => isUnlinkedFileAt(path.join(directoryPath, name)),
       { concurrency: "unbounded" },
+    );
+    const documentNames = candidateNames.flatMap((name, index) =>
+      unlinkedFiles[index] === true ? [name] : [],
     );
     return documentNames.map((name) => `${directory}/${name}`);
   });
