@@ -5,10 +5,24 @@ import { noLenientCoverageThreshold } from "./no-lenient-coverage-threshold--dem
 
 const FULL_THRESHOLDS =
   "{ branches: 100, functions: 100, lines: 100, statements: 100, perFile: true }";
+const SHARED_OWNER = [{ configOwners: [{ source: "@repo/vite-config", name: "toolTest" }] }];
 
 describe("dont-review-it/no-lenient-coverage-threshold--demand-full-coverage", () => {
   testLintRule(noLenientCoverageThreshold, {
     valid: [
+      {
+        name: "a test block taken whole from the configured owner passes",
+        documented: true,
+        code: `import { toolTest } from "@repo/vite-config";\nimport { defineConfig } from "vite-plus";\nexport default defineConfig({ test: { ...toolTest, testTimeout: 60000 } });\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+      },
+      {
+        name: "coverage that spreads the owner's coverage and adds exclusions passes",
+        code: `import { toolTest } from "@repo/vite-config";\nexport default { test: { ...toolTest, coverage: { ...toolTest.coverage, exclude: ["specs/**", "fixtures/**"] } } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+      },
       {
         name: "every metric spelled out at full coverage, checked file by file, passes",
         documented: true,
@@ -97,6 +111,21 @@ describe("dont-review-it/no-lenient-coverage-threshold--demand-full-coverage", (
       },
     ],
     invalid: [
+      {
+        name: "a metric the owner settles but the config lowers is reported",
+        documented: true,
+        code: `import { toolTest } from "@repo/vite-config";\nexport default { test: { ...toolTest, coverage: { thresholds: { ...toolTest.coverage.thresholds, branches: 10 } } } };\n`,
+        filename: "vite.config.ts",
+        options: [{ branches: 50, ...SHARED_OWNER[0] }],
+        errors: [{ messageId: "lenientCoverageThreshold" }],
+      },
+      {
+        name: "coverage written over without the owner's thresholds is reported",
+        code: `import { toolTest } from "@repo/vite-config";\nexport default { test: { ...toolTest, coverage: { exclude: ["specs/**"] } } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+        errors: [{ messageId: "missingCoverageThresholds" }],
+      },
       {
         name: "a config that says nothing about coverage is reported once",
         code: `import { defineConfig } from "vite-plus";\nexport default defineConfig({ lint: {} });\n`,

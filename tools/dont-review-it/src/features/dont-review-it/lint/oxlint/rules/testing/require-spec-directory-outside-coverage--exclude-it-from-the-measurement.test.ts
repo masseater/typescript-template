@@ -4,10 +4,24 @@ import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-f
 import { requireSpecDirectoryOutsideCoverage } from "./require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts";
 
 const THRESHOLDS = "thresholds: { 100: true, perFile: true }";
+const SHARED_OWNER = [{ configOwners: [{ source: "@repo/vite-config", name: "toolTest" }] }];
 
 describe("dont-review-it/require-spec-directory-outside-coverage--exclude-it-from-the-measurement", () => {
   testLintRule(requireSpecDirectoryOutsideCoverage, {
     valid: [
+      {
+        name: "coverage taken from the configured owner passes",
+        documented: true,
+        code: `import { toolTest } from "@repo/vite-config";\nimport { defineConfig } from "vite-plus";\nexport default defineConfig({ test: { ...toolTest, testTimeout: 60000 } });\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+      },
+      {
+        name: "an exclusion list that extends the owner's list passes",
+        code: `import { toolTest } from "@repo/vite-config";\nexport default { test: { coverage: { ...toolTest.coverage, exclude: [...toolTest.coverage.exclude, "fixtures/**"] } } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+      },
       {
         name: "a coverage block leaving the specification directory out passes",
         documented: true,
@@ -37,6 +51,20 @@ describe("dont-review-it/require-spec-directory-outside-coverage--exclude-it-fro
       },
     ],
     invalid: [
+      {
+        name: "coverage handed over as a value that is not the owner is reported",
+        documented: true,
+        code: `import { coverage } from "./shared.ts";\nexport default { test: { coverage } };\n`,
+        filename: "vite.config.ts",
+        errors: [{ messageId: "unmeasuredCoverageExclusion" }],
+      },
+      {
+        name: "an exclusion list written over without the owner's list is reported",
+        code: `import { toolTest } from "@repo/vite-config";\nexport default { test: { coverage: { ...toolTest.coverage, exclude: ["fixtures/**"] } } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+        errors: [{ messageId: "includedSpecDirectory" }],
+      },
       {
         name: "a coverage block without an exclusion list is reported",
         documented: true,

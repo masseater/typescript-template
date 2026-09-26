@@ -36,6 +36,14 @@ Where the measured value falls short, cover the code. An unreachable branch is a
 Code this rule rejects.
 
 ```ts
+// a metric the owner settles but the config lowers is reported
+// in vite.config.ts
+import { toolTest } from "@repo/vite-config";
+export default { test: { ...toolTest, coverage: { thresholds: { ...toolTest.coverage.thresholds, branches: 10 } } } };
+
+```
+
+```ts
 // a full threshold checked against the package total is reported
 // in vite.config.ts
 import { defineConfig } from "vite-plus";
@@ -52,6 +60,15 @@ export default defineConfig({ test: { coverage: { thresholds: { functions: 100, 
 ```
 
 Code this rule accepts.
+
+```ts
+// a test block taken whole from the configured owner passes
+// in vite.config.ts
+import { toolTest } from "@repo/vite-config";
+import { defineConfig } from "vite-plus";
+export default defineConfig({ test: { ...toolTest, testTimeout: 60000 } });
+
+```
 
 ```ts
 // every metric spelled out at full coverage, checked file by file, passes
