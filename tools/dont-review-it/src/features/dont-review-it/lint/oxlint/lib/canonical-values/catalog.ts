@@ -1,30 +1,18 @@
 import { groupBy, uniq } from "es-toolkit";
 
-import { canonicalValueKey, type CanonicalValue } from "./fingerprint.ts";
+import { canonicalValueKey } from "./fingerprint.ts";
 
 import type { GitSourceScope } from "../git-ignored-source.ts";
+import type {
+  CanonicalValuesEntry as CanonicalValuesEntrySchema,
+  CanonicalValuesImportRoute as CanonicalValuesImportRouteSchema,
+} from "./catalog-cache-validation.ts";
 
 export { canonicalValueKey };
 
-export type CanonicalValuesImportRoute = {
-  readonly exportName: string;
-  readonly resolvedSourcePaths: readonly string[];
-  readonly specifier: string;
-};
+export type CanonicalValuesImportRoute = typeof CanonicalValuesImportRouteSchema.Type;
 
-export type CanonicalValuesEntry = {
-  readonly annotationStart: number;
-  readonly binding: string;
-  readonly bindingStart: number;
-  readonly conceptId: string;
-  readonly declarationEnd: number;
-  readonly declarationPath: string;
-  readonly declarationStart: number;
-  readonly importRoutes: readonly CanonicalValuesImportRoute[];
-  readonly packageName: string | null;
-  readonly values: readonly CanonicalValue[];
-  readonly fingerprint: string;
-};
+export type CanonicalValuesEntry = typeof CanonicalValuesEntrySchema.Type;
 
 export type CanonicalValuesCatalog = {
   readonly entries: readonly CanonicalValuesEntry[];

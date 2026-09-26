@@ -3,12 +3,6 @@ import { createHash } from "node:crypto";
 
 export type CanonicalValue = string | number | boolean | null;
 
-export const isCanonicalValue = (candidate: unknown): candidate is CanonicalValue =>
-  candidate === null ||
-  typeof candidate === "string" ||
-  typeof candidate === "number" ||
-  typeof candidate === "boolean";
-
 export const canonicalValueKey = (canonicalLiteral: CanonicalValue): string =>
   canonicalLiteral === null
     ? "null:null"

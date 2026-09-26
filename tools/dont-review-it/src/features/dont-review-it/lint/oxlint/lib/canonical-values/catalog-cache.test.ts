@@ -1,7 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Crypto, Effect, Encoding, FileSystem, Path, Schema } from "effect";
-import { attempt } from "es-toolkit";
+import { attempt, omit } from "es-toolkit";
 import { describe, expect } from "vite-plus/test";
 
 import { readCachedEntries, writeCachedEntries } from "./catalog-cache.ts";
@@ -203,6 +203,9 @@ layer(NodeServices.layer)("readCachedEntries", (it) => {
           { ...ORDER_STATUS_CATALOG_ENTRY, fingerprint: "not-a-fingerprint" },
           { ...ORDER_STATUS_CATALOG_ENTRY, packageName: 1 },
           { ...ORDER_STATUS_CATALOG_ENTRY, packageName: "" },
+          omit(ORDER_STATUS_CATALOG_ENTRY, ["values"]),
+          omit(ORDER_STATUS_CATALOG_ENTRY, ["importRoutes"]),
+          omit(ORDER_STATUS_CATALOG_ENTRY, ["declarationEnd"]),
         ],
         (candidateEntry) =>
           Effect.gen(function* readBack() {
@@ -223,6 +226,9 @@ layer(NodeServices.layer)("readCachedEntries", (it) => {
       Effect.gen(function* program() {
         const catalogsReadBackFromBrokenIdentities = yield* fixture;
         expect(catalogsReadBackFromBrokenIdentities).toStrictEqual([
+          null,
+          null,
+          null,
           null,
           null,
           null,

@@ -1,15 +1,15 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 
+import { Option } from "effect";
 import { attempt } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
 import {
   CACHE_FORMAT_VERSION,
   cacheIntegrity,
-  isCachedCatalog,
+  decodeCachedCatalog,
   type CachedCatalog,
-  type FingerprintedEntries,
 } from "./catalog-cache-validation.ts";
 import { readJsonFile } from "./read-json-file.ts";
 
@@ -36,14 +36,18 @@ export const readCachedEntries = (
   repositoryRoot: string,
   fingerprint: string,
 ): readonly CanonicalValuesEntry[] | null => {
-  const cached = usableCacheAt(cacheFilePath(repositoryRoot));
-  if (!isCachedCatalog(cached)) return null;
-  return cached.fingerprint === fingerprint ? cached.entries : null;
+  return decodeCachedCatalog(usableCacheAt(cacheFilePath(repositoryRoot))).pipe(
+    Option.filter((cached) => cached.fingerprint === fingerprint),
+    Option.match({ onNone: () => null, onSome: (cached) => cached.entries }),
+  );
 };
 
 export const writeCachedEntries = (
   repositoryRoot: string,
-  { fingerprint, entries }: FingerprintedEntries,
+  {
+    fingerprint,
+    entries,
+  }: { readonly fingerprint: string; readonly entries: readonly CanonicalValuesEntry[] },
 ): void => {
   const filePath = cacheFilePath(repositoryRoot);
   const temporaryPath = `${filePath}.${process.pid}.tmp`;

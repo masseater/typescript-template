@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { canonicalValueKey, fingerprintValues, isCanonicalValue } from "./fingerprint.ts";
+import { canonicalValueKey, fingerprintValues } from "./fingerprint.ts";
 
 describe("fingerprintValues", () => {
   const testAgainstTheWrittenOrder = test.extend("fingerprintOfWrittenOrder", () =>
@@ -119,26 +119,6 @@ describe("canonicalValueKey", () => {
 
     it("is keyed by its runtime type as well as its spelling", ({ keyOfNull }) => {
       expect(keyOfNull).toBe("null:null");
-    });
-  });
-});
-
-describe("isCanonicalValue", () => {
-  describe("the scalars the canonical vocabulary is made of", () => {
-    const it = test.extend("canonicalityOfVocabularyScalars", () =>
-      [null, "draft", 1, true].map(isCanonicalValue));
-
-    it("recognizes every one of them", ({ canonicalityOfVocabularyScalars }) => {
-      expect(canonicalityOfVocabularyScalars).toStrictEqual([true, true, true, true]);
-    });
-  });
-
-  describe("the runtime values outside the canonical vocabulary", () => {
-    const it = test.extend("canonicalityOfForeignValues", () =>
-      [undefined, 1n, Symbol("draft"), {}, []].map(isCanonicalValue));
-
-    it("rejects every one of them", ({ canonicalityOfForeignValues }) => {
-      expect(canonicalityOfForeignValues).toStrictEqual([false, false, false, false, false]);
     });
   });
 });

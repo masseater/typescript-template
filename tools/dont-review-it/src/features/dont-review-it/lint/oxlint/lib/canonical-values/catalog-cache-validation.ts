@@ -1,90 +1,16 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { createHash } from "node:crypto";
 
+import { Option, Schema } from "effect";
+
 import { path } from "../../../../platform/path.ts";
-import {
-  canonicalValueKey,
-  fingerprintValues,
-  isCanonicalValue,
-  type CanonicalValue,
-} from "./fingerprint.ts";
-
-import type { CanonicalValuesEntry } from "./catalog.ts";
-
-export type FingerprintedEntries = {
-  readonly fingerprint: string;
-  readonly entries: readonly CanonicalValuesEntry[];
-};
-
-export type CachedCatalog = FingerprintedEntries & {
-  readonly integrity: string;
-  readonly version: number;
-};
+import { canonicalValueKey, fingerprintValues } from "./fingerprint.ts";
 
 export const CACHE_FORMAT_VERSION = 5;
 
-export const cacheIntegrity = ({ fingerprint, entries }: FingerprintedEntries): string =>
-  createHash("sha256")
-    .update(JSON.stringify({ version: CACHE_FORMAT_VERSION, fingerprint, entries }))
-    .digest("hex");
+const NonEmptyText = Schema.String.check(Schema.isMinLength(1));
 
-const ENTRY_FIELDS = [
-  "annotationStart",
-  "binding",
-  "bindingStart",
-  "conceptId",
-  "declarationEnd",
-  "declarationPath",
-  "declarationStart",
-  "fingerprint",
-  "importRoutes",
-  "packageName",
-  "values",
-] as const;
-
-type CanonicalValuesEntryFields = Record<(typeof ENTRY_FIELDS)[number], unknown>;
-
-const hasEntryFields = (candidate: object): candidate is CanonicalValuesEntryFields =>
-  ENTRY_FIELDS.every((field) => field in candidate);
-
-const hasIntegerEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
-  Number.isSafeInteger(candidate.annotationStart) &&
-  Number.isSafeInteger(candidate.bindingStart) &&
-  Number.isSafeInteger(candidate.declarationEnd) &&
-  Number.isSafeInteger(candidate.declarationStart);
-
-const hasOrderedEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
-  (candidate.annotationStart as number) >= 0 &&
-  (candidate.declarationStart as number) >= 0 &&
-  (candidate.annotationStart as number) < (candidate.declarationStart as number) &&
-  (candidate.bindingStart as number) >= (candidate.declarationStart as number) &&
-  (candidate.bindingStart as number) < (candidate.declarationEnd as number) &&
-  (candidate.declarationEnd as number) > (candidate.declarationStart as number);
-
-const hasValidEntryOffsets = (candidate: CanonicalValuesEntryFields): boolean =>
-  hasIntegerEntryOffsets(candidate) && hasOrderedEntryOffsets(candidate);
-
-const isPackageName = (candidate: unknown): candidate is string | null =>
-  candidate === null || (typeof candidate === "string" && candidate.length > 0);
-
-const hasValidEntryIdentity = (candidate: CanonicalValuesEntryFields): boolean =>
-  typeof candidate.binding === "string" &&
-  candidate.binding.length > 0 &&
-  typeof candidate.conceptId === "string" &&
-  /^[a-z0-9]+(?:[-.][a-z0-9]+)*$/u.test(candidate.conceptId) &&
-  typeof candidate.declarationPath === "string" &&
-  candidate.declarationPath.length > 0 &&
-  typeof candidate.fingerprint === "string" &&
-  /^[a-f0-9]{32}$/u.test(candidate.fingerprint) &&
-  isPackageName(candidate.packageName);
-
-const hasNonemptyStringProperty = (
-  candidate: object,
-  property: "exportName" | "specifier",
-): boolean => {
-  const propertyValue = (candidate as Partial<Record<typeof property, unknown>>)[property];
-  return typeof propertyValue === "string" && propertyValue.length > 0;
-};
+const Offset = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 
 const staysWithinRepository = (filePath: string): boolean =>
   !path.isAbsolute(filePath) &&
@@ -92,61 +18,95 @@ const staysWithinRepository = (filePath: string): boolean =>
   filePath !== ".." &&
   !filePath.startsWith("../");
 
-const isResolvedSourcePath = (candidate: unknown): candidate is string =>
-  typeof candidate === "string" &&
-  candidate.length > 0 &&
-  candidate !== "." &&
-  !candidate.includes("\0") &&
-  !candidate.includes("\\") &&
-  path.normalize(candidate) === candidate &&
-  staysWithinRepository(candidate);
+const ResolvedSourcePath = NonEmptyText.check(
+  Schema.makeFilter(
+    (candidate: string) =>
+      (candidate !== "." &&
+        !candidate.includes("\0") &&
+        !candidate.includes("\\") &&
+        path.normalize(candidate) === candidate &&
+        staysWithinRepository(candidate)) ||
+      "Expected a normalized path inside the repository",
+  ),
+);
 
-const hasResolvedSourcePaths = (candidate: object): boolean => {
-  if (!("resolvedSourcePaths" in candidate)) return false;
-  if (!Array.isArray(candidate.resolvedSourcePaths)) return false;
-  if (candidate.resolvedSourcePaths.length === 0) return false;
-  if (!candidate.resolvedSourcePaths.every(isResolvedSourcePath)) return false;
-  return new Set(candidate.resolvedSourcePaths).size === candidate.resolvedSourcePaths.length;
+const distinctBy =
+  <Item>(keyOf: (item: Item) => string) =>
+  (items: readonly Item[]): boolean | string =>
+    new Set(items.map(keyOf)).size === items.length || "Expected distinct items";
+
+export const CanonicalValuesImportRoute = Schema.Struct({
+  exportName: NonEmptyText,
+  resolvedSourcePaths: Schema.Array(ResolvedSourcePath).check(
+    Schema.isMinLength(1),
+    Schema.makeFilter(distinctBy((sourcePath: string) => sourcePath)),
+  ),
+  specifier: NonEmptyText,
+});
+
+const CanonicalValue = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null]);
+
+export const CanonicalValuesEntry = Schema.Struct({
+  annotationStart: Offset,
+  binding: NonEmptyText,
+  bindingStart: Offset,
+  conceptId: Schema.String.check(Schema.isPattern(/^[a-z0-9]+(?:[-.][a-z0-9]+)*$/u)),
+  declarationEnd: Offset,
+  declarationPath: NonEmptyText,
+  declarationStart: Offset,
+  importRoutes: Schema.Array(CanonicalValuesImportRoute),
+  packageName: Schema.NullOr(NonEmptyText),
+  values: Schema.Array(CanonicalValue).check(Schema.makeFilter(distinctBy(canonicalValueKey))),
+  fingerprint: Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u)),
+}).check(
+  Schema.makeFilter(
+    (entry) =>
+      (entry.annotationStart < entry.declarationStart &&
+        entry.bindingStart >= entry.declarationStart &&
+        entry.bindingStart < entry.declarationEnd) ||
+      "Expected the annotation, declaration and binding offsets in source order",
+  ),
+  Schema.makeFilter(
+    (entry) =>
+      entry.fingerprint === fingerprintValues(entry.values) ||
+      "Expected the fingerprint of the values",
+  ),
+);
+
+export type FingerprintedEntries = {
+  readonly fingerprint: string;
+  readonly entries: readonly unknown[];
 };
 
-const isImportRoute = (candidate: unknown): boolean => {
-  if (candidate === null || typeof candidate !== "object") return false;
-  if (!hasNonemptyStringProperty(candidate, "exportName")) return false;
-  if (!hasNonemptyStringProperty(candidate, "specifier")) return false;
-  return hasResolvedSourcePaths(candidate);
+export const cacheIntegrity = ({ fingerprint, entries }: FingerprintedEntries): string =>
+  createHash("sha256")
+    .update(JSON.stringify({ version: CACHE_FORMAT_VERSION, fingerprint, entries }))
+    .digest("hex");
+
+const SealedCatalog = Schema.Struct({
+  entries: Schema.Array(Schema.Unknown),
+  fingerprint: Schema.String,
+  integrity: Schema.String,
+  version: Schema.Literal(CACHE_FORMAT_VERSION),
+}).check(
+  Schema.makeFilter(
+    (sealed) =>
+      sealed.integrity === cacheIntegrity(sealed) ||
+      "Expected the integrity of the fingerprint and entries",
+  ),
+);
+
+const CachedEntries = Schema.Array(CanonicalValuesEntry);
+
+export type CachedCatalog = Omit<typeof SealedCatalog.Type, "entries"> & {
+  readonly entries: typeof CachedEntries.Type;
 };
 
-const hasCanonicalValues = (candidate: unknown): candidate is readonly CanonicalValue[] => {
-  if (!Array.isArray(candidate)) return false;
-  if (!candidate.every(isCanonicalValue)) return false;
-  return new Set(candidate.map(canonicalValueKey)).size === candidate.length;
-};
-
-const isCanonicalValuesEntry = (candidate: unknown): candidate is CanonicalValuesEntry => {
-  if (candidate === null || typeof candidate !== "object") return false;
-  if (!hasEntryFields(candidate)) return false;
-  if (!hasValidEntryOffsets(candidate) || !hasValidEntryIdentity(candidate)) return false;
-  if (!Array.isArray(candidate.importRoutes) || !candidate.importRoutes.every(isImportRoute))
-    return false;
-  if (!hasCanonicalValues(candidate.values)) return false;
-  return candidate.fingerprint === fingerprintValues(candidate.values);
-};
-
-const hasCachedCatalogFields = (
-  candidate: object,
-): candidate is Record<"entries" | "fingerprint" | "integrity" | "version", unknown> =>
-  ["entries", "fingerprint", "integrity", "version"].every((field) => field in candidate);
-
-export const isCachedCatalog = (candidate: unknown): candidate is CachedCatalog => {
-  if (candidate === null || typeof candidate !== "object") return false;
-  if (!hasCachedCatalogFields(candidate)) return false;
-  if (candidate.version !== CACHE_FORMAT_VERSION) return false;
-  if (typeof candidate.fingerprint !== "string" || typeof candidate.integrity !== "string")
-    return false;
-  if (!Array.isArray(candidate.entries) || !candidate.entries.every(isCanonicalValuesEntry))
-    return false;
-  return (
-    candidate.integrity ===
-    cacheIntegrity({ fingerprint: candidate.fingerprint, entries: candidate.entries })
+export const decodeCachedCatalog = (candidate: unknown): Option.Option<CachedCatalog> =>
+  Schema.decodeUnknownOption(SealedCatalog)(candidate).pipe(
+    Option.flatMap((sealed) =>
+      Schema.decodeUnknownOption(CachedEntries)(sealed.entries).pipe(
+        Option.map((entries) => ({ ...sealed, entries })),
+      ),
+    ),
   );
-};
