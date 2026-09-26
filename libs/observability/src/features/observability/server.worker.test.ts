@@ -401,7 +401,15 @@ describe("browser events followed by a failing request", () => {
           Effect.withTracer(fixedSpans),
           Effect.asVoid,
         );
-        return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
+        return {
+          stderr: logs.stderr.map(({ "error.cause": failureCause, ...line }) =>
+            typeof failureCause === "string"
+              ? { ...line, "error.cause": failureCause.split("\n").slice(0, 2).join("\n") }
+              : line,
+          ),
+          stdout: logs.stdout,
+          stdwarn: logs.stdwarn,
+        };
       }),
     ));
 
@@ -431,6 +439,7 @@ describe("browser events followed by a failing request", () => {
           request_id: "22222222-2222-4222-8222-222222222222",
           span_id: "c".repeat(16),
           trace_id: "c".repeat(32),
+          "error.cause": "RangeError: [redacted]\n at handle (/assets/app-abc.js:7:11)",
           "error.fingerprint": "ea495fdd",
           "error.locations": "/assets/app-abc.js:7:11",
           "error.type": "RangeError",

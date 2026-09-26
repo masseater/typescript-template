@@ -80,6 +80,7 @@ it.effect("does not return zero usage or expose response bodies on authorization
       token: Redacted.make("test-token"),
     }).pipe(Effect.flip);
     assert.strictEqual(failure.code, "billing_http_failed");
+    assert.strictEqual(failure.status, 403);
     assert.notInclude(
       yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
       "must-not-be-logged",

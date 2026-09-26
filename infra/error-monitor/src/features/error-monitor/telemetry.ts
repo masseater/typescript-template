@@ -81,9 +81,9 @@ const queryBody = (queryWindow: QueryWindow, offsetBy: number): string =>
   });
 
 const telemetryFailure =
-  (code: ErrorMonitorFailure["code"]): (() => ErrorMonitorFailure) =>
-  () =>
-    new ErrorMonitorFailure({ code, keys: [] });
+  (code: ErrorMonitorFailure["code"]): ((cause?: unknown) => ErrorMonitorFailure) =>
+  (cause) =>
+    new ErrorMonitorFailure({ cause, code, keys: [] });
 
 const queryTelemetry = ({
   fetchImpl,
@@ -120,7 +120,11 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
 > {
   const telemetryResponse = yield* queryTelemetry({ fetchImpl: fetch, offsetBy, queryWindow });
   if (!telemetryResponse.ok) {
-    return yield* telemetryFailure("telemetry_http_failed")();
+    return yield* new ErrorMonitorFailure({
+      code: "telemetry_http_failed",
+      keys: [],
+      status: telemetryResponse.status,
+    });
   }
   const telemetryPayload = yield* Effect.tryPromise({
     catch: telemetryFailure("telemetry_response_invalid"),

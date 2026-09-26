@@ -131,8 +131,16 @@ const maskedValue = (masked: {
   const quote = quotePattern.exec(decoded)?.[0] ?? nameQuote;
   return { end, value: `${quote}${placeholder}${quote}` };
 };
+const octet = String.raw`(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)`;
+const hextet = "[0-9a-f]{1,4}";
+const personalValues = [
+  String.raw`[\w.%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}`,
+  String.raw`(?<![\d.])${octet}(?:\.${octet}){3}(?!\.?\d)`,
+  String.raw`(?<![\w:.])(?:(?:${hextet}:){7}${hextet}|(?:${hextet}:){1,7}:(?:${hextet}(?::${hextet}){0,6})?|::${hextet}(?::${hextet}){0,6})(?![\w:])`,
+];
+const personalValue = new RegExp(personalValues.join("|"), "giu");
 const redactSecrets = (source: string, keepNumbers = false): string =>
-  new TextScan(source, 0).redact(keepNumbers);
+  new TextScan(source, 0).redact(keepNumbers).replaceAll(personalValue, placeholder);
 const isSecretKey = (fieldName: string): boolean => secretKey.test(fieldName);
 const redactedField = (fieldName: string, fieldValue: unknown): unknown => {
   if (isSecretKey(fieldName)) {

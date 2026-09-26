@@ -2,11 +2,12 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { APPLICATION, applications, type Application } from "@repo/config";
 import { AUTHENTICATION_METHOD, ROLE, authenticationMethods, roles } from "@repo/config/identity";
 import { claimMailSlot, findUser, schema, type DrizzleDatabase } from "@repo/db";
-import { logAt, logCause } from "@repo/observability";
+import { logAt } from "@repo/observability";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
-import { Cause, Clock, DateTime, Duration, Effect, Result } from "effect";
+import { Clock, DateTime, Duration, Effect, Result } from "effect";
 
+import { createLogger } from "./auth-logger.ts";
 import { authPlugins } from "./auth-plugins.ts";
 import {
   sendEmailChangeCompleted,
@@ -174,25 +175,6 @@ const createEmailChangeCompletedNotifier = (
         url: new URL("/settings/security", origin).href,
       }),
     );
-};
-
-const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {
-  return {
-    level: "warn",
-    log: (level, _description, ...details: readonly unknown[]) => {
-      const cause = details.find((detail) => detail instanceof Error);
-      void run(
-        level === "error"
-          ? cause === undefined
-            ? logAt("Error", { eventName: "authentication.failed" })
-            : logCause({ cause: Cause.fail(cause), eventName: "authentication.failed" })
-          : logAt(level === "warn" ? "Warn" : "Info", {
-              attributes: { level },
-              eventName: "authentication.diagnostic",
-            }),
-      );
-    },
-  };
 };
 
 const createAdvancedOptions = ({

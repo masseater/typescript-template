@@ -92,6 +92,7 @@ export const failureAttributesOf = (failed: unknown): Attributes => {
 export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> =>
   logAt("Error", {
     attributes: failureAttributesOf(Cause.squash(cause)),
+    cause,
     eventName: "application.error",
   });
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";

@@ -211,3 +211,72 @@ describe("a failure whose cause carries a secret", () => {
     ]);
   });
 });
+
+describe("a warning whose failure carries fields and a chain of causes", () => {
+  const it = test.extend("loggedLines", () => {
+    const loggedLines = Ref.makeUnsafe<
+      readonly { readonly line: unknown; readonly stream: keyof LogSink }[]
+    >([]);
+    const recordInto =
+      (stream: keyof LogSink) =>
+      (line: string): void => {
+        const parsedLine: unknown = JSON.parse(line);
+        Effect.runSync(
+          Ref.update(loggedLines, (earlier) => [...earlier, { line: parsedLine, stream }]),
+        );
+      };
+    const logSink = {
+      error: recordInto("error"),
+      info: recordInto("info"),
+      warn: recordInto("warn"),
+    };
+    const relayFailure: unknown = Object.create(TypeError.prototype, {
+      message: { value: "private@example.test from 203.0.113.7 was refused" },
+      stack: {
+        value: "TypeError: private@example.test from 203.0.113.7 was refused\n    at relay",
+      },
+    });
+    const refused: unknown = Object.create(Error.prototype, {
+      cause: { value: relayFailure },
+      code: { enumerable: true, value: "billing_http_failed" },
+      message: { value: "" },
+      name: { value: "UpstreamRefused" },
+      stack: { value: "UpstreamRefused: \n    at fetchUsage" },
+      status: { enumerable: true, value: 503 },
+    });
+    return Effect.runPromise(
+      Effect.andThen(
+        logAt("Warn", { cause: Cause.fail(refused), eventName: "billing.degraded" }).pipe(
+          Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink })),
+        ),
+        Ref.get(loggedLines),
+      ),
+    );
+  });
+
+  it("keeps the fields and the chain at the level it was asked for, minus the personal values", ({
+    loggedLines,
+  }) => {
+    expect(loggedLines).toStrictEqual([
+      {
+        line: {
+          "error.cause": [
+            "UpstreamRefused: ",
+            "    at fetchUsage {",
+            "  [cause]: TypeError: [redacted] from [redacted] was refused",
+            "      at relay",
+            "}",
+          ].join("\n"),
+          "error.fields": JSON.stringify({
+            code: "billing_http_failed",
+            status: 503,
+          }),
+          event: "billing.degraded",
+          release: "abc123",
+          service: "service-member-server",
+        },
+        stream: "warn",
+      },
+    ]);
+  });
+});

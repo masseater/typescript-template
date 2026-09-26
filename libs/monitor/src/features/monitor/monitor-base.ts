@@ -1,4 +1,5 @@
 import { Email, httpStatus } from "@repo/config";
+import { causeField } from "@repo/observability";
 import {
   Cause,
   Clock,
@@ -59,6 +60,17 @@ const failureReason = (cause: Readonly<Cause.Cause<unknown>>): string => {
   return `${base}:${squashedFailure.keys.join(",")}`;
 };
 
+const checkFailedRecord = (failed: {
+  readonly cause: Readonly<Cause.Cause<unknown>>;
+  readonly durationMs: number;
+  readonly monitorEvent: string;
+}): Readonly<Record<string, string | number>> => ({
+  durationMs: failed.durationMs,
+  event: `${failed.monitorEvent}.check_failed`,
+  reason: failureReason(failed.cause),
+  ...causeField(failed.cause),
+});
+
 const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const splitRecipients = SchemaGetter.transform((recipientText: string) => recipientText.split(","));
 const joinRecipients = SchemaGetter.transform((recipients: readonly string[]) =>
@@ -95,7 +107,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
           const outcome = yield* Effect.exit(monitor.check(notify));
           return Exit.isSuccess(outcome)
             ? yield* monitor.reportSuccess(outcome.value, started)
-            : yield* monitor.reportFailure(notify, started, failureReason(outcome.cause));
+            : yield* monitor.reportFailure(notify, started, outcome.cause);
         });
       }),
     );
@@ -133,16 +145,19 @@ abstract class Monitor<Bindings extends MonitorBindings> {
     });
   }
 
-  private reportFailure(notify: Notify, started: number, reason: string): Effect.Effect<Response> {
+  private reportFailure(
+    notify: Notify,
+    started: number,
+    cause: Readonly<Cause.Cause<unknown>>,
+  ): Effect.Effect<Response> {
     const { durableState, monitorEvent, failure } = this;
+    const reason = failureReason(cause);
     return Effect.gen(function* reportFailure() {
       const durationMs = (yield* Clock.currentTimeMillis) - started;
       yield* Console.error(
-        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
-          durationMs,
-          event: `${monitorEvent}.check_failed`,
-          reason,
-        }).pipe(Effect.orDie),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+          checkFailedRecord({ cause, durationMs, monitorEvent }),
+        ).pipe(Effect.orDie),
       );
       const day = DateTime.formatIsoDateUtc(DateTime.makeUnsafe(started));
       if (
@@ -159,5 +174,5 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   protected abstract check(notify: Notify): Effect.Effect<object, unknown>;
 }
 
-export { AlertEnvironment, Monitor, Recipients };
+export { AlertEnvironment, Monitor, Recipients, checkFailedRecord };
 export type { Alert, MonitorBindings, Notify };

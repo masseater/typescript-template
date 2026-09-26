@@ -132,6 +132,26 @@ describe.for([
     '{"tokens":[],"reason":"boom"}',
     '{"tokens":"[redacted]","reason":"boom"}',
   ],
+  [
+    "an email address inside a message",
+    "RangeError: private@example.test is taken",
+    "RangeError: [redacted] is taken",
+  ],
+  [
+    "an IPv4 address inside a message",
+    "connect ECONNREFUSED 203.0.113.7:443",
+    "connect ECONNREFUSED [redacted]:443",
+  ],
+  [
+    "an IPv6 address inside a message",
+    "client 2001:db8::1 was rejected",
+    "client [redacted] was rejected",
+  ],
+  [
+    "a version and a clock that only look like addresses",
+    "effect@4.0.0 at 08:00:00.000Z in /assets/app-abc.js:7:11",
+    "effect@4.0.0 at 08:00:00.000Z in /assets/app-abc.js:7:11",
+  ],
 ] as const)("%s", ([, written, expectedLine]) => {
   const it = test.extend("redactedLine", () => redactSecrets(written));
   it("leaves the line readable with the secret hidden", ({ redactedLine }) => {

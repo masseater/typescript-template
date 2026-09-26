@@ -1,4 +1,13 @@
-import { Cause, Console, Logger, Predicate, References, type Layer, type LogLevel } from "effect";
+import {
+  Cause,
+  Console,
+  Logger,
+  Predicate,
+  References,
+  Result,
+  type Layer,
+  type LogLevel,
+} from "effect";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 
@@ -19,8 +28,22 @@ const messageParts = (logMessage: unknown): readonly unknown[] => {
 const redactedMessage = (logMessage: unknown): unknown => {
   return JSON.parse(JSON.stringify(messageParts(logMessage), redactedField));
 };
+const unlistedFields: ReadonlySet<string> = new Set(["_tag", "stack"]);
+const failureFields = (cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> => {
+  const failure: unknown = Cause.squash(cause);
+  if (!Predicate.isObject(failure)) {
+    return {};
+  }
+  const fields = Object.entries(failure).filter(([fieldName]) => !unlistedFields.has(fieldName));
+  const encoded = Result.try(() => JSON.stringify(Object.fromEntries(fields), redactedField));
+  return fields.length === 0 || Result.isFailure(encoded)
+    ? {}
+    : { "error.fields": redactSecrets(encoded.success) };
+};
 const causeField = (cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> => {
-  return cause.reasons.length === 0 ? {} : { "error.cause": redactSecrets(Cause.pretty(cause)) };
+  return cause.reasons.length === 0
+    ? {}
+    : { "error.cause": redactSecrets(Cause.pretty(cause)), ...failureFields(cause) };
 };
 const withCause = (logMessage: unknown, cause: Readonly<Cause.Cause<unknown>>): unknown => {
   const reported = causeField(cause);
@@ -71,5 +94,5 @@ const structuredLogs = (settings: StructuredLogOptions): Layer.Layer<never> => {
   });
   return Logger.layer([logger]);
 };
-export { redactedLogger, serviceLabel, structuredLogs };
+export { causeField, redactedLogger, serviceLabel, structuredLogs };
 export type { LogSink, StructuredLogOptions };
