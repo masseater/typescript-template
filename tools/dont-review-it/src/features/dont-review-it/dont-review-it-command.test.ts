@@ -1459,7 +1459,7 @@ describe("dontReviewItCommand", () => {
     });
   });
 
-  describe("check --write on entries it may repair", () => {
+  describe("regenerate on entries it may repair", () => {
     const it = standardIoTest
       .extend("theExitCodeOfARepairedEntryComposition", () =>
         Effect.runPromise(
@@ -1485,7 +1485,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             const settled = process.exitCode;
@@ -1518,7 +1518,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             process.exitCode = 0;
@@ -1555,7 +1555,7 @@ describe("dontReviewItCommand", () => {
                 );
                 yield* Effect.promise(() =>
                   runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--write", "--repository-root", root],
+                    rawArgs: ["regenerate", "--repository-root", root],
                   }),
                 );
                 process.exitCode = 0;
@@ -1588,7 +1588,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             process.exitCode = 0;
@@ -1618,7 +1618,7 @@ describe("dontReviewItCommand", () => {
     });
   });
 
-  describe("check --write on a workspace whose lint rule index is missing", () => {
+  describe("regenerate on a workspace whose lint rule index is missing", () => {
     const it = standardIoTest.extend("theWrittenLintRuleIndexHeading", () =>
       Effect.runPromise(
         Effect.gen(function* theWrittenLintRuleIndexHeading() {
@@ -1649,7 +1649,7 @@ describe("dontReviewItCommand", () => {
           );
           yield* Effect.promise(() =>
             runCommand(dontReviewItCommand, {
-              rawArgs: ["check", "--write", "--repository-root", root],
+              rawArgs: ["regenerate", "--repository-root", root],
             }),
           );
           process.exitCode = 0;
@@ -1665,7 +1665,7 @@ describe("dontReviewItCommand", () => {
     });
   });
 
-  describe("check --write on entries it must not repair", () => {
+  describe("regenerate on entries it must not repair", () => {
     const it = standardIoTest
       .extend("theExitCodeOfAnUnrepairableEntryComposition", () =>
         Effect.runPromise(
@@ -1691,7 +1691,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             const settled = process.exitCode;
@@ -1724,7 +1724,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             process.exitCode = 0;
@@ -1761,7 +1761,7 @@ describe("dontReviewItCommand", () => {
                 );
                 yield* Effect.promise(() =>
                   runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--write", "--repository-root", root],
+                    rawArgs: ["regenerate", "--repository-root", root],
                   }),
                 );
                 process.exitCode = 0;
@@ -1865,7 +1865,7 @@ describe("dontReviewItCommand", () => {
     });
   });
 
-  describe("check --write on a manifest that exists but does not parse", () => {
+  describe("regenerate on a manifest that exists but does not parse", () => {
     const it = standardIoTest
       .extend("theExitCodeOfWritingToAnUnparsableManifest", () =>
         Effect.runPromise(
@@ -1879,7 +1879,7 @@ describe("dontReviewItCommand", () => {
             yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             const settled = process.exitCode;
@@ -1900,7 +1900,7 @@ describe("dontReviewItCommand", () => {
             yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
             yield* Effect.promise(() =>
               runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
+                rawArgs: ["regenerate", "--repository-root", root],
               }),
             );
             process.exitCode = 0;

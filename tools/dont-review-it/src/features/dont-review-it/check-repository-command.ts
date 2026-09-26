@@ -2,7 +2,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { defineCommand } from "citty";
 import { Effect, Path } from "effect";
 
-import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
+import { refuseMisuse, reportProblems } from "./check-support.ts";
 import { runLintRuleAuthoring } from "./lint-rule-authoring/run-cli.ts";
 import { isDirectoryAt } from "./platform/file-system.ts";
 import {
@@ -30,11 +30,6 @@ export const checkRepositoryCommand = defineCommand({
       description: "Root of the repository to scan (defaults to the current working directory)",
       valueHint: "path",
     },
-    write: {
-      type: "boolean",
-      default: false,
-      description: "Rewrite generated parts owned by dont-review-it, then run every check",
-    },
   },
   run({ args }) {
     return measureCheck(() =>
@@ -46,8 +41,6 @@ export const checkRepositoryCommand = defineCommand({
             refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
             return;
           }
-
-          if (args.write && !(yield* repairGeneratedParts(repositoryRoot))) return;
 
           process.exitCode = EXIT_SUCCESS;
           yield* reportProblems(repositoryRoot);

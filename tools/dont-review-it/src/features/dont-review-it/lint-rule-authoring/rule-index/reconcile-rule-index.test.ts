@@ -19,11 +19,11 @@ const RULE_SOURCE = `export const rule = {
 };
 `;
 
-const MISSING_INDEX = `A workspace that declares lint rules must not go without \`${INDEX_PATH}\`. Generate it with \`dont-review-it check --write\`.`;
+const MISSING_INDEX = `A workspace that declares lint rules must not go without \`${INDEX_PATH}\`. Generate it with \`dont-review-it regenerate\`.`;
 
-const MISSING_MARKERS = `\`${INDEX_PATH}\` must not lose its generated region. Put \`<!-- BEGIN GENERATED lint-rules -->\` and \`<!-- END GENERATED lint-rules -->\` back, or delete the file and regenerate it with \`dont-review-it check --write\`.`;
+const MISSING_MARKERS = `\`${INDEX_PATH}\` must not lose its generated region. Put \`<!-- BEGIN GENERATED lint-rules -->\` and \`<!-- END GENERATED lint-rules -->\` back, or delete the file and regenerate it with \`dont-review-it regenerate\`.`;
 
-const STALE_INDEX = `\`${INDEX_PATH}\` must not fall behind the rule implementations. Regenerate it with \`dont-review-it check --write\`.`;
+const STALE_INDEX = `\`${INDEX_PATH}\` must not fall behind the rule implementations. Regenerate it with \`dont-review-it regenerate\`.`;
 
 const DUPLICATED_RULE_NAME = `Two rules in \`packages/example\` must not share the name \`no-thing--allow-it\`; they claim the same document. Rename one of them.`;
 
@@ -160,7 +160,7 @@ layer(NodeServices.layer)("lintRuleIndexProblems", (it) => {
         expect(indexText).toMatchInlineSnapshot(`
         "# Lint rule index
 
-        Every lint rule this workspace implements. Generated from the rule sources; refresh it with \`dont-review-it check --write\` rather than editing it.
+        Every lint rule this workspace implements. Generated from the rule sources; refresh it with \`dont-review-it regenerate\` rather than editing it.
 
         <!-- BEGIN GENERATED lint-rules -->
 
@@ -739,7 +739,7 @@ layer(NodeServices.layer)("lintRuleIndexProblems", (it) => {
         expect(indexText).toMatchInlineSnapshot(`
         "# Lint rule index
 
-        Every lint rule this workspace implements. Generated from the rule sources; refresh it with \`dont-review-it check --write\` rather than editing it.
+        Every lint rule this workspace implements. Generated from the rule sources; refresh it with \`dont-review-it regenerate\` rather than editing it.
 
         <!-- BEGIN GENERATED lint-rules -->
 

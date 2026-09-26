@@ -1,6 +1,6 @@
 import { defineCommand } from "citty";
 
-import { checkCommand } from "./check-command.ts";
+import { checkCommand, regenerateCommand } from "./check-command.ts";
 import { checkRepositoryCommand } from "./check-repository-command.ts";
 
 export const dontReviewItCommand = defineCommand({
@@ -11,5 +11,6 @@ export const dontReviewItCommand = defineCommand({
   subCommands: {
     check: checkCommand,
     "check-repository": checkRepositoryCommand,
+    regenerate: regenerateCommand,
   },
 });

@@ -80,7 +80,7 @@ const staleLibraryVersion = ({
       {
         file: relativeTo(scope, skillFile),
         line: lineOfLibraryVersion(source),
-        message: `A shipped skill must not name a version its manifest no longer declares, because an agent reads library_version to decide whether the skill describes the package it installed. Set metadata.library_version to "${version}", or run dont-review-it check --write.`,
+        message: `A shipped skill must not name a version its manifest no longer declares, because an agent reads library_version to decide whether the skill describes the package it installed. Set metadata.library_version to "${version}", or run dont-review-it regenerate.`,
       },
     ];
   });

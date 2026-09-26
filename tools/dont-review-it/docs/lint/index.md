@@ -1,6 +1,6 @@
 # Lint rule index
 
-Every lint rule this workspace implements. Generated from the rule sources; refresh it with `dont-review-it check --write` rather than editing it.
+Every lint rule this workspace implements. Generated from the rule sources; refresh it with `dont-review-it regenerate` rather than editing it.
 
 <!-- BEGIN GENERATED lint-rules -->
 

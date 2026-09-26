@@ -9,52 +9,61 @@ import { measureCheck } from "./repository-checks/index.ts";
 
 const REPOSITORY_ROOT_FLAG = "--repository-root";
 
-const WRITE_FLAG = "--write";
-
-const KNOWN_FLAGS = [REPOSITORY_ROOT_FLAG, WRITE_FLAG];
+const KNOWN_FLAGS = [REPOSITORY_ROOT_FLAG];
 
 const flagsIn = (commandLine: readonly string[]): readonly string[] =>
   commandLine.filter((token) => token.startsWith("-")).map((token) => token.replace(/=.*$/u, ""));
 
-export const checkCommand = defineCommand({
-  meta: {
-    name: "check",
-    description: "Report every discipline violation the lint toolchain cannot see.",
-  },
-  args: {
-    "repository-root": {
-      type: "string",
-      description: "Root of the repository to scan (defaults to the current working directory)",
-      valueHint: "path",
+const scanCommand = (input: {
+  readonly name: string;
+  readonly description: string;
+  readonly regenerateFirst: boolean;
+}) =>
+  defineCommand({
+    meta: { name: input.name, description: input.description },
+    args: {
+      "repository-root": {
+        type: "string",
+        description: "Root of the repository to scan (defaults to the current working directory)",
+        valueHint: "path",
+      },
     },
-    write: {
-      type: "boolean",
-      default: false,
-      description:
-        "Rewrite the parts this repository decides on its own, entry scripts, shipped skill versions and lint rule documents, then re-run the checks",
+    run({ args, rawArgs }) {
+      return measureCheck(() =>
+        Effect.runPromise(
+          Effect.gen(function* check() {
+            const unknownFlags = flagsIn(rawArgs).filter(
+              (raised) => !KNOWN_FLAGS.includes(raised),
+            );
+            if (unknownFlags.length > 0) {
+              refuseMisuse(`Unknown option ${unknownFlags.join(", ")}. Run --help for usage.\n`);
+              return;
+            }
+
+            const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
+            if (!(yield* isDirectoryAt(repositoryRoot))) {
+              refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
+              return;
+            }
+
+            if (input.regenerateFirst && !(yield* repairGeneratedParts(repositoryRoot))) return;
+
+            yield* reportProblems(repositoryRoot);
+          }).pipe(Effect.provide(NodeServices.layer)),
+        ),
+      );
     },
-  },
-  run({ args, rawArgs }) {
-    return measureCheck(() =>
-      Effect.runPromise(
-        Effect.gen(function* check() {
-          const unknownFlags = flagsIn(rawArgs).filter((raised) => !KNOWN_FLAGS.includes(raised));
-          if (unknownFlags.length > 0) {
-            refuseMisuse(`Unknown option ${unknownFlags.join(", ")}. Run --help for usage.\n`);
-            return;
-          }
+  });
 
-          const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
-          if (!(yield* isDirectoryAt(repositoryRoot))) {
-            refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
-            return;
-          }
+export const checkCommand = scanCommand({
+  name: "check",
+  description: "Report every discipline violation the lint toolchain cannot see.",
+  regenerateFirst: false,
+});
 
-          if (args.write && !(yield* repairGeneratedParts(repositoryRoot))) return;
-
-          yield* reportProblems(repositoryRoot);
-        }).pipe(Effect.provide(NodeServices.layer)),
-      ),
-    );
-  },
+export const regenerateCommand = scanCommand({
+  name: "regenerate",
+  description:
+    "Rewrite the parts this repository decides on its own, entry scripts, shipped skill versions and lint rule documents, then report what is left.",
+  regenerateFirst: true,
 });

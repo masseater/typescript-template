@@ -1,6 +1,6 @@
 # Rules by normative document
 
-Which lint rules of this repository declare each normative document as their grounds. Collected from those declarations alone, so what the off-the-shelf rules and the other checks cover is not in it. Generated; refresh it with `dont-review-it check --write` rather than editing it.
+Which lint rules of this repository declare each normative document as their grounds. Collected from those declarations alone, so what the off-the-shelf rules and the other checks cover is not in it. Generated; refresh it with `dont-review-it regenerate` rather than editing it.
 
 <!-- BEGIN GENERATED rules-by-guideline -->
 

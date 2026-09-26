@@ -156,7 +156,7 @@ layer(NodeServices.layer)("shippedSkillsProblems", (it) => {
               file: "skills/core/SKILL.md",
               line: 4,
               message:
-                'A shipped skill must not name a version its manifest no longer declares, because an agent reads library_version to decide whether the skill describes the package it installed. Set metadata.library_version to "1.2.3", or run dont-review-it check --write.',
+                'A shipped skill must not name a version its manifest no longer declares, because an agent reads library_version to decide whether the skill describes the package it installed. Set metadata.library_version to "1.2.3", or run dont-review-it regenerate.',
             },
           ],
         });
