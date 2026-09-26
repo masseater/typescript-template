@@ -1,5 +1,3 @@
-import { telemetryAsked } from "@repo/telemetry/optional-setting";
-import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   effectTsgoNoEmit,
@@ -39,19 +37,5 @@ export default defineConfig({
         prepush: ["check:effect", "check:effect:scenarios", "check:imports", "check:modular"],
       }),
     },
-  },
-  test: {
-    experimental: {
-      openTelemetry: {
-        enabled: telemetryAsked,
-        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
-      },
-    },
-    coverage: {
-      exclude: ["specs/**"],
-      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-    },
-    mockReset: true,
-    restoreMocks: true,
   },
 });

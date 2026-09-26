@@ -34,7 +34,6 @@
     "unused-dependency-overrides": "error"
   },
   "duplicates": {
-    "ignore": ["**/vite.config.ts"],
     "threshold": 0.0001
   },
   "dynamicallyLoaded": [
