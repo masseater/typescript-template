@@ -948,6 +948,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.52.0
       lucide-react:
         specifier: 'catalog:'
         version: 1.47.0(react@19.3.0)
@@ -1180,6 +1183,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.52.0
     devDependencies:
       '@repo/telemetry':
         specifier: workspace:*

@@ -1,3 +1,5 @@
+import { memoize } from "es-toolkit";
+
 import type { OfferView } from "#shared/contracts/index.ts";
 
 type Offer = typeof OfferView.Type;
@@ -36,17 +38,9 @@ const singleIntervalNames: Readonly<Record<Offer["interval"], string>> = {
   year: "年額",
 };
 
-const currencyFormats = new Map<string, Intl.NumberFormat>();
-
-function currencyFormat(currency: string): Intl.NumberFormat {
-  const known = currencyFormats.get(currency);
-  if (known !== undefined) {
-    return known;
-  }
-  const created = new Intl.NumberFormat("ja-JP", { currency, style: "currency" });
-  currencyFormats.set(currency, created);
-  return created;
-}
+const currencyFormat = memoize(
+  (currency: string) => new Intl.NumberFormat("ja-JP", { currency, style: "currency" }),
+);
 
 function formatAmount(offer: Offer): string {
   const currency = offer.currency.toLowerCase();

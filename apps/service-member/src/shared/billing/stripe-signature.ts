@@ -1,4 +1,4 @@
-import { Clock, Effect, Encoding, Redacted } from "effect";
+import { Clock, Effect, Encoding, Redacted, Result } from "effect";
 
 import { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
@@ -24,37 +24,26 @@ function parseSignatureHeader(header: string): SignatureHeader | undefined {
   return { signatures, timestamp };
 }
 
-function sameDigest(expected: string, candidate: string): boolean {
-  if (expected.length !== candidate.length) {
-    return false;
-  }
-  const difference = Array.from(expected).reduce(
-    (accumulated, character, index) =>
-      accumulated | (character.charCodeAt(0) ^ candidate.charCodeAt(index)),
-    0,
-  );
-  return difference === 0;
-}
-
-const signPayload = Effect.fn("signStripePayload")(function* signStripePayload(
-  secret: Redacted.Redacted,
-  signedPayload: string,
-) {
-  const encoder = new TextEncoder();
-  const key = yield* Effect.promise(() =>
+const verificationKey = (secret: Redacted.Redacted): Effect.Effect<CryptoKey> =>
+  Effect.promise(() =>
     crypto.subtle.importKey(
       "raw",
-      encoder.encode(Redacted.value(secret)),
+      new TextEncoder().encode(Redacted.value(secret)),
       { hash: "SHA-256", name: "HMAC" },
       false,
-      ["sign"],
+      ["verify"],
     ),
   );
-  const digest = yield* Effect.promise(() =>
-    crypto.subtle.sign("HMAC", key, encoder.encode(signedPayload)),
-  );
-  return Encoding.encodeHex(new Uint8Array(digest));
-});
+
+const signatureMatches = (
+  key: CryptoKey,
+  signed: Readonly<{ payload: Uint8Array<ArrayBuffer>; signature: string }>,
+): Effect.Effect<boolean> =>
+  Result.match(Encoding.decodeHex(signed.signature), {
+    onFailure: () => Effect.succeed(false),
+    onSuccess: (signature) =>
+      Effect.promise(() => crypto.subtle.verify("HMAC", key, signature, signed.payload)),
+  });
 
 const verifyStripeSignature = Effect.fn("verifyStripeSignature")(function* verifyStripeSignature(
   secret: Redacted.Redacted,
@@ -65,8 +54,12 @@ const verifyStripeSignature = Effect.fn("verifyStripeSignature")(function* verif
   if (parsed === undefined) {
     return yield* new StripeSignatureInvalid({ reason: "header_malformed" });
   }
-  const expected = yield* signPayload(secret, `${parsed.timestamp}.${payload}`);
-  if (!parsed.signatures.some((signature) => sameDigest(expected, signature))) {
+  const key = yield* verificationKey(secret);
+  const signedPayload = new TextEncoder().encode(`${parsed.timestamp}.${payload}`);
+  const matches = yield* Effect.forEach(parsed.signatures, (signature) =>
+    signatureMatches(key, { payload: signedPayload, signature }),
+  );
+  if (!matches.includes(true)) {
     return yield* new StripeSignatureInvalid({ reason: "mismatch" });
   }
   const nowSeconds = Math.floor((yield* Clock.currentTimeMillis) / millisecondsPerSecond);
