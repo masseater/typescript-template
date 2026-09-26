@@ -1,11 +1,11 @@
 import { tmpdir } from "node:os";
 
 import {
+  AuthSecret,
   applicationPorts,
   applications,
   loopbackHosts,
   mailpitPort,
-  minimumAuthSecretLength,
 } from "@repo/config";
 import { repositoryRoot as root } from "@repo/config/repository-root";
 import { Effect, Option, Path, Schema } from "effect";
@@ -28,7 +28,13 @@ interface RunOptions {
 
 const ROOT_HASH_LENGTH = 12;
 
-const local = new URL("../../../../../.local/", import.meta.url);
+const rootUrl = Effect.runSync(
+  Path.Path.pipe(
+    Effect.flatMap((paths) => paths.toFileUrl(`${root}/`)),
+    Effect.provide(Path.layer),
+  ),
+);
+const local = new URL(".local/", rootUrl);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
 const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(root));
@@ -43,7 +49,7 @@ const StripeTestCredentials = Schema.Struct({
   webhookSecret: Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u)),
 });
 const CredentialsFile = Schema.Struct({
-  authSecret: Schema.String.check(Schema.isMinLength(minimumAuthSecretLength)),
+  authSecret: AuthSecret,
   origins: Schema.optionalKey(OriginMode),
   stripe: Schema.optionalKey(StripeTestCredentials),
 });
@@ -153,6 +159,7 @@ export {
   readCredentials,
   refreshBrowserConfig,
   root,
+  rootUrl,
   routeNames,
   routes,
   run,

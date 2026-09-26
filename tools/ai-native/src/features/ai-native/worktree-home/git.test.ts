@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filesystem, joinPath, removePath } from "../host.ts";
+import { filesystem, paths, removePath } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 
 describe("gitOutput", () => {
@@ -19,7 +19,7 @@ describe("gitOutput", () => {
       .extend("theCodeOfTheKeptCause", ({ theSandbox }) =>
         Effect.runPromise(
           Effect.flip(
-            gitOutput(runGit, { cwd: joinPath(theSandbox, "absent"), handed: ["status"] }),
+            gitOutput(runGit, { cwd: paths.join(theSandbox, "absent"), handed: ["status"] }),
           ).pipe(
             Effect.map((gitFailure) =>
               gitFailure.cause !== undefined && "code" in gitFailure.cause

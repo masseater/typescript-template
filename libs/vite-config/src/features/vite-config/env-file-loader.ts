@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { sumBy } from "es-toolkit";
 
 import type { PluginOption } from "vite-plus";
 
@@ -22,10 +23,7 @@ const stripEnvFileLoader = (
     }
     return pluginNamed(plugin) === envFileLoader ? [[], 1] : [[plugin], 0];
   });
-  return [
-    pieces.flatMap(([kept]) => kept),
-    pieces.reduce((removedSum, [, removedCount]) => removedSum + removedCount, 0),
-  ];
+  return [pieces.flatMap(([kept]) => kept), sumBy(pieces, ([, removedCount]) => removedCount)];
 };
 
 const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {

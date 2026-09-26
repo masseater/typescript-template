@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Config, Effect, FileSystem, Schema } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 
 import { matchesAnchoredGlobPath } from "../lint/oxlint/lib/glob-path-match.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { shardOutput } from "./pr-check-shard.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { devServerTests } from "./test-runtime.ts";
 import { rootNodeTestIncludes } from "./tool-test-projects.ts";
 import { workspacePackages } from "./workspace-packages.ts";

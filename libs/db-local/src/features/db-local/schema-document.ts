@@ -1,13 +1,8 @@
+import { repositoryFile } from "@repo/config/repository-root";
 import { erDiagram, schema } from "@repo/db";
-import { Effect, Path } from "effect";
 
-const schemaDocumentPath = Effect.flatMap(Path.Path, (hostPath) =>
-  hostPath.fromFileUrl(
-    new URL(
-      "../../../../../apps/internal-dashboard/content/docs/data-model/schema.md",
-      import.meta.url,
-    ),
-  ),
+const schemaDocumentPath = repositoryFile(
+  "apps/internal-dashboard/content/docs/data-model/schema.md",
 );
 
 const schemaDocument = (): string =>

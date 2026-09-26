@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { TextlintRuleSeverityLevelKeys } from "@textlint/kernel";
 import { Effect } from "effect";
 import { createLinter, loadLinterFormatter } from "textlint";
 
 import { path } from "../platform/path.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { textlintDescriptor } from "./text-lint-descriptor.ts";
 
 runCli(

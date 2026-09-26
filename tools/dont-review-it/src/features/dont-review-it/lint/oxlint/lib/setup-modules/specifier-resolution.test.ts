@@ -1,38 +1,12 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema } from "effect";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { buildSetupExportSpecifierIndex } from "./export-specifier-index.ts";
-import {
-  packageDirectoryInWorkspace,
-  packageReferenceOf,
-  resolveCoupling,
-} from "./specifier-resolution.ts";
+import { packageDirectoryInWorkspace, resolveCoupling } from "./specifier-resolution.ts";
 
 const WORKSPACE_STEM = "setup-modules-specifier-workspace-";
-
-describe("packageReferenceOf", () => {
-  describe("a scope written without a package name", () => {
-    const it = test.extend("referenceOfBareScope", () => packageReferenceOf("@fixture"));
-
-    it("references no package", ({ referenceOfBareScope }) => {
-      expect(referenceOfBareScope).toBe(null);
-    });
-  });
-
-  describe("a package written with a subpath", () => {
-    const it = test.extend("referenceOfScopedSubpath", () =>
-      packageReferenceOf("@fixture/shared/http"));
-
-    it("references that subpath", ({ referenceOfScopedSubpath }) => {
-      expect(referenceOfScopedSubpath).toStrictEqual({
-        name: "@fixture/shared",
-        subpath: "./http",
-      });
-    });
-  });
-});
 
 layer(NodeServices.layer)("packageDirectoryInWorkspace", (it) => {
   describe("a specifier naming no package", () => {

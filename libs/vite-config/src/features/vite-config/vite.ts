@@ -1,5 +1,6 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
+  APPLICATION,
   applicationPorts,
   coreEntrypoints,
   grants,
@@ -10,7 +11,6 @@ import {
   jobsWorkflowName,
   loopbackAddress,
   wikiBasePath,
-  wikiHost,
   wikiPort,
   wikiServerFnBase,
   wikiWorker,
@@ -264,17 +264,6 @@ const paraglideAppRun = (packageRoot: string): RunConfig => ({
   },
 });
 
-const toolTest: NonNullable<UserConfig["test"]> = {
-  mockReset: true,
-  restoreMocks: true,
-  coverage: {
-    exclude: ["specs/**"],
-    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-  },
-  unstubEnvs: true,
-  unstubGlobals: true,
-};
-
 const appConfig = (
   app: Application,
   {
@@ -370,7 +359,7 @@ const wikiStartOptions = {
 
 const wikiContentInput = {
   base: "workspace",
-  pattern: `apps/${wikiHost}/content/docs/**`,
+  pattern: `apps/${APPLICATION.dashboard}/content/docs/**`,
 } as const;
 
 const wikiTasks = measured({
@@ -477,7 +466,6 @@ export {
   taskInput,
   telemetryEnv,
   testRun,
-  toolTest,
   wikiCompanion,
   wikiDevServices,
   withoutEnvFileLoader,

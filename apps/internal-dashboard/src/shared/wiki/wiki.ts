@@ -16,7 +16,7 @@ import type { FeatureFlags } from "@repo/feature-flags";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "@repo/runtime";
 
-const wikiService = APPLICATION.wiki;
+const wikiService = APPLICATION.dashboard;
 
 type WikiServices = AppServices | FeatureFlags | FlagEditorAccess | WikiPublisher;
 

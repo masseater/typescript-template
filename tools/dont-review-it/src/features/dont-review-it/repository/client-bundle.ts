@@ -2,12 +2,13 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type BuildTarget, BuildTargetName } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
+import { packageNameOf } from "../lint/oxlint/lib/package-specifier.ts";
 import { denialReason } from "./client-bundle-denial.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const probeModules: Readonly<Record<BuildTarget, string>> = {
   "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
@@ -145,8 +146,12 @@ const expectedDenials = (application: BuildTarget) =>
     const { dependencies } = yield* Schema.decodeEffect(Schema.fromJsonString(Manifest))(
       manifestText,
     );
+    const declares = (specifier: string): boolean => {
+      const packageName = packageNameOf(specifier);
+      return packageName !== undefined && Object.hasOwn(dependencies, packageName);
+    };
     return serverOnly.map(([specifier, pattern]) =>
-      specifier.startsWith("#") || specifier.split("/").slice(0, 2).join("/") in dependencies
+      specifier.startsWith("#") || declares(specifier)
         ? ([specifier, pattern] as const)
         : ([specifier, undefined] as const),
     );

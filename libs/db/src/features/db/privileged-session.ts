@@ -37,7 +37,7 @@ const adminPrivilege: Privilege = {
 };
 
 const staffPrivilege: Privilege = {
-  audience: APPLICATION.wiki,
+  audience: APPLICATION.dashboard,
   levels: staffPermissions,
   role: ROLE.staff,
 };

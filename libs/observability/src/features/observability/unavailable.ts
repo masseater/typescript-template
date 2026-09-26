@@ -4,10 +4,10 @@ import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
 import { serviceLabel, type LogSink } from "./structured-logs.ts";
 
-import type { ServiceName } from "./service-name.ts";
+import type { BuildTarget } from "@repo/config";
 
 type Reporting = {
-  readonly service: ServiceName;
+  readonly service: BuildTarget;
   readonly log?: LogSink;
 };
 
@@ -77,7 +77,7 @@ const causeChain = (caughtError: unknown): string => {
 
 const unavailableLog = (
   cause: Readonly<Cause.Cause<unknown>>,
-  service: ServiceName,
+  service: BuildTarget,
 ): Record<string, string> => {
   const caughtError = Cause.squash(cause);
   return {

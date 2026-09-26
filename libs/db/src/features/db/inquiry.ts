@@ -1,4 +1,11 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  AUDIT_ACTION,
+  INQUIRY_AUTHOR_KIND,
+  InquiryStatus,
+  maximumAdminPageSize,
+  type InquiryAuthorKind,
+} from "@repo/config";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
@@ -8,24 +15,26 @@ import { query, type DrizzleDatabase } from "./database.ts";
 import { freshId } from "./fresh-id.ts";
 import { InquiryForbidden } from "./inquiry-forbidden.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
-import { adminInquiryColumns, inquiryColumns, inquiryThread } from "./inquiry-thread.ts";
+import {
+  acceptsReplies,
+  adminInquiryColumns,
+  inquiryColumns,
+  inquiryThread,
+} from "./inquiry-thread.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import {
   auditEvent,
-  INQUIRY_AUTHOR_KIND,
   INQUIRY_STATUS,
   inquiry,
   inquiryMessage,
-  inquiryStatuses,
   type AuditAction,
-  type InquiryStatus,
   user,
 } from "./schema.ts";
 
 export const InquiryPage = Schema.Struct({
   limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  status: Schema.optionalKey(Schema.Literals(inquiryStatuses)),
+  status: Schema.optionalKey(InquiryStatus),
 });
 
 type InquirySummary = Readonly<{
@@ -38,13 +47,14 @@ type InquirySummary = Readonly<{
 
 type InquiryMessage = Readonly<{
   authorId: string;
-  authorKind: "admin" | "member";
+  authorKind: InquiryAuthorKind;
   body: string;
   createdAt: Date;
   id: string;
 }>;
 
-type InquiryThread = InquirySummary & Readonly<{ messages: readonly InquiryMessage[] }>;
+type InquiryThread = InquirySummary &
+  Readonly<{ messages: readonly InquiryMessage[]; replyable: boolean }>;
 
 type AdminInquirySummary = InquirySummary &
   Readonly<{
@@ -52,7 +62,8 @@ type AdminInquirySummary = InquirySummary &
     memberName: string;
   }>;
 
-type AdminInquiryThread = AdminInquirySummary & Readonly<{ messages: readonly InquiryMessage[] }>;
+type AdminInquiryThread = AdminInquirySummary &
+  Readonly<{ messages: readonly InquiryMessage[]; replyable: boolean }>;
 
 type MemberSummary = Readonly<{
   email: string;
@@ -175,7 +186,7 @@ const replyAsMember = Effect.fn("replyAsMember")(function* replyAsMember({
   memberId,
 }: Readonly<{ body: string; inquiryId: string; memberId: string }>) {
   const thread = yield* getMemberInquiry(memberId, inquiryId);
-  if (thread.status === INQUIRY_STATUS.closed) {
+  if (!thread.replyable) {
     return yield* new InquiryForbidden();
   }
   const repliedAt = DateTime.toDate(yield* DateTime.now);
@@ -247,7 +258,7 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
   if (!existing) {
     return yield* new InquiryNotFound();
   }
-  if (existing.status === INQUIRY_STATUS.closed) {
+  if (!acceptsReplies(existing.status)) {
     return yield* new InquiryForbidden();
   }
   const [repliedAt, messageId] = yield* Effect.all([clockDate, freshId]);

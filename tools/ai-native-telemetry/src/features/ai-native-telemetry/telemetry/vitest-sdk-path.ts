@@ -1,1 +1,1 @@
-export { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
+export { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";

@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { zip } from "es-toolkit";
+import { sumBy, zip } from "es-toolkit";
 import parseGitDiff, { type AnyFileChange } from "parse-git-diff";
 
 export class DiffUnreadable extends Schema.TaggedError<DiffUnreadable>()("DiffUnreadable", {
@@ -55,7 +55,7 @@ const inventoryRecordPattern = new RegExp(
 
 const parseDiffInventory = (produced: string): readonly InventoryFile[] => {
   const matches = Array.from(produced.matchAll(inventoryRecordPattern));
-  const parsedLength = matches.reduce((counted, matched) => counted + matched[0].length, 0);
+  const parsedLength = sumBy(matches, (matched) => matched[0].length);
   if (parsedLength !== produced.length) {
     throw unreadable("Invalid NUL-delimited Git diff metadata");
   }

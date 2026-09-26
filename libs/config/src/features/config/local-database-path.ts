@@ -1,8 +1,10 @@
 import { Config, ConfigProvider, Effect, Option, Path } from "effect";
 
+import { repositoryFile } from "./repository-root.ts";
+
 const localDatabaseVariable = "TEMPLATE_LOCAL_DATABASE";
 const paths = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
-const repositoryDirectory = paths.join(import.meta.dirname, "../../../../../.local/d1");
+const repositoryDirectory = repositoryFile(".local/d1");
 
 const localDatabase = {
   binding: "DB",

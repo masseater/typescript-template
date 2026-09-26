@@ -6,7 +6,7 @@ import { runCaptured } from "../child-process.ts";
 import {
   fileExists,
   filesystem,
-  joinPath,
+  paths,
   readDirectory,
   readFileString,
   removePath,
@@ -14,7 +14,7 @@ import {
   writeFileString,
 } from "../host.ts";
 
-const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
+const CLI_PATH = paths.join(import.meta.dirname, "cli.ts");
 
 const LARGE_OUTPUT_SCRIPT =
   'const line = "x".repeat(99) + "\\n"; for (let i = 0; i < 50000; i += 1) process.stdout.write(line);';
@@ -48,7 +48,10 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             return workTree;
           }),
         );
@@ -83,7 +86,7 @@ describe("spool cli", () => {
         "theLogLineOfALargeOutputNamesTheSpoolDirectory",
         ({ theLogLineOfALargeOutput, theWorkTreeOfALargeOutput }) =>
           theLogLineOfALargeOutput.includes(
-            `spool: log: ${joinPath(theWorkTreeOfALargeOutput, ".spool")}`,
+            `spool: log: ${paths.join(theWorkTreeOfALargeOutput, ".spool")}`,
           ),
       )
       .extend("theLogLineOfALargeOutputCountsEveryByteAndLine", ({ theLogLineOfALargeOutput }) =>
@@ -101,14 +104,17 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
               cwd: workTree,
               env: { ...process.env, CI: "" },
             });
-            return yield* readDirectory(joinPath(workTree, ".spool"));
+            return yield* readDirectory(paths.join(workTree, ".spool"));
           }),
         );
       })
@@ -128,16 +134,19 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
               cwd: workTree,
               env: { ...process.env, CI: "" },
             });
-            const recorded = (yield* readDirectory(joinPath(workTree, ".spool"))).at(0);
+            const recorded = (yield* readDirectory(paths.join(workTree, ".spool"))).at(0);
             if (recorded === undefined) return yield* Effect.die("the run left no record behind");
-            return Number((yield* filesystem.stat(joinPath(workTree, ".spool", recorded))).size);
+            return Number((yield* filesystem.stat(paths.join(workTree, ".spool", recorded))).size);
           }),
         );
       });
@@ -207,7 +216,10 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             return yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
@@ -242,14 +254,17 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
               cwd: workTree,
               env: { ...process.env, CI: "true" },
             });
-            return yield* fileExists(joinPath(workTree, ".spool"));
+            return yield* fileExists(paths.join(workTree, ".spool"));
           }),
         );
       });
@@ -309,7 +324,10 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             return yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH],
@@ -370,7 +388,10 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             return yield* runCaptured({
               executable: process.execPath,
               handed: [
@@ -412,7 +433,10 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             yield* runCaptured({
               executable: process.execPath,
               handed: [
@@ -429,8 +453,9 @@ describe("spool cli", () => {
               env: { ...process.env, CI: "" },
             });
             return yield* Effect.forEach(
-              yield* readDirectory(joinPath(workTree, ".spool")),
-              (recordedFileName) => readFileString(joinPath(workTree, ".spool", recordedFileName)),
+              yield* readDirectory(paths.join(workTree, ".spool")),
+              (recordedFileName) =>
+                readFileString(paths.join(workTree, ".spool", recordedFileName)),
             );
           }),
         );
@@ -565,7 +590,10 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             const { status } = yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
@@ -588,14 +616,17 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               cwd: workTree,
               env: { ...process.env, CI: "" },
             });
-            const { length } = yield* readDirectory(joinPath(workTree, ".spool"));
+            const { length } = yield* readDirectory(paths.join(workTree, ".spool"));
             return length;
           }),
         );
@@ -612,16 +643,19 @@ describe("spool cli", () => {
         return Effect.runPromise(
           Effect.gen(function* () {
             const workTree = yield* Effect.promise(() => madeWorkTree);
-            yield* writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            yield* writeFileString({
+              location: paths.join(workTree, "package.json"),
+              written: "{}",
+            });
             yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               cwd: workTree,
               env: { ...process.env, CI: "" },
             });
-            const recorded = (yield* readDirectory(joinPath(workTree, ".spool"))).at(0);
+            const recorded = (yield* readDirectory(paths.join(workTree, ".spool"))).at(0);
             if (recorded === undefined) return yield* Effect.die("the run left no record behind");
-            return Number((yield* filesystem.stat(joinPath(workTree, ".spool", recorded))).size);
+            return Number((yield* filesystem.stat(paths.join(workTree, ".spool", recorded))).size);
           }),
         );
       })
@@ -639,7 +673,7 @@ describe("spool cli", () => {
             Effect.gen(function* () {
               const workTree = yield* Effect.promise(() => madeWorkTree);
               yield* writeFileString({
-                location: joinPath(workTree, "package.json"),
+                location: paths.join(workTree, "package.json"),
                 written: "{}",
               });
               const child = yield* spawner.spawn(

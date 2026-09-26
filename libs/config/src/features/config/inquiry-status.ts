@@ -1,6 +1,9 @@
+import { Schema } from "effect";
+
 /** @canonical-values config.inquiry-status */
 export const inquiryStatuses = ["inquiry_open", "inquiry_answered", "inquiry_closed"] as const;
-export type InquiryStatus = (typeof inquiryStatuses)[number];
+export const InquiryStatus = Schema.Literals(inquiryStatuses);
+export type InquiryStatus = typeof InquiryStatus.Type;
 export const INQUIRY_STATUS = {
   answered: inquiryStatuses[1],
   closed: inquiryStatuses[2],

@@ -2,14 +2,14 @@ import { Cause, Console, Logger, Predicate, References, type Layer, type LogLeve
 
 import { redactSecrets, redactedField } from "./redact.ts";
 
-import type { ServiceName } from "./service-name.ts";
+import type { BuildTarget } from "@repo/config";
 type LogSink = {
   readonly error: (line: string) => void;
   readonly info: (line: string) => void;
   readonly warn: (line: string) => void;
 };
 type StructuredLogOptions = {
-  readonly serviceName: ServiceName;
+  readonly serviceName: BuildTarget;
   readonly release: string;
   readonly log?: LogSink;
 };
@@ -49,7 +49,7 @@ const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
   Trace: "info",
   Warn: "warn",
 };
-const serviceLabel = (spelled: ServiceName): string => {
+const serviceLabel = (spelled: BuildTarget): string => {
   return `${spelled}-server`;
 };
 const structuredLogs = (settings: StructuredLogOptions): Layer.Layer<never> => {

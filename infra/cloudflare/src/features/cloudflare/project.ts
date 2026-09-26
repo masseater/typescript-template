@@ -1,10 +1,11 @@
+import { repositoryFile } from "@repo/config/repository-root";
 import { Effect, FileSystem, Schema } from "effect";
 
-import { fileUrlPath, layer } from "./platform.ts";
+import { layer } from "./platform.ts";
 
 const Name = Schema.String.check(Schema.isMinLength(1));
 const Manifest = Schema.fromJsonString(Schema.Struct({ name: Name }));
-const manifestFile = fileUrlPath(new URL("../../../../../package.json", import.meta.url));
+const manifestFile = repositoryFile("package.json");
 
 const projectName = Effect.gen(function* readProjectName() {
   const filesystem = yield* FileSystem.FileSystem;

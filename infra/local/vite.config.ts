@@ -1,5 +1,4 @@
-import { telemetryAsked } from "@repo/telemetry/optional-setting";
-import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
+import { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   lifecycle,
@@ -27,12 +26,7 @@ export default defineConfig({
     },
   },
   test: {
-    experimental: {
-      openTelemetry: {
-        enabled: telemetryAsked,
-        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
-      },
-    },
+    experimental: { openTelemetry: vitestOpenTelemetry },
     coverage: {
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },

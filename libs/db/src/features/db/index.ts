@@ -11,11 +11,9 @@ export {
   CONVERSATION_KIND,
   GROUP_JOIN_POLICY,
   GROUP_MEMBERSHIP_ROLE,
-  INQUIRY_AUTHOR_KIND,
   INQUIRY_STATUS,
   NOTIFICATION_KIND,
   auditEvent,
-  inquiryAuthorKinds,
   inquiryStatuses,
   notificationKinds,
   onboardingSteps,
@@ -116,7 +114,6 @@ export type {
   ReadOnlyDashboardStaff,
   TrendQuery,
 } from "./dashboard-staff.ts";
-export { PaidPlanRequired } from "./paid-plan-required.ts";
 export {
   attachCheckout,
   findSubscription,

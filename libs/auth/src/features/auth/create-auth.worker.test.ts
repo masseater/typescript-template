@@ -105,7 +105,7 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* signInToWiki() {
             yield* register("pending@example.com");
-            yield* signIn(yield* clientOf(APPLICATION.wiki), "pending@example.com");
+            yield* signIn(yield* clientOf(APPLICATION.dashboard), "pending@example.com");
             return yield* mailRecipients;
           }),
         ),
@@ -129,7 +129,7 @@ describe("createAuth", () => {
     });
   });
 
-  describe.for([APPLICATION.user, APPLICATION.wiki] as const)("the %s app", (audience) => {
+  describe.for([APPLICATION.user, APPLICATION.dashboard] as const)("the %s app", (audience) => {
     const it = authTest
       .extend("missingFields", ({ auth }) => runWith(auth, () => missingSchemaFields(audience)))
       .extend("inputs", ({ auth }) => runWith(auth, () => audienceInputs(audience)));
@@ -192,14 +192,14 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* signInMember() {
             yield* registerVerified("member@example.com");
-            return yield* signIn(yield* clientOf(APPLICATION.wiki), "member@example.com");
+            return yield* signIn(yield* clientOf(APPLICATION.dashboard), "member@example.com");
           }),
         ),
       )
       .extend("signUpStatus", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signUpMember() {
-            return yield* (yield* clientOf(APPLICATION.wiki)).status("/sign-up/email", {
+            return yield* (yield* clientOf(APPLICATION.dashboard)).status("/sign-up/email", {
               email: "new@example.com",
               name: "new",
               password: PASSWORD,

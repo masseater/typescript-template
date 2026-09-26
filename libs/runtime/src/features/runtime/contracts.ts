@@ -1,4 +1,4 @@
-import { applications } from "@repo/config";
+import { InquiryAuthorKind, applications } from "@repo/config";
 import { accountPermissions, roles } from "@repo/config/identity";
 import {
   Identifier,
@@ -70,7 +70,7 @@ const Redirect = Schema.Struct({ url: Schema.String });
 const InvitationIssued = Schema.Struct({ email: Schema.String, expiresAt: Schema.DateFromString });
 const InquiryMessage = Schema.Struct({
   authorId: Schema.String,
-  authorKind: Role,
+  authorKind: InquiryAuthorKind,
   body: Schema.String,
   createdAt: Schema.DateFromString,
   id: Schema.String,

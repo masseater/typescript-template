@@ -25,7 +25,7 @@ import { mcpRequest } from "./wiki-oauth-test-fixture.ts";
 const tamperedSuffix = "xx";
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
-  const wiki = (yield* AuthApps)[APPLICATION.wiki];
+  const wiki = (yield* AuthApps)[APPLICATION.dashboard];
   const response = yield* Effect.promise(() =>
     wiki.instance.handler(new Request(`${wikiOrigin}${path}`)),
   );
@@ -120,12 +120,12 @@ describe("wiki MCP authorization", () => {
         const result = yield* Effect.gen(function* program() {
           const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
-          const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
+          const weak = yield* signInAs(APPLICATION.dashboard, "owner@example.com");
           const continued = yield* weak.json("/oauth2/continue", {
             oauth_query: flow.oauthQuery,
             postLogin: true,
           });
-          const smuggled = yield* (yield* clientOf(APPLICATION.wiki)).json("/sign-in/email", {
+          const smuggled = yield* (yield* clientOf(APPLICATION.dashboard)).json("/sign-in/email", {
             email: "owner@example.com",
             oauth_query: flow.oauthQuery,
             password: PASSWORD,
@@ -149,7 +149,7 @@ describe("wiki MCP authorization", () => {
       Effect.gen(function* refuseMemberSignIn() {
         const result = yield* Effect.gen(function* program() {
           yield* registerVerified("member@example.com");
-          const member = yield* clientOf(APPLICATION.wiki);
+          const member = yield* clientOf(APPLICATION.dashboard);
           const signInStatus = yield* signIn(member, "member@example.com");
           const signUpStatus = yield* member.status("/sign-up/email", {
             email: "new@example.com",

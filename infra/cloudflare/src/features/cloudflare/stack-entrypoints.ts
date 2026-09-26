@@ -9,7 +9,12 @@ import type { PackageStack, StackName } from "./stacks.ts";
 const applicationEntrypoints = {
   [APPLICATION.admin]: path.join(repositoryRoot, "apps", APPLICATION.admin, "alchemy.run.ts"),
   [APPLICATION.user]: path.join(repositoryRoot, "apps", APPLICATION.user, "alchemy.run.ts"),
-  [APPLICATION.wiki]: path.join(repositoryRoot, "apps", APPLICATION.wiki, "alchemy.run.ts"),
+  [APPLICATION.dashboard]: path.join(
+    repositoryRoot,
+    "apps",
+    APPLICATION.dashboard,
+    "alchemy.run.ts",
+  ),
   core: path.join(repositoryRoot, "apps", "core", "alchemy.run.ts"),
   [wikiWorker]: path.join(repositoryRoot, "apps", wikiWorker, "alchemy.run.ts"),
 } as const satisfies Readonly<Record<PackageStack, string>>;

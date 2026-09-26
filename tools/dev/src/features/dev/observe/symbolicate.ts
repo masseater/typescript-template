@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { causeRecord, runCli, runCommand } from "@repo/cli";
 import { applications } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Console, Effect, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
-import { layer, urlPath } from "../platform.ts";
+import { layer } from "../platform.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
@@ -27,7 +28,6 @@ const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: 
   const decoded = yield* Schema.decodeEffect(SymbolicateInput)(input).pipe(
     Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })),
   );
-  const repositoryRoot = yield* urlPath(new URL("../../../../../", import.meta.url));
   const frames = yield* symbolicate(
     {
       app: decoded.app,

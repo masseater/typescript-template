@@ -2,6 +2,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type BuildTarget, BuildTargetName } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Console, Effect, Schema, type PlatformError } from "effect";
 import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
@@ -10,7 +11,6 @@ import { filePathOf, path } from "../platform/path.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { REACT_DOCTOR_SKIP_DETAIL, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
 import { reactDoctorPassed } from "./react-doctor-verdict.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {
   readonly failed: boolean;

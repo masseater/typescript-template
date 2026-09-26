@@ -1,11 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryFile, repositoryRoot } from "@repo/config/repository-root";
 import { lifecycleInherits, lifecycles } from "@repo/vite-config";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
 import { directoryEntries, filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
-import { filePathOf } from "../platform/path.ts";
 import { field, rootManifests } from "./dependencies-test-fixture.ts";
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks-test-fixture.ts";
 import {
@@ -194,7 +194,7 @@ function unmatchedProjectNames(): string[] {
   );
 }
 
-const toolsRoot = filePathOf(new URL("../../../../../../tools", import.meta.url));
+const toolsRoot = repositoryFile("tools");
 
 type TreeScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
@@ -230,8 +230,6 @@ const uncoveredToolTestPackages = (packagesWithTests: readonly string[]): string
       !reachesTest(directory, ["prepr", "premerge"]),
   );
 };
-
-const repositoryRoot = filePathOf(new URL("../../../../../..", import.meta.url));
 
 const CursorEnvironment = Schema.fromJsonString(Schema.Unknown);
 

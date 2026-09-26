@@ -66,7 +66,7 @@ describe("request hooks", () => {
     });
   });
 
-  describe.for([APPLICATION.admin, APPLICATION.wiki] as const)(
+  describe.for([APPLICATION.admin, APPLICATION.dashboard] as const)(
     "a privileged account signed in to %s with a recovery code",
     (audience) => {
       const it = authTest.extend("denied", ({ auth }) =>
@@ -190,7 +190,7 @@ describe("request hooks", () => {
         Effect.gen(function* continueWeakly() {
           const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
-          const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
+          const weak = yield* signInAs(APPLICATION.dashboard, "owner@example.com");
           return yield* weak.json("/oauth2/continue", {
             oauth_query: flow.oauthQuery,
             postLogin: true,
@@ -213,7 +213,7 @@ describe("request hooks", () => {
         Effect.gen(function* smuggle() {
           const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
-          const client = yield* clientOf(APPLICATION.wiki);
+          const client = yield* clientOf(APPLICATION.dashboard);
           return yield* client.json("/sign-in/email", {
             email: "owner@example.com",
             oauth_query: flow.oauthQuery,

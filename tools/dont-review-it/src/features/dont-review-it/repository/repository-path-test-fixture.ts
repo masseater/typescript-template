@@ -1,5 +1,6 @@
+import { repositoryRoot } from "@repo/config/repository-root";
+
 import { path, posixPath } from "../platform/path.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const qualityDirectory = import.meta.dirname;
 

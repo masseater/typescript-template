@@ -2,7 +2,7 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { DateTime, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import { filesystem, joinPath, readFileString, removePath } from "../host.ts";
+import { filesystem, paths, readFileString, removePath } from "../host.ts";
 import { runSpool } from "./run-spool.ts";
 
 const NODE = process.execPath;
@@ -26,21 +26,21 @@ const FIVE_THOUSAND_LINES_BODY = Array.from(
   (_, lineIndex) => `line ${lineIndex}\n`,
 ).join("");
 
-const FIVE_THOUSAND_LINES_ROOT = joinPath(TEST_ROOT, "five-thousand-lines");
+const FIVE_THOUSAND_LINES_ROOT = paths.join(TEST_ROOT, "five-thousand-lines");
 
 const TEN_THOUSAND_LINES_SCRIPT =
   'const line = "x".repeat(99) + "\\n"; for (let i = 0; i < 10000; i += 1) process.stdout.write(line);';
 
 const TEN_THOUSAND_LINES_COMMAND_LINE = [NODE, "-e", TEN_THOUSAND_LINES_SCRIPT].join(" ");
 
-const TEN_THOUSAND_LINES_ROOT = joinPath(TEST_ROOT, "ten-thousand-lines");
+const TEN_THOUSAND_LINES_ROOT = paths.join(TEST_ROOT, "ten-thousand-lines");
 
 const HUNDRED_THOUSAND_LINES_SCRIPT =
   'const line = "x".repeat(99) + "\\n"; for (let i = 0; i < 100000; i += 1) process.stdout.write(line);';
 
 const HUNDRED_THOUSAND_LINES_COMMAND_LINE = [NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT].join(" ");
 
-const HUNDRED_THOUSAND_LINES_ROOT = joinPath(TEST_ROOT, "hundred-thousand-lines");
+const HUNDRED_THOUSAND_LINES_ROOT = paths.join(TEST_ROOT, "hundred-thousand-lines");
 
 describe("runSpool", () => {
   describe("an argv naming no command at all", () => {
@@ -159,7 +159,7 @@ describe("runSpool", () => {
                 spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
               }),
             );
-            return yield* readFileString(joinPath(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME));
+            return yield* readFileString(paths.join(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME));
           }),
         );
       });
@@ -177,7 +177,7 @@ describe("runSpool", () => {
       { timeout: 15_000 },
       ({ theSummaryOfFiveThousandLines }) => {
         expect(theSummaryOfFiveThousandLines).toBe(
-          `spool: command: ${FIVE_THOUSAND_LINES_COMMAND_LINE}\nspool: log: ${joinPath(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)} (${FIVE_THOUSAND_LINES_BODY.length} bytes, 5000 lines)\nspool: exit: 0 (0.0s)\n`,
+          `spool: command: ${FIVE_THOUSAND_LINES_COMMAND_LINE}\nspool: log: ${paths.join(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)} (${FIVE_THOUSAND_LINES_BODY.length} bytes, 5000 lines)\nspool: exit: 0 (0.0s)\n`,
         );
       },
     );
@@ -259,7 +259,7 @@ describe("runSpool", () => {
               }),
             );
             return Buffer.byteLength(
-              yield* readFileString(joinPath(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
+              yield* readFileString(paths.join(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
             );
           }),
         );
@@ -278,7 +278,7 @@ describe("runSpool", () => {
       { timeout: 30_000 },
       ({ theSummaryOfTenThousandLines }) => {
         expect(theSummaryOfTenThousandLines).toBe(
-          `spool: command: ${TEN_THOUSAND_LINES_COMMAND_LINE}\nspool: log: ${joinPath(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)} (1000000 bytes, 10000 lines)\nspool: exit: 0 (0.0s)\n`,
+          `spool: command: ${TEN_THOUSAND_LINES_COMMAND_LINE}\nspool: log: ${paths.join(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)} (1000000 bytes, 10000 lines)\nspool: exit: 0 (0.0s)\n`,
         );
       },
     );
@@ -352,7 +352,7 @@ describe("runSpool", () => {
               }),
             );
             return Buffer.byteLength(
-              yield* readFileString(joinPath(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
+              yield* readFileString(paths.join(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
             );
           }),
         );
@@ -371,7 +371,7 @@ describe("runSpool", () => {
       { timeout: 30_000 },
       ({ theSummaryOfHundredThousandLines }) => {
         expect(theSummaryOfHundredThousandLines).toBe(
-          `spool: command: ${HUNDRED_THOUSAND_LINES_COMMAND_LINE}\nspool: log: ${joinPath(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)} (10000000 bytes, 100000 lines)\nspool: exit: 0 (0.0s)\n`,
+          `spool: command: ${HUNDRED_THOUSAND_LINES_COMMAND_LINE}\nspool: log: ${paths.join(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)} (10000000 bytes, 100000 lines)\nspool: exit: 0 (0.0s)\n`,
         );
       },
     );

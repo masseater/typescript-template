@@ -1,11 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, it } from "vite-plus/test";
 
 import { pathExists } from "../platform/file-system.ts";
 import { capturedProcess } from "./captured-process.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const ClaudeSettings = Schema.Struct({
   hooks: Schema.Record(

@@ -1,4 +1,4 @@
-import { INQUIRY_STATUS, ROLE, inquiryStatusLabels } from "@repo/config";
+import { INQUIRY_AUTHOR_KIND, inquiryStatusLabels } from "@repo/config";
 
 import type { getMemberInquiry, listMemberInquiries } from "@repo/db";
 import type { Effect } from "effect";
@@ -20,14 +20,14 @@ function presentSummary(inquiry: ListedInquiry) {
 function presentThread(thread: InquiryThread) {
   return {
     ...presentSummary(thread),
-    closed: thread.status === INQUIRY_STATUS.closed,
     messages: thread.messages.map((message) => ({
       authorId: message.authorId,
       body: message.body,
       createdAt: message.createdAt,
-      fromOperator: message.authorKind === ROLE.administrator,
+      fromOperator: message.authorKind === INQUIRY_AUTHOR_KIND.admin,
       id: message.id,
     })),
+    replyable: thread.replyable,
   };
 }
 

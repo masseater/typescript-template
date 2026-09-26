@@ -5,7 +5,6 @@ import {
   HttpsOrigin,
   ROLE,
   distinctOrigins,
-  minimumAuthSecretLength,
 } from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
 import { Recipients } from "@repo/monitor";
@@ -49,7 +48,6 @@ function fail(
   return Effect.fail(new CloudflareFailure({ code, keys }));
 }
 
-const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 const Confirmation = Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN));
@@ -74,11 +72,6 @@ const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
 const observabilitySampling = 1;
-const AuthSecret = Schema.String.check(
-  Schema.isMinLength(minimumAuthSecretLength),
-  Schema.makeFilter((value: string) => value.trim() === value),
-  Schema.makeFilter((value: string) => new Set(value).size >= MIN_AUTH_SECRET_VARIETY),
-);
 
 const SharedSettings = Schema.Struct({
   accountId: CloudflareId,
@@ -216,7 +209,6 @@ type DeploymentRequest = Effect.Success<ReturnType<typeof parseDeploymentCommand
 type DeploymentTarget = Pick<SharedConfig, "accountId" | "prefix">;
 
 export {
-  AuthSecret,
   CONFIRMATION_LENGTH,
   CloudflareFailure,
   Confirmation,

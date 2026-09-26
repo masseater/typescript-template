@@ -1,7 +1,7 @@
 import { renderedAt } from "@repo/ui/testing";
 import { describe, expect, it } from "vite-plus/test";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 import { ConsentView } from "./consent-view.tsx";
 
 function rendered(clientId: string | undefined, client: string | undefined, error: string): string {
@@ -28,7 +28,7 @@ describe("consent", () => {
 
   it("asks to allow the named client", () => {
     expect(rendered("client-1", "Claude", "")).toContain(
-      `Claude に ${serviceName} の管理操作を許可しますか？`,
+      `Claude に ${productName} の管理操作を許可しますか？`,
     );
   });
 

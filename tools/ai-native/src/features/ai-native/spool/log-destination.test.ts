@@ -1,7 +1,7 @@
 import { DateTime, Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filesystem, joinPath, makeDirectory, removePath, writeFileString } from "../host.ts";
+import { filesystem, makeDirectory, paths, removePath, writeFileString } from "../host.ts";
 import { commandIdOf, defaultSpoolRoot, timestampOf } from "./log-destination.ts";
 
 describe("defaultSpoolRoot", () => {
@@ -19,10 +19,10 @@ describe("defaultSpoolRoot", () => {
       .extend("spoolRootOfTheNestedStart", ({ markedAncestorDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const start = joinPath(markedAncestorDirectory, "a", "b");
+            const start = paths.join(markedAncestorDirectory, "a", "b");
             yield* makeDirectory(start);
             yield* writeFileString({
-              location: joinPath(markedAncestorDirectory, "package.json"),
+              location: paths.join(markedAncestorDirectory, "package.json"),
               written: "{}",
             });
             return yield* defaultSpoolRoot(start);
@@ -34,7 +34,7 @@ describe("defaultSpoolRoot", () => {
       markedAncestorDirectory,
       spoolRootOfTheNestedStart,
     }) => {
-      expect(spoolRootOfTheNestedStart).toBe(joinPath(markedAncestorDirectory, ".spool"));
+      expect(spoolRootOfTheNestedStart).toBe(paths.join(markedAncestorDirectory, ".spool"));
     });
   });
 
@@ -57,7 +57,7 @@ describe("defaultSpoolRoot", () => {
       spoolRootOfTheUnmarkedStart,
       unmarkedStartDirectory,
     }) => {
-      expect(spoolRootOfTheUnmarkedStart).toBe(joinPath(unmarkedStartDirectory, ".spool"));
+      expect(spoolRootOfTheUnmarkedStart).toBe(paths.join(unmarkedStartDirectory, ".spool"));
     });
   });
 
@@ -66,7 +66,7 @@ describe("defaultSpoolRoot", () => {
       Effect.runPromise(defaultSpoolRoot()));
 
     it("begins the search at the working directory", ({ spoolRootOfTheImplicitStart }) => {
-      expect(spoolRootOfTheImplicitStart).toBe(joinPath(process.cwd(), ".spool"));
+      expect(spoolRootOfTheImplicitStart).toBe(paths.join(process.cwd(), ".spool"));
     });
   });
 
@@ -81,7 +81,7 @@ describe("defaultSpoolRoot", () => {
         );
         return Effect.runPromise(
           Effect.gen(function* () {
-            const plainFile = joinPath(yield* Effect.promise(() => madeDirectory), "plain");
+            const plainFile = paths.join(yield* Effect.promise(() => madeDirectory), "plain");
             yield* writeFileString({ location: plainFile, written: "" });
             return plainFile;
           }),
@@ -89,7 +89,7 @@ describe("defaultSpoolRoot", () => {
       })
       .extend("theCodeOfTheLookupFailure", ({ fileInPlaceOfADirectory }) =>
         Effect.runPromise(
-          Effect.flip(defaultSpoolRoot(joinPath(fileInPlaceOfADirectory, "a"))).pipe(
+          Effect.flip(defaultSpoolRoot(paths.join(fileInPlaceOfADirectory, "a"))).pipe(
             Effect.map((lookupFailure) =>
               "code" in lookupFailure ? lookupFailure.code : undefined,
             ),

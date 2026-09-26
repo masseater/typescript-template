@@ -1,3 +1,5 @@
+import { sumBy } from "es-toolkit";
+
 import { declarations } from "./design-system-test-fixture.ts";
 
 const hoverSuffix = "-hover";
@@ -44,12 +46,10 @@ const luminance = (color: string | undefined): number | undefined => {
     return undefined;
   }
   const width = digits.length / hexChannels;
-  return [redWeight, greenWeight, blueWeight]
-    .map((weight: number, index: number) => {
-      const digit = digits.slice(index * width, index * width + width);
-      return weight * channel(Number.parseInt(digit.repeat(hexChannels - width), 16));
-    })
-    .reduce((total: number, weighted: number) => total + weighted, 0);
+  return sumBy([redWeight, greenWeight, blueWeight], (weight: number, index: number) => {
+    const digit = digits.slice(index * width, index * width + width);
+    return weight * channel(Number.parseInt(digit.repeat(hexChannels - width), 16));
+  });
 };
 
 const hoverViolations = (css: string): string[] => {

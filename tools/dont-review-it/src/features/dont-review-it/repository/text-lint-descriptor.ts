@@ -1,3 +1,4 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import aiWriting from "@textlint-ja/textlint-rule-preset-ai-writing";
 import { TextlintKernelDescriptor, type TextlintKernelRule } from "@textlint/kernel";
 import markdown from "@textlint/textlint-plugin-markdown";
@@ -9,7 +10,6 @@ import noMixDearuDesumasu from "textlint-rule-no-mix-dearu-desumasu";
 import aiWordsJa from "textlint-rule-preset-ai-words-ja";
 
 import { noOtherDocumentLocation } from "./no-other-document-location.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 import type { TextlintRuleModule } from "@textlint/types";
 

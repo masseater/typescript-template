@@ -1,5 +1,6 @@
 import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, Schema } from "effect";
+import { sum } from "es-toolkit";
 
 import { ArtifactFailure, fail, ioFailed } from "./artifact-io.ts";
 import { isNotFound, layer, path } from "./platform.ts";
@@ -81,7 +82,7 @@ function copyMaps(source: string, destination: string): Effect.Effect<number, Ar
       },
       { concurrency: "unbounded" },
     );
-    return copied.reduce((total, count) => total + count, 0);
+    return sum(copied);
   }).pipe(Effect.provide(layer));
 }
 

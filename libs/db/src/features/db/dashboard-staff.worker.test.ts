@@ -155,7 +155,7 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
     yield* query((database) =>
       database.insert(session).values([
         {
-          audience: APPLICATION.wiki,
+          audience: APPLICATION.dashboard,
           authenticationMethod: "password_totp",
           createdAt: recordedAt,
           expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
@@ -167,7 +167,7 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
           userId: "staff",
         },
         {
-          audience: APPLICATION.wiki,
+          audience: APPLICATION.dashboard,
           authenticationMethod: "password_totp",
           createdAt: recordedAt,
           expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),

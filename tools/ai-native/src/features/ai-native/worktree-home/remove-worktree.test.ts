@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { fileExists, filesystem, joinPath, parentPath, writeFileString } from "../host.ts";
+import { fileExists, filesystem, paths, writeFileString } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { removeWorktree } from "./remove-worktree.ts";
 
@@ -11,7 +11,7 @@ describe("removeWorktree", () => {
       Effect.runPromise(
         Effect.gen(function* () {
           const sandbox = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-" });
-          const checkout = joinPath(sandbox, "checkout");
+          const checkout = paths.join(sandbox, "checkout");
           for (const gitStep of [
             { cwd: sandbox, handed: ["init", "--quiet", "-b", "main", checkout] },
             {
@@ -34,7 +34,7 @@ describe("removeWorktree", () => {
             yield* gitOutput(runGit, gitStep);
           }
           yield* writeFileString({
-            location: joinPath(sandbox, "dirty", "draft.txt"),
+            location: paths.join(sandbox, "dirty", "draft.txt"),
             written: "draft\n",
           });
           return checkout;
@@ -43,7 +43,7 @@ describe("removeWorktree", () => {
     .extend("theCleanWorktreeLeft", ({ theCheckout }) =>
       Effect.runPromise(
         Effect.gen(function* () {
-          const cleanWorktree = joinPath(parentPath(theCheckout), "clean");
+          const cleanWorktree = paths.join(paths.dirname(theCheckout), "clean");
           yield* removeWorktree(cleanWorktree);
           return yield* fileExists(cleanWorktree);
         }),
@@ -51,7 +51,7 @@ describe("removeWorktree", () => {
     )
     .extend("theDirtyRemovalFailure", ({ theCheckout }) =>
       Effect.runPromise(
-        removeWorktree(joinPath(parentPath(theCheckout), "dirty")).pipe(
+        removeWorktree(paths.join(paths.dirname(theCheckout), "dirty")).pipe(
           Effect.flip,
           Effect.orElseSucceed(() => {
             throw new Error("removeWorktree removed a worktree with uncommitted work");
@@ -61,7 +61,7 @@ describe("removeWorktree", () => {
     )
     .extend("theDraftKeptAfterRefusal", ({ theCheckout, theDirtyRemovalFailure }) =>
       Effect.runPromise(
-        fileExists(joinPath(parentPath(theCheckout), "dirty", "draft.txt")).pipe(
+        fileExists(paths.join(paths.dirname(theCheckout), "dirty", "draft.txt")).pipe(
           Effect.map((draftKept) => theDirtyRemovalFailure instanceof Error && draftKept),
         ),
       ),

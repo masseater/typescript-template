@@ -8,6 +8,7 @@ import {
   local,
   readCredentials,
   refreshBrowserConfig,
+  rootUrl,
 } from "./local-environment.ts";
 import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
 import { privateDirectoryMode, replacePrivateFile, writePrivateFile } from "./private-files.ts";
@@ -75,10 +76,7 @@ function writeAppVariables(
   const content = `${Object.entries(appVariables(app, credentials, mode))
     .map(([key, value]: readonly [string, string]) => `${key}=${JSON.stringify(value)}`)
     .join("\n")}\n`;
-  return replacePrivateFile(
-    new URL(`../../../../../apps/${app}/.dev.vars`, import.meta.url),
-    content,
-  );
+  return replacePrivateFile(new URL(`apps/${app}/.dev.vars`, rootUrl), content);
 }
 
 const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(

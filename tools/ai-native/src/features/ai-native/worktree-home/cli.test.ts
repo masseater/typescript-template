@@ -3,13 +3,13 @@ import { Effect } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, paths } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { hook } from "./hook.ts";
 
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
-const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
+const CLI_PATH = paths.join(import.meta.dirname, "cli.ts");
 
 const originAddress = "https://git.example.test/acme/widgets.git";
 
@@ -35,8 +35,8 @@ describe("worktree-home cli", () => {
       .extend("theSandbox", () =>
         Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" })))
       .extend("theRun", ({ theSandbox }) => {
-        const origin = joinPath(theSandbox, "origin.git");
-        const checkout = joinPath(theSandbox, "checkout");
+        const origin = paths.join(theSandbox, "origin.git");
+        const checkout = paths.join(theSandbox, "checkout");
         const hookInput = JSON.stringify({
           cwd: checkout,
           hook_event_name: "WorktreeCreate",
@@ -72,7 +72,7 @@ describe("worktree-home cli", () => {
             return yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH],
-              env: { ...process.env, HOME: joinPath(theSandbox, "home") },
+              env: { ...process.env, HOME: paths.join(theSandbox, "home") },
               input: hookInput,
             });
           }),
@@ -88,7 +88,7 @@ describe("worktree-home cli", () => {
       { timeout: 30_000 },
       ({ theSandbox, theStandardOutput }) => {
         expect(theStandardOutput).toBe(
-          `${joinPath(theSandbox, "home", "worktrees", "git.example.test", "acme", "widgets", "from-cli")}\n`,
+          `${paths.join(theSandbox, "home", "worktrees", "git.example.test", "acme", "widgets", "from-cli")}\n`,
         );
       },
     );

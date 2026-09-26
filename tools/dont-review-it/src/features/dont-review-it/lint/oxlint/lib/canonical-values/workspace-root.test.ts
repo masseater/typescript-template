@@ -1,40 +1,36 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filePathOf, path } from "../../../../platform/path.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "./workspace-root.ts";
-
-const REPOSITORY_ROOT = path.resolve(
-  path.dirname(filePathOf(new URL(import.meta.url))),
-  "../../../../../../../../..",
-);
 
 layer(NodeServices.layer)("findWorkspaceRoot", (it) => {
   describe("the directory holding the workspace manifest", () => {
-    const it = test.extend("root", () => findWorkspaceRoot(REPOSITORY_ROOT));
+    const it = test.extend("root", () => findWorkspaceRoot(repositoryRoot));
 
     it("is the root", ({ root }) => {
-      expect(root).toBe(REPOSITORY_ROOT);
+      expect(root).toBe(repositoryRoot);
     });
   });
 
   describe("a package directory", () => {
     const it = test.extend("root", () =>
-      findWorkspaceRoot(path.join(REPOSITORY_ROOT, "tools/dont-review-it")));
+      findWorkspaceRoot(path.join(repositoryRoot, "tools/dont-review-it")));
 
     it("reports the workspace above it rather than itself", ({ root }) => {
-      expect(root).toBe(REPOSITORY_ROOT);
+      expect(root).toBe(repositoryRoot);
     });
   });
 
   describe("a directory deeper inside a package", () => {
     const it = test.extend("root", () =>
-      findWorkspaceRoot(path.join(REPOSITORY_ROOT, "tools/dont-review-it/src/lint")));
+      findWorkspaceRoot(path.join(repositoryRoot, "tools/dont-review-it/src/lint")));
 
     it("reports the same workspace above it", ({ root }) => {
-      expect(root).toBe(REPOSITORY_ROOT);
+      expect(root).toBe(repositoryRoot);
     });
   });
 

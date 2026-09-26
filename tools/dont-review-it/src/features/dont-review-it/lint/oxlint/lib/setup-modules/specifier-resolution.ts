@@ -6,6 +6,7 @@ import { memoize } from "es-toolkit";
 import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
 import { isDirectory, isFile } from "../canonical-values/source-files.ts";
+import { packageReferenceOf } from "../package-specifier.ts";
 import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { aliasedPathsFor } from "../tsconfig-path-aliases.ts";
@@ -56,22 +57,6 @@ const candidatePathsFor = (base: string): readonly string[] => [
 const existingModuleAt = (base: string): ResolvedModule | null => {
   const found = candidatePathsFor(base).find(isFile);
   return found === undefined ? null : { kind: "repositoryFile", path: found };
-};
-
-const SCOPE_PREFIX = "@";
-
-export const packageReferenceOf = (
-  specifier: string,
-): { readonly name: string; readonly subpath: string } | null => {
-  const segments = segmentsOf({ path: specifier, separator: "/" });
-  const takenSegments = specifier.startsWith(SCOPE_PREFIX) ? 2 : 1;
-  if (segments.length < takenSegments) return null;
-
-  const trailing = segments.slice(takenSegments);
-  return {
-    name: segments.slice(0, takenSegments).join("/"),
-    subpath: trailing.length === 0 ? "." : `./${trailing.join("/")}`,
-  };
 };
 
 const realPathOf = (filePath: string): string | null =>

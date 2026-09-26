@@ -15,7 +15,8 @@
     "@repo/monitor": "workspace:*",
     "@repo/observability": "workspace:*",
     "alchemy": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "es-toolkit": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
