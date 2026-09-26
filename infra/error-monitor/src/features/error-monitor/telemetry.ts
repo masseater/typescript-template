@@ -1,6 +1,7 @@
 import { CloudflareId } from "@repo/config";
 import { schemaMismatches } from "@repo/config/schema-mismatches";
 import { Effect, Redacted, Schema } from "effect";
+import { sumBy } from "es-toolkit";
 
 import { ErrorMonitorFailure } from "./config.ts";
 
@@ -172,10 +173,7 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
   }
   const aggregates = yield* collectPages({ aggregates: [], offsetBy: 0, queryWindow });
   const collected = aggregates.map((aggregateRow) => groupedError(aggregateRow));
-  const droppedCount = collected.reduce(
-    (droppedTotal, collectedGroup) => droppedTotal + collectedGroup.dropped,
-    0,
-  );
+  const droppedCount = sumBy(collected, (collectedGroup) => collectedGroup.dropped);
   if (droppedCount > 0) {
     return yield* new ErrorMonitorFailure({
       code: "telemetry_groups_dropped",

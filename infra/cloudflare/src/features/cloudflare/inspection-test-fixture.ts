@@ -35,7 +35,7 @@ const hosts = Object.values(config.origins).map((origin) => new URL(origin).host
 const workers = [
   APPLICATION.user,
   APPLICATION.admin,
-  APPLICATION.wiki,
+  APPLICATION.dashboard,
   "budget",
   "errors",
   "health",
@@ -60,7 +60,7 @@ function row(resourceType: string, attr: Readonly<Record<string, string>>): Crea
 const deployedUnits = [
   [APPLICATION.user, APPLICATION.user],
   [APPLICATION.admin, APPLICATION.admin],
-  [APPLICATION.wiki, APPLICATION.wiki],
+  [APPLICATION.dashboard, APPLICATION.dashboard],
   ["budget-monitor", "budget"],
   ["error-monitor", "errors"],
   ["health-monitor", "health"],

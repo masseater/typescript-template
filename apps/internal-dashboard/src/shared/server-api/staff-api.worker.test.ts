@@ -58,10 +58,10 @@ const seedAccounts = Effect.gen(function* seedAccounts() {
   yield* addUser({ permission: STAFF_PERMISSION.editor, role: ROLE.staff, userId: "target" });
   yield* addUser({ role: ROLE.administrator, userId: "admin" });
   for (const actor of ["editor", "viewer", "admin"] as const) {
-    yield* addSession({ audience: APPLICATION.wiki, token: tokenOf(actor), userId: actor });
+    yield* addSession({ audience: APPLICATION.dashboard, token: tokenOf(actor), userId: actor });
   }
   yield* addSession({
-    audience: APPLICATION.wiki,
+    audience: APPLICATION.dashboard,
     strong: false,
     token: tokenOf("weak-editor"),
     userId: "editor",

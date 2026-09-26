@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, it } from "vite-plus/test";
@@ -9,7 +10,6 @@ import { defaultShippablePackagesConfig } from "../shippable-packages/config.ts"
 import { publishedEntriesOf } from "../shippable-packages/published-entries.ts";
 import { readShippableWorkspaces } from "../shippable-packages/workspace-manifests.ts";
 import { capturedProcess } from "./captured-process.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const packedDirectory = "./dist/";
 const workspaceSpecifier =

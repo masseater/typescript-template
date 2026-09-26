@@ -1,13 +1,13 @@
+import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { Effect, Result, Stream, type FileSystem, type PlatformError, type Scope } from "effect";
 
 import { childEndOf, type ChildEnd } from "../child-process.ts";
 import {
   filesystem,
-  joinPath,
   makeDirectory,
   nativeFailure,
   onDisk,
-  optionalSetting,
+  paths,
   randomHex,
   removePath,
   spawner,
@@ -248,7 +248,7 @@ const runEscapedUnder = (input: {
 }): Effect.Effect<number> =>
   Effect.gen(function* runRecorded() {
     const { command, deps, rootDir } = input;
-    const filePath = joinPath(
+    const filePath = paths.join(
       rootDir,
       recordNameOf({
         stampedInstant: deps.now(),

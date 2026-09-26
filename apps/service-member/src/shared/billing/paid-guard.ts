@@ -1,6 +1,6 @@
 import { httpStatus } from "@repo/config";
 
-import type { PaidPlanRequired } from "@repo/db";
+import type { PaidPlanRequired } from "@repo/config";
 import type { FailureTable } from "@repo/runtime/http";
 
 const paidFailures = {

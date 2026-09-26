@@ -11,6 +11,7 @@ import {
   getMemberInquiry,
   listMemberInquiries,
   replyAsAdmin,
+  replyAsMember,
 } from "./inquiry.ts";
 import { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
 import { INQUIRY_STATUS } from "./schema.ts";
@@ -116,6 +117,48 @@ describe("staffInquiryCounts", () => {
       },
       pending: 1,
       trendRecorded: true,
+    });
+  });
+});
+
+describe("closeInquiry", () => {
+  const it = test.extend("closedThread", () =>
+    Effect.runPromise(
+      Effect.gen(function* closeAndReply() {
+        yield* addUser({ role: ROLE.administrator, userId: "admin" });
+        yield* addUser({ userId: "member" });
+        const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "admin" });
+        const memberInquiry = yield* createMemberInquiry("member", {
+          body: "本文",
+          subject: "件名",
+        });
+        const openReplyable = memberInquiry.replyable;
+        const closed = yield* closeInquiry(sessionId, memberInquiry.id);
+        const memberRefusal = yield* replyAsMember({
+          body: "追記です",
+          inquiryId: memberInquiry.id,
+          memberId: "member",
+        }).pipe(Effect.flip);
+        const adminRefusal = yield* replyAsAdmin({
+          body: "返信です",
+          inquiryId: memberInquiry.id,
+          sessionId,
+        }).pipe(Effect.flip);
+        return {
+          adminRefusal: adminRefusal._tag,
+          closedReplyable: closed.replyable,
+          memberRefusal: memberRefusal._tag,
+          openReplyable,
+        };
+      }).pipe(Effect.provide(TestDatabase)),
+    ));
+
+  it("stops accepting replies from either side once closed", ({ closedThread }) => {
+    expect(closedThread).toStrictEqual({
+      adminRefusal: "InquiryForbidden",
+      closedReplyable: false,
+      memberRefusal: "InquiryForbidden",
+      openReplyable: true,
     });
   });
 });

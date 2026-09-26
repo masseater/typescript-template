@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SplatRouteImport } from './routes/$'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as LoginRouteImport } from './routes/login'
@@ -27,11 +26,6 @@ import { Route as DashboardRecordingsIndexRouteImport } from './routes/_dashboar
 import { Route as DashboardRecordingsIdRouteImport } from './routes/_dashboard/recordings/$id'
 import { Route as DashboardWikiEditSplatRouteImport } from './routes/_dashboard/wiki-edit/$'
 
-const SplatRoute = SplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/_dashboard',
   getParentRoute: () => rootRouteImport,
@@ -114,7 +108,6 @@ const DashboardWikiEditSplatRoute = DashboardWikiEditSplatRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/$': typeof SplatRoute
   '/': typeof DashboardIndexRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
@@ -132,7 +125,6 @@ export interface FileRoutesByFullPath {
   '/recordings/': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/$': typeof SplatRoute
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
@@ -151,7 +143,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/$': typeof SplatRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/consent': typeof ConsentRoute
   '/login': typeof LoginRoute
@@ -172,7 +163,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/$'
     | '/'
     | '/consent'
     | '/login'
@@ -190,7 +180,6 @@ export interface FileRouteTypes {
     | '/recordings/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/$'
     | '/consent'
     | '/login'
     | '/mcp'
@@ -208,7 +197,6 @@ export interface FileRouteTypes {
     | '/recordings'
   id:
     | '__root__'
-    | '/$'
     | '/_dashboard'
     | '/consent'
     | '/login'
@@ -228,7 +216,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  SplatRoute: typeof SplatRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ConsentRoute: typeof ConsentRoute
   LoginRoute: typeof LoginRoute
@@ -240,13 +227,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/$': {
-      id: '/$'
-      path: '/$'
-      fullPath: '/$'
-      preLoaderRoute: typeof SplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_dashboard': {
       id: '/_dashboard'
       path: ''
@@ -391,7 +371,6 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  SplatRoute: SplatRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ConsentRoute: ConsentRoute,
   LoginRoute: LoginRoute,

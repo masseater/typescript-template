@@ -15,6 +15,8 @@ const JobPayload = Schema.Struct({
 
 type JobPayload = typeof JobPayload.Type;
 
+const jobInstanceId = (packet: JobPayload): string => `${packet.ownerId}-${packet.jobId}`;
+
 type JobResult = {
   readonly jobId: string;
   readonly stage: "complete";
@@ -47,6 +49,7 @@ const readJobs = Effect.fn("readJobs")(function* readJobs(input: unknown) {
 
 export {
   JobPayload,
+  jobInstanceId,
   jobsQueueBinding,
   jobsQueueName,
   jobsWorkflowBinding,

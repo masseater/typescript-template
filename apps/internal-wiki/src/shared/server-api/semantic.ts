@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { sumBy } from "es-toolkit";
 
 import { Embedder } from "#shared/wiki/embedder.ts";
 import { EmbeddingFailed } from "#shared/wiki/embedding-failed.ts";
@@ -30,7 +31,7 @@ type SemanticSearch = (query: string) => Effect.Effect<SemanticMatch[], Embeddin
 const KEYWORD_RANK_BONUS = 0.3;
 
 function similarity(vector: readonly number[], target: readonly number[]): number {
-  return vector.reduce((total, value, column) => total + value * (target[column] ?? 0), 0);
+  return sumBy(vector, (value, column) => value * (target[column] ?? 0));
 }
 
 function normalize(vector: readonly number[]): number[] {

@@ -4,11 +4,10 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { childEndOf, runCaptured } from "../child-process.ts";
 import {
-  baseName,
   fileExists,
   filesystem,
-  joinPath,
   makeDirectory,
+  paths,
   readDirectory,
   readFileString,
   removePath,
@@ -68,7 +67,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "slot-0"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-0"));
           }),
         ),
       )
@@ -77,7 +76,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "slot-1"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-1"));
           }),
         ),
       )
@@ -86,7 +85,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "slot-2"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-2"));
           }),
         ),
       )
@@ -95,7 +94,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "slot-0.lock"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-0.lock"));
           }),
         ),
       )
@@ -104,7 +103,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "slot-1.lock"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-1.lock"));
           }),
         ),
       )
@@ -113,7 +112,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "slot-2.lock"));
+            return yield* fileExists(paths.join(slotDirectory, "slot-2.lock"));
           }),
         ),
       )
@@ -122,7 +121,9 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return (yield* filesystem.stat(joinPath(slotDirectory, "slot-0.lock"))).type === "File";
+            return (
+              (yield* filesystem.stat(paths.join(slotDirectory, "slot-0.lock"))).type === "File"
+            );
           }),
         ),
       )
@@ -131,7 +132,9 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return (yield* filesystem.stat(joinPath(slotDirectory, "slot-1.lock"))).type === "File";
+            return (
+              (yield* filesystem.stat(paths.join(slotDirectory, "slot-1.lock"))).type === "File"
+            );
           }),
         ),
       )
@@ -140,7 +143,9 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return (yield* filesystem.stat(joinPath(slotDirectory, "slot-2.lock"))).type === "File";
+            return (
+              (yield* filesystem.stat(paths.join(slotDirectory, "slot-2.lock"))).type === "File"
+            );
           }),
         ),
       )
@@ -149,7 +154,7 @@ describe("ensureSlots", () => {
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 3);
             yield* ensureSlots(slotDirectory, 3);
-            return yield* fileExists(joinPath(slotDirectory, "waiters"));
+            return yield* fileExists(paths.join(slotDirectory, "waiters"));
           }),
         ),
       );
@@ -229,8 +234,8 @@ describe("ensureSlots", () => {
       .extend("theRefusalOfALockThatIsADirectory", ({ slotDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            yield* writeFileString({ location: joinPath(slotDirectory, "slot-0"), written: "" });
-            yield* makeDirectory(joinPath(slotDirectory, "slot-0.lock"));
+            yield* writeFileString({ location: paths.join(slotDirectory, "slot-0"), written: "" });
+            yield* makeDirectory(paths.join(slotDirectory, "slot-0.lock"));
             return yield* ensureSlots(slotDirectory, 1).pipe(
               Effect.matchEffect({
                 onFailure: (refusal) =>
@@ -244,9 +249,9 @@ describe("ensureSlots", () => {
       .extend("aSlotHeldOnceTheLockDirectoryIsDrained", ({ slotDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            yield* writeFileString({ location: joinPath(slotDirectory, "slot-0"), written: "" });
-            yield* makeDirectory(joinPath(slotDirectory, "slot-0.lock"));
-            yield* removePath(joinPath(slotDirectory, "slot-0.lock"));
+            yield* writeFileString({ location: paths.join(slotDirectory, "slot-0"), written: "" });
+            yield* makeDirectory(paths.join(slotDirectory, "slot-0.lock"));
+            yield* removePath(paths.join(slotDirectory, "slot-0.lock"));
             yield* ensureSlots(slotDirectory, 1);
             const held = yield* Effect.promise(() =>
               tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
@@ -274,7 +279,7 @@ describe("ensureSlots", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            return yield* makeDirectory(joinPath(slotDirectory, "slot-0.lock")).pipe(
+            return yield* makeDirectory(paths.join(slotDirectory, "slot-0.lock")).pipe(
               Effect.matchEffect({
                 onFailure: (refusal) =>
                   Effect.succeed(failedWithCode(refusal, new Set(["EEXIST"]))),
@@ -290,7 +295,7 @@ describe("ensureSlots", () => {
             yield* ensureSlots(slotDirectory, 1);
             const reclaim = yield* runCaptured({
               executable: process.execPath,
-              handed: ["-e", OLDER_PROTOCOL_RECLAIM, joinPath(slotDirectory, "slot-0.lock")],
+              handed: ["-e", OLDER_PROTOCOL_RECLAIM, paths.join(slotDirectory, "slot-0.lock")],
             });
             return ["ENOTDIR", "EPERM"].includes(reclaim.stdout);
           }),
@@ -427,7 +432,7 @@ describe("tryAcquireAny", () => {
             if (held) yield* Effect.promise(() => held.release());
             return yield* Effect.scoped(
               Effect.gen(function* () {
-                const unrelated = yield* filesystem.open(joinPath(slotDirectory, "unrelated"), {
+                const unrelated = yield* filesystem.open(paths.join(slotDirectory, "unrelated"), {
                   flag: "w",
                 });
                 if (held) yield* Effect.promise(() => held.release());
@@ -459,8 +464,8 @@ describe("tryAcquireAny", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            yield* removePath(joinPath(slotDirectory, "slot-0"));
-            yield* makeDirectory(joinPath(slotDirectory, "slot-0"));
+            yield* removePath(paths.join(slotDirectory, "slot-0"));
+            yield* makeDirectory(paths.join(slotDirectory, "slot-0"));
             return yield* Effect.tryPromise({
               try: () => tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
               catch: (refusal): boolean => failedWithCode(refusal, new Set(["EISDIR", "EPERM"])),
@@ -477,13 +482,13 @@ describe("tryAcquireAny", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            yield* removePath(joinPath(slotDirectory, "slot-0"));
-            yield* makeDirectory(joinPath(slotDirectory, "slot-0"));
+            yield* removePath(paths.join(slotDirectory, "slot-0"));
+            yield* makeDirectory(paths.join(slotDirectory, "slot-0"));
             yield* Effect.promise(() =>
               Promise.allSettled([tryAcquireAny({ slotDir: slotDirectory, limit: 1 })]),
             );
-            yield* removePath(joinPath(slotDirectory, "slot-0"));
-            yield* writeFileString({ location: joinPath(slotDirectory, "slot-0"), written: "" });
+            yield* removePath(paths.join(slotDirectory, "slot-0"));
+            yield* writeFileString({ location: paths.join(slotDirectory, "slot-0"), written: "" });
             const held = yield* Effect.promise(() =>
               tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
             );
@@ -601,12 +606,12 @@ describe("slotStateFingerprint", () => {
             const first = yield* Effect.promise(() =>
               tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
             );
-            const firstGeneration = yield* readFileString(joinPath(slotDirectory, "slot-0"));
+            const firstGeneration = yield* readFileString(paths.join(slotDirectory, "slot-0"));
             if (first) yield* Effect.promise(() => first.release());
             const second = yield* Effect.promise(() =>
               tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
             );
-            const secondGeneration = yield* readFileString(joinPath(slotDirectory, "slot-0"));
+            const secondGeneration = yield* readFileString(paths.join(slotDirectory, "slot-0"));
             if (second) yield* Effect.promise(() => second.release());
             return secondGeneration !== firstGeneration;
           }),
@@ -632,7 +637,7 @@ describe("slotStateFingerprint", () => {
             prefix: "throttle-slots-",
           });
           yield* ensureSlots(temporarySlotDirectory, 1);
-          yield* removePath(joinPath(temporarySlotDirectory, "slot-0"));
+          yield* removePath(paths.join(temporarySlotDirectory, "slot-0"));
           return yield* slotStateFingerprint(temporarySlotDirectory, 1);
         }).pipe(Effect.scoped, Effect.orDie),
       ));
@@ -781,19 +786,19 @@ describe("sweepWaiters", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            const waiters = joinPath(slotDirectory, "waiters");
+            const waiters = paths.join(slotDirectory, "waiters");
             yield* writeWaiterEntry(reserveWaiterPath(slotDirectory));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+              location: paths.join(waiters, "0000000000001-broken-aaaaaaaa"),
               written: "not a pid\n",
             });
-            yield* makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+            yield* makeDirectory(paths.join(waiters, "0000000000002-unreadable-bbbbbbbb"));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+              location: paths.join(waiters, "0000000000003-dead-cccccccc"),
               written: `${String(EXITED_PID)}\n`,
             });
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000004-root-dddddddd"),
+              location: paths.join(waiters, "0000000000004-root-dddddddd"),
               written: "1\n",
             });
             return (yield* sweepWaiters(slotDirectory)).slice(0, 1);
@@ -804,23 +809,23 @@ describe("sweepWaiters", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            const waiters = joinPath(slotDirectory, "waiters");
+            const waiters = paths.join(slotDirectory, "waiters");
             const ownEntry = reserveWaiterPath(slotDirectory);
             yield* writeWaiterEntry(ownEntry);
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+              location: paths.join(waiters, "0000000000001-broken-aaaaaaaa"),
               written: "not a pid\n",
             });
-            yield* makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+            yield* makeDirectory(paths.join(waiters, "0000000000002-unreadable-bbbbbbbb"));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+              location: paths.join(waiters, "0000000000003-dead-cccccccc"),
               written: `${String(EXITED_PID)}\n`,
             });
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000004-root-dddddddd"),
+              location: paths.join(waiters, "0000000000004-root-dddddddd"),
               written: "1\n",
             });
-            return (yield* sweepWaiters(slotDirectory)).at(-1) === baseName(ownEntry);
+            return (yield* sweepWaiters(slotDirectory)).at(-1) === paths.basename(ownEntry);
           }),
         ),
       )
@@ -828,19 +833,19 @@ describe("sweepWaiters", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            const waiters = joinPath(slotDirectory, "waiters");
+            const waiters = paths.join(slotDirectory, "waiters");
             yield* writeWaiterEntry(reserveWaiterPath(slotDirectory));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+              location: paths.join(waiters, "0000000000001-broken-aaaaaaaa"),
               written: "not a pid\n",
             });
-            yield* makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+            yield* makeDirectory(paths.join(waiters, "0000000000002-unreadable-bbbbbbbb"));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+              location: paths.join(waiters, "0000000000003-dead-cccccccc"),
               written: `${String(EXITED_PID)}\n`,
             });
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000004-root-dddddddd"),
+              location: paths.join(waiters, "0000000000004-root-dddddddd"),
               written: "1\n",
             });
             const survivors = yield* sweepWaiters(slotDirectory);
@@ -854,19 +859,19 @@ describe("sweepWaiters", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             yield* ensureSlots(slotDirectory, 1);
-            const waiters = joinPath(slotDirectory, "waiters");
+            const waiters = paths.join(slotDirectory, "waiters");
             yield* writeWaiterEntry(reserveWaiterPath(slotDirectory));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+              location: paths.join(waiters, "0000000000001-broken-aaaaaaaa"),
               written: "not a pid\n",
             });
-            yield* makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+            yield* makeDirectory(paths.join(waiters, "0000000000002-unreadable-bbbbbbbb"));
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+              location: paths.join(waiters, "0000000000003-dead-cccccccc"),
               written: `${String(EXITED_PID)}\n`,
             });
             yield* writeFileString({
-              location: joinPath(waiters, "0000000000004-root-dddddddd"),
+              location: paths.join(waiters, "0000000000004-root-dddddddd"),
               written: "1\n",
             });
             const survivors = yield* sweepWaiters(slotDirectory);
@@ -918,7 +923,7 @@ describe("removeWaiter", () => {
           yield* writeWaiterEntry(waiterEntry);
           yield* removeWaiter(waiterEntry);
           yield* removeWaiter(waiterEntry);
-          return yield* readDirectory(joinPath(slotDirectory, "waiters"));
+          return yield* readDirectory(paths.join(slotDirectory, "waiters"));
         }),
       ),
     );
@@ -954,7 +959,7 @@ describe("reserveWaiterPath with writeWaiterEntry", () => {
           yield* writeWaiterEntry(second);
           return (
             (yield* sweepWaiters(slotDirectory)).join("\n") ===
-            [first, second].map((writtenWaiter) => baseName(writtenWaiter)).join("\n")
+            [first, second].map((writtenWaiter) => paths.basename(writtenWaiter)).join("\n")
           );
         }),
       ),

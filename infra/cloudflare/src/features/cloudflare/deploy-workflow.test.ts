@@ -1,22 +1,16 @@
 import { assert, it } from "@effect/vitest";
 import { applications, wikiWorker } from "@repo/config";
+import { repositoryFile } from "@repo/config/repository-root";
 import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
 import { monitorStacks } from "./monitors.ts";
 import { fileUrlPath, layer } from "./platform.ts";
 
-const workflow = fileUrlPath(
-  new URL("../../../../../.github/workflows/deploy.yml", import.meta.url),
-);
-const environmentWorkflow = fileUrlPath(
-  new URL("../../../../../.github/workflows/deploy-environment.yml", import.meta.url),
-);
-const setupGuide = fileUrlPath(
-  new URL(
-    "../../../../../apps/internal-dashboard/content/docs/getting-started/first-steps.md",
-    import.meta.url,
-  ),
+const workflow = repositoryFile(".github/workflows/deploy.yml");
+const environmentWorkflow = repositoryFile(".github/workflows/deploy-environment.yml");
+const setupGuide = repositoryFile(
+  "apps/internal-dashboard/content/docs/getting-started/first-steps.md",
 );
 const viteConfig = fileUrlPath(new URL("../../../vite.config.ts", import.meta.url));
 const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(

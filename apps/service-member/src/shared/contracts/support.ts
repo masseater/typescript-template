@@ -1,9 +1,8 @@
+import { InquiryStatus } from "@repo/config";
 import { Identifier, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";
-
-const InquiryStatus = Schema.String;
 
 const InquiryMessage = Schema.Struct({
   authorId: Schema.String,
@@ -24,7 +23,7 @@ const InquirySummary = Schema.Struct({
 
 const InquiryThread = Schema.Struct({
   ...InquirySummary.fields,
-  closed: Schema.Boolean,
+  replyable: Schema.Boolean,
   messages: Schema.Array(InquiryMessage),
 });
 

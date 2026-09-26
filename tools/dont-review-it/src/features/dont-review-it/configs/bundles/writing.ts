@@ -10,6 +10,7 @@ import { noDetachedRationale } from "../../lint/oxlint/rules/writing/no-detached
 import { noDoubleTypeAssertion } from "../../lint/oxlint/rules/writing/no-double-type-assertion--declare-the-real-type.ts";
 import { noEnvironmentNameBranch } from "../../lint/oxlint/rules/writing/no-environment-name-branch--list-the-values-per-stage.ts";
 import { noExplanatoryComment } from "../../lint/oxlint/rules/writing/no-explanatory-comment--delete-or-move-to-commit-message.ts";
+import { noHandRolledSumOrClamp } from "../../lint/oxlint/rules/writing/no-hand-rolled-sum-or-clamp--use-es-toolkit.ts";
 import { noHardcodedEndpoint } from "../../lint/oxlint/rules/writing/no-hardcoded-endpoint--read-from-configuration.ts";
 import { noHardcodedProviderId } from "../../lint/oxlint/rules/writing/no-hardcoded-provider-id--read-from-configuration.ts";
 import { noIdentityWrapper } from "../../lint/oxlint/rules/writing/no-identity-wrapper--call-the-target-directly.ts";
@@ -40,6 +41,7 @@ export const writingBundle: readonly WorkspaceLintRule[] = [
   noEnvironmentNameBranch,
   noPlainSecretEnvironmentKey,
   noTestOnlyEnvironmentKey,
+  noHandRolledSumOrClamp,
   noHardcodedEndpoint,
   noHardcodedProviderId,
   noIdentityWrapper,

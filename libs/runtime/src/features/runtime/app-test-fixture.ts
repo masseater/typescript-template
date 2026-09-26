@@ -9,7 +9,7 @@ import { workerRuntime, type WorkerRuntime } from "./worker-runtime.ts";
 
 import type { AppServices } from "./index.ts";
 const fixtureOrigin = "http://localhost:3001";
-const fixtureAuthSecret = "worker-test-secret-at-least-32-characters";
+const fixtureAuthSecret = "worker-test-secret-of-at-least-32-characters-0123456789";
 const appEnvironment = (
   overrides: Readonly<Record<string, unknown>> = {},
 ): Record<string, unknown> => {

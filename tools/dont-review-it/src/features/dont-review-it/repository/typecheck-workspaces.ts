@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, cliStderr, markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Path, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { capturedProcess } from "./captured-process.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 
 class TypecheckUnstarted extends Schema.TaggedError<TypecheckUnstarted>()("TypecheckUnstarted", {

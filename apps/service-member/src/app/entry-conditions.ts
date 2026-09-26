@@ -1,4 +1,4 @@
-import { loginPath, sessionOptions } from "@repo/auth-ui";
+import { loginPath, sessionOptions, type SessionView } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 import { Effect } from "effect";
 
@@ -8,7 +8,6 @@ import { loadOnboardingStep, onboardingOptions } from "#pages/account/welcome/in
 import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
-import type { Session } from "#entities/session/index.ts";
 import type { OnboardingStep } from "#shared/contracts/index.ts";
 import type { QueryClient } from "@tanstack/react-query";
 
@@ -25,7 +24,7 @@ const welcomePath = {
 
 const recoveryPath = "/welcome/recovery";
 
-const currentSession = (queries: QueryClient): Effect.Effect<Session | undefined> =>
+const currentSession = (queries: QueryClient): Effect.Effect<SessionView | undefined> =>
   Effect.promise(() => loadSession()).pipe(
     Effect.tap((session) =>
       Effect.sync(() => queries.setQueryData(sessionOptions.queryKey, session)),
@@ -53,7 +52,7 @@ function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void>
 
 type PendingStep = Exclude<OnboardingStep, "done">;
 
-const signedIn = (session: Session | undefined, href: string): Session => {
+const signedIn = (session: SessionView | undefined, href: string): SessionView => {
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
   }
@@ -99,7 +98,7 @@ function enterMemberFrame(
   queries: QueryClient,
   href: string,
   pathname: string,
-): Promise<{ agreements: Agreements; session: Session }> {
+): Promise<{ agreements: Agreements; session: SessionView }> {
   return Effect.runPromise(
     Effect.gen(function* enterMember() {
       const session = signedIn(yield* currentSession(queries), href);
@@ -116,7 +115,7 @@ function enterWelcomeFrame(
   queries: QueryClient,
   href: string,
   pathname: string,
-): Promise<{ session: Session; step: OnboardingStep }> {
+): Promise<{ session: SessionView; step: OnboardingStep }> {
   return Effect.runPromise(
     Effect.gen(function* enterWelcome() {
       const session = signedIn(yield* currentSession(queries), href);

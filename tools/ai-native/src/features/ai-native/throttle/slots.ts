@@ -2,8 +2,8 @@ import { Effect } from "effect";
 
 import {
   epochMillis,
-  joinPath,
   makeDirectory,
+  paths,
   randomHex,
   readDirectory,
   readFileString,
@@ -13,11 +13,11 @@ import {
 import { tryAcquireFileLock } from "./acquire-file-lock.ts";
 import { failedWithCode, failureSpelling } from "./failure-codes.ts";
 
-const markerPath = (slotDir: string, index: number): string => joinPath(slotDir, `slot-${index}`);
+const markerPath = (slotDir: string, index: number): string => paths.join(slotDir, `slot-${index}`);
 
 const lockPath = (marker: string): string => `${marker}.lock`;
 
-const waitersDir = (slotDir: string): string => joinPath(slotDir, "waiters");
+const waitersDir = (slotDir: string): string => paths.join(slotDir, "waiters");
 
 const slotIndexes = (limit: number): number[] => [...Array(limit).keys()];
 
@@ -80,7 +80,7 @@ export const reserveWaiterPath = (slotDir: string): string => {
   const spelled = [String(epochMillis()).padStart(13, "0"), String(process.pid), randomHex(4)].join(
     "-",
   );
-  return joinPath(waitersDir(slotDir), spelled);
+  return paths.join(waitersDir(slotDir), spelled);
 };
 
 export const writeWaiterEntry = (waiterPath: string): Effect.Effect<void, Error> =>
@@ -124,7 +124,7 @@ export const sweepWaiters = (slotDir: string): Effect.Effect<string[], Error> =>
   readDirectory(waitersDir(slotDir)).pipe(
     Effect.flatMap((spelledEntries) =>
       Effect.filter([...spelledEntries].toSorted(), (spelled) =>
-        survives(joinPath(waitersDir(slotDir), spelled)),
+        survives(paths.join(waitersDir(slotDir), spelled)),
       ),
     ),
   );

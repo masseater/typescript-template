@@ -1,6 +1,7 @@
 import { CloudflareId } from "@repo/config";
 import { DateTime, Effect, Redacted, Schema } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
+import { sumBy } from "es-toolkit";
 
 import { BudgetFailure, fail } from "./config.ts";
 
@@ -104,7 +105,7 @@ const latestChargeEnd = (asked: {
 };
 
 const totalCost = (usageRows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> => {
-  const usageTotal = usageRows.reduce((sum, usageRow) => sum + usageRow.BilledCost, 0);
+  const usageTotal = sumBy(usageRows, (usageRow) => usageRow.BilledCost);
   return Number.isFinite(usageTotal) ? Effect.succeed(usageTotal) : fail("billing_cost_invalid");
 };
 

@@ -1,5 +1,6 @@
-import { findWikiReader, insufficientScopeError, mcpAuthorizer, mcpJsonRpcError } from "@repo/auth";
+import { insufficientScopeError, mcpAuthorizer, mcpJsonRpcError } from "@repo/auth";
 import { httpStatus } from "@repo/config";
+import { findWikiReader } from "@repo/db";
 import { Effect } from "effect";
 
 const requiredScopes = ["wiki:read"];

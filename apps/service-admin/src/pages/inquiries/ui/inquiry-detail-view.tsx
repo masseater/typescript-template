@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { INQUIRY_AUTHOR_KIND, inquiryAuthorKindLabels, inquiryStatusLabels } from "@repo/config";
 import {
   Heading,
   NavigationLink,
@@ -8,8 +8,6 @@ import {
   formatWarekiDateTime,
   type UiNode,
 } from "@repo/ui";
-
-import { inquiryStatusLabel, isInquiryClosed } from "#pages/inquiries/model/status-label.ts";
 
 import type {
   AdminInquiryDetail,
@@ -58,16 +56,16 @@ function InquiryConversation({
         {inquiry.subject}
       </Heading>
       <p className="text-sm leading-normal text-muted-foreground">
-        会員・{inquiryStatusLabel(inquiry.status)}
+        会員・{inquiryStatusLabels[inquiry.status]}
       </p>
       <ul className="flex flex-col gap-3">
         {inquiry.messages.map((message) => (
           <li
             key={message.id}
-            className={`rounded-lg border border-border p-3 ${message.authorKind === ROLE.administrator ? "bg-muted" : ""}`}
+            className={`rounded-lg border border-border p-3 ${message.authorKind === INQUIRY_AUTHOR_KIND.admin ? "bg-muted" : ""}`}
           >
             <p className="text-sm leading-normal font-medium">
-              {message.authorKind === ROLE.administrator ? "運営" : "会員"}
+              {inquiryAuthorKindLabels[message.authorKind]}
             </p>
             <p className="text-base leading-normal whitespace-pre-wrap">{message.body}</p>
             <p className="text-xs leading-normal text-muted-foreground">
@@ -76,7 +74,7 @@ function InquiryConversation({
           </li>
         ))}
       </ul>
-      {isInquiryClosed(inquiry.status) ? null : replyForm}
+      {inquiry.replyable ? replyForm : null}
     </section>
   );
 }

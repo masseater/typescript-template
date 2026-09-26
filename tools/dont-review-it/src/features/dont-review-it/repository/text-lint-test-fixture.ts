@@ -1,7 +1,7 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect } from "effect";
 import { createLinter } from "textlint";
 
-import { repositoryRoot } from "./repository-root.ts";
 import { textlintDescriptor } from "./text-lint-descriptor.ts";
 
 const linter = createLinter({

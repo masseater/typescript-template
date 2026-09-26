@@ -3,7 +3,7 @@ import { Button, FailureStatus, FormColumn, localState, useAction } from "@repo/
 import { getRouteApi } from "@tanstack/react-router";
 
 import { submitDecision } from "#pages/account/consent/api/consent.ts";
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 import { McpScopeFields, requestedToolScopes, useChosenScopes } from "./mcp-scope-fields.tsx";
 
 import type { ReactElement } from "react";
@@ -64,7 +64,7 @@ function ConsentActions({
   return (
     <FormColumn>
       <p>
-        {client} に {serviceName} で許す操作を選んでください。選んでいない操作は拒否されます。
+        {client} に {productName} で許す操作を選んでください。選んでいない操作は拒否されます。
       </p>
       <McpScopeFields requested={requested} />
       <DecisionButtons

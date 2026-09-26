@@ -146,6 +146,16 @@ describe("readEnvironment", () => {
       'Expected a value with a length of at least 32\n  at ["AUTH_SECRET"]',
     ],
     [
+      "a session secret repeating too few characters",
+      { AUTH_SECRET: "repeated-secret-repeated-secret-" },
+      'Expected at least 16 distinct characters\n  at ["AUTH_SECRET"]',
+    ],
+    [
+      "a session secret padded with whitespace",
+      { AUTH_SECRET: " test-environment-secret-not-for-any-deployment " },
+      'Leading or trailing whitespace is not allowed\n  at ["AUTH_SECRET"]',
+    ],
+    [
       "an origin carrying a path",
       { APP_ORIGIN: "http://localhost:3001/path" },
       'An origin without a path is required\n  at ["APP_ORIGIN"]',

@@ -2,7 +2,7 @@ import { Button, FormColumn, STATUS_VARIANT, StatusMessage, localState, useActio
 import { Effect } from "effect";
 
 import { submitDecision } from "#pages/consent/api/consent.ts";
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -33,7 +33,7 @@ function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement 
   return (
     <FormColumn>
       <p>
-        {client} に {serviceName} の閲覧を許可しますか？
+        {client} に {productName} の閲覧を許可しますか？
       </p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="primary" disabled={disabled} onClick={allow}>

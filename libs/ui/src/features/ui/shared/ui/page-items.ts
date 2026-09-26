@@ -1,4 +1,4 @@
-import { omit, range } from "es-toolkit";
+import { clamp, omit, range } from "es-toolkit";
 
 const MAX_PAGES_WITHOUT_GAPS = 7;
 const pagesKeptBesideAnEdge = 2;
@@ -13,11 +13,8 @@ const pageItems = ({ current, last }: Readonly<{ current: number; last: number }
   if (last <= MAX_PAGES_WITHOUT_GAPS) {
     return pages(1, last);
   }
-  const windowEnd = Math.max(Math.min(last - 1, current + 1), pagesKeptBesideAnEdge + 1);
-  const windowStart = Math.min(
-    Math.max(pagesKeptBesideAnEdge, current - 1),
-    last - pagesKeptBesideAnEdge,
-  );
+  const windowEnd = clamp(current + 1, pagesKeptBesideAnEdge + 1, last - 1);
+  const windowStart = clamp(current - 1, pagesKeptBesideAnEdge, last - pagesKeptBesideAnEdge);
   const start = windowStart === pagesKeptBesideAnEdge + 1 ? pagesKeptBesideAnEdge : windowStart;
   const end = windowEnd === last - pagesKeptBesideAnEdge ? last - 1 : windowEnd;
   return [

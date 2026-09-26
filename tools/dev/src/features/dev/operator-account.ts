@@ -44,7 +44,7 @@ const operatorAccounts: Readonly<Record<Application, OperatorAccount>> = {
     name: "Local Admin",
   },
   [APPLICATION.user]: { email: "local-member@example.test", name: "Local Member" },
-  [APPLICATION.wiki]: {
+  [APPLICATION.dashboard]: {
     email: "local-staff@example.test",
     kind: "staff",
     name: "Local Staff",

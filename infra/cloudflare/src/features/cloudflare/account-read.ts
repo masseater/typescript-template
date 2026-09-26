@@ -2,6 +2,7 @@ import { httpStatus } from "@repo/config";
 import { schemaMismatches } from "@repo/config/schema-mismatches";
 import { Duration, Effect, Predicate, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
+import { sumBy } from "es-toolkit";
 
 import { CloudflareFailure } from "./config.ts";
 
@@ -254,7 +255,7 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
     ),
     (page) => readPage(access, { ...collection, page }, shape),
   );
-  const gathered = rest.reduce((rows, page) => rows + page.rows, first.rows);
+  const gathered = first.rows + sumBy(rest, (page) => page.rows);
   if (gathered !== first.total) {
     return yield* unreadable(collection.source, "truncated");
   }

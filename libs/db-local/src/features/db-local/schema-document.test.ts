@@ -9,7 +9,7 @@ describe("the schema page of the wiki", () => {
     Effect.runPromise(
       Effect.gen(function* readSchemaDocument() {
         const filesystem = yield* FileSystem.FileSystem;
-        return yield* filesystem.readFileString(yield* schemaDocumentPath);
+        return yield* filesystem.readFileString(schemaDocumentPath);
       }).pipe(Effect.orDie, Effect.provide(NodeServices.layer)),
     ));
 

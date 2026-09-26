@@ -1,11 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
 import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const frontmatterPattern = /^---\n(?<body>[\s\S]*?)\n---\n/u;
 const markdownReferencePattern = /`(?<path>[^`\s]+\.md)`/gu;

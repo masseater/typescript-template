@@ -1,3 +1,4 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 
 import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
@@ -10,7 +11,6 @@ import {
   workspaceManifests,
   type WorkspaceManifest,
 } from "./dependencies-test-fixture.ts";
-import { repositoryRoot } from "./repository-root.ts";
 import { commands, taskNames } from "./tasks-test-fixture.ts";
 
 const areas = new Set(["apps", "libs", "infra", "tools"]);

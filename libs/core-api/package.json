@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/features/core-api/index.ts",
-    "./entrypoints": "./src/features/core-api/entrypoints.ts"
+    ".": "./src/features/core-api/index.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

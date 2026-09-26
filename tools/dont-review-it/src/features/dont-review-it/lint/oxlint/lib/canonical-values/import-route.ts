@@ -1,6 +1,7 @@
 import { isBuiltin } from "node:module";
 
 import { path } from "../../../../platform/path.ts";
+import { packageNameOf } from "../package-specifier.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import {
   isIgnoredRepositoryModule,
@@ -30,13 +31,13 @@ const registeredEntriesForImportRoute = (
 
 const SUBPATH_IMPORT_PREFIX = "#";
 
-const packageNameOf = (specifier: string): string => {
-  if (!specifier.startsWith("@")) return specifier.split("/")[0] as string;
-  return specifier.split("/").slice(0, 2).join("/");
+const belongsToRegisteredPackage = (
+  specifier: string,
+  catalog: CanonicalValuesCatalog,
+): boolean => {
+  const packageName = packageNameOf(specifier);
+  return packageName !== undefined && catalog.packageNames.has(packageName);
 };
-
-const belongsToRegisteredPackage = (specifier: string, catalog: CanonicalValuesCatalog): boolean =>
-  catalog.packageNames.has(packageNameOf(specifier));
 
 const isKnownRepositorySpecifier = (
   query: ImportRouteQuery,

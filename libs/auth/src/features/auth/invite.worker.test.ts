@@ -91,7 +91,7 @@ describe("a staff invite", () => {
       Effect.gen(function* inviteStaffMember() {
         const editor = yield* wikiStaff("editor@example.com");
         const authority = yield* editor.verify();
-        const wiki = (yield* AuthApps)[APPLICATION.wiki];
+        const wiki = (yield* AuthApps)[APPLICATION.dashboard];
         const invited = yield* inviteStaff({
           email: "reader@example.com",
           permission: STAFF_PERMISSION.viewer,
@@ -104,11 +104,11 @@ describe("a staff invite", () => {
           password: PASSWORD,
           token: decodeURIComponent(link.pathname.split("/").at(-1) ?? ""),
         }).pipe(Effect.provideService(Auth, wiki));
-        const client = yield* signInAs(APPLICATION.wiki, "reader@example.com");
+        const client = yield* signInAs(APPLICATION.dashboard, "reader@example.com");
         const session = yield* client.verify(true);
         return {
           accepted: { permission: accepted.permission, role: accepted.role },
-          linkOrigin: link.origin === origins[APPLICATION.wiki],
+          linkOrigin: link.origin === origins[APPLICATION.dashboard],
           session: { permission: session.user.permission, role: session.user.role },
         };
       }),

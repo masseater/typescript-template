@@ -2,6 +2,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
+import { sum } from "es-toolkit";
 
 import { directoryEntries } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
@@ -34,10 +35,10 @@ const lineCount = (file: string): TreeScan<number> =>
   });
 
 const directoryLines = (directory: string): TreeScan<number> =>
-  Effect.gen(function* sum() {
+  Effect.gen(function* directoryLineTotal() {
     const files = yield* collectSourceFiles(directory);
     const counts = yield* Effect.forEach(files, lineCount, { concurrency: "unbounded" });
-    return counts.reduce((total, count) => total + count, 0);
+    return sum(counts);
   });
 
 const whenPresent = <Scanned>(

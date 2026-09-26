@@ -1,7 +1,8 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { joinPath, readFileString, temporaryDirectory } from "../host.ts";
+import { temporaryDirectory } from "../host-facts.ts";
+import { paths, readFileString } from "../host.ts";
 import { failureSpelling } from "./failure-codes.ts";
 
 describe("failureSpelling", () => {
@@ -9,7 +10,7 @@ describe("failureSpelling", () => {
     const it = test.extend("theSpellingOfACodedRefusal", () =>
       Effect.runPromise(
         readFileString(
-          joinPath(temporaryDirectory(), "throttle-marker-that-was-never-written"),
+          paths.join(temporaryDirectory(), "throttle-marker-that-was-never-written"),
         ).pipe(Effect.flip, Effect.map(failureSpelling)),
       ));
 

@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -15,7 +16,6 @@ import {
   unnamedControlViolations,
   urlHoldsScreenState,
 } from "./ai-operable-ui-test-fixture.ts";
-import { repositoryRoot } from "./repository-root.ts";
 
 const shippedModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../../../{apps,libs}/**/*.{ts,tsx}",

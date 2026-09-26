@@ -1,6 +1,6 @@
 import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 import { ConsentActions } from "./consent-actions.tsx";
 
 import type { ReactElement } from "react";
@@ -17,7 +17,7 @@ function ConsentView({
   onError: (message: string) => void;
 }>): ReactElement {
   return (
-    <Page title={`${serviceName} との連携`}>
+    <Page title={`${productName} との連携`}>
       {clientId === undefined && (
         <StatusMessage variant={STATUS_VARIANT.failure}>
           連携を求めているクライアントが分かりません。

@@ -9,6 +9,7 @@
     "block",
     "board-post",
     "board-thread",
+    "build-target",
     "conversation",
     "feature-flag",
     "feed-event",
@@ -24,6 +25,7 @@
     "moderation-action",
     "notification",
     "plan-subscription",
+    "product-name",
     "report",
     "session",
     "staff-account"

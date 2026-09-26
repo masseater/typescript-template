@@ -35,7 +35,7 @@ const resolveLocalVerifyEnvironment = (
     environment,
     mailpitOrigin: mailpit,
     memberOrigin: applicationOrigins[APPLICATION.user],
-    wikiOrigin: applicationOrigins[APPLICATION.wiki],
+    wikiOrigin: applicationOrigins[APPLICATION.dashboard],
   };
 };
 

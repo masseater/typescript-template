@@ -32,7 +32,7 @@ const stackReferences = {
   Readonly<
     Record<typeof APPLICATION.admin, typeof servedApplication> &
       Record<typeof APPLICATION.user, typeof memberServed> &
-      Record<typeof APPLICATION.wiki, typeof wikiServed>
+      Record<typeof APPLICATION.dashboard, typeof wikiServed>
   > &
   Readonly<Record<MonitorStack, readonly string[]>>;
 
@@ -72,7 +72,7 @@ const stackNames = [
   ...monitorStacks,
   APPLICATION.user,
   APPLICATION.admin,
-  APPLICATION.wiki,
+  APPLICATION.dashboard,
 ] as const satisfies readonly StackName[];
 
 const onboardingStack = "email" as const satisfies StackName;
@@ -81,7 +81,7 @@ const sendingStacks = [
   ...monitorStacks,
   APPLICATION.user,
   APPLICATION.admin,
-  APPLICATION.wiki,
+  APPLICATION.dashboard,
 ] as const satisfies readonly StackName[];
 
 function applyOrderViolations(order: readonly StackName[]): readonly StackName[] {

@@ -72,7 +72,7 @@ const authApps = Layer.effect(
   Effect.all({
     [APPLICATION.admin]: authFor(APPLICATION.admin),
     [APPLICATION.user]: authFor(APPLICATION.user),
-    [APPLICATION.wiki]: authFor(APPLICATION.wiki),
+    [APPLICATION.dashboard]: authFor(APPLICATION.dashboard),
   }),
 ).pipe(Layer.provide(sequentialIdentifiers));
 

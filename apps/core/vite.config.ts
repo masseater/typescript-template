@@ -1,5 +1,4 @@
-import { telemetryAsked } from "@repo/telemetry/optional-setting";
-import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
+import { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   lifecycle,
@@ -15,7 +14,14 @@ export default defineConfig({
   pack: {
     deps: {
       alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
-      onlyBundle: ["@better-auth/core", "better-call", "drizzle-orm", "effect", "msgpackr"],
+      onlyBundle: [
+        "@better-auth/core",
+        "better-call",
+        "drizzle-orm",
+        "effect",
+        "es-toolkit",
+        "msgpackr",
+      ],
     },
     entry: { index: "src/features/core/worker.ts" },
     format: "esm" as const,
@@ -43,12 +49,7 @@ export default defineConfig({
     },
   },
   test: {
-    experimental: {
-      openTelemetry: {
-        enabled: telemetryAsked,
-        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
-      },
-    },
+    experimental: { openTelemetry: vitestOpenTelemetry },
     coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
     mockReset: true,
     restoreMocks: true,

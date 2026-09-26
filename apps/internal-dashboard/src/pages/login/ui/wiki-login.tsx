@@ -5,7 +5,7 @@ import { Redirect } from "@repo/runtime/contracts";
 import { Effect } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 
-import { serviceName } from "#shared/config/index.ts";
+import { productName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -47,7 +47,7 @@ function continueAuthorization(): Promise<void> {
 function WikiLogin(): ReactElement {
   return (
     <LoginPage
-      title={`${serviceName} にログイン`}
+      title={`${productName} にログイン`}
       signUp={false}
       onAuthenticated={continueAuthorization}
     />

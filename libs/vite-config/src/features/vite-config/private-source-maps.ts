@@ -1,3 +1,4 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Schema } from "effect";
 
 import { filesystem, paths } from "./host.ts";
@@ -5,11 +6,6 @@ import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
 
 import type { BuildTarget } from "@repo/config";
 import type { Plugin } from "vite-plus";
-
-const PRIVATE_FILE_MODE = 0o600;
-const PRIVATE_DIRECTORY_MODE = 0o700;
-
-const repositoryRoot = paths.resolve(import.meta.dirname, "../../../../..");
 
 const BROKEN_SOURCE_MAP = "SOURCEMAP_BROKEN";
 
@@ -24,6 +20,9 @@ const failOnBrokenSourceMaps = (): Plugin => {
     },
   };
 };
+
+const PRIVATE_FILE_MODE = 0o600;
+const PRIVATE_DIRECTORY_MODE = 0o700;
 
 const moveMap = (source: string, destination: string): Effect.Effect<void> =>
   Effect.gen(function* moveMapProgram() {

@@ -1,7 +1,7 @@
 import { defineHook } from "cc-hooks-ts";
 import { Effect } from "effect";
 
-import { homeDirectory } from "../host.ts";
+import { homeDirectory } from "../host-facts.ts";
 import { createWorktree } from "./create-worktree.ts";
 import { denyReasonOf } from "./deny-reason.ts";
 import { repositoryRootOf, runGit } from "./git.ts";
