@@ -120,5 +120,8 @@
   "lintRules": [
     "src/features/dont-review-it/lint/oxlint/rules",
     "src/features/dont-review-it/lint-rule-authoring/lint/oxlint/rules"
-  ]
+  ],
+  "scripts": {
+    "guard": "throttle --timeout 1800 -- spool -- exit 0"
+  }
 }

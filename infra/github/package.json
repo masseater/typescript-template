@@ -15,7 +15,8 @@
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "alchemy": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "es-toolkit": "catalog:"
   },
   "devDependencies": {
     "@repo/telemetry": "workspace:*",

@@ -13,6 +13,7 @@ import {
   type Scope,
 } from "effect";
 import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
+import { escape } from "es-toolkit";
 
 import {
   type InstallationWait,
@@ -69,13 +70,6 @@ const replacesApp = (olds: AppDefinition, news: AppDefinition): boolean =>
   news.url !== olds.url ||
   permissionsText(news) !== permissionsText(olds);
 
-const escapeHtml = (markup: string): string =>
-  markup
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-
 const manifestPage = (
   definition: AppDefinition,
   formPlacement: Readonly<{ manifestState: string; organization: boolean; origin: string }>,
@@ -92,7 +86,7 @@ const manifestPage = (
     redirect_url: `${formPlacement.origin}${createdPath}`,
     url: definition.url,
   };
-  return `<!doctype html><form id="manifest" method="post" action="https://github.com${newAppPath}?state=${formPlacement.manifestState}"><input type="hidden" name="manifest" value="${escapeHtml(
+  return `<!doctype html><form id="manifest" method="post" action="https://github.com${newAppPath}?state=${formPlacement.manifestState}"><input type="hidden" name="manifest" value="${escape(
     JSON.stringify(manifest),
   )}"><button>Create GitHub App</button></form><script>document.getElementById("manifest").submit()</script>`;
 };
