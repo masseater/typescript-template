@@ -1,30 +1,14 @@
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
-import {
-  effectDiagnostics,
-  intentValidation,
-  lifecycle,
-  testRun,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-} from "@repo/vite-config";
+import { effectRun, intentValidation, testRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...effectRun(import.meta.dirname, { prepush: ["check"], prepr: ["test"] }).tasks,
       ...intentValidation,
       ...testRun,
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check", "check:modular"],
-        prepr: ["test"],
-      }),
     },
   },
   test: {

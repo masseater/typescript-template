@@ -1,13 +1,5 @@
 import { applications, wikiWorker } from "@repo/config";
-import {
-  awaitingEffectDiagnostics,
-  lifecycle,
-  taskInput,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-  telemetryEnv,
-} from "@repo/vite-config";
+import { awaitingEffectRun, taskInput, telemetryEnv } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/features/cloudflare/monitors.ts";
@@ -19,10 +11,10 @@ const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...awaitingEffectRun(import.meta.dirname, {
+        prepr: ["verify:stacks"],
+        prerelease: ["verify:account"],
+      }).tasks,
       "bootstrap:state": { cache: false, command: "./src/features/cloudflare/bootstrap-state.ts" },
       "db:bootstrap:remote": {
         cache: false,
@@ -53,12 +45,6 @@ export default defineConfig({
         dependsOn: stackBuilds,
         input: [...taskInput],
       },
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check:modular"],
-        prepr: ["verify:stacks"],
-        prerelease: ["verify:account"],
-      }),
     },
   },
 });

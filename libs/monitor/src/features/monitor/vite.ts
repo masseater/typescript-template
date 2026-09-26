@@ -1,13 +1,4 @@
-import {
-  effectDiagnostics,
-  lifecycle,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-  paths,
-  taskInput,
-  telemetryEnv,
-} from "@repo/vite-config";
+import { effectRun, paths, taskInput, telemetryEnv } from "@repo/vite-config";
 
 import type { UserConfig } from "vite-plus";
 import type { PackUserConfig } from "vite-plus/pack";
@@ -33,21 +24,13 @@ const monitorWorkerVite = (
   },
   run: {
     tasks: {
-      ...effectDiagnostics(packageRoot),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...effectRun(packageRoot, { prepr: ["build"] }).tasks,
       build: {
         command: "vp pack",
         dependsOn: ["check:effect"],
         input: [...taskInput],
         env: [...telemetryEnv],
       },
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check:modular"],
-        prepr: ["build"],
-      }),
     },
   },
   test: {

@@ -8,18 +8,16 @@ import {
   appConfig,
   appRun,
   awaitingEffectDiagnostics,
-  checkCode,
   effectDiagnostics,
   effectRun,
   lifecycle,
-  modularBoundaries,
   paraglideAppRun,
   sliceBoundaries,
   taskInput,
   telemetryEnv,
-  workspaceCheckImports,
   workspaceParaglideCompile,
 } from "./vite.ts";
+import { checkCode, modularBoundaries, workspaceCheckImports } from "./workspace-checks.ts";
 
 import type { ConfigEnv, PluginOption } from "vite-plus";
 
@@ -81,6 +79,29 @@ describe("effectRun", () => {
         ...lifecycle({
           precommit: ["check:code"],
           prepush: ["check:effect", "check:imports", "check:modular"],
+        }),
+      },
+    });
+  });
+});
+
+describe("effectRun with workspace stages", () => {
+  const it = test.extend("stagedWorkspaceRun", () =>
+    effectRun(libraryRoot, { prepr: ["build"], prepush: ["check"] }));
+
+  it("appends the stages to the standard ones instead of replacing them", ({
+    stagedWorkspaceRun,
+  }) => {
+    expect(stagedWorkspaceRun).toStrictEqual({
+      tasks: {
+        ...effectDiagnostics(libraryRoot),
+        ...checkCode,
+        ...workspaceCheckImports,
+        ...modularBoundaries,
+        ...lifecycle({
+          precommit: ["check:code"],
+          prepush: ["check:effect", "check:imports", "check:modular", "check"],
+          prepr: ["build"],
         }),
       },
     });
