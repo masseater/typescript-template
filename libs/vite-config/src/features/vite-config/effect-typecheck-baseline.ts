@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Schema, type Effect } from "effect";
 
 import {
   compareCounted,
@@ -20,8 +20,10 @@ const TypecheckBaseline = Schema.Struct({
 
 type TypecheckBaseline = typeof TypecheckBaseline.Type;
 
-const parseBaseline = (baselineJson: string): TypecheckBaseline =>
-  Schema.decodeSync(Schema.fromJsonString(TypecheckBaseline))(baselineJson);
+const parseBaseline = (
+  baselineJson: string,
+): Effect.Effect<TypecheckBaseline, Schema.SchemaError> =>
+  Schema.decodeEffect(Schema.fromJsonString(TypecheckBaseline))(baselineJson);
 
 const serializeBaseline = (baseline: TypecheckBaseline): string => {
   const workspaces = Object.fromEntries(

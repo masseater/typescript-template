@@ -1,4 +1,4 @@
-import { Cause, Console, Effect, Predicate, Result } from "effect";
+import { Cause, Console, Effect, Predicate, Result, Schema } from "effect";
 
 import { redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
@@ -90,13 +90,18 @@ const unavailableLog = (
   };
 };
 
+const encodeLogLine = Schema.encodeEffect(
+  Schema.fromJsonString(Schema.Record(Schema.String, Schema.String)),
+);
+
 const reportUnavailable = (
   cause: Readonly<Cause.Cause<unknown>>,
   reporting: Reporting,
 ): Effect.Effect<void> => {
   return Effect.gen(function* reportUnavailableProgram() {
     const sink = reporting.log ?? (yield* Console.Console);
-    sink.error(JSON.stringify(unavailableLog(cause, reporting.service)));
+    const line = yield* encodeLogLine(unavailableLog(cause, reporting.service)).pipe(Effect.orDie);
+    sink.error(line);
   });
 };
 
