@@ -70,46 +70,134 @@ const jitCompile =
   'return new Function("h", fullAlias, `return ${code}`)(handler, ...paramValues);';
 const jitWithoutEval = `try {
 		return new Function("h", fullAlias, \`return \${code}\`)(handler, ...paramValues);
-	} catch {
+	} catch (evalRefusal) {
+		if (!(evalRefusal instanceof EvalError)) {
+			throw evalRefusal;
+		}
+		const unrunPhases = Object.entries({
+			afterHandle: hasAfterHandle,
+			afterResponse: hasAfterResponse,
+			cookie: cookieConfig !== undefined && cookieConfig !== null,
+			derive: hasDeriveDispose || (hook?.["~deriveEntries"]?.length ?? 0) > 0,
+			mapResponse: hasMapResponse,
+			parse: hasBody,
+			trace: hasTrace,
+			transform: (hook?.transform?.length ?? 0) > 0,
+			validation:
+				hasResponseValidator ||
+				[vali?.body, vali?.query, vali?.params, vali?.headers, vali?.cookie].some(
+					(validator) => validator !== undefined && validator !== null,
+				),
+		})
+			.filter(([, present]) => present)
+			.map(([phase]) => phase);
+		if (unrunPhases.length > 0) {
+			throw new Error(
+				\`[elysia-workerd-jit] \${method} \${path} needs \${unrunPhases.join(", ")}, which the eval-free route does not run\`,
+				{ cause: evalRefusal },
+			);
+		}
 		const routeHandler = handler;
-		const routeHook = hook;
-		const mapResponse = responseMap;
-		return (context) => {
-			const run = async () => {
-				if (
-					context.request.method !== "GET" &&
-					context.request.method !== "HEAD" &&
-					context.request.headers.get("content-type")?.includes("json") === true
-				) {
-					context.body = await context.request.clone().json();
+		const beforeHandles = hook?.beforeHandle === undefined ? [] : [hook.beforeHandle].flat();
+		const errorHooks = hook?.error === undefined ? [] : [hook.error].flat();
+		const reply = (value, context) => responseMap(value, context.set, context.request, true);
+		const settle = async (context) => {
+			if (responseMode === "set-with-default-headers" && inference.set) {
+				materializeSetHeaders(context.set);
+			}
+			if (inference.query) {
+				context.query = parseQueryFromURL(context.request.url, context.qi);
+			}
+			if (inference.headers) {
+				context.headers = Object.fromEntries(context.request.headers);
+			}
+			if (inference.route) {
+				context.route = path;
+			}
+			if (beforeHandlePrefix) {
+				const early = await runBeforeHandlePrefixAsync(beforeHandlePrefix, context);
+				if (early !== undefined) {
+					return early;
 				}
-				const befores = routeHook?.beforeHandle;
-				if (befores !== undefined) {
-					for (const hookFn of Array.isArray(befores) ? befores : [befores]) {
-						const early = await hookFn(context);
-						if (early !== undefined) {
-							return mapResponse(early, context.set, context.request, true);
-						}
+			}
+			for (const beforeHandle of beforeHandles) {
+				const early = await beforeHandle(context);
+				if (early !== undefined) {
+					return early;
+				}
+			}
+			if (isHandleFunction) {
+				return routeHandler(context);
+			}
+			if (isStaticResponse) {
+				return cloneResponse(routeHandler);
+			}
+			if (isPromiseHandler) {
+				return routeHandler.then(cloneResponse);
+			}
+			return routeHandler;
+		};
+		const recover = async (context, error) => {
+			if (errorHooks.length === 0) {
+				return finalizeRouteError(errorRoot, context, error);
+			}
+			context.error = error;
+			if (error?.status) {
+				context.set.status = error.status;
+			} else if (context.set.status === undefined || context.set.status === 200) {
+				context.set.status = 500;
+			}
+			for (const errorHook of errorHooks) {
+				const handled = await errorHook(context);
+				if (handled !== undefined) {
+					if (handled instanceof Response) {
+						context.set.status = handled.status;
+					} else if (context.set.status === undefined || context.set.status === 200) {
+						context.set.status = 500;
 					}
+					return reply(workerdAdoptErrorType(handled, error), context);
 				}
-				return mapResponse(await routeHandler(context), context.set, context.request, true);
-			};
-			return run();
+			}
+			return fallbackResponse(context, error, (value, set, fallbackContext) =>
+				responseMap(value, set, fallbackContext.request, true),
+			);
+		};
+		return async (context) => {
+			try {
+				const settled = await settle(context);
+				if (settled instanceof Error) {
+					throw settled;
+				}
+				return await reply(settled, context);
+			} catch (error) {
+				try {
+					return await recover(context, error);
+				} catch (unrecovered) {
+					return finalizeRouteError(errorRoot, context, unrecovered);
+				}
+			}
 		};
 	}`;
+
+const adoptErrorTypeImport =
+  'import { adoptErrorType as workerdAdoptErrorType } from "../../handler/error.mjs";\n';
+
+const jitModule = /\/elysia\/dist\/compile\/handler\/jit\.mjs(?:\?|$)/u;
 
 const elysiaWorkerdJit = (): Plugin => ({
   applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name !== "client",
   enforce: "pre",
   name: "elysia-workerd-jit",
-  transform: (code: string, moduleUrl: string): { code: string; map: null } | undefined => {
-    if (!moduleUrl.includes("/elysia/") || !moduleUrl.includes("/compile/handler/jit.")) {
+  transform(code: string, moduleUrl: string): { code: string; map: null } | undefined {
+    if (!jitModule.test(moduleUrl)) {
       return undefined;
     }
     if (!code.includes(jitCompile)) {
-      return undefined;
+      return this.error(
+        `elysia-workerd-jit: ${moduleUrl} no longer contains the handler compilation it replaces`,
+      );
     }
-    return { code: code.replace(jitCompile, jitWithoutEval), map: null };
+    return { code: adoptErrorTypeImport + code.replace(jitCompile, jitWithoutEval), map: null };
   },
 });
 
