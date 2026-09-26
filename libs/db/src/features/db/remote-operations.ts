@@ -91,7 +91,7 @@ const queryValues = <Result>(
 ): Effect.Effect<unknown, RemoteFailure> => {
   return Effect.tryPromise({
     catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-    try: async () => database.values(query),
+    try: () => database.values(query),
   });
 };
 
@@ -156,7 +156,7 @@ const migrateDatabase = <Result>(
     const applied = yield* appliedMigrations(input.database, migrations);
     yield* Effect.tryPromise({
       catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-      try: async () => input.apply({ migrationsFolder: folder }),
+      try: () => input.apply({ migrationsFolder: folder }),
     });
     if ((yield* appliedMigrations(input.database, migrations)) !== migrations.length) {
       return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
@@ -171,7 +171,7 @@ const migrateD1 = (
 ): Effect.Effect<number, RemoteFailure> => {
   const database = connectD1(binding);
   return migrateDatabase({
-    apply: async (config) => applyD1MigrationFiles(database, config),
+    apply: (config) => applyD1MigrationFiles(database, config),
     database,
     folder,
   });

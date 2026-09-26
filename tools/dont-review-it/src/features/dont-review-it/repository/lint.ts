@@ -1,4 +1,3 @@
-import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
 import {
   cloudflareNewCapExceptions,
   cloudflareSourceFiles,
@@ -15,12 +14,6 @@ import {
   uiQualityInspectionFiles,
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
-
-const midPresetEffectPackages = ["libs/db/**", "libs/runtime/**", "libs/observability/**"];
-
-const midPresetEffectRules = Object.fromEntries(
-  Object.keys(effectRecommended.rules ?? {}).map((ruleName) => [ruleName, LINT_SEVERITY.OFF]),
-);
 
 const softPresetPackages = [
   "apps/service-admin/**",
@@ -411,10 +404,6 @@ const lintOptions = {
       },
     },
     {
-      files: midPresetEffectPackages,
-      rules: midPresetEffectRules,
-    },
-    {
       files: [
         "libs/db/src/features/db/security.ts",
         "libs/db/src/features/db/local-platform.test.ts",
@@ -499,29 +488,6 @@ const lintOptions = {
         "eslint/max-params": LINT_SEVERITY.OFF,
         "eslint/no-duplicate-imports": LINT_SEVERITY.OFF,
       },
-    },
-    {
-      files: [
-        "libs/vite-config/**",
-        "infra/local/**",
-        "infra/error-monitor/**",
-        "infra/health-monitor/**",
-        "libs/monitor/**",
-      ],
-      rules: midPresetEffectRules,
-    },
-    {
-      files: [
-        "libs/config/**/*.test.ts",
-        "infra/local/**/*.test.ts",
-        "infra/error-monitor/**/*.test.ts",
-        "infra/health-monitor/**/*.test.ts",
-        "infra/budget-monitor/**/*.test.ts",
-        "infra/budget-monitor/**/*.worker.test.ts",
-        "libs/monitor/**/*.test.ts",
-        "libs/vite-config/**/*.test.ts",
-      ],
-      rules: midPresetEffectRules,
     },
     {
       files: [

@@ -9,8 +9,8 @@ const app = createApi("/api").get("/view", () => ({ id: "visible" }));
 describe("in-process api client", () => {
   it.effect("answers a request without leaving the isolate", () =>
     Effect.gen(function* program() {
-      const { api } = yield* Effect.promise(async () => apiServerClient(app, {}));
-      const answered = yield* Effect.promise(async () => api.view.get());
+      const { api } = yield* Effect.sync(() => apiServerClient(app, {}));
+      const answered = yield* Effect.promise(() => api.view.get());
       assert.strictEqual(answered.status, httpStatus.ok);
       assert.deepStrictEqual(apiData(View, answered), { id: "visible" });
     }),

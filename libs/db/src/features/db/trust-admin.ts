@@ -15,6 +15,7 @@ import { auditWhenTargeted } from "./audit.ts";
 import { clockDate } from "./clock-date.ts";
 import { countRows } from "./count-rows.ts";
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { user } from "./identity-schema.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import { AUDIT_CHANNEL } from "./schema.ts";
@@ -161,7 +162,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
   if (targetId === undefined || targetId === null) {
     return yield* new TrustTargetUnavailable();
   }
-  const suspendedAt = yield* clockDate;
+  const [suspendedAt, auditId, moderationId] = yield* Effect.all([clockDate, freshId, freshId]);
   const [, suspendedMembers] = yield* query((database) => {
     const live = liveAdmin(database, {
       checkedAt: suspendedAt,
@@ -178,6 +179,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
           channel: AUDIT_CHANNEL.ui,
           targetId,
         },
+        id: auditId,
       }),
     );
     const suspension = database
@@ -191,7 +193,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
     const moderation = database.insert(moderationAction).values({
       actorId: actor.user.id,
       createdAt: suspendedAt,
-      id: crypto.randomUUID(),
+      id: moderationId,
       kind: suspended ? MODERATION_KIND.suspend : MODERATION_KIND.unsuspend,
       reportId,
       targetMemberId: targetId,
@@ -217,12 +219,13 @@ const warnTarget = Effect.fn("warnTarget")(function* warnTarget(
     return yield* new TrustSubjectNotFound();
   }
   const warnedAt = yield* clockDate;
+  const moderationId = yield* freshId;
   yield* query((database) =>
     database.batch([
       database.insert(moderationAction).values({
         actorId: actor.user.id,
         createdAt: warnedAt,
-        id: crypto.randomUUID(),
+        id: moderationId,
         kind: MODERATION_KIND.warn,
         reportId,
         targetMemberId: report.targetMemberId,
