@@ -4,10 +4,24 @@ import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-f
 import { noSharedDoubleState } from "./no-shared-double-state--reset-doubles-between-tests.ts";
 
 const RESET_AND_RESTORED = "{ mockReset: true, restoreMocks: true }";
+const SHARED_OWNER = [{ configOwners: [{ source: "@repo/vite-config", name: "toolTest" }] }];
 
 describe("dont-review-it/no-shared-double-state--reset-doubles-between-tests", () => {
   testLintRule(noSharedDoubleState, {
     valid: [
+      {
+        name: "a test block taken whole from the configured owner passes",
+        documented: true,
+        code: `import { toolTest } from "@repo/vite-config";\nimport { defineConfig } from "vite-plus";\nexport default defineConfig({ test: toolTest });\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+      },
+      {
+        name: "a test block that spreads the configured owner and adds its own options passes",
+        code: `import { toolTest as shared } from "@repo/vite-config";\nexport default { test: { ...shared, testTimeout: 60000 } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+      },
       {
         name: "a test block that takes the doubles down before each test passes",
         code: `import { defineConfig } from "vite-plus";\nexport default defineConfig({ test: ${RESET_AND_RESTORED} });\n`,
@@ -52,6 +66,21 @@ describe("dont-review-it/no-shared-double-state--reset-doubles-between-tests", (
       },
     ],
     invalid: [
+      {
+        name: "a setting the owner settles but the config writes over is reported",
+        documented: true,
+        code: `import { toolTest } from "@repo/vite-config";\nexport default { test: { ...toolTest, mockReset: false } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+        errors: [{ messageId: "sharedDoubleState" }],
+      },
+      {
+        name: "the owner's name imported from another module is not the owner",
+        code: `import { toolTest } from "./shared.ts";\nexport default { test: { ...toolTest } };\n`,
+        filename: "vite.config.ts",
+        options: SHARED_OWNER,
+        errors: [{ messageId: "sharedDoubleState" }, { messageId: "sharedDoubleState" }],
+      },
       {
         name: "a config that declares no test block is reported once",
         documented: true,

@@ -12,11 +12,11 @@ layer(NodeServices.layer)("workspacePackages", (it) => {
       affectedTests(["libs/telemetry/src/features/telemetry/vitest-sdk.ts"], packages),
     );
 
-    it.effect("are affected by a change to that library although it cannot be declared", () =>
+    it.effect("are affected by a change to that library", () =>
       Effect.gen(function* program() {
         const affected = yield* telemetryChange;
         expect(affected.kind === "subset" ? affected.directories : []).toStrictEqual(
-          expect.arrayContaining(["libs/cli", "libs/config", "libs/telemetry", "libs/vite-config"]),
+          expect.arrayContaining(["libs/telemetry", "tools/e2e"]),
         );
       }),
     );

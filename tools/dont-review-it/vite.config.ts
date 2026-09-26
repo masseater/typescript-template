@@ -5,6 +5,7 @@ import {
   intentValidation,
   lifecycle,
   testRun,
+  toolTest,
   checkCode,
   modularBoundaries,
   workspaceCheckImports,
@@ -65,6 +66,7 @@ export default defineConfig({
     },
   },
   test: {
+    ...toolTest,
     experimental: {
       openTelemetry: {
         enabled: telemetryAsked,
@@ -72,15 +74,11 @@ export default defineConfig({
       },
     },
     testTimeout: 60_000,
-    mockReset: true,
-    restoreMocks: true,
     coverage: {
-      exclude: ["specs/**", "src/features/dont-review-it/repository/**"],
-      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+      ...toolTest.coverage,
+      exclude: [...toolTest.coverage.exclude, "src/features/dont-review-it/repository/**"],
     },
     exclude: ["**/node_modules/**", "**/dist/**", "src/features/dont-review-it/repository/**"],
-    unstubEnvs: true,
-    unstubGlobals: true,
   },
   pack: {
     entry: [
