@@ -32,7 +32,7 @@ const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 type DeliveredMail = Readonly<{
   readonly text: string;
-  readonly to: string;
+  readonly to: readonly string[];
 }>;
 
 function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
@@ -228,7 +228,7 @@ describe("admin invitation through the API", () => {
       assert.strictEqual(invited.status, httpStatus.ok);
       const [mail] = yield* Effect.promise(() => deliveredMail(env));
       assert.isDefined(mail);
-      assert.strictEqual(mail.to, invitee);
+      assert.deepStrictEqual(mail.to, [invitee]);
       const token = inviteTokenOf(mail.text);
       const preview: Call = { method: "GET", path: `/invite?token=${encodeURIComponent(token)}` };
       const acceptance: Call = {

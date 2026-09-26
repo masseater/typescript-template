@@ -110,15 +110,12 @@ it.effect("lets API keys read allowed resources and rejects writes", () => {
     yield* addMember("listed");
     yield* addMember("hidden", false);
     const created = yield* Effect.gen(function* issueKey() {
-      const auth = yield* Auth;
+      const { createApiKey } = (yield* Auth).instance.api;
+      if (createApiKey === undefined) {
+        return yield* Effect.die("member API keys are not enabled");
+      }
       return yield* Effect.promise(() =>
-        (
-          auth.instance.api as unknown as {
-            createApiKey: (input: unknown) => Promise<{ id: string; key: string }>;
-          }
-        ).createApiKey({
-          body: { name: "read-only", userId: "owner" },
-        }),
+        createApiKey({ body: { name: "read-only", userId: "owner" } }),
       );
     }).pipe(Effect.provide(services));
     const profile = yield* Effect.promise(() =>
@@ -144,15 +141,12 @@ it.effect("lets API keys read allowed resources and rejects writes", () => {
       }),
     );
     yield* Effect.gen(function* revokeKey() {
-      const auth = yield* Auth;
-      yield* Effect.promise(() =>
-        (
-          auth.instance.api as unknown as {
-            updateApiKey: (input: unknown) => Promise<{ id: string }>;
-          }
-        ).updateApiKey({
-          body: { enabled: false, keyId: created.id, userId: "owner" },
-        }),
+      const { updateApiKey } = (yield* Auth).instance.api;
+      if (updateApiKey === undefined) {
+        return yield* Effect.die("member API keys are not enabled");
+      }
+      return yield* Effect.promise(() =>
+        updateApiKey({ body: { enabled: false, keyId: created.id, userId: "owner" } }),
       );
     }).pipe(Effect.provide(services));
     const revoked = yield* Effect.promise(() =>

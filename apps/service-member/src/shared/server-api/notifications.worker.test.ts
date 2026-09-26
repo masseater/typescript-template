@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { notificationMailSubjects, type MailSettings } from "@repo/auth";
+import { notificationMailSubjects } from "@repo/auth";
 import { ROLE } from "@repo/config";
 import { NOTIFICATION_KIND, and, eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
@@ -24,33 +24,11 @@ import type { Database, DatabaseFailure } from "@repo/db";
 const { follow, user } = schema;
 const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
-type DeliveredMail = Readonly<{
-  readonly subject: string;
-  readonly text: string;
-  readonly to: string | readonly string[];
-}>;
-
-function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
-  if (!("EMAIL" in bindings)) {
-    throw new Error("EMAIL recorder is missing");
-  }
-  const email = bindings.EMAIL;
-  if (
-    typeof email !== "object" ||
-    email === null ||
-    !("taken" in email) ||
-    typeof email.taken !== "function"
-  ) {
-    throw new Error("EMAIL recorder is missing taken()");
-  }
-  return email.taken() as Promise<readonly DeliveredMail[]>;
-}
-
 const testLayer = Layer.merge(
   TestDatabase,
   Layer.succeed(OpsMail, {
     APP_ORIGIN: fixtureOrigin,
-    EMAIL: env.EMAIL as unknown as NonNullable<MailSettings["EMAIL"]>,
+    EMAIL: env.EMAIL,
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
   }),
@@ -80,10 +58,10 @@ function drainMailbox(): Effect.Effect<
   ReadonlyArray<{
     readonly subject: string;
     readonly text: string;
-    readonly to: string | readonly string[];
+    readonly to: readonly string[];
   }>
 > {
-  return Effect.promise(() => deliveredMail(env));
+  return Effect.promise(() => env.EMAIL.taken());
 }
 
 it.effect("follows a member and notifies the followee", () =>
@@ -193,10 +171,7 @@ it.effect("sends mail without message content when enabled", () =>
     });
     const [delivered] = yield* drainMailbox();
     assert.isDefined(delivered);
-    assert.strictEqual(
-      Array.isArray(delivered.to) ? delivered.to[0] : delivered.to,
-      "alert@example.com",
-    );
+    assert.deepStrictEqual(delivered.to, ["alert@example.com"]);
     assert.strictEqual(delivered.subject, notificationMailSubjects.conversationMessage);
     assert.notInclude(delivered.text, "secret body");
     assert.include(delivered.text, "/messages/conversation-c");

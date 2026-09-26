@@ -16,6 +16,12 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
+        send(sentMail: {
+          readonly from: string;
+          readonly subject: string;
+          readonly text: string;
+          readonly to: readonly string[];
+        }): Promise<void>;
         taken(): Promise<
           ReadonlyArray<{
             readonly from: string;
@@ -46,7 +52,7 @@ function drainMailbox(): Effect.Effect<
   ReadonlyArray<{
     readonly subject: string;
     readonly text: string;
-    readonly to: string | readonly string[];
+    readonly to: readonly string[];
   }>
 > {
   return Effect.promise(() => env.EMAIL.taken());
@@ -97,7 +103,7 @@ it.effect("delivers a logged-out contact submission to the ops mailbox", () =>
     assert.strictEqual(response.status, httpStatus.ok);
     const [delivered] = yield* drainMailbox();
     assert.isDefined(delivered);
-    assert.strictEqual(Array.isArray(delivered.to) ? delivered.to[0] : delivered.to, opsEmail);
+    assert.deepStrictEqual(delivered.to, [opsEmail]);
     assert.strictEqual(delivered.subject, "お問い合わせ");
     assert.include(delivered.text, submission.name);
     assert.include(delivered.text, submission.email);

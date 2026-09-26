@@ -7,9 +7,9 @@ import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-c
 import { encodeJson } from "./platform.ts";
 import { verificationSettings } from "./verification-settings.ts";
 
-import type { Plan } from "alchemy/Plan";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
-import type { PlannedStack } from "./plan-confirmation.ts";
+import type { ResourceLike } from "alchemy/Resource";
+import type { PlannedNodes, PlannedStack } from "./plan-confirmation.ts";
 
 const { accountId } = verificationSettings;
 const otherAccountId = verificationSettings.zoneId;
@@ -37,12 +37,23 @@ function action(kind: PlannedAction["action"], logicalId: string): PlannedAction
   return { action: kind, actionType: "Cloudflare.Migration", fqn: fqn(logicalId), logicalId };
 }
 
-function nativePlan(shape: Readonly<Record<string, unknown>>): Plan {
-  return shape as unknown as Plan;
-}
-
 function expression(logicalId: string): unknown {
-  return new ResourceExpr({ LogicalId: logicalId, Type: "Cloudflare.Test" } as never);
+  const source: ResourceLike = {
+    Adopt: undefined,
+    Attributes: {},
+    Binding: undefined,
+    FQN: fqn(logicalId),
+    FormerFqns: undefined,
+    LogicalId: logicalId,
+    Mode: undefined,
+    Namespace: undefined,
+    Props: {},
+    Providers: undefined,
+    RemovalPolicy: "destroy",
+    RequiresImplementation: undefined,
+    Type: "Cloudflare.Test",
+  };
+  return new ResourceExpr(source);
 }
 
 function planned(
@@ -219,7 +230,7 @@ it.effect("describes an unresolved same-stack reference instead of coercing it t
 
 it.effect("carries the resource props and the action input the engine planned", () =>
   Effect.sync(() => {
-    const native = nativePlan({
+    const native: PlannedNodes = {
       actions: {
         [fqn("Migrate")]: { action: "run", input: { statements: 3 } },
       },
@@ -227,7 +238,7 @@ it.effect("carries the resource props and the action input the engine planned", 
         [fqn("Worker")]: { action: "create", props: workerProps },
         [fqn("Email")]: { action: "noop" },
       },
-    });
+    };
     const built = plannedStack({
       actions: [action("run", "Migrate")],
       native,
@@ -239,10 +250,10 @@ it.effect("carries the resource props and the action input the engine planned", 
     assert.isUndefined(built.props[fqn("Email")]);
     const changed = plannedStack({
       actions: [action("run", "Migrate")],
-      native: nativePlan({
+      native: {
         ...native,
         actions: { [fqn("Migrate")]: { action: "run", input: { statements: 4 } } },
-      }),
+      },
       resources: created.resources,
       stack,
     });

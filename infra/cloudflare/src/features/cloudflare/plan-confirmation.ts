@@ -189,22 +189,34 @@ function refusedRows(planned: PlannedStack): readonly Refusal[] {
   ];
 }
 
-function resourceProps(nodes: Plan["resources"]): readonly (readonly [string, unknown])[] {
+type PlannedNodes = {
+  readonly resources: Readonly<
+    Record<
+      string,
+      { readonly action: Plan["resources"][string]["action"]; readonly props?: unknown }
+    >
+  >;
+  readonly actions: Readonly<
+    Record<string, { readonly action: Plan["actions"][string]["action"]; readonly input?: unknown }>
+  >;
+};
+
+function resourceProps(nodes: PlannedNodes["resources"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
-      [fqn, node.action === "noop" ? undefined : node.props] as const,
+    ([fqn, node]) => [fqn, node.action === "noop" ? undefined : node.props] as const,
   );
 }
 
-function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unknown])[] {
+function actionInputs(nodes: PlannedNodes["actions"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    ([fqn, node]: readonly [string, Plan["actions"][string]]) =>
-      [fqn, node.action === "run" ? node.input : undefined] as const,
+    ([fqn, node]) => [fqn, node.action === "run" ? node.input : undefined] as const,
   );
 }
 
 function plannedStack(
-  snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "native" | "resources" | "stack">,
+  snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "resources" | "stack"> & {
+    readonly native: PlannedNodes;
+  },
 ): PlannedStack {
   return {
     actions: snapshot.actions,
@@ -238,4 +250,4 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
 });
 
 export { acceptPlan, planConfirmation, planReport, plannedStack };
-export type { PlannedStack, PlanReport, PlanRow, RowAction };
+export type { PlannedNodes, PlannedStack, PlanReport, PlanRow, RowAction };

@@ -21,6 +21,8 @@ Disallow asserting the type of an expression that is already the result of a typ
 
 A type assertion whose own target is a type assertion. Both spellings count and mix freely, so `x as A as B`, `<B>(x as A)` and `(x as A) as B` are the same violation. What the intermediate type is is not read: a single assertion passes only where the two types overlap, while a second one on top passes whatever it claims.
 
+In a spec or a test fixture, a single assertion to `never` is reported as well. `never` is assignable to every type, so a double asserted to it reaches the parameter it is handed to without being compared with that parameter's declared type. `specFileSuffixes` names the spec files; test fixtures are the files ending in `-test-fixture.ts` or `-test-fixture.tsx`.
+
 At three steps or more, each step standing on an assertion is reported. A `satisfies` expression and a non-null assertion are not assertions, so `(x satisfies T) as U` and `x! as T` stay single. `[1, 2] as const as number[]` is reported, because the second step rides on the first.
 
 ## Fix
@@ -30,6 +32,8 @@ Declare the type the value really has: annotate where the value comes from, narr
 ```ts
 const parseUser = (input: unknown): User | null => (isUser(input) ? input : null);
 ```
+
+In a spec, build the double at the declared type, so the type checker names every field it is missing.
 
 <!-- BEGIN GENERATED examples -->
 

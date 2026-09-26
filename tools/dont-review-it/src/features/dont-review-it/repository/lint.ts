@@ -59,7 +59,6 @@ const softPresetRules = Object.fromEntries(
     "dont-review-it/no-detached-rationale--comment-at-explained-line",
     "dont-review-it/no-detached-test-file--move-beside-source",
     "dont-review-it/no-discarded-failure--receive-and-surface-it",
-    "dont-review-it/no-double-type-assertion--declare-the-real-type",
     "dont-review-it/no-dry-test-setup--inline-owned-setup",
     "dont-review-it/no-duplicate-value-declaration--reuse-authoritative-value",
     "dont-review-it/no-duplicated-body--import-the-existing-declaration",

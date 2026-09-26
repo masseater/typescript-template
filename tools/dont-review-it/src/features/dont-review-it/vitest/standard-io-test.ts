@@ -42,7 +42,7 @@ const forward = (property: PropertyKey): unknown => {
   return typeof value === "function" ? value.bind(api) : value;
 };
 
-const unbound = (() => undefined) as unknown as StandardIoTest;
+const unbound = (() => undefined) as StandardIoTest;
 
 /** @public */
 export const standardIoTest: StandardIoTest = new Proxy(unbound, {

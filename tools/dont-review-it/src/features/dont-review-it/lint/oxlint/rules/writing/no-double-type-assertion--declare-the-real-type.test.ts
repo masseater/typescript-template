@@ -44,8 +44,32 @@ describe("dont-review-it/no-double-type-assertion--declare-the-real-type", () =>
         name: "an assertion on the argument of a call is one assertion",
         code: "const total = parse(input as string);",
       },
+      {
+        name: "an assertion to never outside test code is left to the other rules",
+        code: "const total = parse(input as never);",
+        filename: "src/parse.ts",
+      },
+      {
+        name: "a spec that builds the value at its declared type claims nothing",
+        documented: true,
+        code: 'const context: Context = { format: "es" };\nconst total = parse(context);',
+        filename: "src/parse.test.ts",
+      },
     ],
     invalid: [
+      {
+        name: "a single assertion to never in a spec is reported",
+        documented: true,
+        code: 'const total = parse({ format: "es" } as never);',
+        filename: "src/parse.test.ts",
+        errors: [{ messageId: "neverAssertionInSpec" }],
+      },
+      {
+        name: "a single angle bracket assertion to never in a test fixture is reported",
+        code: "const total = parse(<never>input);",
+        filename: "src/parse-test-fixture.ts",
+        errors: [{ messageId: "neverAssertionInSpec" }],
+      },
       {
         name: "an assertion routed through unknown is reported",
         documented: true,

@@ -58,7 +58,7 @@ type MailBinding = {
     readonly from: string;
     readonly subject: string;
     readonly text: string;
-    readonly to: string;
+    readonly to: string[];
   }) => Promise<unknown>;
 };
 
@@ -71,7 +71,7 @@ const sendThroughBinding = (
   }
   return Effect.tryPromise({
     catch: () => new EmailDeliveryFailed({ reason: "rejected" }),
-    try: () => binding.send(outbound),
+    try: () => binding.send({ ...outbound, to: [outbound.to] }),
   }).pipe(Effect.asVoid);
 };
 
