@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { viewOf } from "./contracts.ts";
 import { accepts, advance, begin } from "./engine.ts";
+import { SPEAKER } from "./state.ts";
 
 describe("reply forms the sheet cannot hold", () => {
   const manyHobbies = ["音楽", "料理", "読書", "映画", "旅行", "登山"];
@@ -40,7 +41,7 @@ describe("reply forms the sheet cannot hold", () => {
       },
     );
     const { messages, reply } = viewOf(asked);
-    expect(messages.at(-1)).toStrictEqual({ role: "interviewer", text: "お仕事は？" });
+    expect(messages.at(-1)).toStrictEqual({ role: SPEAKER.interviewer, text: "お仕事は？" });
     expect(reply).toBeUndefined();
   });
 });

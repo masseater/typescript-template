@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from "vite-plus/test";
 
 import { viewOf } from "./contracts.ts";
 import { accepts, advance, begin, save } from "./engine.ts";
+import { SPEAKER } from "./state.ts";
 
 const NICKNAME_LIMIT = 30;
 const OCCUPATION_INDEX = 1;
@@ -29,20 +30,20 @@ describe("an interview answered with the reply forms", () => {
     expect(viewOf(finished)).toStrictEqual({
       fields,
       messages: [
-        { role: "interviewer", text: greeting },
-        { role: "member", text: "たろう" },
-        { role: "interviewer", text: `${thanks}ふだんはどんなお仕事をしていますか？` },
-        { role: "member", text: "エンジニア" },
+        { role: SPEAKER.interviewer, text: greeting },
+        { role: SPEAKER.member, text: "たろう" },
+        { role: SPEAKER.interviewer, text: `${thanks}ふだんはどんなお仕事をしていますか？` },
+        { role: SPEAKER.member, text: "エンジニア" },
         {
-          role: "interviewer",
+          role: SPEAKER.interviewer,
           text: `${thanks}興味のあるものを教えてください。いくつでも選べます。`,
         },
-        { role: "member", text: "音楽、料理" },
-        { role: "interviewer", text: `${thanks}主にどのあたりで活動していますか？` },
-        { role: "member", text: "東京" },
-        { role: "interviewer", text: `${thanks}最後に、載せたいひとことをどうぞ。` },
-        { role: "member", text: "よろしく" },
-        { card: fields, role: "interviewer", text: `${thanks}${summary}` },
+        { role: SPEAKER.member, text: "音楽、料理" },
+        { role: SPEAKER.interviewer, text: `${thanks}主にどのあたりで活動していますか？` },
+        { role: SPEAKER.member, text: "東京" },
+        { role: SPEAKER.interviewer, text: `${thanks}最後に、載せたいひとことをどうぞ。` },
+        { role: SPEAKER.member, text: "よろしく" },
+        { card: fields, role: SPEAKER.interviewer, text: `${thanks}${summary}` },
       ],
       phase: "summary",
     });
@@ -90,9 +91,9 @@ describe("an utterance that ignores the question", () => {
         { key: "message", label: "ひとこと", status: "unanswered" },
       ],
       messages: [
-        { role: "interviewer", text: greeting },
-        { role: "member", text: "東京でエンジニアやってます" },
-        { role: "interviewer", text: message },
+        { role: SPEAKER.interviewer, text: greeting },
+        { role: SPEAKER.member, text: "東京でエンジニアやってます" },
+        { role: SPEAKER.interviewer, text: message },
       ],
       phase: "asking",
     });
@@ -116,7 +117,7 @@ describe("what the model understood", () => {
     );
     const { messages, reply } = viewOf(next);
     expect(messages.at(-1)).toStrictEqual({
-      role: "interviewer",
+      role: SPEAKER.interviewer,
       text: "ありがとうございます。ふだんはどんなお仕事をしていますか？",
     });
     expect(reply).toStrictEqual(occupationChoices);
@@ -148,7 +149,7 @@ describe("answers outside the sheet's limits", () => {
       status: "unanswered",
     });
     expect(view.messages.at(-1)).toStrictEqual({
-      role: "interviewer",
+      role: SPEAKER.interviewer,
       text: "すみません、うまく受け取れませんでした。なんて呼べばいいですか？",
     });
   });
@@ -160,9 +161,9 @@ describe("skipping", () => {
     const view = viewOf(advance(begin(), { kind: "skip" }));
     expect(view.fields[0]).toStrictEqual({ key: "nickname", label: "呼び名", status: "skipped" });
     expect(view.messages.slice(1)).toStrictEqual([
-      { role: "member", text: "スキップ" },
+      { role: SPEAKER.member, text: "スキップ" },
       {
-        role: "interviewer",
+        role: SPEAKER.interviewer,
         text: "わかりました、飛ばしますね。ふだんはどんなお仕事をしていますか？",
       },
     ]);
@@ -202,7 +203,7 @@ describe("finishing early", () => {
     expect(view.fields).toStrictEqual(fields);
     expect(view.messages.at(-1)).toStrictEqual({
       card: fields,
-      role: "interviewer",
+      role: SPEAKER.interviewer,
       text: `わかりました、ここまでにしますね。${summary}`,
     });
   });
@@ -264,7 +265,7 @@ describe("corrections that change nothing or follow a save", () => {
       "unanswered",
     ]);
     expect(puzzled.messages.at(-1)).toStrictEqual({
-      role: "interviewer",
+      role: SPEAKER.interviewer,
       text: "どの項目をどう直すかを、「職種は〇〇」のように教えてください。",
     });
   });
@@ -276,7 +277,7 @@ describe("corrections that change nothing or follow a save", () => {
     const saved = save(finished);
     expect(viewOf(saved).phase).toBe("saved");
     expect(viewOf(saved).messages.at(-1)).toStrictEqual({
-      role: "interviewer",
+      role: SPEAKER.interviewer,
       text: "保存しました。",
     });
     const corrected = advance(saved, { kind: "text", text: "呼び名はたろう" });

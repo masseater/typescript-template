@@ -1,5 +1,4 @@
 import {
-  AUTHENTICATION_METHOD,
   ROLE,
   accountPermissions,
   applications,
@@ -64,7 +63,7 @@ const account = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     idToken: text("id_token"),
-    password: text(AUTHENTICATION_METHOD.password),
+    password: text("password"),
     providerId: text("provider_id").notNull(),
     refreshToken: text("refresh_token"),
     refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
@@ -184,7 +183,7 @@ const auditEvent = sqliteTable(
   {
     action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
-    actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.administrator),
+    actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.admin),
     channel: text("channel", { enum: auditChannels }).notNull().default(AUDIT_CHANNEL.ui),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
