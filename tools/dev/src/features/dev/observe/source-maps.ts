@@ -1,5 +1,4 @@
-import { SourceMap } from "node:module";
-
+import { TraceMap, decodedMappings } from "@jridgewell/trace-mapping";
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
 
@@ -50,6 +49,19 @@ interface MapCandidate {
 
 interface MapLookup extends ParsedLocation, MapCandidate {
   readonly location: string;
+}
+
+interface LoadedSourceMap {
+  readonly lines: readonly (readonly (readonly number[])[])[];
+  readonly names: readonly string[];
+  readonly sources: readonly string[];
+}
+
+interface Origin {
+  readonly column: number;
+  readonly line: number;
+  readonly name: string;
+  readonly source: string;
 }
 
 class SourceMapFailure extends Schema.TaggedError<SourceMapFailure>()("SourceMapFailure", {
@@ -147,20 +159,41 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Payload))(text).pipe(
     Effect.mapError(invalid),
   );
-  return yield* Effect.try({
+  const lines = yield* Effect.try({
     catch: invalid,
     try: () =>
-      new SourceMap({
-        file: filename,
-        mappings: parsed.mappings,
-        names: [...parsed.names],
-        sourceRoot: "",
-        sources: [...parsed.sources],
-        sourcesContent: [],
-        version: parsed.version,
-      }),
+      decodedMappings(
+        new TraceMap({
+          file: filename,
+          mappings: parsed.mappings,
+          names: [...parsed.names],
+          sourceRoot: "",
+          sources: [...parsed.sources],
+          version: parsed.version,
+        }),
+      ),
   });
+  const loaded: LoadedSourceMap = { lines, names: parsed.names, sources: parsed.sources };
+  return loaded;
 });
+
+function findOrigin(map: LoadedSourceMap, line: number, column: number): Origin | undefined {
+  const generatedColumn = column - 1;
+  const segment = (map.lines[line - 1] ?? []).findLast(
+    (candidate) => (candidate[0] ?? 0) <= generatedColumn,
+  );
+  const [segmentColumn = 0, sourceIndex, originalLine, originalColumn, nameIndex] = segment ?? [];
+  const source = sourceIndex === undefined ? undefined : map.sources[sourceIndex];
+  if (source === undefined || originalLine === undefined || originalColumn === undefined) {
+    return undefined;
+  }
+  return {
+    column: originalColumn + generatedColumn - segmentColumn + 1,
+    line: originalLine + 1,
+    name: nameIndex === undefined ? "" : (map.names[nameIndex] ?? ""),
+    source,
+  };
+}
 
 function repositorySource(
   request: Symbolication,
@@ -196,20 +229,18 @@ const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
 ) {
   const { column, line, location } = lookup;
   const map = yield* loadSourceMap(lookup.mapFile, lookup.filename);
-  const entry = map.findEntry(line - 1, column - 1);
-  const origin = map.findOrigin(line, column);
-  if (!("generatedLine" in entry) || entry.generatedLine !== line - 1 || !("fileName" in origin)) {
+  const origin = findOrigin(map, line, column);
+  if (origin === undefined) {
     const missing: Frame = { location, reason: "mapping_missing", resolved: false };
     return missing;
   }
-  const name: string = origin.name ?? "";
   const frame: Frame = {
-    column: origin.columnNumber,
-    line: origin.lineNumber,
+    column: origin.column,
+    line: origin.line,
     location,
-    ...(name === "" ? {} : { name }),
+    ...(origin.name === "" ? {} : { name: origin.name }),
     resolved: true,
-    source: yield* repositorySource(request, lookup, origin.fileName),
+    source: yield* repositorySource(request, lookup, origin.source),
   };
   return frame;
 });

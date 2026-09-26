@@ -1,19 +1,15 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { createHash } from "node:crypto";
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readFileSync } from "node:fs";
-
+import { bytesAt, startSha256, type Sha256Digest } from "../../../../platform/synchronous-host.ts";
 import { CACHE_FORMAT_VERSION } from "./catalog-cache-validation.ts";
 
 import type { ScannedFile } from "./source-files.ts";
 
-const updateLengthPrefixed = (hash: ReturnType<typeof createHash>, identity: string): void => {
+const updateLengthPrefixed = (hash: Sha256Digest, identity: string): void => {
   hash.update(`${Buffer.byteLength(identity)}:`);
   hash.update(identity);
 };
 
-const updateFileFingerprint = (hash: ReturnType<typeof createHash>, file: ScannedFile): void => {
-  const fileBytes = readFileSync(file.absolutePath);
+const updateFileFingerprint = (hash: Sha256Digest, file: ScannedFile): void => {
+  const fileBytes = bytesAt(file.absolutePath);
   [file.relativePath, file.realPathIdentity, file.symbolicLinkTarget ?? ""].forEach((identity) => {
     updateLengthPrefixed(hash, identity);
   });
@@ -22,7 +18,7 @@ const updateFileFingerprint = (hash: ReturnType<typeof createHash>, file: Scanne
 };
 
 const updateProblemFingerprint = (
-  hash: ReturnType<typeof createHash>,
+  hash: Sha256Digest,
   problem: { readonly filePath: string; readonly kind: string; readonly line: number },
 ): void => {
   updateLengthPrefixed(hash, JSON.stringify(problem));
@@ -36,7 +32,7 @@ export const cacheInputFingerprint = (
     readonly line: number;
   }[] = [],
 ): string => {
-  const hash = createHash("sha256");
+  const hash = startSha256();
   hash.update(String(CACHE_FORMAT_VERSION));
   files.forEach((file) => {
     updateFileFingerprint(hash, file);

@@ -1,6 +1,5 @@
-import { homedir, userInfo } from "node:os";
-
-import { Effect, FileSystem, Path, PlatformError } from "effect";
+import { Config, Effect, FileSystem, Path, PlatformError } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { failure } from "./failure.ts";
 import { isNotFound, withFileSystem } from "./platform.ts";
@@ -56,10 +55,27 @@ const plistClosing = `    <key>EnvironmentVariables</key>
 </plist>
 `;
 
+interface RunnerAccount {
+  readonly home: string;
+  readonly user: string;
+}
+
+const runnerAccount: Effect.Effect<
+  RunnerAccount,
+  LocalCommandFailure,
+  ChildProcessSpawner.ChildProcessSpawner
+> = Effect.gen(function* runnerAccountProgram() {
+  const home = yield* Config.String("HOME");
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const user = yield* spawner.string(
+    ChildProcess.make("id", ["-un"], { stderr: "ignore", stdin: "ignore", stdout: "pipe" }),
+  );
+  return { home, user: user.trim() };
+}).pipe(Effect.mapError(() => failure("process_failed")));
+
 function plistDocument(
   service: RunnerService,
-  user: string,
-  home: string,
+  { home, user }: RunnerAccount,
 ): Effect.Effect<string, never, Path.Path> {
   return Effect.gen(function* plistDocumentProgram() {
     const path = yield* Path.Path;
@@ -123,6 +139,7 @@ function installedDocument(
 function renderService(
   root: string,
   write: boolean,
+  account: RunnerAccount,
 ): Effect.Effect<ServiceReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
   return serviceOf(root).pipe(
     Effect.flatMap((service) =>
@@ -131,7 +148,7 @@ function renderService(
       ),
     ),
     Effect.flatMap(({ installed, service }) =>
-      plistDocument(service, userInfo().username, homedir()).pipe(
+      plistDocument(service, account).pipe(
         Effect.flatMap((rendered) => {
           const changed = installed !== rendered;
           const report = {
@@ -153,12 +170,19 @@ function renderService(
 
 function ciRunner(
   args: readonly string[],
-): Effect.Effect<CiRunnerReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
+): Effect.Effect<
+  CiRunnerReport,
+  LocalCommandFailure,
+  ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
+> {
   const write = args.includes(writeFlag);
   const roots = args.filter((argument) => argument !== writeFlag);
   return roots.length === 0
     ? Effect.fail(failure("ci_runner_root_required"))
-    : Effect.forEach(roots, (root) => renderService(root, write)).pipe(
+    : runnerAccount.pipe(
+        Effect.flatMap((account) =>
+          Effect.forEach(roots, (root) => renderService(root, write, account)),
+        ),
         Effect.map((services) => ({
           event: "local.ci_runner_services_rendered" as const,
           ok: true as const,

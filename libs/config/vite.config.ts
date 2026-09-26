@@ -16,6 +16,10 @@ export default defineConfig({
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
+    env: {
+      TEMPLATE_LOCAL_DATABASE: ".local/d1-probe",
+      TEMPLATE_PROCESS_ENVIRONMENT_CARRIED: "carried",
+    },
     mockReset: true,
     restoreMocks: true,
   },

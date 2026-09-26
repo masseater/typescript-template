@@ -1,6 +1,5 @@
-import { isBuiltin } from "node:module";
-
 import { path } from "../../../../platform/path.ts";
+import { namesBuiltinModule } from "../../../../platform/synchronous-host.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import {
   isIgnoredRepositoryModule,
@@ -47,7 +46,7 @@ const isKnownRepositorySpecifier = (
   belongsToRegisteredPackage(query.specifier, catalog);
 
 const isExternalProtocolSpecifier = (specifier: string): boolean =>
-  isBuiltin(specifier) || /^[a-z][a-z+.-]*:/iu.test(specifier);
+  namesBuiltinModule(specifier) || /^[a-z][a-z+.-]*:/iu.test(specifier);
 
 export const importRouteStatus = (
   query: ImportRouteQuery,

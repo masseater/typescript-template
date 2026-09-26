@@ -1,12 +1,10 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { rmSync } from "node:fs";
-
 import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
+import { removeFileAt } from "../../../../platform/synchronous-host.ts";
 import { noStandaloneTsconfig } from "./no-standalone-tsconfig--extend-shared-preset.ts";
 
 const sharedPresets = ["dont-review-it/tsconfig/library.json", "dont-review-it/tsconfig/app.json"];
@@ -155,7 +153,7 @@ describe("dont-review-it/no-standalone-tsconfig--extend-shared-preset", () => {
         filename: forgotten,
         options: [sharedPresets],
         before: () => {
-          rmSync(path.join(fixtureDir, "forgotten", "tsconfig.json"));
+          removeFileAt(path.join(fixtureDir, "forgotten", "tsconfig.json"));
         },
       },
       {

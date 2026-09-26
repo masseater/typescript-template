@@ -29,9 +29,9 @@
     "es-toolkit": "catalog:"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
-    "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

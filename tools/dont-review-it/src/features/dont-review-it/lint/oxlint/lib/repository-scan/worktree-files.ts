@@ -1,10 +1,8 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readdirSync } from "node:fs";
-
 import { memoize } from "es-toolkit";
 
 import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
+import { childEntriesIn } from "../../../../platform/synchronous-host.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { toPosixPath } from "../posix-path.ts";
 
@@ -37,9 +35,7 @@ const filePathsUnder = (
   sourceScope: GitSourceScope,
   directory: string,
 ): readonly string[] => {
-  const directoryChildren = readUnlessMissing(() =>
-    readdirSync(directory, { withFileTypes: true }),
-  );
+  const directoryChildren = readUnlessMissing(() => childEntriesIn(directory));
   if (directoryChildren === null) return [];
 
   return directoryChildren.flatMap((directoryChild) => {

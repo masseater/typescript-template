@@ -1,5 +1,3 @@
-import { homedir } from "node:os";
-
 import { optionalSetting } from "@repo/config/process-environment";
 
 import { path } from "./platform.ts";
@@ -16,7 +14,10 @@ const environmentFile = (): string | undefined => nonEmptySetting(ENVIRONMENT_FI
 const secretsFileConfigured = (): boolean => environmentFile() !== undefined;
 
 const configurationHome = (project: string): string =>
-  path.join(nonEmptySetting("XDG_CONFIG_HOME") ?? path.join(homedir(), ".config"), project);
+  path.join(
+    nonEmptySetting("XDG_CONFIG_HOME") ?? path.join(nonEmptySetting("HOME") ?? "", ".config"),
+    project,
+  );
 
 const ENVIRONMENT_FILE_NAME = "cloudflare.env";
 

@@ -1,5 +1,4 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { createHash } from "node:crypto";
+import { startSha256 } from "../../../../platform/synchronous-host.ts";
 
 export type CanonicalValue = string | number | boolean | null;
 
@@ -18,7 +17,7 @@ const normalizeValues = (canonicalLiterals: readonly CanonicalValue[]): readonly
   [...new Set(canonicalLiterals.map(canonicalValueKey))].toSorted();
 
 export const fingerprintValues = (canonicalLiterals: readonly CanonicalValue[]): string =>
-  createHash("sha256")
+  startSha256()
     .update(JSON.stringify(normalizeValues(canonicalLiterals)))
     .digest("hex")
     .slice(0, 32);

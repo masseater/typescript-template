@@ -1,12 +1,10 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { rmSync } from "node:fs";
-
 import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
+import { removeFileAt } from "../../../../platform/synchronous-host.ts";
 import { noDetachedTestFile } from "./no-detached-test-file--move-beside-source.ts";
 
 const fixtureDir = await Effect.gen(function* fixtureDirectory() {
@@ -118,7 +116,7 @@ describe("dont-review-it/no-detached-test-file--move-beside-source", () => {
         code: "export const total = 2;",
         filename: path.join(fixtureDir, "remembered.test.ts"),
         before: () => {
-          rmSync(rememberedSourcePath);
+          removeFileAt(rememberedSourcePath);
         },
       },
     ],

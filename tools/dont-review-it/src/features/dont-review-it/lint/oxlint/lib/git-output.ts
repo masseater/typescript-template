@@ -1,8 +1,6 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { execFileSync } from "node:child_process";
-
 import { attempt, omitBy } from "es-toolkit";
 
+import { capturedStdoutOf } from "../../../platform/synchronous-host.ts";
 import { gitExecutablePath } from "../../../repository-checks/index.ts";
 import { isEnvironmentFailure } from "./path-failure.ts";
 
@@ -26,12 +24,12 @@ export const gitOutput = (
     environmentName.startsWith("GIT_"),
   );
   const [unaskableGit, gitStdout] = attempt<string, Error>(() =>
-    execFileSync(gitExecutablePath(repositoryAgnosticEnv.PATH), [...gitArguments], {
+    capturedStdoutOf({
+      command: gitExecutablePath(repositoryAgnosticEnv.PATH),
+      commandArguments: gitArguments,
       cwd: environment.cwd,
-      encoding: "utf8",
       env: repositoryAgnosticEnv,
       input: environment.input,
-      stdio: [environment.input === undefined ? "ignore" : "pipe", "pipe", "ignore"],
     }),
   );
   if (unaskableGit === null) return gitStdout.trim();

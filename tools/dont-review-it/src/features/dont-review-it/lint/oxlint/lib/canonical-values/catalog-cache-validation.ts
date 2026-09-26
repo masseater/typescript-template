@@ -1,7 +1,5 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { createHash } from "node:crypto";
-
 import { path } from "../../../../platform/path.ts";
+import { startSha256 } from "../../../../platform/synchronous-host.ts";
 import {
   canonicalValueKey,
   fingerprintValues,
@@ -24,7 +22,7 @@ export type CachedCatalog = FingerprintedEntries & {
 export const CACHE_FORMAT_VERSION = 5;
 
 export const cacheIntegrity = ({ fingerprint, entries }: FingerprintedEntries): string =>
-  createHash("sha256")
+  startSha256()
     .update(JSON.stringify({ version: CACHE_FORMAT_VERSION, fingerprint, entries }))
     .digest("hex");
 

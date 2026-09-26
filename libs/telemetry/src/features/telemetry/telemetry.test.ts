@@ -1,12 +1,10 @@
-import { syncBuiltinESMExports } from "node:module";
-
+import { NodeHttpServer } from "@effect/platform-node";
 import { context, metrics, propagation, trace } from "@opentelemetry/api";
 import { logs } from "@opentelemetry/api-logs";
 import { globalErrorHandler } from "@opentelemetry/core";
 import { exitWith } from "@repo/cli";
-import { ConfigProvider, Console, Effect, Ref, Schema } from "effect";
-import { HttpResponse, http } from "msw";
-import { setupServer } from "msw/node";
+import { ConfigProvider, Console, Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
+import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import type { Telemetry } from "./telemetry.ts";
@@ -19,9 +17,11 @@ const MEASURED_TRACER = "telemetry-under-test";
 
 const MEASURED_SPAN = "the work being measured";
 
-const ACCEPTING_COLLECTOR = "http://otlp.example.test";
+const ACCEPTING_COLLECTOR = "accepting";
 
-const REFUSING_COLLECTOR = "http://refusing.otlp.example.test";
+const REFUSING_COLLECTOR = "refusing";
+
+const COLLECTED_EXPORT = /^\/(?<collector>[a-z]+)\/v1\/(?<signal>[a-z]+)$/u;
 
 const REPORT_PREFIX = "MST_TELEMETRY asked for telemetry, but it could not be exported: ";
 
@@ -56,41 +56,50 @@ describe("measuredTelemetry", () => {
         const spans = yield* Ref.make<readonly MeasuredSpan[]>([]);
         const reports = yield* Ref.make<readonly string[]>([]);
         const services = yield* Effect.context();
-        const server = setupServer(
-          http.post(`${REFUSING_COLLECTOR}/v1/:signal`, () =>
-            HttpResponse.json({}, { status: 400 }),
-          ),
-          http.post(`${ACCEPTING_COLLECTOR}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromiseWith(services)(
-              Effect.gen(function* collectExport() {
-                const signal = String(params.signal);
-                yield* Ref.update(signals, (earlier) => [...earlier, signal]);
-                if (signal !== "traces") return HttpResponse.json({});
-                const exported = yield* Effect.orDie(
-                  Effect.promise(() => request.json()).pipe(
-                    Effect.flatMap(Schema.decodeUnknownEffect(ExportedTraces)),
-                  ),
-                );
-                const measured = exported.resourceSpans.flatMap((resourceSpans) =>
-                  resourceSpans.scopeSpans
-                    .filter((scopeSpans) => scopeSpans.scope.name === MEASURED_TRACER)
-                    .flatMap((scopeSpans) =>
-                      scopeSpans.spans.map((span) => ({
-                        service: resourceSpans.resource.attributes.find(
-                          (attribute) => attribute.key === "service.name",
-                        )?.value.stringValue,
-                        span: span.name,
-                      })),
-                    ),
-                );
-                yield* Ref.update(spans, (earlier) => [...earlier, ...measured]);
-                return HttpResponse.json({});
-              }),
-            ),
-          ),
+        const collectorScope = yield* Scope.make();
+        const collector = Context.get(
+          yield* Layer.build(NodeHttpServer.layerTest).pipe(Scope.provide(collectorScope)),
+          HttpServer.HttpServer,
         );
-        server.listen({ onUnhandledRequest: "error" });
-        syncBuiltinESMExports();
+        yield* collector
+          .serve(
+            Effect.gen(function* collectExport() {
+              const exportRequest = yield* HttpServerRequest.HttpServerRequest;
+              const route = COLLECTED_EXPORT.exec(exportRequest.url)?.groups;
+              if (exportRequest.method !== "POST" || route?.signal === undefined) {
+                return HttpServerResponse.empty({ status: 404 });
+              }
+              if (route.collector === REFUSING_COLLECTOR) {
+                return HttpServerResponse.empty({ status: 400 });
+              }
+              const { signal } = route;
+              yield* Ref.update(signals, (earlier) => [...earlier, signal]);
+              if (signal !== "traces") return HttpServerResponse.jsonUnsafe({});
+              const exported = yield* Effect.orDie(
+                exportRequest.json.pipe(Effect.flatMap(Schema.decodeUnknownEffect(ExportedTraces))),
+              );
+              const measured = exported.resourceSpans.flatMap((resourceSpans) =>
+                resourceSpans.scopeSpans
+                  .filter((scopeSpans) => scopeSpans.scope.name === MEASURED_TRACER)
+                  .flatMap((scopeSpans) =>
+                    scopeSpans.spans.map((span) => ({
+                      service: resourceSpans.resource.attributes.find(
+                        (attribute) => attribute.key === "service.name",
+                      )?.value.stringValue,
+                      span: span.name,
+                    })),
+                  ),
+              );
+              yield* Ref.update(spans, (earlier) => [...earlier, ...measured]);
+              return HttpServerResponse.jsonUnsafe({});
+            }),
+          )
+          .pipe(Scope.provide(collectorScope));
+        if (collector.address._tag === "UnixPathAddress") {
+          return yield* Effect.die(new Error("the collector did not bind a port"));
+        }
+        const origin = `http://127.0.0.1:${collector.address.port}`;
+        const endpointOf = (collectorName: string): string => `${origin}/${collectorName}`;
         const resetGlobalTelemetry = (): void => {
           process.removeAllListeners("beforeExit");
           context.disable();
@@ -101,11 +110,13 @@ describe("measuredTelemetry", () => {
           Effect.runSyncWith(services)(exitWith(0));
         };
         resetGlobalTelemetry();
-        onCleanup(() => {
-          server.close();
-          syncBuiltinESMExports();
-          resetGlobalTelemetry();
-        });
+        onCleanup(() =>
+          Effect.runPromiseWith(services)(
+            Scope.close(collectorScope, Exit.void).pipe(
+              Effect.andThen(Effect.sync(resetGlobalTelemetry)),
+            ),
+          ),
+        );
         vi.resetModules();
         const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
         const recordingConsole = {
@@ -121,6 +132,7 @@ describe("measuredTelemetry", () => {
           spans: Ref.get(spans),
           spansSoFar: (): readonly MeasuredSpan[] => Effect.runSyncWith(services)(Ref.get(spans)),
           reports: Ref.get(reports),
+          endpointOf,
           started: (
             serviceName: string,
             settings: Readonly<Record<string, string>>,
@@ -143,7 +155,7 @@ describe("measuredTelemetry", () => {
       Effect.runPromise(
         Effect.gen(function* notAsked() {
           const started = yield* harness.started(MEASURED_SERVICE, {
-            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(ACCEPTING_COLLECTOR),
           });
           trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
@@ -167,7 +179,7 @@ describe("measuredTelemetry", () => {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
             OTEL_SDK_DISABLED: "true",
-            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(ACCEPTING_COLLECTOR),
           });
           trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
@@ -192,7 +204,7 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* asked() {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: `${ACCEPTING_COLLECTOR}/`,
+            OTEL_EXPORTER_OTLP_ENDPOINT: `${harness.endpointOf(ACCEPTING_COLLECTOR)}/`,
           });
           onCleanup(() => started.shutdown());
           trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
@@ -238,7 +250,7 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* askedTwice() {
           const settings = {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(ACCEPTING_COLLECTOR),
           };
           const started = yield* harness.started(MEASURED_SERVICE, settings);
           yield* harness.started(SECOND_MEASURED_SERVICE, settings);
@@ -264,7 +276,7 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* everySignal() {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(ACCEPTING_COLLECTOR),
           });
           trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
@@ -289,8 +301,8 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* ownEndpoint() {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: REFUSING_COLLECTOR,
-            OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: `${ACCEPTING_COLLECTOR}/v1/traces`,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(REFUSING_COLLECTOR),
+            OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: `${harness.endpointOf(ACCEPTING_COLLECTOR)}/v1/traces`,
           });
           trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
@@ -316,7 +328,7 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* refused() {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: REFUSING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(REFUSING_COLLECTOR),
           });
           trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
@@ -340,7 +352,7 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* thrownValue() {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(ACCEPTING_COLLECTOR),
           });
           onCleanup(() => started.shutdown());
           globalErrorHandler({ code: "503" });
@@ -360,7 +372,7 @@ describe("measuredTelemetry", () => {
         Effect.gen(function* thrownError() {
           const started = yield* harness.started(MEASURED_SERVICE, {
             MST_TELEMETRY: "1",
-            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+            OTEL_EXPORTER_OTLP_ENDPOINT: harness.endpointOf(ACCEPTING_COLLECTOR),
           });
           onCleanup(() => started.shutdown());
           globalErrorHandler(new Error("the collector refused"));

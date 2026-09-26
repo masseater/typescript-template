@@ -1,19 +1,17 @@
-import {
-  readdirSync,
-  readFileSync,
-  readlinkSync,
-  realpathSync,
-  lstatSync,
-  statSync,
-  type Dirent,
-  type Stats,
-  // @effect-diagnostics-next-line nodeBuiltinImport:off
-} from "node:fs";
-
 import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
 import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
+import {
+  childEntriesIn,
+  linkStatusAt,
+  linkTargetAt,
+  nativeRealPathOf,
+  statusAt,
+  textAt,
+  type HostDirectoryEntry,
+  type HostFileStatus,
+} from "../../../../platform/synchronous-host.ts";
 import { generatedSourcePaths } from "../generated-source.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
@@ -21,7 +19,8 @@ import { pathIsInside } from "../path-is-inside.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { MANIFEST_FILE_NAME } from "./package-manifest.ts";
 
-const statOf = (targetPath: string): Stats | null => readUnlessMissing(() => statSync(targetPath));
+const statOf = (targetPath: string): HostFileStatus | null =>
+  readUnlessMissing(() => statusAt(targetPath));
 
 export const isFile = (targetPath: string): boolean => statOf(targetPath)?.isFile() === true;
 
@@ -37,7 +36,7 @@ export const nearestPackageDirectory = (
 };
 
 export const readTextFile = (targetPath: string): string | null =>
-  readUnlessMissing(() => readFileSync(targetPath, "utf8"));
+  readUnlessMissing(() => textAt(targetPath));
 
 const SCRIPT_FILE_NAME_PATTERN = /\.[cm]?[jt]sx?$/u;
 
@@ -106,7 +105,7 @@ type ScanDirectoryInput = {
 };
 
 const resolvedSymbolicTarget = (input: ScanDirectoryInput, absolutePath: string): string | null => {
-  const [failure, resolvedTargetPath] = attempt(() => realpathSync.native(absolutePath));
+  const [failure, resolvedTargetPath] = attempt(() => nativeRealPathOf(absolutePath));
   if (failure !== null || resolvedTargetPath === null) return null;
   if (!pathIsInside(input.realRepositoryRoot, resolvedTargetPath)) return null;
   return input.ancestry.has(resolvedTargetPath) ? null : resolvedTargetPath;
@@ -119,12 +118,12 @@ const scannedFileAt = (input: {
 }): ScannedFile | null => {
   const { absolutePath, realRepositoryRoot, repositoryRoot } = input;
   const stats = statOf(absolutePath);
-  const realPath = readUnlessMissing(() => realpathSync.native(absolutePath));
+  const realPath = readUnlessMissing(() => nativeRealPathOf(absolutePath));
   if (stats === null || realPath === null) {
     return null;
   }
   const symbolicLinkTarget = readUnlessMissing(() =>
-    lstatSync(absolutePath).isSymbolicLink() ? readlinkSync(absolutePath) : null,
+    linkStatusAt(absolutePath).isSymbolicLink() ? linkTargetAt(absolutePath) : null,
   );
   return {
     absolutePath,
@@ -142,7 +141,7 @@ const scannedSymbolicFile = (
   input: ScanDirectoryInput,
   candidate: {
     readonly absolutePath: string;
-    readonly directoryEntry: Dirent;
+    readonly directoryEntry: HostDirectoryEntry;
     readonly isFile: boolean;
   },
 ): ScannedFiles => {
@@ -157,7 +156,10 @@ const scannedSymbolicFile = (
   return scanned === null ? EMPTY_SCANNED_FILES : { files: [scanned], problems: [] };
 };
 
-const scannedSymbolicLink = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
+const scannedSymbolicLink = (
+  input: ScanDirectoryInput,
+  directoryEntry: HostDirectoryEntry,
+): ScannedFiles => {
   const absolutePath = path.join(input.directory, directoryEntry.name);
   if (input.sourceScope.isIgnored(absolutePath)) return EMPTY_SCANNED_FILES;
   const resolvedTargetPath = resolvedSymbolicTarget(input, absolutePath);
@@ -186,7 +188,10 @@ const scannedRegularFile = (input: ScanDirectoryInput, absolutePath: string): Sc
   return scanned === null ? EMPTY_SCANNED_FILES : { files: [scanned], problems: [] };
 };
 
-const isIgnoredDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent): boolean =>
+const isIgnoredDirectoryEntry = (
+  input: ScanDirectoryInput,
+  directoryEntry: HostDirectoryEntry,
+): boolean =>
   input.ignoredDirectoryNames.has(directoryEntry.name) &&
   (directoryEntry.isDirectory() || directoryEntry.isSymbolicLink());
 
@@ -197,14 +202,17 @@ const scannedSubdirectory = (input: ScanDirectoryInput, absolutePath: string): S
 
 const isIncludedFile = (
   input: ScanDirectoryInput,
-  directoryEntry: Dirent,
+  directoryEntry: HostDirectoryEntry,
   absolutePath: string,
 ): boolean =>
   directoryEntry.isFile() &&
   input.includesFileName(directoryEntry.name) &&
   !input.sourceScope.isIgnored(absolutePath);
 
-const scannedDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
+const scannedDirectoryEntry = (
+  input: ScanDirectoryInput,
+  directoryEntry: HostDirectoryEntry,
+): ScannedFiles => {
   const absolutePath = path.join(input.directory, directoryEntry.name);
   if (isIgnoredDirectoryEntry(input, directoryEntry)) return EMPTY_SCANNED_FILES;
   if (directoryEntry.isSymbolicLink()) return scannedSymbolicLink(input, directoryEntry);
@@ -223,7 +231,7 @@ const scannedFilesUnder = ({
   realRepositoryRoot,
   sourceScope,
 }: ScanDirectoryInput): ScannedFiles => {
-  const scanned = readdirSync(directory, { withFileTypes: true }).map((directoryEntry) =>
+  const scanned = childEntriesIn(directory).map((directoryEntry) =>
     scannedDirectoryEntry(
       {
         ancestry,
@@ -328,7 +336,7 @@ export const listRepositoryFiles = (
 ): RepositoryFiles => {
   if (!isDirectory(repositoryRoot)) return NO_REPOSITORY_FILES;
 
-  const realRoot = realpathSync.native(repositoryRoot);
+  const realRoot = nativeRealPathOf(repositoryRoot);
   const scannedRepository = scannedFilesUnder({
     repositoryRoot,
     realRepositoryRoot: realRoot,

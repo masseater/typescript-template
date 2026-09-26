@@ -1,11 +1,9 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { delimiter } from "node:path";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect } from "vite-plus/test";
 
+import { searchPathDelimiter } from "../platform/path.ts";
 import { gitExecutablePath } from "./git-executable.ts";
 
 const RUNNABLE = 0o755;
@@ -39,7 +37,9 @@ layer(NodeServices.layer)("gitExecutablePath", (it) => {
       });
       return {
         expected: paths.join(trailingGitDirectory, "git"),
-        located: gitExecutablePath([leadingEmptyDirectory, trailingGitDirectory].join(delimiter)),
+        located: gitExecutablePath(
+          [leadingEmptyDirectory, trailingGitDirectory].join(searchPathDelimiter),
+        ),
       };
     });
 

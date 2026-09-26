@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import { env as processEnvironment } from "node:process";
 
-import { reportFailed, runCli } from "@repo/cli";
+import { firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
 import {
   applicationReadyPaths,
   applications,
@@ -28,6 +27,7 @@ const requestTimeoutMilliseconds = 120_000;
 const startTimeout = "5 minutes";
 const closeTimeoutMilliseconds = 30_000;
 const databasePrefix = "template-check-dev-";
+const serveStage = "--serve";
 
 function workspaceName(): string {
   const cwd = process.cwd();
@@ -37,6 +37,7 @@ function workspaceName(): string {
 
 function migrateDatabase(
   vp: string,
+  directory: string,
 ): Effect.Effect<void, DevStartFailure, ChildProcessSpawner.ChildProcessSpawner> {
   return Effect.gen(function* migrate() {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -44,6 +45,7 @@ function migrateDatabase(
       .spawn(
         ChildProcess.make(vp, ["run", "--filter", "@repo/db-local", "db:migrate:local"], {
           cwd: repositoryRoot,
+          env: { [localDatabaseVariable]: directory },
           extendEnv: true,
           stderr: "inherit",
           stdin: "ignore",
@@ -86,13 +88,11 @@ const isolatedDatabase = Effect.acquireRelease(
           }),
       ),
     );
-    processEnvironment[localDatabaseVariable] = directory;
-    yield* migrateDatabase(path.join(repositoryRoot, "node_modules/.bin/vp"));
+    yield* migrateDatabase(path.join(repositoryRoot, "node_modules/.bin/vp"), directory);
     return directory;
   }),
   (directory) =>
     Effect.gen(function* cleanupDatabase() {
-      delete processEnvironment[localDatabaseVariable];
       const fs = yield* FileSystem.FileSystem;
       yield* fs.remove(directory, { force: true, recursive: true }).pipe(Effect.ignore);
     }),
@@ -124,8 +124,28 @@ const devServer = Effect.acquireRelease(
     ),
 );
 
-const listeningOrigin = isolatedDatabase.pipe(
-  Effect.flatMap(() => devServer),
+function serveWithDatabase(
+  directory: string,
+): Effect.Effect<number, DevStartFailure, ChildProcessSpawner.ChildProcessSpawner> {
+  return ChildProcessSpawner.ChildProcessSpawner.pipe(
+    Effect.flatMap((spawner) =>
+      spawner.exitCode(
+        ChildProcess.make(import.meta.filename, [serveStage], {
+          env: { [localDatabaseVariable]: directory },
+          extendEnv: true,
+          stderr: "inherit",
+          stdin: "ignore",
+          stdout: "inherit",
+        }),
+      ),
+    ),
+    Effect.mapError(
+      (error) => new DevStartFailure({ reason: `failed to serve: ${describeError(error)}` }),
+    ),
+  );
+}
+
+const listeningOrigin = devServer.pipe(
   Effect.flatMap((server) =>
     Effect.tryPromise({
       catch: (error) =>
@@ -201,7 +221,7 @@ function report(app: string, reasons: readonly string[]): Effect.Effect<void> {
     : reportFailed(failed(app, ...reasons));
 }
 
-const program = Effect.gen(function* program() {
+const serve = Effect.gen(function* serve() {
   const app = yield* Schema.decodeUnknownEffect(Application)(workspaceName()).pipe(
     Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
   );
@@ -215,7 +235,20 @@ const program = Effect.gen(function* program() {
     Result.isFailure(result) ? [result.failure.reason] : [],
   );
   yield* report(workspaceName(), reasons);
-}).pipe(
+});
+
+const isolate = isolatedDatabase.pipe(
+  Effect.flatMap(serveWithDatabase),
+  Effect.flatMap((exitCode) =>
+    Effect.sync(() => {
+      process.exitCode = exitCode;
+    }),
+  ),
+);
+
+const program = (
+  process.argv.slice(firstUserArgumentIndex).includes(serveStage) ? serve : isolate
+).pipe(
   Effect.scoped,
   Effect.timeoutOrElse({
     duration: startTimeout,

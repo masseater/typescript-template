@@ -1,9 +1,7 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { realpathSync } from "node:fs";
-
 import { attempt } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
+import { nativeRealPathOf } from "../../../../platform/synchronous-host.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 
 export type RepositoryModuleLocation =
@@ -16,7 +14,7 @@ export type RepositoryModuleLocation =
 
 export const realPathOf = (filePath: string): string => {
   const absolutePath = path.resolve(filePath);
-  const [failure, realPath] = attempt(() => realpathSync.native(absolutePath));
+  const [failure, realPath] = attempt(() => nativeRealPathOf(absolutePath));
   return failure === null && realPath !== null ? realPath : absolutePath;
 };
 

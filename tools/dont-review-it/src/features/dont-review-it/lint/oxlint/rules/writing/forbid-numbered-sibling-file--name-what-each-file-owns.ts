@@ -1,14 +1,12 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { readdirSync } from "node:fs";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
+import { childNamesIn } from "../../../../platform/synchronous-host.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 
-const directoryEntries = memoize((directory: string): readonly string[] => readdirSync(directory));
+const directoryEntries = memoize((directory: string): readonly string[] => childNamesIn(directory));
 
 const baseNameOf = (fileName: string): string => fileName.split(".").slice(0, 1).join("");
 
