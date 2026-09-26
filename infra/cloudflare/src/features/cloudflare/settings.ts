@@ -63,7 +63,7 @@ const otlpAuthorization = optional(Config.Redacted(deploymentKey.otlpAuthorizati
 
 const StripeSandboxKey = Schema.String.check(Schema.isPattern(/^(?:sk|rk)_test_[A-Za-z0-9]+$/u));
 
-const stripeSandboxKey = Config.schema(StripeSandboxKey, deploymentKey.stripeSecretKey).pipe(
+const stripeSandboxKey = Config.schema(StripeSandboxKey, deploymentKey.stripeApiKey).pipe(
   Config.map(Redacted.make),
 );
 

@@ -3,6 +3,7 @@ import { forbidOversizedFile } from "../../lint/oxlint/rules/writing/forbid-over
 import { forbidUnresolvableModuleSpecifier } from "../../lint/oxlint/rules/writing/forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.ts";
 import { noAmbiguousVariableName } from "../../lint/oxlint/rules/writing/no-ambiguous-variable-name--rename-to-concrete-noun.ts";
 import { noBehaviorSwitchEnvironmentKey } from "../../lint/oxlint/rules/writing/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag.ts";
+import { noCallerNameBranch } from "../../lint/oxlint/rules/writing/no-caller-name-branch--read-the-per-caller-table.ts";
 import { noCittyParentRun } from "../../lint/oxlint/rules/writing/no-citty-parent-run--move-run-into-a-subcommand.ts";
 import { noDefaultExport } from "../../lint/oxlint/rules/writing/no-default-export--use-named-export.ts";
 import { noDetachedDeclaration } from "../../lint/oxlint/rules/writing/no-detached-declaration--declare-it-next-to-its-use.ts";
@@ -38,6 +39,7 @@ export const writingBundle: readonly WorkspaceLintRule[] = [
   noExplanatoryComment,
   noBehaviorSwitchEnvironmentKey,
   noEnvironmentNameBranch,
+  noCallerNameBranch,
   noPlainSecretEnvironmentKey,
   noTestOnlyEnvironmentKey,
   noHardcodedEndpoint,

@@ -1,5 +1,11 @@
 import { assert, it } from "@effect/vitest";
-import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
+import {
+  ConfigurationInvalid,
+  readAi,
+  readConfig,
+  readStripeConfig,
+  stripeEnvKey,
+} from "@repo/config";
 import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
@@ -88,10 +94,10 @@ const userBindings: AppBindings<"service-member"> = {
         status: (): Promise<{ status: string }> => Promise.resolve({ status: "complete" }),
       }),
   }),
-  STRIPE_METERED_PRICE_ID: "price_metered",
-  STRIPE_PRICE_ID: "price_test",
-  STRIPE_SECRET_KEY: "sk_test_secret_of_at_least_32_characters",
-  STRIPE_WEBHOOK_SECRET: "whsec_test_secret_of_at_least_32_ch",
+  [stripeEnvKey.meteredPriceId]: "price_metered",
+  [stripeEnvKey.priceId]: "price_test",
+  [stripeEnvKey.secretKey]: "sk_test_secret_of_at_least_32_characters",
+  [stripeEnvKey.webhookSecret]: "whsec_test_secret_of_at_least_32_ch",
   USER_INBOX: binding<DurableObjectNamespace>({
     get: (): undefined => undefined,
     idFromName: (): undefined => undefined,
@@ -189,5 +195,11 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     assert.isDefined((yield* readStorage(userBindings)).cache);
     const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
+    const stripe = yield* readStripeConfig(userBindings);
+    assert.strictEqual(stripe.meteredPriceId, userBindings[stripeEnvKey.meteredPriceId]);
+    assert.strictEqual(stripe.priceId, userBindings[stripeEnvKey.priceId]);
+    assert.strictEqual(stripe.mode, "test");
+    const adminStripe = yield* readStripeConfig(adminBindings).pipe(Effect.flip);
+    assert.instanceOf(adminStripe, ConfigurationInvalid);
   }),
 );

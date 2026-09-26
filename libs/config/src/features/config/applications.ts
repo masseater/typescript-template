@@ -38,6 +38,18 @@ const applicationCapabilities = {
 
 export type CapabilityOf<App extends Application> = (typeof applicationCapabilities)[App][number];
 
+type ApplicationWorkerTraits = {
+  readonly analytics: boolean;
+  readonly crons: readonly string[];
+  readonly wiki: boolean;
+};
+
+export const applicationWorkerTraits: Readonly<Record<Application, ApplicationWorkerTraits>> = {
+  "internal-dashboard": { analytics: false, crons: ["*/30 * * * *"], wiki: true },
+  "service-admin": { analytics: false, crons: [], wiki: false },
+  "service-member": { analytics: true, crons: ["0 4 * * *"], wiki: false },
+};
+
 export const grants = (app: Application, capability: Capability): boolean => {
   const granted: readonly Capability[] = applicationCapabilities[app];
   return granted.includes(capability);

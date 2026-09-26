@@ -53,6 +53,14 @@ const appEnvKey = {
   otlpEndpoint: "OTLP_ENDPOINT",
 } as const;
 
+const stripeEnvKey = {
+  meteredPriceId: "STRIPE_METERED_PRICE_ID",
+  priceId: "STRIPE_PRICE_ID",
+  secretKey: "STRIPE_SECRET_KEY",
+  webhookSecret: "STRIPE_WEBHOOK_SECRET",
+} as const;
+type StripeEnvKey = (typeof stripeEnvKey)[keyof typeof stripeEnvKey];
+
 const Scalars = Schema.Struct({
   [appEnvKey.appOrigin]: Origin,
   [appEnvKey.appRelease]: Schema.optionalKey(Release),
@@ -108,11 +116,11 @@ const StripeWebhookSecret = Schema.RedactedFromValue(
 );
 const StripePriceId = Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u));
 const StripeScalars = Schema.Struct({
-  APP_ORIGIN: Origin,
-  STRIPE_METERED_PRICE_ID: StripePriceId,
-  STRIPE_PRICE_ID: StripePriceId,
-  STRIPE_SECRET_KEY: StripeSecretKey,
-  STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
+  [appEnvKey.appOrigin]: Origin,
+  [stripeEnvKey.meteredPriceId]: StripePriceId,
+  [stripeEnvKey.priceId]: StripePriceId,
+  [stripeEnvKey.secretKey]: StripeSecretKey,
+  [stripeEnvKey.webhookSecret]: StripeWebhookSecret,
 });
 
 const stripeKeyMode = (secretKey: Redacted.Redacted): StripeKeyMode =>
@@ -244,16 +252,16 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
 
 const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfig(input: unknown) {
   const scalars = yield* decode(StripeScalars, input);
-  const keyMode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
-  if (keyMode === "live" && isLocalDevelopmentOrigin(scalars.APP_ORIGIN)) {
+  const keyMode = stripeKeyMode(scalars[stripeEnvKey.secretKey]);
+  if (keyMode === "live" && isLocalDevelopmentOrigin(scalars[appEnvKey.appOrigin])) {
     return yield* invalid("Stripe live keys are restricted to deployed origins");
   }
   return {
-    meteredPriceId: scalars.STRIPE_METERED_PRICE_ID,
+    meteredPriceId: scalars[stripeEnvKey.meteredPriceId],
     mode: keyMode,
-    priceId: scalars.STRIPE_PRICE_ID,
-    secretKey: scalars.STRIPE_SECRET_KEY,
-    webhookSecret: scalars.STRIPE_WEBHOOK_SECRET,
+    priceId: scalars[stripeEnvKey.priceId],
+    secretKey: scalars[stripeEnvKey.secretKey],
+    webhookSecret: scalars[stripeEnvKey.webhookSecret],
   };
 });
 
@@ -264,6 +272,7 @@ export {
   Email,
   HttpsOrigin,
   appEnvKey,
+  stripeEnvKey,
   bindingWith,
   decode,
   distinctOrigins,
@@ -278,4 +287,12 @@ export {
   readWikiBindings,
   stripeKeyModes,
 };
-export type { AppConfig, AssetFetcher, ServiceFetcher, SiteConfig, StripeConfig, StripeKeyMode };
+export type {
+  AppConfig,
+  AssetFetcher,
+  ServiceFetcher,
+  SiteConfig,
+  StripeConfig,
+  StripeEnvKey,
+  StripeKeyMode,
+};

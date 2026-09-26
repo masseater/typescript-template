@@ -20,7 +20,7 @@ const verificationSettings = {
   otlp: { endpoint: "https://otlp.example.com" },
   otlpAuthorization: "Bearer stack-verification-not-a-real-token",
   prefix: "template-verify",
-  stripeSecretKey: "sk_test_stackVerificationNotAReal",
+  stripeApiKey: "sk_test_stackVerificationNotAReal",
   wikiPublish: {
     appId: "424242",
     privateKey: `-----BEGIN ${pemLabel}-----\nstack-verification-not-a-real-key\n-----END ${pemLabel}-----\n`,
@@ -43,7 +43,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.otlpAuthorization]: verificationSettings.otlpAuthorization,
   [deploymentKey.otlpEndpoint]: verificationSettings.otlp.endpoint,
   [deploymentKey.prefix]: verificationSettings.prefix,
-  [deploymentKey.stripeSecretKey]: verificationSettings.stripeSecretKey,
+  [deploymentKey.stripeApiKey]: verificationSettings.stripeApiKey,
   [deploymentKey.wikiPublishAppId]: verificationSettings.wikiPublish.appId,
   [deploymentKey.wikiPublishPrivateKey]: verificationSettings.wikiPublish.privateKey,
   [deploymentKey.wikiPublishRepository]: verificationSettings.wikiPublish.repository,

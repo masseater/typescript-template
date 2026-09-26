@@ -6,12 +6,14 @@ import {
   aiMeterEventName,
   aiUsageUnitAmount,
   appEnvKey,
+  applicationWorkerTraits,
   applications,
   grants,
   jobsQueueBinding,
   jobsWorkflowBinding,
   jobsWorkflowClass,
   stripeApiVersion,
+  stripeEnvKey,
   stripeWebhookEvents,
   userInboxBinding,
   userInboxClassName,
@@ -46,7 +48,6 @@ import {
   compileStack,
   describeInventoryCause,
 } from "./inventory.ts";
-import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { encodeJson } from "./platform.ts";
 import {
   applyOrderViolations,
@@ -109,7 +110,7 @@ function tokenValue(name: string, resource: string): string {
 }
 
 function wikiBindings(app: Application): readonly string[] {
-  return app === APPLICATION.internalDashboard
+  return applicationWorkerTraits[app].wiki
     ? [
         tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
         `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
@@ -123,7 +124,7 @@ function wikiBindings(app: Application): readonly string[] {
 }
 
 function analyticsBindings(app: Application): readonly string[] {
-  return app === APPLICATION.serviceMember
+  return applicationWorkerTraits[app].analytics
     ? [
         plainText(
           appEnvKey.googleAnalyticsMeasurementId,
@@ -137,10 +138,10 @@ const capabilityBindings: readonly (readonly [Capability, readonly string[]])[] 
   [
     "billing",
     [
-      "STRIPE_METERED_PRICE_ID:deferred:<unresolved PropExpr>",
-      "STRIPE_PRICE_ID:deferred:<unresolved PropExpr>",
-      `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
-      "STRIPE_WEBHOOK_SECRET:deferred:<unresolved EffectExpr>",
+      `${stripeEnvKey.meteredPriceId}:deferred:<unresolved PropExpr>`,
+      `${stripeEnvKey.priceId}:deferred:<unresolved PropExpr>`,
+      `${stripeEnvKey.secretKey}:secret_text:text=$${deploymentKey.stripeApiKey}`,
+      `${stripeEnvKey.webhookSecret}:deferred:<unresolved EffectExpr>`,
     ],
   ],
   ["workers-ai", ["AI:ai"]],
@@ -168,10 +169,8 @@ function grantedBindings(app: Application): readonly string[] {
 }
 
 function applicationCrons(app: Application): { readonly crons?: readonly string[] } {
-  return {
-    ...(app === APPLICATION.serviceMember ? { crons: [memberLeavePurgeCron] } : {}),
-    ...(app === APPLICATION.internalDashboard ? { crons: ["*/30 * * * *"] } : {}),
-  };
+  const { crons } = applicationWorkerTraits[app];
+  return crons.length === 0 ? {} : { crons };
 }
 
 function billingResources(app: Application): Readonly<Record<string, ResourceInventory>> {

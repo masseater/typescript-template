@@ -12,6 +12,7 @@ export {
   applicationOrigins,
   applicationPorts,
   applicationReadyPaths,
+  applicationWorkerTraits,
   applications,
   audienceRoles,
   coreEntrypoints,
@@ -136,6 +137,7 @@ export {
   readConfig,
   readEnvironment,
   readStripeConfig,
+  stripeEnvKey,
   stripeKeyModes,
   readSiteEnvironment,
   readCore,
@@ -191,6 +193,7 @@ export type {
   ServiceFetcher,
   SiteConfig,
   StripeConfig,
+  StripeEnvKey,
   StripeKeyMode,
 } from "./environment.ts";
 export {

@@ -744,6 +744,15 @@ const lintOptions = {
       },
     },
     {
+      files: ["infra/cloudflare/src/features/cloudflare/**/*.ts"],
+      rules: {
+        "dont-review-it/no-caller-name-branch--read-the-per-caller-table": [
+          LINT_SEVERITY.ERROR,
+          { callers: [{ source: "@repo/config", name: "APPLICATION" }] },
+        ],
+      },
+    },
+    {
       files: workspaceConfigsOutsideTestProjects,
       rules: {
         "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": LINT_SEVERITY.OFF,

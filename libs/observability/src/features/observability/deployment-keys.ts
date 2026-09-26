@@ -12,7 +12,7 @@ const deploymentKey = {
   otlpEndpoint: "TEMPLATE_OTLP_ENDPOINT",
   googleAnalyticsMeasurementId: "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
   prefix: "TEMPLATE_PREFIX",
-  stripeSecretKey: "STRIPE_API_KEY",
+  stripeApiKey: "STRIPE_API_KEY",
   wikiPublishAppId: "TEMPLATE_WIKI_PUBLISH_APP_ID",
   wikiPublishPrivateKey: "TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY",
   wikiPublishRepository: "TEMPLATE_WIKI_PUBLISH_REPOSITORY",
@@ -28,7 +28,7 @@ const deploymentKeys = [
   deploymentKey.authSecret,
   deploymentKey.mailFrom,
   deploymentKey.prefix,
-  deploymentKey.stripeSecretKey,
+  deploymentKey.stripeApiKey,
 ] as const;
 const optionalDeploymentKeys = [
   deploymentKey.googleAnalyticsMeasurementId,

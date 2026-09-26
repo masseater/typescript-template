@@ -1,4 +1,4 @@
-import type { Capability } from "@repo/config";
+import type { Capability, stripeEnvKey } from "@repo/config";
 import type { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import type {
   AIBinding,
@@ -31,12 +31,11 @@ type SharedEnv = Readonly<{
   OTLP_ENDPOINT?: string;
 }>;
 
-type BillingEnv = Readonly<{
-  STRIPE_METERED_PRICE_ID: Output<string>;
-  STRIPE_PRICE_ID: Output<string>;
-  STRIPE_SECRET_KEY: Redacted.Redacted;
-  STRIPE_WEBHOOK_SECRET: Output<Redacted.Redacted>;
-}>;
+type BillingEnv = Readonly<
+  Record<typeof stripeEnvKey.meteredPriceId | typeof stripeEnvKey.priceId, Output<string>> &
+    Record<typeof stripeEnvKey.secretKey, Redacted.Redacted> &
+    Record<typeof stripeEnvKey.webhookSecret, Output<Redacted.Redacted>>
+>;
 
 interface CapabilityEnv {
   readonly billing: BillingEnv;

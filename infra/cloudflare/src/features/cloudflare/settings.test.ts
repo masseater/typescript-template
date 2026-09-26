@@ -1,4 +1,6 @@
 import { assert, it } from "@effect/vitest";
+import { deploymentKey } from "@repo/observability/deployment-keys";
+import { STRIPE_API_KEY_ENV } from "alchemy/Stripe";
 import { Effect, Redacted, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
@@ -195,14 +197,18 @@ for (const key of ["sk_live_notARealKey", "rk_live_notARealKey", "pk_test_notARe
     Effect.provideService(
       stripeSandboxKey,
       ConfigProvider,
-      environment({ STRIPE_API_KEY: key }),
+      environment({ [deploymentKey.stripeApiKey]: key }),
     ).pipe(Effect.flip, Effect.asVoid),
   );
 }
 
+it("reads the Stripe key from the variable Alchemy's Stripe authentication reads", () => {
+  assert.strictEqual(deploymentKey.stripeApiKey, STRIPE_API_KEY_ENV);
+});
+
 it.effect("accepts a Stripe sandbox secret key", () =>
   Effect.gen(function* program() {
     const key = yield* Effect.provideService(stripeSandboxKey, ConfigProvider, environment({}));
-    assert.strictEqual(Redacted.value(key), verificationSettings.stripeSecretKey);
+    assert.strictEqual(Redacted.value(key), verificationSettings.stripeApiKey);
   }),
 );
