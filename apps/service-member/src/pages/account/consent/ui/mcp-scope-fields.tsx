@@ -1,21 +1,10 @@
-import { memberMcpToolScopes } from "@repo/config";
-import { CheckboxField, localState } from "@repo/ui";
+import { CheckboxField } from "@repo/ui";
 
+import { useChosenScopes } from "#pages/account/consent/model/mcp-scopes.ts";
 import { scopeLabel } from "#shared/contracts/index.ts";
 
+import type { MemberMcpToolScope } from "#pages/account/consent/model/mcp-scopes.ts";
 import type { ReactElement } from "react";
-
-type MemberMcpToolScope = (typeof memberMcpToolScopes)[number];
-
-const useChosenScopes = localState<readonly MemberMcpToolScope[] | undefined>(undefined);
-
-function isToolScope(value: string): value is MemberMcpToolScope {
-  return memberMcpToolScopes.some((scope) => scope === value);
-}
-
-function requestedToolScopes(scope: string | undefined): readonly MemberMcpToolScope[] {
-  return (scope ?? "").split(" ").filter(isToolScope);
-}
 
 function McpScopeFields({
   requested,
@@ -43,4 +32,4 @@ function McpScopeFields({
   );
 }
 
-export { McpScopeFields, requestedToolScopes, useChosenScopes };
+export { McpScopeFields };

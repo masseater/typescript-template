@@ -36,16 +36,9 @@ function writeSecrets(filename: string, content: string, mode: number): Effect.E
 }
 
 function verifySecretsFile(filename: string): ReturnType<typeof verifiedSecrets> {
-  return Effect.acquireUseRelease(
-    Effect.sync(() => {
-      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, filename);
-    }),
-    () => verifiedSecrets(),
-    () =>
-      Effect.sync(() => {
-        vi.unstubAllEnvs();
-      }),
-  );
+  return Effect.sync(() => {
+    vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, filename);
+  }).pipe(Effect.andThen(() => verifiedSecrets()));
 }
 
 it.effect("accepts an owner-only file that declares every deployment input", () =>
@@ -125,19 +118,10 @@ it.effect("reports a missing file instead of deploying without it", () =>
 );
 
 it.effect("resolves the same file the staged-diff check reads", () =>
-  Effect.acquireUseRelease(
-    Effect.sync(() => {
-      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, undefined);
-    }),
-    () =>
-      Effect.sync(() => {
-        assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, "/elsewhere/cloudflare.env");
-        assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
-      }),
-    () =>
-      Effect.sync(() => {
-        vi.unstubAllEnvs();
-      }),
-  ),
+  Effect.sync(() => {
+    vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, undefined);
+    assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
+    vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, "/elsewhere/cloudflare.env");
+    assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
+  }),
 );

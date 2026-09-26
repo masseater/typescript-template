@@ -1,7 +1,7 @@
 const ANALYSIS_TIMEOUT = "Project analysis worker timed out";
 const FSPY_SHARED_MEMORY = "fspy: failed to claim frame in shared memory";
 
-/** @canonical-values dont-review-it.react-doctor-skip-detail */
+/** @canonical-values dont-review-it.doctor-skip-detail */
 const REACT_DOCTOR_SKIP_DETAILS = ["incomplete", "dead-code"] as const;
 
 const REACT_DOCTOR_SKIP_DETAIL = {

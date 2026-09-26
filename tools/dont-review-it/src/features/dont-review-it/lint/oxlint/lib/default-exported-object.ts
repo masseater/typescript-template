@@ -4,6 +4,9 @@ export const objectExpressionOf = (
   held: ESTree.ExportDefaultDeclaration["declaration"],
 ): ESTree.ObjectExpression | null => {
   if (held.type === "ObjectExpression") return held;
+  if (held.type === "ArrowFunctionExpression") {
+    return held.body.type === "ObjectExpression" ? held.body : null;
+  }
   if (held.type !== "CallExpression") return null;
   const [firstArgument] = held.arguments;
   if (firstArgument === undefined || firstArgument.type === "SpreadElement") return null;

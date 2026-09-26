@@ -1,41 +1,17 @@
-import { Effect, FileSystem, type Path, type PlatformError, Schema } from "effect";
+import { Effect, FileSystem, type Path, type PlatformError } from "effect";
 
+import { DanglingSymlink } from "./dangling-symlink.ts";
+import { EscapingSymlink } from "./escaping-symlink.ts";
 import { unlessMissing } from "./file-system.ts";
 import { isLinkLoop, isMissingPath, isNotALink } from "./path-failure.ts";
 import { path } from "./path.ts";
+import { SymlinkCycle } from "./symlink-cycle.ts";
 
 export type EntryKind = "directory" | "file" | "other";
 
 export interface DirectoryEntry {
   readonly kind: EntryKind;
   readonly name: string;
-}
-
-class DanglingSymlink extends Schema.TaggedError<DanglingSymlink>()("DanglingSymlink", {
-  path: Schema.String,
-}) {
-  override get message(): string {
-    return `${this.path} is a symbolic link to nothing, so what it was meant to hold cannot be read.`;
-  }
-}
-
-class EscapingSymlink extends Schema.TaggedError<EscapingSymlink>()("EscapingSymlink", {
-  path: Schema.String,
-  target: Schema.String,
-  root: Schema.String,
-}) {
-  override get message(): string {
-    return `${this.path} is a symbolic link to ${this.target}, outside ${this.root}, so what it holds is not part of the tree being read.`;
-  }
-}
-
-class SymlinkCycle extends Schema.TaggedError<SymlinkCycle>()("SymlinkCycle", {
-  path: Schema.String,
-  target: Schema.String,
-}) {
-  override get message(): string {
-    return `${this.path} leads back into ${this.target}, which already encloses it, so following it would never end.`;
-  }
 }
 
 export type TreeFailure =

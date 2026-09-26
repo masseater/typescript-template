@@ -26,6 +26,7 @@ import {
   CodeLeaf,
   ImageElement,
   LinkElement,
+  ListItem,
   ParagraphElement,
   SectionHeadingElement,
   TableCellElement,
@@ -33,10 +34,13 @@ import {
   TableHeaderCellElement,
   TableRowElement,
   TermLink,
-  renderListItem,
 } from "./wiki-editor-elements.tsx";
 
 import type { NodeComponents } from "platejs";
+import type { RenderNodeWrapper } from "platejs/react";
+
+const renderListItem: RenderNodeWrapper = ({ element }) =>
+  typeof element["listStyleType"] === "string" ? ListItem : undefined;
 
 const TermLinkPlugin = createPlatePlugin({
   key: TERM_LINK,

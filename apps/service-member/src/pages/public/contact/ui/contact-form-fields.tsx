@@ -4,13 +4,13 @@ import { maximumContactMessageLength, maximumContactNameLength } from "#shared/c
 import { EmailField, NameField, fieldError } from "#shared/forms/index.ts";
 
 import type { useContactForm } from "#pages/public/contact/model/contact-form.ts";
-import type { FormEvent, ReactElement } from "react";
+import type { ReactElement, SubmitEvent } from "react";
 
 function ContactFormFields({
   formState,
 }: Readonly<{ formState: ReturnType<typeof useContactForm> }>): ReactElement {
   const { blocked, error, form, pending } = formState;
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>): void {
     event.preventDefault();
     event.stopPropagation();
     void form.handleSubmit();

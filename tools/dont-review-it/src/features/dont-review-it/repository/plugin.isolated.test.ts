@@ -4,6 +4,10 @@ import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness-
 import { configuredLintRules } from "./lint-test-fixture.ts";
 import { lintOptions } from "./lint.ts";
 
+import type { OxlintOverride } from "oxlint";
+
+const lintOverrides: readonly OxlintOverride[] = lintOptions.overrides;
+
 const forbiddenCode = [
   [
     "apps/service-member/src/probe.ts",
@@ -487,7 +491,7 @@ describe("project lint rules on dependency boundaries", () => {
   it("turns atom-server-data off for auth-ui after the workspace error", () => {
     expect.hasAssertions();
     const severityAt = (severity: string): number =>
-      lintOptions.overrides.findIndex(
+      lintOverrides.findIndex(
         (override) => override.rules?.["project/atom-server-data"] === severity,
       );
     expect(severityAt("off")).toBeGreaterThan(severityAt("error"));
@@ -495,16 +499,16 @@ describe("project lint rules on dependency boundaries", () => {
 
   it("keeps the builtin loader check on where the full process-boundary is off", () => {
     expect.hasAssertions();
-    expect(lintOptions.overrides).toContainEqual(
-      expect.objectContaining({
-        files: expect.arrayContaining([
-          "apps/service-member/**",
-          "infra/cloudflare/**",
-          "tools/dev/**",
-        ]),
-        rules: { "project/process-boundary": ["error", { builtinLoaderOnly: true }] },
-      }),
+    const softPackageOverride = lintOverrides.find(
+      (override) =>
+        ["apps/service-member/**", "infra/cloudflare/**", "tools/dev/**"].every((pattern) =>
+          override.files.includes(pattern),
+        ) && override.rules?.["project/process-boundary"] !== undefined,
     );
+    expect(softPackageOverride?.rules?.["project/process-boundary"]).toStrictEqual([
+      "error",
+      { builtinLoaderOnly: true },
+    ]);
   });
 
   it.for(builtinLoaderOnlyProbes)(

@@ -52,7 +52,7 @@ function uploadRecording(title: string, audio: Readonly<File>): Promise<string> 
         Effect.provide(browserHttp),
         Effect.provideService(FetchHttpClient.RequestInit, {
           credentials: "same-origin",
-          redirect: "error",
+          redirect: "manual",
         }),
       );
       const answered = yield* response.json;

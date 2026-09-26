@@ -115,7 +115,7 @@ export const moduleDeclarationsOf = (
 });
 
 const parsedModuleAt = (filePath: string): ModuleDeclarations | null => {
-  const source = readUnlessMissing(() => readFileSync(filePath, "utf8"));
+  const source = readUnlessMissing(() => readFileSync(filePath, "utf-8"));
   if (source === null) return null;
 
   const writtenBody = parseSync(filePath, source).program.body.map(

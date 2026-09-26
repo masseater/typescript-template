@@ -12,6 +12,10 @@ overrides:
   drizzle-kit@*: "catalog:"
   "valibot@*": 1.5.0
   eslint-plugin-react-hooks>zod-validation-error: 4.0.2
+packageExtensions:
+  "@feature-sliced/steiger-plugin@0.7.0":
+    dependencies:
+      "@steiger/toolkit": 0.2.3
 allowBuilds:
   esbuild: true
   workerd: true

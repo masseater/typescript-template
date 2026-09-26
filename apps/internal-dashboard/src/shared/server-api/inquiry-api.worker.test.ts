@@ -4,6 +4,7 @@ import { inquiryStaff, type ReadOnlyInquiryStaff } from "@repo/db/inquiry-staff"
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { Effect } from "effect";
+import { expect } from "vite-plus/test";
 
 import { inquiryApi } from "./inquiry-api.ts";
 import { reporting, runtime } from "./runtime.ts";
@@ -46,10 +47,10 @@ it.effect("rejects write requests on inquiry routes", () =>
 describe("the staff surface", () => {
   it("exposes only read-only inquiry staff operations", () => {
     const staff: ReadOnlyInquiryStaff = inquiryStaff;
-    assert.isFunction(staff.getInquiry);
-    assert.isFunction(staff.inquiryCounts);
-    assert.isFunction(staff.listMemberInquiries);
-    assert.notProperty(staff, "replyAsAdmin");
-    assert.notProperty(staff, "createMemberInquiry");
+    expect(staff).toStrictEqual({
+      getInquiry: expect.any(Function),
+      inquiryCounts: expect.any(Function),
+      listMemberInquiries: expect.any(Function),
+    });
   });
 });

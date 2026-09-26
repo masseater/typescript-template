@@ -1,3 +1,4 @@
+import { appHead } from "@repo/ui/shell";
 import { describe, expect, test } from "vite-plus/test";
 
 import { googleAnalyticsBootstrap } from "./bootstrap.ts";
@@ -12,7 +13,7 @@ describe("memberAppHead", () => {
     const it = test.extend("head", () => memberAppHead("Service", "/styles.css", undefined));
 
     it("does not add analytics scripts", ({ head }) => {
-      expect(head.scripts).toBeUndefined();
+      expect(head).toStrictEqual(appHead("Service", "/styles.css"));
     });
   });
 
@@ -20,13 +21,16 @@ describe("memberAppHead", () => {
     const it = test.extend("head", () => memberAppHead("Service", "/styles.css", measurementId));
 
     it("loads gtag from Google Tag Manager", ({ head }) => {
-      expect(head.scripts).toStrictEqual([
-        {
-          async: true,
-          src: `https://www.googletagmanager.com/gtag/js?id=${measurementId}`,
-        },
-        { children: googleAnalyticsBootstrap(measurementId) },
-      ]);
+      expect(head).toStrictEqual({
+        ...appHead("Service", "/styles.css"),
+        scripts: [
+          {
+            async: true,
+            src: `https://www.googletagmanager.com/gtag/js?id=${measurementId}`,
+          },
+          { children: googleAnalyticsBootstrap(measurementId) },
+        ],
+      });
     });
 
     it("does not embed member identifiers in the injected snippet", ({ head }) => {
@@ -34,8 +38,6 @@ describe("memberAppHead", () => {
       expect(serialized).not.toContain(sampleMemberId);
       expect(serialized).not.toContain(sampleEmail);
       expect(serialized).not.toContain("user_id");
-      expect(head.scripts?.[1]?.children).not.toContain(sampleMemberId);
-      expect(head.scripts?.[1]?.children).not.toContain(sampleEmail);
     });
   });
 });

@@ -26,7 +26,7 @@ function openUpstream(target: number): Effect.Effect<Socket, SocketError, Scope.
   >;
 }
 
-function proxyConnection(target: number, client: Socket): Effect.Effect<void, never, never> {
+function proxyConnection(target: number, client: Socket): Effect.Effect<void> {
   return Effect.scoped(
     openUpstream(target).pipe(
       Effect.orElseSucceed(() => undefined),
@@ -49,7 +49,7 @@ function proxyConnection(target: number, client: Socket): Effect.Effect<void, ne
       ),
       Effect.asVoid,
     ),
-  ) as Effect.Effect<void, never, never>;
+  ) as Effect.Effect<void>;
 }
 
 const program = Effect.gen(function* gateway() {
@@ -77,6 +77,6 @@ const program = Effect.gen(function* gateway() {
   Effect.scoped,
   Effect.provide(NodeSocketServer.layer({ host: "::", port: 443 })),
   Effect.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
-) as Effect.Effect<void, GatewayFailure, never>;
+) as Effect.Effect<void, GatewayFailure>;
 
 runCli(program, (cause) => causeRecord("local.gateway_failed", { cause }));

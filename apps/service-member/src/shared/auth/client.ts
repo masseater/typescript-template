@@ -5,7 +5,7 @@ const memberAuthClient = createAuthClient({
   basePath: "/api/auth",
   fetchOptions: {
     credentials: "same-origin",
-    redirect: "error",
+    redirect: "manual",
   },
   plugins: [apiKeyClient()],
 });

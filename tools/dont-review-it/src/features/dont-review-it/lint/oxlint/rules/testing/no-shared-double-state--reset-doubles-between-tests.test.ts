@@ -31,6 +31,11 @@ describe("dont-review-it/no-shared-double-state--reset-doubles-between-tests", (
         filename: "vite.config.mts",
       },
       {
+        name: "a config built per command by an arrow that returns an object literal is read the same way",
+        code: `import { defineConfig } from "vite-plus";\nexport default defineConfig((env) => ({ mode: env.mode, test: ${RESET_AND_RESTORED} }));\n`,
+        filename: "vite.config.ts",
+      },
+      {
         name: "a setting written with a computed string key is the setting it names",
         code: `export default { test: { ["mockReset"]: true, restoreMocks: true } };\n`,
         filename: "vite.config.ts",
@@ -56,6 +61,18 @@ describe("dont-review-it/no-shared-double-state--reset-doubles-between-tests", (
         name: "a config that declares no test block is reported once",
         documented: true,
         code: `import { defineConfig } from "vite-plus";\nexport default defineConfig({ lint: {} });\n`,
+        filename: "vite.config.ts",
+        errors: [{ messageId: "missingTestBlock" }],
+      },
+      {
+        name: "a config built per command whose returned object declares no test block is reported",
+        code: `import { defineConfig } from "vite-plus";\nexport default defineConfig((env) => ({ mode: env.mode }));\n`,
+        filename: "vite.config.ts",
+        errors: [{ messageId: "missingTestBlock" }],
+      },
+      {
+        name: "a config built per command by an arrow with a statement body cannot be read and is reported",
+        code: `import { defineConfig } from "vite-plus";\nexport default defineConfig((env) => {\n  return { mode: env.mode, test: ${RESET_AND_RESTORED} };\n});\n`,
         filename: "vite.config.ts",
         errors: [{ messageId: "missingTestBlock" }],
       },

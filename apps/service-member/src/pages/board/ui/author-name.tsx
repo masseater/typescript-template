@@ -1,9 +1,9 @@
 import { TextLink } from "@repo/ui";
 
+import { unavailableAuthor } from "#pages/board/model/author-labels.ts";
+
 import type { BoardThreadSummary } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
-
-const unavailableAuthor = "利用できない利用者";
 
 function AuthorName({
   author,
@@ -28,4 +28,4 @@ function AuthorName({
   );
 }
 
-export { AuthorName, unavailableAuthor };
+export { AuthorName };

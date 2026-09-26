@@ -1,4 +1,5 @@
 import { activeGoogleAnalyticsMeasurementId, readEnvironment } from "@repo/config";
+import { logAt } from "@repo/observability";
 import { Process, consumeJobBatch } from "@repo/runtime/jobs";
 import { appServerEntry, withQueue } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
@@ -10,15 +11,12 @@ import { UserInbox } from "#shared/inbox/index.ts";
 import { purgeWithdrawnWithPhotos } from "#shared/photo/index.ts";
 import { reporting, runtime } from "#shared/server-api/index.ts";
 
-const googleAnalytics =
-  Effect.runSync(
-    readEnvironment(env).pipe(
-      Effect.map(
-        (configuration) => activeGoogleAnalyticsMeasurementId(configuration) !== undefined,
-      ),
-      Effect.orDie,
-    ),
-  ) === true;
+const googleAnalytics = Effect.runSync(
+  readEnvironment(env).pipe(
+    Effect.map((configuration) => activeGoogleAnalyticsMeasurementId(configuration) !== undefined),
+    Effect.orDie,
+  ),
+);
 
 const startHandler = {
   fetch(request: Request): Promise<Response> {
@@ -42,9 +40,13 @@ export default {
       runtime.runPromise(
         Effect.gen(function* purgeWithdrawnMembers() {
           const purged = yield* purgeWithdrawnWithPhotos(DateTime.toDate(yield* DateTime.now));
-          yield* Effect.log(
-            `member_leave.purged count=${purged.memberIds.length} retained=${purged.retainedMemberIds.length}`,
-          );
+          yield* logAt("Info", {
+            attributes: {
+              count: purged.memberIds.length,
+              retained: purged.retainedMemberIds.length,
+            },
+            eventName: "member_leave.purged",
+          });
         }),
       ),
     );

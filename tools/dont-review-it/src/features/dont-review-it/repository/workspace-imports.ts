@@ -5,15 +5,8 @@ import { cruise, format } from "dependency-cruiser";
 import { Console, Effect, Path, Schema } from "effect";
 
 import configuration from "./dependency-cruiser.ts";
+import { OutsideRepository } from "./outside-repository.ts";
 import { repositoryRoot } from "./repository-root.ts";
-
-class OutsideRepository extends Schema.TaggedError<OutsideRepository>()("OutsideRepository", {
-  cwd: Schema.String,
-}) {
-  public override get message(): string {
-    return `workspace check:imports must run inside the repository (cwd=${this.cwd})`;
-  }
-}
 
 class CruiseFailed extends Schema.TaggedError<CruiseFailed>()("CruiseFailed", {
   cause: Schema.Defect(),

@@ -68,7 +68,7 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
   );
   const api = apiRoutes(runtime, reporting);
   const app = createApi("").all("/mcp", ...api.raw(serveMcp, unavailable));
-  const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
+  const fetchMcp = (request: Request): Effect.Effect<Response> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
   return { fetchMcp, stop: Effect.promise(() => runtime.dispose()) };
 }

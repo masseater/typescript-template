@@ -24,7 +24,7 @@ import type {
   Service,
 } from "@cloudflare/workers-types";
 import type { Application, CapabilityOf } from "@repo/config";
-import type { Assets, Flagship, InferEnv } from "alchemy/Cloudflare";
+import type { Assets, InferEnv } from "alchemy/Cloudflare";
 import type { CapabilityEnv, SharedEnv, UnionToIntersection } from "./bindings.ts";
 
 type AppBindings<App extends Application> = InferEnv<
@@ -38,7 +38,9 @@ type AppBindings<App extends Application> = InferEnv<
 const release = "0".repeat(16);
 const settings = verificationSettings;
 
-function binding<Binding>(value: object): Binding {
+function binding<Binding extends object>(
+  value: Readonly<Partial<Record<keyof Binding, unknown>>>,
+): Binding {
   return value as Binding;
 }
 
@@ -55,7 +57,7 @@ const sharedBindings = {
   EMAIL: binding<SendEmail>({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
   EMAIL_FROM: settings.mailFrom,
   FLAGSHIP_ACCOUNT_ID: settings.accountId,
-  FLAGS: binding<Flagship.App>({
+  FLAGS: binding<AppBindings<"service-admin">["FLAGS"]>({
     appId: "flagship-app-id",
     getBooleanValue: (): Promise<boolean> => Promise.resolve(false),
     getNumberValue: (): Promise<number> => Promise.resolve(0),
@@ -80,8 +82,10 @@ const userBindings: AppBindings<"service-member"> = {
     get: (): Promise<null> => Promise.resolve(null),
     put: (): Promise<null> => Promise.resolve(null),
   }),
-  JOBS: binding({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
-  PROCESS: binding({
+  JOBS: binding<AppBindings<"service-member">["JOBS"]>({
+    send: (): Promise<undefined> => Promise.resolve(undefined),
+  }),
+  PROCESS: binding<AppBindings<"service-member">["PROCESS"]>({
     create: (): Promise<{ id: string }> => Promise.resolve({ id: "job" }),
     get: (): Promise<{ status: () => Promise<{ status: string }> }> =>
       Promise.resolve({

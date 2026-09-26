@@ -29,6 +29,7 @@ import { memberApi } from "./member-api.ts";
 import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 import type { BrowserClient } from "@repo/auth/testing";
+import type { HttpHandler } from "msw";
 
 type App = ReturnType<typeof billingApp>;
 
@@ -45,8 +46,6 @@ const trialPeriodDays = 14;
 const invoiceId = "in_test_member";
 const invoiceAmount = 980;
 const hostedInvoiceUrl = "https://invoice.stripe.com/i/test_invoice";
-const checkoutForms: URLSearchParams[] = [];
-const invoiceKeys: string[] = [];
 const millisecondsPerSecond = 1000;
 const monthInSeconds = 30 * 24 * 60 * 60;
 const hexRadix = 16;
@@ -74,6 +73,12 @@ function billingApp() {
   });
   const api = apiRoutes(runtime, reporting);
   return memberApi(api);
+}
+
+function send(app: App, path: string, init?: RequestInit): Effect.Effect<Response> {
+  return Effect.promise(() =>
+    Promise.resolve(app.fetch(new Request(`${origin}${apiRoot}${path}`, init))),
+  );
 }
 
 function call(
@@ -137,17 +142,11 @@ function deliver(
       sign.secret ?? webhookSecret,
       sign.timestamp ?? nowSeconds(),
     );
-    return yield* Effect.promise(() =>
-      Promise.resolve(
-        app.fetch(
-          new Request(`${origin}${apiRoot}/billing/webhook`, {
-            body: payload,
-            headers: { "content-type": "application/json", "stripe-signature": header },
-            method: "POST",
-          }),
-        ),
-      ),
-    );
+    return yield* send(app, "/billing/webhook", {
+      body: payload,
+      headers: { "content-type": "application/json", "stripe-signature": header },
+      method: "POST",
+    });
   }).pipe(Effect.orDie);
 }
 
@@ -276,7 +275,11 @@ function quoteEvent(
   };
 }
 
-const stripeHandlers = [
+type StripeRecord = Readonly<{ checkoutForms: URLSearchParams[]; invoiceKeys: string[] }>;
+
+const stripeHandlers = (
+  recorded: StripeRecord = { checkoutForms: [], invoiceKeys: [] },
+): readonly HttpHandler[] => [
   http.get(`${stripeApi}/subscriptions/${quoteSubscriptionId}`, () =>
     HttpResponse.json({
       cancel_at_period_end: false,
@@ -289,8 +292,10 @@ const stripeHandlers = [
   ),
   http.post(`${stripeApi}/checkout/sessions`, ({ request }) =>
     request.formData().then((form) => {
-      checkoutForms.push(
-        new URLSearchParams([...form].map(([key, value]) => [key, String(value)])),
+      recorded.checkoutForms.push(
+        new URLSearchParams(
+          [...form].flatMap(([key, value]) => (typeof value === "string" ? [[key, value]] : [])),
+        ),
       );
       return request.headers.get("stripe-version") === stripeApiVersion &&
         form.get("mode") === "subscription" &&
@@ -310,7 +315,7 @@ const stripeHandlers = [
   ),
   http.post(`${stripeApi}/invoiceitems`, ({ request }) =>
     request.formData().then((form) => {
-      invoiceKeys.push(String(request.headers.get("idempotency-key")));
+      recorded.invoiceKeys.push(String(request.headers.get("idempotency-key")));
       return form.get("customer") === customerId
         ? HttpResponse.json({ id: "ii_test_member" })
         : HttpResponse.json({ error: { message: "unknown customer" } }, { status: 400 });
@@ -318,7 +323,7 @@ const stripeHandlers = [
   ),
   http.post(`${stripeApi}/invoices`, ({ request }) =>
     request.formData().then((form) => {
-      invoiceKeys.push(String(request.headers.get("idempotency-key")));
+      recorded.invoiceKeys.push(String(request.headers.get("idempotency-key")));
       return form.get("collection_method") === "send_invoice"
         ? HttpResponse.json({
             amount_due: invoiceAmount,
@@ -376,7 +381,7 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         const refused = yield* call(app, client, "/members?page=1");
@@ -419,10 +424,10 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        const recorded: StripeRecord = { checkoutForms: [], invoiceKeys: [] };
+        (yield* MockNetwork).use(...stripeHandlers(recorded));
         const app = billingApp();
         const { client, id } = yield* member(app);
-        checkoutForms.length = 0;
         yield* call(app, client, "/billing/checkout", {});
         yield* deliver(app, checkoutCompleted(id));
         yield* deliver(
@@ -430,7 +435,7 @@ describe("billing api", () => {
           subscriptionEvent("customer.subscription.deleted", "canceled", "evt_gone"),
         );
         yield* call(app, client, "/billing/checkout", {});
-        return checkoutForms.map((form) => Object.fromEntries(form));
+        return recorded.checkoutForms.map((form) => Object.fromEntries(form));
       }),
     ).then(([first, second]) => {
       expect(first).toMatchObject({
@@ -454,7 +459,7 @@ describe("billing api", () => {
   it("restores a lapsed subscription once Stripe reports the invoice as paid", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
@@ -508,15 +513,15 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        const recorded: StripeRecord = { checkoutForms: [], invoiceKeys: [] };
+        (yield* MockNetwork).use(...stripeHandlers(recorded));
         const app = billingApp();
         const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
-        invoiceKeys.length = 0;
         const first = yield* json(yield* call(app, client, "/billing/invoice-payment", {}));
         const repeated = yield* json(yield* call(app, client, "/billing/invoice-payment", {}));
         const listed = yield* json(yield* call(app, client, "/billing/invoices"));
-        return { first, keys: [...invoiceKeys], listed, repeated };
+        return { first, keys: [...recorded.invoiceKeys], listed, repeated };
       }),
     ).then((result) => {
       expect(result.first).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
@@ -547,7 +552,7 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
@@ -625,7 +630,7 @@ describe("billing api", () => {
   it("turns an accepted sales quote into the member's paid plan, billed by invoice", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         yield* deliver(
@@ -688,7 +693,7 @@ describe("billing api", () => {
   it("records a canceled quote and ignores one that names no member", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         const unowned = yield* json(
@@ -733,7 +738,7 @@ describe("billing api", () => {
   it("adds up every credit note on an invoice instead of keeping only the last one", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
@@ -768,7 +773,7 @@ describe("billing api", () => {
   it("ignores a credit note and a refund for an invoice the ledger never recorded", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const credited = yield* json(
           yield* deliver(
@@ -793,7 +798,7 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
@@ -834,7 +839,7 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client, id } = yield* member(app);
         const forged = yield* deliver(app, checkoutCompleted(id), { secret: "whsec_forged" });
@@ -842,17 +847,11 @@ describe("billing api", () => {
           timestamp: nowSeconds() - 2 * 60 * 60,
         });
         const payload = yield* Schema.encodeEffect(JsonUnknown)(checkoutCompleted(id));
-        const unsigned = yield* Effect.promise(() =>
-          Promise.resolve(
-            app.fetch(
-              new Request(`${origin}${apiRoot}/billing/webhook`, {
-                body: payload,
-                headers: { "content-type": "application/json" },
-                method: "POST",
-              }),
-            ),
-          ),
-        );
+        const unsigned = yield* send(app, "/billing/webhook", {
+          body: payload,
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        });
         const stillRefused = yield* call(app, client, "/members?page=1");
         return {
           forged: forged.status,
@@ -873,14 +872,12 @@ describe("billing api", () => {
   }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
-        (yield* MockNetwork).use(...stripeHandlers);
+        (yield* MockNetwork).use(...stripeHandlers());
         const app = billingApp();
         const { client } = yield* member(app);
         const portal = yield* call(app, client, "/billing/portal", {});
         const offer = yield* json(yield* call(app, client, "/billing/offer"));
-        const visitor = yield* Effect.promise(() =>
-          Promise.resolve(app.fetch(new Request(`${origin}${apiRoot}/billing/offer`))),
-        );
+        const visitor = yield* send(app, "/billing/offer");
         return { offer, portal: portal.status, visitor: visitor.status };
       }),
     ).then((result) => {

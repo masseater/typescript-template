@@ -1,8 +1,9 @@
 import { REPORT_SUBJECT } from "@repo/config";
 import { Avatar, formatWarekiDateTime } from "@repo/ui";
 
+import { unavailableAuthor } from "#pages/board/model/author-labels.ts";
 import { ReportControl } from "#shared/ui/index.ts";
-import { AuthorName, unavailableAuthor } from "./author-name.tsx";
+import { AuthorName } from "./author-name.tsx";
 
 import type { Thread } from "#pages/board/api/board.ts";
 import type { ReactElement } from "react";

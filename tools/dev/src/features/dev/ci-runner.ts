@@ -63,8 +63,10 @@ function plistDocument(
 ): Effect.Effect<string, never, Path.Path> {
   return Effect.gen(function* plistDocumentProgram() {
     const path = yield* Path.Path;
-    const arguments_ = yield* programArguments(service.root);
-    const program = arguments_.map((argument) => `      <string>${argument}</string>`).join("\n");
+    const launchArguments = yield* programArguments(service.root);
+    const program = launchArguments
+      .map((argument) => `      <string>${argument}</string>`)
+      .join("\n");
     const logDirectory = path.join(home, "Library", "Logs", service.label);
     return `${plistOpening}
     <key>Label</key>

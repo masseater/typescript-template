@@ -3,8 +3,9 @@ import { Button, FailureStatus, FormColumn, localState, useAction } from "@repo/
 import { getRouteApi } from "@tanstack/react-router";
 
 import { submitDecision } from "#pages/account/consent/api/consent.ts";
+import { requestedToolScopes, useChosenScopes } from "#pages/account/consent/model/mcp-scopes.ts";
 import { serviceName } from "#shared/config/index.ts";
-import { McpScopeFields, requestedToolScopes, useChosenScopes } from "./mcp-scope-fields.tsx";
+import { McpScopeFields } from "./mcp-scope-fields.tsx";
 
 import type { ReactElement } from "react";
 const consentRoute = getRouteApi("/consent");
@@ -55,7 +56,7 @@ function ConsentActions({
   const selected = chosen ?? requested;
   function decide(accept: boolean): void {
     const scopes =
-      accept && search.scope?.split(" ").includes(MEMBER_MCP_SCOPE.offlineAccess)
+      accept && (search.scope ?? "").split(" ").includes(MEMBER_MCP_SCOPE.offlineAccess)
         ? [...selected, MEMBER_MCP_SCOPE.offlineAccess]
         : selected;
     action.run(() => submitDecision(accept, scopes).then(() => setDecided(true)));

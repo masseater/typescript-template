@@ -31,16 +31,13 @@ function renderDashboardFrame(defaultCollapsed: boolean): Promise<string> {
   return Effect.runPromise(
     Effect.gen(function* loadFrame() {
       const rootRoute = createRootRoute({
-        component: () =>
-          createElement(AppProviders, {
-            children: createElement(DashboardFrame, {
-              children: createElement("p", null, "本文"),
-              defaultCollapsed,
-              email: "ada@example.com",
-              name: "Ada",
-            }),
-            fieldValidationMessages: japaneseFieldValidationMessages,
-          }),
+        component: () => (
+          <AppProviders fieldValidationMessages={japaneseFieldValidationMessages}>
+            <DashboardFrame defaultCollapsed={defaultCollapsed} email="ada@example.com" name="Ada">
+              <p>本文</p>
+            </DashboardFrame>
+          </AppProviders>
+        ),
       });
       const router = createRouter({
         history: createMemoryHistory({ initialEntries: ["/inquiries"] }),

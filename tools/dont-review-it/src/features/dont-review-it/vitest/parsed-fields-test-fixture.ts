@@ -36,14 +36,14 @@ const parsedFieldsOf = (hostMessage: HostMessage) =>
 
 expect.extend({
   toHaveParsedFields(received: HostMessage, expectedFields: ParsedFields) {
-    const matcher = this;
+    const { equals, utils } = this;
     return Effect.runPromise(
       Effect.gen(function* matchParsedFields() {
         const receivedFields = yield* parsedFieldsOf(received);
         return {
-          pass: matcher.equals(receivedFields, expectedFields),
+          pass: equals(receivedFields, expectedFields),
           message: () =>
-            `expected parsed fields ${matcher.utils.printExpected(expectedFields)}, received ${matcher.utils.printReceived(receivedFields)}`,
+            `expected parsed fields ${utils.printExpected(expectedFields)}, received ${utils.printReceived(receivedFields)}`,
           actual: receivedFields,
           expected: expectedFields,
         };

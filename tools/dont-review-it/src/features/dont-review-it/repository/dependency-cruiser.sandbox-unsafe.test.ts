@@ -25,11 +25,6 @@ const reportedRules = (
   return [...reported].toSorted();
 };
 
-class CruiseReportedText extends Schema.TaggedError<CruiseReportedText>()(
-  "CruiseReportedText",
-  {},
-) {}
-
 class CruiseFailed extends Schema.TaggedError<CruiseFailed>()("CruiseFailed", {
   cause: Schema.Defect(),
 }) {}
@@ -37,7 +32,7 @@ class CruiseFailed extends Schema.TaggedError<CruiseFailed>()("CruiseFailed", {
 const cruiseModules = (
   directories: readonly string[],
   baseDir?: string,
-): Effect.Effect<ICruiseResult, CruiseFailed | CruiseReportedText> =>
+): Effect.Effect<ICruiseResult, CruiseFailed> =>
   Effect.gen(function* cruiseModules() {
     const { output } = yield* Effect.tryPromise({
       catch: (cause) => new CruiseFailed({ cause }),
@@ -54,7 +49,7 @@ const cruiseModules = (
         ),
     });
     if (typeof output === "string") {
-      return yield* new CruiseReportedText();
+      return yield* new CruiseFailed({ cause: output });
     }
     return output;
   });

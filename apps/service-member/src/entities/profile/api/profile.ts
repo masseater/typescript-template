@@ -14,7 +14,7 @@ function loadProfile(): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.profile.get().then((response) => {
       const profile = apiDataOrNoneFor(absent.notFound)(ProfileView, response);
-      if (profile == null) {
+      if (profile === undefined) {
         throw notFound();
       }
       return profile as Profile;

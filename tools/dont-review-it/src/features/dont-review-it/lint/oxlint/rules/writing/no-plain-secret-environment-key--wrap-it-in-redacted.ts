@@ -31,7 +31,7 @@ const namespaceMemberOf = (
   callee: ESTree.Expression,
 ): { readonly namespace: string; readonly member: string } | null => {
   const member = staticMemberOf(callee);
-  if (member === null || member.object.type !== "Identifier") return null;
+  if (member?.object.type !== "Identifier") return null;
   return { namespace: member.object.name, member: member.name };
 };
 

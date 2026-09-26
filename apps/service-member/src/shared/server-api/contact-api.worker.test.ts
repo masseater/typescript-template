@@ -16,6 +16,12 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
+        send(mail: {
+          readonly from: string;
+          readonly subject: string;
+          readonly text: string;
+          readonly to: readonly string[];
+        }): Promise<void>;
         taken(): Promise<
           ReadonlyArray<{
             readonly from: string;
@@ -63,8 +69,9 @@ function contactApp() {
   return createApi(apiRoot).use(contactApi(apiRoutes(runtime, reporting)));
 }
 
-function postContact(
+function postTo(
   app: ReturnType<typeof contactApp>,
+  path: string,
   body: unknown,
   network: Readonly<Record<string, string>> = {},
 ): Effect.Effect<Response> {
@@ -73,7 +80,7 @@ function postContact(
     return yield* Effect.promise(() =>
       Promise.resolve(
         app.fetch(
-          new Request(`${fixtureOrigin}${apiRoot}/contact`, {
+          new Request(`${fixtureOrigin}${apiRoot}${path}`, {
             body: encoded,
             headers: {
               "content-type": "application/json",
@@ -93,7 +100,7 @@ it.effect("delivers a logged-out contact submission to the ops mailbox", () =>
     yield* migrated;
     yield* drainMailbox();
     const app = contactApp();
-    const response = yield* postContact(app, submission);
+    const response = yield* postTo(app, "/contact", submission);
     assert.strictEqual(response.status, httpStatus.ok);
     const [delivered] = yield* drainMailbox();
     assert.isDefined(delivered);
@@ -113,7 +120,7 @@ it.effect("rejects further contact submissions after the rate limit is spent", (
     const spender = { "cf-connecting-ip": "203.0.113.40" };
     const statuses: number[] = [];
     for (let attempt = 0; attempt < contactRateLimitMax + 1; attempt += 1) {
-      statuses.push((yield* postContact(app, submission, spender)).status);
+      statuses.push((yield* postTo(app, "/contact", submission, spender)).status);
     }
     assert.deepStrictEqual(
       statuses.slice(0, contactRateLimitMax),
@@ -121,7 +128,7 @@ it.effect("rejects further contact submissions after the rate limit is spent", (
     );
     assert.strictEqual(statuses.at(-1), httpStatus.tooManyRequests);
     assert.strictEqual(
-      (yield* postContact(app, submission, { "cf-connecting-ip": "203.0.113.41" })).status,
+      (yield* postTo(app, "/contact", submission, { "cf-connecting-ip": "203.0.113.41" })).status,
       httpStatus.ok,
     );
   }),

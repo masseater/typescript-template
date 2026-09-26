@@ -1,11 +1,11 @@
 "use client";
 
 import { localState } from "@repo/ui";
-import Link from "fumadocs-core/link";
+import { Link } from "fumadocs-core/link";
 import { useId } from "react";
 
+import { useGlossaryTerms } from "#pages/docs/model/glossary-terms.ts";
 import { findGlossaryTerm } from "#shared/glossary-term/index.ts";
-import { useGlossaryTerms } from "./glossary-terms-provider.tsx";
 
 import type { ReactElement } from "react";
 
@@ -59,7 +59,7 @@ function TermLink({ label, term }: Readonly<{ label?: string; term: string }>): 
         <span
           id={tooltipId}
           role="tooltip"
-          className="border-fd-border bg-fd-popover text-fd-popover-foreground absolute bottom-[calc(100%+0.4rem)] left-1/2 z-20 w-64 -translate-x-1/2 rounded-md border p-3 text-left text-sm shadow-md"
+          className="border-fd-border bg-fd-popover text-fd-popover-foreground absolute bottom-full left-1/2 z-20 mb-1.5 w-64 -translate-x-1/2 rounded-md border p-3 text-left text-sm shadow-md"
         >
           <span className="text-fd-foreground block font-medium">{entry.name}</span>
           <span className="text-fd-muted-foreground mt-1 block">{entry.description}</span>

@@ -1,7 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
 import { loadStyleClassIndex } from "./builder.ts";
@@ -73,45 +73,6 @@ layer(NodeServices.layer)("loadStyleClassIndex", (it) => {
     );
   });
 
-  describe("a style sheet that vanished after the listing", () => {
-    const fixture = Effect.gen(function* index() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const paths = yield* Path.Path;
-      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "style-classes-builder-",
-      });
-
-      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
-      yield* filesystem.writeFileString(
-        paths.join(repositoryRoot, "src", "style.css"),
-        ORPHAN_STYLE_SHEET,
-      );
-      yield* filesystem.writeFileString(
-        paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
-        ".ghost {\n  color: red;\n}\n",
-      );
-      const listedSources = yield* Effect.promise(() =>
-        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
-          "../canonical-values/source-files.ts",
-        ),
-      );
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a style sheet is still there when the boundary reads it is settled between the listing and the read, both of which happen inside the boundary this spec replaces
-      vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
-      );
-      return loadStyleClassIndex({ repositoryRoot });
-    });
-
-    it.effect("is left out of the index, and the style sheets beside it stay in", () =>
-      Effect.gen(function* program() {
-        const index = yield* fixture;
-        expect(index).toStrictEqual({
-          unusedByStyleSheet: new Map([["src/style.css", ORPHAN_SITES]]),
-        });
-      }),
-    );
-  });
-
   describe("a directory that holds no file at all", () => {
     const fixture = Effect.gen(function* index() {
       const filesystem = yield* FileSystem.FileSystem;
@@ -152,5 +113,46 @@ layer(NodeServices.layer)("loadStyleClassIndex", (it) => {
         expect(sameIndexOnASecondAsk).toBe(true);
       }),
     );
+  });
+});
+
+describe("loadStyleClassIndex", () => {
+  describe("a style sheet that vanished after the listing", () => {
+    const it = test.extend("index", () =>
+      Effect.runPromise(
+        Effect.gen(function* index() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "style-classes-builder-",
+          });
+
+          yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(repositoryRoot, "src", "style.css"),
+            ORPHAN_STYLE_SHEET,
+          );
+          yield* filesystem.writeFileString(
+            paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
+            ".ghost {\n  color: red;\n}\n",
+          );
+          const listedSources = yield* Effect.promise(() =>
+            vi.importActual<typeof import("../canonical-values/source-files.ts")>(
+              "../canonical-values/source-files.ts",
+            ),
+          );
+          // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a style sheet is still there when the boundary reads it is settled between the listing and the read, both of which happen inside the boundary this spec replaces
+          vi.mocked(readTextFile).mockImplementation((path) =>
+            path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
+          );
+          return loadStyleClassIndex({ repositoryRoot });
+        }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+      ));
+
+    it("is left out of the index, and the style sheets beside it stay in", ({ index }) => {
+      expect(index).toStrictEqual({
+        unusedByStyleSheet: new Map([["src/style.css", ORPHAN_SITES]]),
+      });
+    });
   });
 });

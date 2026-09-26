@@ -1,7 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
 import { loadRepositoryValueDeclarationIndex } from "./builder.ts";
@@ -242,66 +242,6 @@ layer(NodeServices.layer)("loadRepositoryValueDeclarationIndex", (it) => {
     );
   });
 
-  describe("a repository holding a source that went away after the listing", () => {
-    const fixture = Effect.gen(function* indexOfASourceBesideAVanishedSource() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const paths = yield* Path.Path;
-      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "value-declarations-builder-",
-      });
-
-      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
-      yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", "a.ts"), SEED);
-      yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", REMOVED_FILE_NAME), SEED);
-      const listedSources = yield* Effect.promise(() =>
-        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
-          "../canonical-values/source-files.ts",
-        ),
-      );
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still there by the time it is read is settled inside the boundary this spec replaces, and both the listing and the read happen inside one synchronous call
-      vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(REMOVED_FILE_NAME) ? null : listedSources.readTextFile(path),
-      );
-      return loadRepositoryValueDeclarationIndex({ repositoryRoot });
-    });
-
-    it.effect("leaves a source that went away after the listing out of the index", () =>
-      Effect.gen(function* program() {
-        const indexOfASourceBesideAVanishedSource = yield* fixture;
-        expect(indexOfASourceBesideAVanishedSource).toStrictEqual({
-          sitesByName: new Map([
-            [
-              "seed",
-              [
-                {
-                  name: "seed",
-                  line: 1,
-                  exported: true,
-                  fingerprint: SEED_FINGERPRINT,
-                  relativePath: "src/a.ts",
-                },
-              ],
-            ],
-          ]),
-          sitesByPath: new Map([
-            [
-              "src/a.ts",
-              [
-                {
-                  name: "seed",
-                  line: 1,
-                  exported: true,
-                  fingerprint: SEED_FINGERPRINT,
-                  relativePath: "src/a.ts",
-                },
-              ],
-            ],
-          ]),
-        });
-      }),
-    );
-  });
-
   describe("a repository asked for its index a second time", () => {
     const fixtures = Effect.gen(function* fixtures() {
       const repositoryRootHoldingOneSource = yield* Effect.gen(
@@ -333,5 +273,72 @@ layer(NodeServices.layer)("loadRepositoryValueDeclarationIndex", (it) => {
         expect(indexBuiltAgain).toBe(indexBuiltFirst);
       }),
     );
+  });
+});
+
+describe("loadRepositoryValueDeclarationIndex", () => {
+  describe("a repository holding a source that went away after the listing", () => {
+    const it = test.extend("indexOfASourceBesideAVanishedSource", () =>
+      Effect.runPromise(
+        Effect.gen(function* indexOfASourceBesideAVanishedSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "value-declarations-builder-",
+          });
+
+          yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+          yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", "a.ts"), SEED);
+          yield* filesystem.writeFileString(
+            paths.join(repositoryRoot, "src", REMOVED_FILE_NAME),
+            SEED,
+          );
+          const listedSources = yield* Effect.promise(() =>
+            vi.importActual<typeof import("../canonical-values/source-files.ts")>(
+              "../canonical-values/source-files.ts",
+            ),
+          );
+          // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still there by the time it is read is settled inside the boundary this spec replaces, and both the listing and the read happen inside one synchronous call
+          vi.mocked(readTextFile).mockImplementation((path) =>
+            path.endsWith(REMOVED_FILE_NAME) ? null : listedSources.readTextFile(path),
+          );
+          return loadRepositoryValueDeclarationIndex({ repositoryRoot });
+        }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+      ));
+
+    it("leaves a source that went away after the listing out of the index", ({
+      indexOfASourceBesideAVanishedSource,
+    }) => {
+      expect(indexOfASourceBesideAVanishedSource).toStrictEqual({
+        sitesByName: new Map([
+          [
+            "seed",
+            [
+              {
+                name: "seed",
+                line: 1,
+                exported: true,
+                fingerprint: SEED_FINGERPRINT,
+                relativePath: "src/a.ts",
+              },
+            ],
+          ],
+        ]),
+        sitesByPath: new Map([
+          [
+            "src/a.ts",
+            [
+              {
+                name: "seed",
+                line: 1,
+                exported: true,
+                fingerprint: SEED_FINGERPRINT,
+                relativePath: "src/a.ts",
+              },
+            ],
+          ],
+        ]),
+      });
+    });
   });
 });

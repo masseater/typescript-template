@@ -188,6 +188,7 @@ describe("effect diagnostics coverage", () => {
         }
         return Array.isArray(dependsOn) &&
           dependsOn.length === 1 &&
+          typeof dependsOn[0] === "string" &&
           ["compile:paraglide", "typescript-template#compile:paraglide"].includes(dependsOn[0])
           ? []
           : [dependsOn];

@@ -3,6 +3,7 @@ import { ChildProcess } from "effect/unstable/process";
 import { vi } from "vite-plus/test";
 
 import { capturedProcess } from "./captured-process.ts";
+import { MergeResolvedConflict } from "./merge-resolved-conflict.ts";
 
 const IDENTITY = "quality@example.test";
 
@@ -14,11 +15,6 @@ class FixtureGitFailed extends Schema.TaggedError<FixtureGitFailed>()("FixtureGi
   command: Schema.String,
   exitCode: Schema.Int,
 }) {}
-
-class MergeResolvedConflict extends Schema.TaggedError<MergeResolvedConflict>()(
-  "MergeResolvedConflict",
-  { file: Schema.String },
-) {}
 
 const gitEnvironment = (root: string) =>
   Effect.gen(function* gitEnvironment() {
@@ -90,17 +86,11 @@ const conflict = (root: string) =>
 
 const GIT_VARIABLE = "GIT_";
 
-const withoutInheritedGitEnvironment = Effect.acquireRelease(
-  Effect.sync(() => {
-    for (const name of Object.keys(process.env).filter((each) => each.startsWith(GIT_VARIABLE))) {
-      vi.stubEnv(name, undefined);
-    }
-  }),
-  () =>
-    Effect.sync(() => {
-      vi.unstubAllEnvs();
-    }),
-);
+const withoutInheritedGitEnvironment = Effect.sync(() => {
+  for (const name of Object.keys(process.env).filter((each) => each.startsWith(GIT_VARIABLE))) {
+    vi.stubEnv(name, undefined);
+  }
+});
 
 const emptyDirectory = Effect.gen(function* emptyDirectory() {
   const filesystem = yield* FileSystem.FileSystem;

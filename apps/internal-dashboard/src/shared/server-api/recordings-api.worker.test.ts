@@ -231,11 +231,11 @@ describe("recordings api", () => {
       const id = yield* uploaded(app, cookie);
       const early = yield* sendJson(app, "/recording/retry", { body: { id }, cookie });
       assert.strictEqual(early.status, httpStatus.conflict);
-      yield* Effect.provide(
-        CoreRecords.use((records) =>
+      yield* CoreRecords.pipe(
+        Effect.flatMap((records) =>
           records.failRecording({ failure: "model_rejected", recordingId: id }),
         ),
-        core,
+        Effect.provide(core),
       );
       const retried = yield* sendJson(app, "/recording/retry", { body: { id }, cookie });
       assert.strictEqual(retried.status, httpStatus.ok);
@@ -263,8 +263,8 @@ describe("recordings api", () => {
       const app = recordingsApp();
       const cookie = yield* signedIn(app, "host@example.test");
       const id = yield* uploaded(app, cookie);
-      yield* Effect.provide(
-        CoreRecords.use((records) =>
+      yield* CoreRecords.pipe(
+        Effect.flatMap((records) =>
           records.storeTranscript({
             recordingId: id,
             transcript: {
@@ -273,7 +273,7 @@ describe("recordings api", () => {
             },
           }),
         ),
-        core,
+        Effect.provide(core),
       );
       const unknown = yield* sendJson(app, "/recording/speaker", {
         body: { label: 0, personId: "missing", recordingId: id },

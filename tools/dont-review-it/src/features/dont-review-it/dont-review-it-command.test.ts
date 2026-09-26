@@ -9,80 +9,41 @@ import { standardIoTest } from "./vitest/standard-io-test.ts";
 
 const CANONICAL_VALUES_TAG = "@canonical-values";
 
+const settledExitCode = Effect.sync(() => {
+  const settled = process.exitCode;
+  process.exitCode = 0;
+  return typeof settled === "number" ? settled : 0;
+});
+
 describe("dontReviewItCommand", () => {
   describe("a repository whose annotation names the concept it declares", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/order.ts"),
+        `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, {
+          rawArgs: ["check", "--repository-root", root],
+        }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfANamedAnnotation", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfANamedAnnotation() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--repository-root", root],
-              }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfANamedAnnotation", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfANamedAnnotation", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfANamedAnnotation() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--repository-root", root],
-              }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend("theEntryCompositionCheckIsNamedOnStandardErrorForANamedAnnotation", ({ stderr }) =>
         Effect.runPromise(
-          Effect.gen(function* theEntryCompositionCheckIsNamedOnStandardErrorForANamedAnnotation() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--repository-root", root],
-              }),
-            );
-            process.exitCode = 0;
-            return stderr.text().includes("entry-composition");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
         ),
       );
 
@@ -102,119 +63,46 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a check given no repository root", () => {
-    const it = standardIoTest
-      .extend("theExitCodeWithoutARepositoryRoot", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeWithoutARepositoryRoot() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
 
-            const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            const previousWorkingDirectory = process.cwd();
-            yield* filesystem.writeFileString(paths.join(workingDirectory, "package.json"), "{}");
-            yield* Effect.acquireRelease(
-              Effect.sync(() => {
-                process.chdir(workingDirectory);
-              }),
-              () =>
-                Effect.sync(() => {
-                  process.chdir(previousWorkingDirectory);
-                }),
-            );
-            yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      const previousWorkingDirectory = process.cwd();
+      yield* filesystem.writeFileString(paths.join(workingDirectory, "package.json"), "{}");
+      yield* Effect.acquireRelease(
+        Effect.sync(() => {
+          process.chdir(workingDirectory);
+        }),
+        () =>
+          Effect.sync(() => {
+            process.chdir(previousWorkingDirectory);
+          }),
+      );
+      yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
+    const it = standardIoTest
+      .extend("theExitCodeWithoutARepositoryRoot", () => Effect.runPromise(checked))
       .extend("theMissingGuardEntryIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theMissingGuardEntryIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            const previousWorkingDirectory = process.cwd();
-            yield* filesystem.writeFileString(paths.join(workingDirectory, "package.json"), "{}");
-            yield* Effect.acquireRelease(
-              Effect.sync(() => {
-                process.chdir(workingDirectory);
-              }),
-              () =>
-                Effect.sync(() => {
-                  process.chdir(previousWorkingDirectory);
-                }),
-            );
-            yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
-            process.exitCode = 0;
-            return stdout.text().includes('required "guard" entry must not be missing');
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(
+            Effect.map(() => stdout.text().includes('required "guard" entry must not be missing')),
+          ),
         ),
       )
       .extend("theWorkspaceOfTheWorkingDirectoryIsScanned", ({ stderr }) =>
         Effect.runPromise(
-          Effect.gen(function* theWorkspaceOfTheWorkingDirectoryIsScanned() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            const previousWorkingDirectory = process.cwd();
-            yield* filesystem.writeFileString(paths.join(workingDirectory, "package.json"), "{}");
-            yield* Effect.acquireRelease(
-              Effect.sync(() => {
-                process.chdir(workingDirectory);
-              }),
-              () =>
-                Effect.sync(() => {
-                  process.chdir(previousWorkingDirectory);
-                }),
-            );
-            yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
-            process.exitCode = 0;
-            return stderr.text().includes("canonical-values");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stderr.text().includes("canonical-values"))),
         ),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorWithoutARepositoryRoot",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorWithoutARepositoryRoot() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                const previousWorkingDirectory = process.cwd();
-                yield* filesystem.writeFileString(
-                  paths.join(workingDirectory, "package.json"),
-                  "{}",
-                );
-                yield* Effect.acquireRelease(
-                  Effect.sync(() => {
-                    process.chdir(workingDirectory);
-                  }),
-                  () =>
-                    Effect.sync(() => {
-                      process.chdir(previousWorkingDirectory);
-                    }),
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, { rawArgs: ["check"] }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -242,108 +130,43 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("an annotation that names no concept in the working directory", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      const previousWorkingDirectory = process.cwd();
+      yield* filesystem.makeDirectory(paths.join(workingDirectory, "src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(workingDirectory, "src/order.ts"),
+        `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
+      );
+      yield* Effect.acquireRelease(
+        Effect.sync(() => {
+          process.chdir(workingDirectory);
+        }),
+        () =>
+          Effect.sync(() => {
+            process.chdir(previousWorkingDirectory);
+          }),
+      );
+      yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAnAnnotationInTheWorkingDirectory", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAnAnnotationInTheWorkingDirectory() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            const previousWorkingDirectory = process.cwd();
-            yield* filesystem.makeDirectory(paths.join(workingDirectory, "src"), {
-              recursive: true,
-            });
-            yield* filesystem.writeFileString(
-              paths.join(workingDirectory, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.acquireRelease(
-              Effect.sync(() => {
-                process.chdir(workingDirectory);
-              }),
-              () =>
-                Effect.sync(() => {
-                  process.chdir(previousWorkingDirectory);
-                }),
-            );
-            yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAnAnnotationInTheWorkingDirectory", () => Effect.runPromise(checked))
       .extend("theDeclarationSiteInTheWorkingDirectoryIsNamedOnStandardOutput", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theDeclarationSiteInTheWorkingDirectoryIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            const previousWorkingDirectory = process.cwd();
-            yield* filesystem.makeDirectory(paths.join(workingDirectory, "src"), {
-              recursive: true,
-            });
-            yield* filesystem.writeFileString(
-              paths.join(workingDirectory, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.acquireRelease(
-              Effect.sync(() => {
-                process.chdir(workingDirectory);
-              }),
-              () =>
-                Effect.sync(() => {
-                  process.chdir(previousWorkingDirectory);
-                }),
-            );
-            yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
-            process.exitCode = 0;
-            return stdout.text().includes("src/order.ts:1");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text().includes("src/order.ts:1")))),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForTheWorkingDirectory",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForTheWorkingDirectory() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const workingDirectory = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                const previousWorkingDirectory = process.cwd();
-                yield* filesystem.makeDirectory(paths.join(workingDirectory, "src"), {
-                  recursive: true,
-                });
-                yield* filesystem.writeFileString(
-                  paths.join(workingDirectory, "src/order.ts"),
-                  `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-                );
-                yield* Effect.acquireRelease(
-                  Effect.sync(() => {
-                    process.chdir(workingDirectory);
-                  }),
-                  () =>
-                    Effect.sync(() => {
-                      process.chdir(previousWorkingDirectory);
-                    }),
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, { rawArgs: ["check"] }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -365,78 +188,33 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a repository root glued to the flag", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/order.ts"),
+        `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", `--repository-root=${root}`] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAGluedRepositoryRoot", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAGluedRepositoryRoot() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", `--repository-root=${root}`] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAGluedRepositoryRoot", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfAGluedRepositoryRoot", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfAGluedRepositoryRoot() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", `--repository-root=${root}`] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForAGluedRepositoryRoot",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForAGluedRepositoryRoot() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const root = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "src/order.ts"),
-                  `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", `--repository-root=${root}`],
-                  }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -456,109 +234,42 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a workspace whose packages disagree on a dependency version", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        "packages:\n  - packages/*\n",
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages/web"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/site"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/web/package.json"),
+        `{"devDependencies": {"typescript": "^5.0.0"}}`,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/site/package.json"),
+        `{"devDependencies": {"typescript": "^5.5.0"}}`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAVersionDisagreement", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAVersionDisagreement() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, "pnpm-workspace.yaml"),
-              "packages:\n  - packages/*\n",
-            );
-            yield* filesystem.makeDirectory(paths.join(root, "packages/web"), { recursive: true });
-            yield* filesystem.makeDirectory(paths.join(root, "packages/site"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "packages/web/package.json"),
-              `{"devDependencies": {"typescript": "^5.0.0"}}`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "packages/site/package.json"),
-              `{"devDependencies": {"typescript": "^5.5.0"}}`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAVersionDisagreement", () => Effect.runPromise(checked))
       .extend("theWarningOfAVersionDisagreementIsNamedOnStandardOutput", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theWarningOfAVersionDisagreementIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, "pnpm-workspace.yaml"),
-              "packages:\n  - packages/*\n",
-            );
-            yield* filesystem.makeDirectory(paths.join(root, "packages/web"), { recursive: true });
-            yield* filesystem.makeDirectory(paths.join(root, "packages/site"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "packages/web/package.json"),
-              `{"devDependencies": {"typescript": "^5.0.0"}}`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "packages/site/package.json"),
-              `{"devDependencies": {"typescript": "^5.5.0"}}`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("warning: ");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text().includes("warning: ")))),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForAVersionDisagreement",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForAVersionDisagreement() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const root = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "pnpm-workspace.yaml"),
-                  "packages:\n  - packages/*\n",
-                );
-                yield* filesystem.makeDirectory(paths.join(root, "packages/web"), {
-                  recursive: true,
-                });
-                yield* filesystem.makeDirectory(paths.join(root, "packages/site"), {
-                  recursive: true,
-                });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "packages/web/package.json"),
-                  `{"devDependencies": {"typescript": "^5.0.0"}}`,
-                );
-                yield* filesystem.writeFileString(
-                  paths.join(root, "packages/site/package.json"),
-                  `{"devDependencies": {"typescript": "^5.5.0"}}`,
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--repository-root", root],
-                  }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -580,100 +291,36 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("an annotation that names no concept", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/order.ts"),
+        `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAnUnnamedAnnotation", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAnUnnamedAnnotation() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAnUnnamedAnnotation", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfAnUnnamedAnnotation", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfAnUnnamedAnnotation() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend("theDeclarationSiteOfAnUnnamedAnnotationIsNamedOnStandardOutput", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theDeclarationSiteOfAnUnnamedAnnotationIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("src/order.ts:1");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text().includes("src/order.ts:1")))),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForAnUnnamedAnnotation",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForAnUnnamedAnnotation() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const root = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "src/order.ts"),
-                  `/** ${CANONICAL_VALUES_TAG} */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--repository-root", root],
-                  }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -737,72 +384,33 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a retired annotation tag left in a JavaScript file", () => {
-    const it = standardIoTest
-      .extend("theExitCodeOfARetiredAnnotationTag", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfARetiredAnnotationTag() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
 
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "scripts"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "scripts/legacy.mjs"),
-              `/** ${RETIRED_ANNOTATION_TAGS[0]} */\nexport const LEGACY_STATUSES = ["draft"];\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "scripts"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "scripts/legacy.mjs"),
+        `/** ${RETIRED_ANNOTATION_TAGS[0]} */\nexport const LEGACY_STATUSES = ["draft"];\n`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
+    const it = standardIoTest
+      .extend("theExitCodeOfARetiredAnnotationTag", () => Effect.runPromise(checked))
       .extend("theDeclarationSiteOfARetiredAnnotationTagIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theDeclarationSiteOfARetiredAnnotationTagIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "scripts"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "scripts/legacy.mjs"),
-              `/** ${RETIRED_ANNOTATION_TAGS[0]} */\nexport const LEGACY_STATUSES = ["draft"];\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("scripts/legacy.mjs:1");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stdout.text().includes("scripts/legacy.mjs:1"))),
         ),
       )
       .extend("theRetiredTagIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theRetiredTagIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "scripts"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "scripts/legacy.mjs"),
-              `/** ${RETIRED_ANNOTATION_TAGS[0]} */\nexport const LEGACY_STATUSES = ["draft"];\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes(RETIRED_ANNOTATION_TAGS[0] ?? "");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stdout.text().includes(RETIRED_ANNOTATION_TAGS[0] ?? ""))),
         ),
       );
 
@@ -822,90 +430,37 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a concept a test file repeats", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/order.test.ts"),
+        'const FIXTURE_STATUSES = ["draft"] as const;\n',
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/order.ts"),
+        `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAConceptATestFileRepeats", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAConceptATestFileRepeats() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.test.ts"),
-              'const FIXTURE_STATUSES = ["draft"] as const;\n',
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAConceptATestFileRepeats", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfAConceptATestFileRepeats", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfAConceptATestFileRepeats() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.test.ts"),
-              'const FIXTURE_STATUSES = ["draft"] as const;\n',
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForAConceptATestFileRepeats",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForAConceptATestFileRepeats() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const root = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "src/order.test.ts"),
-                  'const FIXTURE_STATUSES = ["draft"] as const;\n',
-                );
-                yield* filesystem.writeFileString(
-                  paths.join(root, "src/order.ts"),
-                  `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft"] as const;\n`,
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--repository-root", root],
-                  }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -927,85 +482,34 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a value set that more than one concept declares", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/article.ts"),
+        `/** ${CANONICAL_VALUES_TAG} article.status */\nexport const ARTICLE_STATUSES = ["published", "draft"] as const;\n`,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/order.ts"),
+        `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfASharedValueSet", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfASharedValueSet() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/article.ts"),
-              `/** ${CANONICAL_VALUES_TAG} article.status */\nexport const ARTICLE_STATUSES = ["published", "draft"] as const;\n`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfASharedValueSet", () => Effect.runPromise(checked))
       .extend("theArticleConceptIsNamedOnStandardOutput", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theArticleConceptIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/article.ts"),
-              `/** ${CANONICAL_VALUES_TAG} article.status */\nexport const ARTICLE_STATUSES = ["published", "draft"] as const;\n`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("article.status");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text().includes("article.status")))),
       )
       .extend("theOrderConceptIsNamedOnStandardOutput", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theOrderConceptIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/article.ts"),
-              `/** ${CANONICAL_VALUES_TAG} article.status */\nexport const ARTICLE_STATUSES = ["published", "draft"] as const;\n`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/order.ts"),
-              `/** ${CANONICAL_VALUES_TAG} order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("order.status");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text().includes("order.status")))),
       );
 
     it("is warned about without failing the check", ({ theExitCodeOfASharedValueSet }) => {
@@ -1074,64 +578,27 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a repository root that is not a directory", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, {
+          rawArgs: ["check", "--repository-root", paths.join(root, "missing")],
+        }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAMissingRepositoryRoot", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAMissingRepositoryRoot() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--repository-root", paths.join(root, "missing")],
-              }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAMissingRepositoryRoot", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfAMissingRepositoryRoot", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfAMissingRepositoryRoot() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--repository-root", paths.join(root, "missing")],
-              }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend("theMissingRepositoryRootIsNamedOnStandardError", ({ stderr }) =>
-        Effect.runPromise(
-          Effect.gen(function* theMissingRepositoryRootIsNamedOnStandardError() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--repository-root", paths.join(root, "missing")],
-              }),
-            );
-            process.exitCode = 0;
-            return stderr.text().includes("missing");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stderr.text().includes("missing")))),
       );
 
     it("exits two instead of scanning nothing", ({ theExitCodeOfAMissingRepositoryRoot }) => {
@@ -1203,84 +670,35 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a repository where no body is spelled twice", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/twice.ts"),
+        "export const twice = (value: number): number => value * 2;\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/thrice.ts"),
+        "export const thrice = (value: number): number => value * 3;\n",
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfDistinctBodies", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfDistinctBodies() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/thrice.ts"),
-              "export const thrice = (value: number): number => value * 3;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfDistinctBodies", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfDistinctBodies", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfDistinctBodies() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/thrice.ts"),
-              "export const thrice = (value: number): number => value * 3;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend("theEntryCompositionCheckIsNamedOnStandardErrorForDistinctBodies", ({ stderr }) =>
         Effect.runPromise(
-          Effect.gen(function* theEntryCompositionCheckIsNamedOnStandardErrorForDistinctBodies() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/thrice.ts"),
-              "export const thrice = (value: number): number => value * 3;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stderr.text().includes("entry-composition");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
         ),
       );
 
@@ -1300,84 +718,37 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a body spelled twice", () => {
-    const it = standardIoTest
-      .extend("theExitCodeOfABodySpelledTwice", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfABodySpelledTwice() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
 
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/doubled.ts"),
-              "export const doubled = (value: number): number => value * 2;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/twice.ts"),
+        "export const twice = (value: number): number => value * 2;\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/doubled.ts"),
+        "export const doubled = (value: number): number => value * 2;\n",
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
+    const it = standardIoTest
+      .extend("theExitCodeOfABodySpelledTwice", () => Effect.runPromise(checked))
       .extend("theDoubledSiteIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theDoubledSiteIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/doubled.ts"),
-              "export const doubled = (value: number): number => value * 2;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("src/doubled.ts:1 (doubled)");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stdout.text().includes("src/doubled.ts:1 (doubled)"))),
         ),
       )
       .extend("theTwiceSiteIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theTwiceSiteIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/doubled.ts"),
-              "export const doubled = (value: number): number => value * 2;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("src/twice.ts:1 (twice)");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stdout.text().includes("src/twice.ts:1 (twice)"))),
         ),
       );
 
@@ -1395,59 +766,31 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a body a test file repeats", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/twice.ts"),
+        "export const twice = (value: number): number => value * 2;\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "src/twice.test.ts"),
+        "export const doubled = (value: number): number => value * 2;\n",
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfABodyATestFileRepeats", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfABodyATestFileRepeats() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.test.ts"),
-              "export const doubled = (value: number): number => value * 2;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfABodyATestFileRepeats", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfABodyATestFileRepeats", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfABodyATestFileRepeats() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.ts"),
-              "export const twice = (value: number): number => value * 2;\n",
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "src/twice.test.ts"),
-              "export const doubled = (value: number): number => value * 2;\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       );
 
     it("is left out of the body scan", ({ theExitCodeOfABodyATestFileRepeats }) => {
@@ -1666,108 +1009,45 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("check --write on entries it must not repair", () => {
-    const it = standardIoTest
-      .extend("theExitCodeOfAnUnrepairableEntryComposition", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAnUnrepairableEntryComposition() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
 
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, "package.json"),
-              `{ "scripts": { "guard": "throttle --timeout 1800 -- spool -- vp check" } }`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "pnpm-workspace.yaml"),
-              "packages:\n  - packages/*\n",
-            );
-            yield* filesystem.makeDirectory(paths.join(root, "packages/web"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "packages/web/package.json"),
-              `{ "scripts": { "test": "throttle -- spool -- vp test" } }`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
-              }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "package.json"),
+        `{ "scripts": { "guard": "throttle --timeout 1800 -- spool -- vp check" } }`,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        "packages:\n  - packages/*\n",
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages/web"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/web/package.json"),
+        `{ "scripts": { "test": "throttle -- spool -- vp test" } }`,
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, {
+          rawArgs: ["check", "--write", "--repository-root", root],
+        }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
+    const it = standardIoTest
+      .extend("theExitCodeOfAnUnrepairableEntryComposition", () => Effect.runPromise(checked))
       .extend("theUnrepairableManifestIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theUnrepairableManifestIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, "package.json"),
-              `{ "scripts": { "guard": "throttle --timeout 1800 -- spool -- vp check" } }`,
-            );
-            yield* filesystem.writeFileString(
-              paths.join(root, "pnpm-workspace.yaml"),
-              "packages:\n  - packages/*\n",
-            );
-            yield* filesystem.makeDirectory(paths.join(root, "packages/web"), { recursive: true });
-            yield* filesystem.writeFileString(
-              paths.join(root, "packages/web/package.json"),
-              `{ "scripts": { "test": "throttle -- spool -- vp test" } }`,
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
-              }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes("packages/web/package.json");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stdout.text().includes("packages/web/package.json"))),
         ),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForAnUnrepairableEntryComposition",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForAnUnrepairableEntryComposition() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const root = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "package.json"),
-                  `{ "scripts": { "guard": "throttle --timeout 1800 -- spool -- vp check" } }`,
-                );
-                yield* filesystem.writeFileString(
-                  paths.join(root, "pnpm-workspace.yaml"),
-                  "packages:\n  - packages/*\n",
-                );
-                yield* filesystem.makeDirectory(paths.join(root, "packages/web"), {
-                  recursive: true,
-                });
-                yield* filesystem.writeFileString(
-                  paths.join(root, "packages/web/package.json"),
-                  `{ "scripts": { "test": "throttle -- spool -- vp test" } }`,
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--write", "--repository-root", root],
-                  }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 
@@ -1791,62 +1071,31 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a manifest that exists but does not parse", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfAnUnparsableManifest", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfAnUnparsableManifest() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfAnUnparsableManifest", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfAnUnparsableManifest", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfAnUnparsableManifest() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend("theUnparsableManifestIsNamedOnStandardError", ({ stderr }) =>
         Effect.runPromise(
-          Effect.gen(function* theUnparsableManifestIsNamedOnStandardError() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stderr
-              .text()
-              .includes("package.json exists but does not parse as a JSON object");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(
+            Effect.map(() =>
+              stderr.text().includes("package.json exists but does not parse as a JSON object"),
+            ),
+          ),
         ),
       );
 
@@ -1866,48 +1115,30 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("check --write on a manifest that exists but does not parse", () => {
-    const it = standardIoTest
-      .extend("theExitCodeOfWritingToAnUnparsableManifest", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfWritingToAnUnparsableManifest() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
 
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
-              }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, {
+          rawArgs: ["check", "--write", "--repository-root", root],
+        }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
+    const it = standardIoTest
+      .extend("theExitCodeOfWritingToAnUnparsableManifest", () => Effect.runPromise(checked))
       .extend("theUnparsableManifestIsNamedOnStandardErrorWhileWriting", ({ stderr }) =>
         Effect.runPromise(
-          Effect.gen(function* theUnparsableManifestIsNamedOnStandardErrorWhileWriting() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "package.json"), "{ oops");
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, {
-                rawArgs: ["check", "--write", "--repository-root", root],
-              }),
-            );
-            process.exitCode = 0;
-            return stderr
-              .text()
-              .includes("package.json exists but does not parse as a JSON object");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(
+            Effect.map(() =>
+              stderr.text().includes("package.json exists but does not parse as a JSON object"),
+            ),
+          ),
         ),
       );
 
@@ -1923,54 +1154,30 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a workflow definition that narrows its own start", () => {
-    const it = standardIoTest
-      .extend("theExitCodeOfANarrowedWorkflowStart", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfANarrowedWorkflowStart() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
 
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
-              recursive: true,
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, ".github/workflows/ci.yml"),
-              "on:\n  pull_request:\n    paths: [src/**]\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, ".github/workflows/ci.yml"),
+        "on:\n  pull_request:\n    paths: [src/**]\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
+    const it = standardIoTest
+      .extend("theExitCodeOfANarrowedWorkflowStart", () => Effect.runPromise(checked))
       .extend("theNarrowedWorkflowStartIsNamedOnStandardOutput", ({ stdout }) =>
         Effect.runPromise(
-          Effect.gen(function* theNarrowedWorkflowStartIsNamedOnStandardOutput() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
-              recursive: true,
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, ".github/workflows/ci.yml"),
-              "on:\n  pull_request:\n    paths: [src/**]\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text().includes(".github/workflows/ci.yml:3");
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+          checked.pipe(Effect.map(() => stdout.text().includes(".github/workflows/ci.yml:3"))),
         ),
       );
 
@@ -1986,87 +1193,36 @@ describe("dontReviewItCommand", () => {
   });
 
   describe("a workflow definition that keeps every discipline", () => {
+    const checked = Effect.gen(function* checked() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-cli-",
+      });
+      yield* filesystem.writeFileString(paths.join(root, "renovate.json"), "{}\n");
+      yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, ".github/workflows/ci.yml"),
+        "name: CI\non:\n  pull_request:\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
+      );
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
+      );
+    }).pipe(Effect.andThen(settledExitCode), Effect.scoped, Effect.provide(NodeServices.layer));
+
     const it = standardIoTest
-      .extend("theExitCodeOfADisciplinedWorkflow", () =>
-        Effect.runPromise(
-          Effect.gen(function* theExitCodeOfADisciplinedWorkflow() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "renovate.json"), "{}\n");
-            yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
-              recursive: true,
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, ".github/workflows/ci.yml"),
-              "name: CI\non:\n  pull_request:\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            const settled = process.exitCode;
-            process.exitCode = 0;
-            return typeof settled === "number" ? settled : 0;
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
-      )
+      .extend("theExitCodeOfADisciplinedWorkflow", () => Effect.runPromise(checked))
       .extend("theStandardOutputOfADisciplinedWorkflow", ({ stdout }) =>
-        Effect.runPromise(
-          Effect.gen(function* theStandardOutputOfADisciplinedWorkflow() {
-            const filesystem = yield* FileSystem.FileSystem;
-            const paths = yield* Path.Path;
-
-            const root = yield* filesystem.makeTempDirectoryScoped({
-              prefix: "dont-review-it-cli-",
-            });
-            yield* filesystem.writeFileString(paths.join(root, "renovate.json"), "{}\n");
-            yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
-              recursive: true,
-            });
-            yield* filesystem.writeFileString(
-              paths.join(root, ".github/workflows/ci.yml"),
-              "name: CI\non:\n  pull_request:\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
-            );
-            yield* Effect.promise(() =>
-              runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
-            );
-            process.exitCode = 0;
-            return stdout.text();
-          }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-        ),
+        Effect.runPromise(checked.pipe(Effect.map(() => stdout.text()))),
       )
       .extend(
         "theEntryCompositionCheckIsNamedOnStandardErrorForADisciplinedWorkflow",
         ({ stderr }) =>
           Effect.runPromise(
-            Effect.gen(
-              function* theEntryCompositionCheckIsNamedOnStandardErrorForADisciplinedWorkflow() {
-                const filesystem = yield* FileSystem.FileSystem;
-                const paths = yield* Path.Path;
-
-                const root = yield* filesystem.makeTempDirectoryScoped({
-                  prefix: "dont-review-it-cli-",
-                });
-                yield* filesystem.writeFileString(paths.join(root, "renovate.json"), "{}\n");
-                yield* filesystem.makeDirectory(paths.join(root, ".github/workflows"), {
-                  recursive: true,
-                });
-                yield* filesystem.writeFileString(
-                  paths.join(root, ".github/workflows/ci.yml"),
-                  "name: CI\non:\n  pull_request:\npermissions:\n  contents: read\njobs:\n  ready:\n    steps:\n      - run: vp run guard\n",
-                );
-                yield* Effect.promise(() =>
-                  runCommand(dontReviewItCommand, {
-                    rawArgs: ["check", "--repository-root", root],
-                  }),
-                );
-                process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
-              },
-            ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+            checked.pipe(Effect.map(() => stderr.text().includes("entry-composition"))),
           ),
       );
 

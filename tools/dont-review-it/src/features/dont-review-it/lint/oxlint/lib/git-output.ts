@@ -28,7 +28,7 @@ export const gitOutput = (
   const [unaskableGit, gitStdout] = attempt<string, Error>(() =>
     execFileSync(gitExecutablePath(repositoryAgnosticEnv.PATH), [...gitArguments], {
       cwd: environment.cwd,
-      encoding: "utf8",
+      encoding: "utf-8",
       env: repositoryAgnosticEnv,
       input: environment.input,
       stdio: [environment.input === undefined ? "ignore" : "pipe", "pipe", "ignore"],

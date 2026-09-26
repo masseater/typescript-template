@@ -5,8 +5,10 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { describe, expect, vi } from "vite-plus/test";
 
 import { gitExecutablePath } from "../repository-checks/index.ts";
-import { GitCommandFailed, gitEnvironmentLayer } from "./git-text.ts";
-import { BlobUnreadable, compareRevisions, UndecodableSource } from "./repository-comparison.ts";
+import { BlobUnreadable } from "./blob-unreadable.ts";
+import { GitCommandFailed } from "./git-command-failed.ts";
+import { gitEnvironmentLayer } from "./git-text.ts";
+import { compareRevisions, UndecodableSource } from "./repository-comparison.ts";
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
@@ -636,16 +638,10 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevis
       yield* writeSource(repositoryRoot, "src/current.ts", "export const current = false;\n");
       yield* git(repositoryRoot, ["add", "--all"]);
       yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
-      yield* Effect.acquireRelease(
-        Effect.sync(() => {
-          vi.stubEnv("GIT_DIR", paths.join(repositoryRoot, "absent.git"));
-          vi.stubEnv("GIT_WORK_TREE", paths.join(repositoryRoot, "absent"));
-        }),
-        () =>
-          Effect.sync(() => {
-            vi.unstubAllEnvs();
-          }),
-      );
+      yield* Effect.sync(() => {
+        vi.stubEnv("GIT_DIR", paths.join(repositoryRoot, "absent.git"));
+        vi.stubEnv("GIT_WORK_TREE", paths.join(repositoryRoot, "absent"));
+      });
       return {
         repositoryRoot,
         comparison: yield* compareRevisions({

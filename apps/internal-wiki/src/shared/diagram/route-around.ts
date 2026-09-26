@@ -137,14 +137,38 @@ const turnCost = ({
 }>): number =>
   (moveIndex === heading ? 0 : BEND_COST) + (arrives && moveIndex !== arrivalIndex ? BEND_COST : 0);
 
-const routeAround = (request: RouteRequest): readonly Point[] => {
-  const orthogonal = (direction: Direction): boolean =>
-    directions.some((candidate) => candidate.x === direction.x && candidate.y === direction.y);
+const orthogonal = (direction: Direction): boolean =>
+  directions.some((candidate) => candidate.x === direction.x && candidate.y === direction.y);
+
+const assertOrthogonalEnds = (request: RouteRequest): void => {
   if (!orthogonal(request.departure) || !orthogonal(request.arrival)) {
     throw new Error(
       "a route can only be re-routed when both of its ends run horizontally or vertically",
     );
   }
+};
+
+const tracedPath = ({
+  cameFrom,
+  reached,
+  xs,
+  ys,
+}: Readonly<{
+  cameFrom: ReadonlyMap<number, number>;
+  reached: number;
+  xs: readonly number[];
+  ys: readonly number[];
+}>): Point[] => {
+  const path: Point[] = [];
+  for (let state: number | undefined = reached; state !== undefined; state = cameFrom.get(state)) {
+    const cell = Math.floor(state / directions.length);
+    path.unshift({ x: xs[Math.floor(cell / ys.length)] ?? 0, y: ys[cell % ys.length] ?? 0 });
+  }
+  return path;
+};
+
+const routeAround = (request: RouteRequest): readonly Point[] => {
+  assertOrthogonalEnds(request);
   const walls = request.obstacles.map((obstacle) => inflate(obstacle, CLEARANCE - 0.5));
   const departurePort = step(
     request.start,
@@ -251,12 +275,7 @@ const routeAround = (request: RouteRequest): readonly Point[] => {
       reason: "no orthogonal route leads around the shapes between these ends",
     });
   }
-  const path: Point[] = [];
-  for (let state: number | undefined = reached; state !== undefined; state = cameFrom.get(state)) {
-    const cell = Math.floor(state / directions.length);
-    path.unshift({ x: xs[Math.floor(cell / ys.length)] ?? 0, y: ys[cell % ys.length] ?? 0 });
-  }
-  return simplify([request.start, ...path, request.end]);
+  return simplify([request.start, ...tracedPath({ cameFrom, reached, xs, ys }), request.end]);
 };
 
 export { routeAround };

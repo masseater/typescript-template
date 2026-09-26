@@ -1,14 +1,11 @@
 import { Effect, Redacted, Schema } from "effect";
 import { HttpClient, HttpClientResponse, type HttpClientError } from "effect/unstable/http";
 
+import { GitHubAnswerUnexpected } from "./github-answer-unexpected.ts";
+
 export class GitHubRequestFailed extends Schema.TaggedError<GitHubRequestFailed>()(
   "GitHubRequestFailed",
   { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
-) {}
-
-export class GitHubAnswerUnexpected extends Schema.TaggedError<GitHubAnswerUnexpected>()(
-  "GitHubAnswerUnexpected",
-  { message: Schema.String, cause: Schema.Defect() },
 ) {}
 
 const MovedFile = Schema.Struct({

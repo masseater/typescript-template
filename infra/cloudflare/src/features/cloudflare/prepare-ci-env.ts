@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { runCli } from "@repo/cli";
+import { logAt } from "@repo/observability";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect } from "effect";
 
 import { PrepareCiEnvFailure, writeCiSecretsFile, writeConfiguredOutput } from "./ci-env.ts";
-import { encodeJson } from "./platform.ts";
 import { causeRecord } from "./secrets.ts";
 
 const EVENT = "cloudflare.ci_env_rejected";
@@ -20,9 +20,10 @@ runCli(
       });
     }
     yield* writeConfiguredOutput(environment, true);
-    yield* Effect.log(
-      yield* encodeJson({ event: "cloudflare.ci_env_ready", filename: preparation.filename }),
-    );
+    yield* logAt("Info", {
+      attributes: { filename: preparation.filename },
+      eventName: "cloudflare.ci_env_ready",
+    });
   }),
   (cause) => causeRecord(EVENT, cause),
 );

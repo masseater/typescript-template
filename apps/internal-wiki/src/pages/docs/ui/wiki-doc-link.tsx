@@ -1,4 +1,4 @@
-import Link from "fumadocs-core/link";
+import { Link } from "fumadocs-core/link";
 
 import { resolveWikiDocHref } from "#shared/content/index.ts";
 

@@ -38,7 +38,7 @@ describe("app frame", () => {
             <AppFrame
               collapsedMark="管理"
               defaultCollapsed
-              footer={() => <button type="button">{"アカウント"}</button>}
+              renderFooter={() => <button type="button">{"アカウント"}</button>}
               navigationId="app-navigation"
               productName="管理画面"
               sections={[
@@ -68,7 +68,7 @@ describe("app frame", () => {
             <AppFrame
               collapsedMark="社内"
               defaultCollapsed
-              footer={() => <button type="button">{"アカウント"}</button>}
+              renderFooter={() => <button type="button">{"アカウント"}</button>}
               headerActions={<a href="https://example.com/">{"分析"}</a>}
               navigationId="app-navigation"
               productName="社内ダッシュボード"
@@ -136,7 +136,7 @@ describe("app frame", () => {
           <RouterContextProvider router={router}>
             <AppFrame
               collapsedMark="管理"
-              footer={() => <button type="button">{"アカウント"}</button>}
+              renderFooter={() => <button type="button">{"アカウント"}</button>}
               navigationId="app-navigation"
               productName="管理画面"
               sections={[
@@ -218,7 +218,7 @@ describe("app frame", () => {
               bottomTabs
               collapsedMark="ユーザー"
               density="compact"
-              footer={() => <button type="button">{"アカウント"}</button>}
+              renderFooter={() => <button type="button">{"アカウント"}</button>}
               headerLeading={<span>{"会員メニュー"}</span>}
               homeTo="/home"
               navigationId="app-navigation"
@@ -275,7 +275,7 @@ describe("app frame", () => {
             <RouterContextProvider router={router}>
               <AppFrame
                 collapsedMark="管"
-                footer={() => <button type="button">{"アカウント"}</button>}
+                renderFooter={() => <button type="button">{"アカウント"}</button>}
                 navigationId="app-navigation"
                 productName="管理画面"
                 sections={[

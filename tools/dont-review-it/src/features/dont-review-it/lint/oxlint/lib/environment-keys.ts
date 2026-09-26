@@ -122,7 +122,7 @@ const keyNameOf = (expression: ESTree.Expression, constants: ConstantStrings): s
   if (literal !== null) return literal;
   if (written.type === "Identifier") return constants.get(written.name) ?? null;
   const member = staticMemberOf(written);
-  if (member === null || member.object.type !== "Identifier") return null;
+  if (member?.object.type !== "Identifier") return null;
   return constants.get(`${member.object.name}.${member.name}`) ?? screamingSnakeOf(member.name);
 };
 
@@ -131,7 +131,7 @@ const isNamespaceCall = (
   namespace: string,
 ): { readonly member: string } | null => {
   const member = staticMemberOf(node.callee);
-  if (member === null || member.object.type !== "Identifier") return null;
+  if (member?.object.type !== "Identifier") return null;
   return member.object.name === namespace ? { member: member.name } : null;
 };
 
@@ -139,8 +139,7 @@ const isProcessReference = (expression: ESTree.Expression): boolean => {
   if (expression.type === "Identifier") return expression.name === "process";
   const member = staticMemberOf(expression);
   return (
-    member !== null &&
-    member.name === "process" &&
+    member?.name === "process" &&
     member.object.type === "Identifier" &&
     member.object.name === "globalThis"
   );
@@ -148,7 +147,7 @@ const isProcessReference = (expression: ESTree.Expression): boolean => {
 
 const isProcessEnvironment = (expression: ESTree.Expression): boolean => {
   const member = staticMemberOf(expression);
-  if (member === null || member.name !== "env") return false;
+  if (member?.name !== "env") return false;
   if (member.object.type === "MetaProperty") return true;
   return isProcessReference(member.object);
 };
@@ -165,7 +164,7 @@ const isThisEnvInWorkerClass = (
   tracking: SourceTracking,
 ): boolean => {
   const member = staticMemberOf(expression);
-  if (member === null || member.name !== "env" || member.object.type !== "ThisExpression") {
+  if (member?.name !== "env" || member.object.type !== "ThisExpression") {
     return false;
   }
   const enclosingClass = ancestorsOf(expression).find(

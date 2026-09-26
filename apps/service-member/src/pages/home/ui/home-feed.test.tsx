@@ -5,14 +5,13 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { overwriteGetLocale } from "#paraglide/runtime.js";
-import { HomeFeed, homeState, presentFeed } from "./home-feed.tsx";
+import { HomeFeed } from "./home-feed.tsx";
 
-import type { HomeEntry } from "./home-feed.tsx";
+import type { HomeEntry } from "#pages/home/model/home-feed-state.ts";
 
 const first = {
   actorId: "hana",
@@ -41,10 +40,9 @@ function rendered(state: Parameters<typeof HomeFeed>[0]["state"]): string {
     routeTree,
   });
   return renderToStaticMarkup(
-    createElement(RouterContextProvider, {
-      children: createElement(HomeFeed, { state }),
-      router,
-    }),
+    <RouterContextProvider router={router}>
+      <HomeFeed state={state} />
+    </RouterContextProvider>,
   );
 }
 
@@ -63,20 +61,6 @@ describe("home feed", () => {
     expect(html).toContain("max-w-page");
   });
 
-  it("shows the written profile, and says when the introduction is still empty", () => {
-    expect.hasAssertions();
-    overwriteGetLocale(() => "ja");
-    const [written, blank] = presentFeed(
-      [
-        { actorId: "hana", actorName: "山田 花子", profile: "週末は本屋めぐり。", updatedAt: 1 },
-        { actorId: "taro", actorName: "佐藤 太郎", profile: "", updatedAt: 2 },
-      ],
-      () => "日付",
-    );
-    expect(written?.change).toBe("週末は本屋めぐり。");
-    expect(blank?.change).toBe("自己紹介はまだ書かれていません。");
-  });
-
   it("offers one next action when idle and does not spin", () => {
     expect.hasAssertions();
     overwriteGetLocale(() => "ja");
@@ -90,20 +74,5 @@ describe("home feed", () => {
   it("shows a spinner only while the feed is loading", () => {
     expect.hasAssertions();
     expect(rendered({ status: "pending" })).toContain('data-slot="spinner"');
-  });
-
-  it("settles the feed state with a failure first, then loading, then emptiness", () => {
-    expect.hasAssertions();
-    expect(homeState("取得できませんでした。", [first], false)).toStrictEqual({
-      message: "取得できませんでした。",
-      status: "failure",
-    });
-    expect(homeState(undefined, [first], true)).toStrictEqual({ status: "pending" });
-    expect(homeState(undefined, undefined, false)).toStrictEqual({ status: "pending" });
-    expect(homeState(undefined, [], false)).toStrictEqual({ status: "empty" });
-    expect(homeState(undefined, [first], false)).toStrictEqual({
-      entries: [first],
-      status: "ready",
-    });
   });
 });

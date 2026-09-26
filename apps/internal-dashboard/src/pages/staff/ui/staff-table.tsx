@@ -18,7 +18,7 @@ function StaffTable({
       columns={staffTableColumns}
       listing={listing}
       onReload={onReload}
-      row={(member) => <StaffRow key={member.id} member={member} onChanged={onReload} />}
+      renderRow={(member) => <StaffRow key={member.id} member={member} onChanged={onReload} />}
     />
   );
 }

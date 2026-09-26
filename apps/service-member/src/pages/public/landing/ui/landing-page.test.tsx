@@ -58,13 +58,9 @@ const rendered = (locale: Locale, view: ReactElement): string => {
     routeTree,
   });
   return renderToStaticMarkup(
-    createElement(RouterContextProvider, {
-      children: createElement(AppProviders, {
-        children: view,
-        fieldValidationMessages: fieldValidationMessages(locale),
-      }),
-      router,
-    }),
+    <RouterContextProvider router={router}>
+      <AppProviders fieldValidationMessages={fieldValidationMessages(locale)}>{view}</AppProviders>
+    </RouterContextProvider>,
   );
 };
 

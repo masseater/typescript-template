@@ -52,12 +52,14 @@ const Route = createFileRoute("/_member/search")({
     context,
     deps,
   }: Readonly<{ context: Readonly<{ queryClient: QueryClient }>; deps: UsersSearch }>) =>
-    context.queryClient.ensureInfiniteQueryData(membersOptions(deps)).catch((error: unknown) => {
-      if (Schema.is(PaidPlanRequired)(error)) {
-        throw redirect({ replace: true, search: {}, to: "/upgrade" });
-      }
-      throw error;
-    }),
+    context.queryClient
+      .infiniteQuery({ ...membersOptions(deps), staleTime: "static" })
+      .catch((error: unknown) => {
+        if (Schema.is(PaidPlanRequired)(error)) {
+          throw redirect({ replace: true, search: {}, to: "/upgrade" });
+        }
+        throw error;
+      }),
   component: SearchRoute,
   errorComponent: UsersFailed,
   pendingComponent: UsersPending,

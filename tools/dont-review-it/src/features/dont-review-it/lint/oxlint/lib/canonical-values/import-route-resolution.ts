@@ -169,7 +169,7 @@ const routeMatchesResolvedSource = (input: {
 
 const declarationExportsName = (filePath: string, importedName: string): boolean => {
   if (!/\.d\.[cm]?ts$/u.test(filePath)) return false;
-  const source = readFileSync(filePath, "utf8");
+  const source = readFileSync(filePath, "utf-8");
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.ESNext, true);
   return sourceFile.statements.some((statement) => {
     if (!ts.isVariableStatement(statement)) return false;

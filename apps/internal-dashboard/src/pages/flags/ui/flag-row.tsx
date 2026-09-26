@@ -42,7 +42,7 @@ function FlagRow({
           label={entry.enabled ? "オン" : "オフ"}
           name={`flag-${String(entry.key)}`}
           onCheckedChange={(checked) => {
-            action.run(() => toggleFlag(onToggle, entry.key, checked === true));
+            action.run(() => toggleFlag(onToggle, entry.key, checked));
           }}
         />
       </div>

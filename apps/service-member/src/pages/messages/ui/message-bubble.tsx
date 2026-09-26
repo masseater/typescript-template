@@ -52,7 +52,7 @@ function MessageBubble({
   const bubble = message.mine ? ownBubble : peerBubble;
   return (
     <li className={`flex ${bubble.alignment}`}>
-      <div className={`rounded-2xl max-w-[85%] px-4 py-2 text-base leading-relaxed ${bubble.tone}`}>
+      <div className={`max-w-4/5 rounded-lg px-4 py-2 text-base leading-relaxed ${bubble.tone}`}>
         <SenderName message={message} />
         <p className="whitespace-pre-wrap">{message.body}</p>
         <MessageReport kind={kind} message={message} />

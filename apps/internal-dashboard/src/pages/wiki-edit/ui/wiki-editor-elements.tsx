@@ -2,7 +2,7 @@ import { PlateElement, PlateLeaf } from "platejs/react";
 
 import type { TermLinkElement } from "#shared/wiki-document/index.ts";
 import type { TImageElement, TLinkElement, TListElement } from "platejs";
-import type { PlateElementProps, PlateLeafProps, RenderNodeWrapper } from "platejs/react";
+import type { PlateElementProps, PlateLeafProps } from "platejs/react";
 import type { ReactElement } from "react";
 
 const nestedListIndent = 1.5;
@@ -52,11 +52,21 @@ function ParagraphElement(props: PlateElementProps): ReactElement {
 }
 
 function SectionHeadingElement(props: PlateElementProps): ReactElement {
-  return <PlateElement {...props} as="h2" className="mt-6 mb-2 text-lg font-bold" />;
+  const { children } = props;
+  return (
+    <PlateElement {...props} as="h2" className="mt-6 mb-2 text-lg font-bold">
+      {children}
+    </PlateElement>
+  );
 }
 
 function BlockHeadingElement(props: PlateElementProps): ReactElement {
-  return <PlateElement {...props} as="h3" className="mt-4 mb-2 text-base font-bold" />;
+  const { children } = props;
+  return (
+    <PlateElement {...props} as="h3" className="mt-4 mb-2 text-base font-bold">
+      {children}
+    </PlateElement>
+  );
 }
 
 function BlockquoteElement(props: PlateElementProps): ReactElement {
@@ -127,9 +137,6 @@ function ListItem({ children, element }: PlateElementProps): ReactElement {
   );
 }
 
-const renderListItem: RenderNodeWrapper = ({ element }) =>
-  typeof element["listStyleType"] === "string" ? ListItem : undefined;
-
 export {
   BlockHeadingElement,
   BlockquoteElement,
@@ -137,6 +144,7 @@ export {
   CodeLeaf,
   ImageElement,
   LinkElement,
+  ListItem,
   ParagraphElement,
   SectionHeadingElement,
   TableCellElement,
@@ -144,5 +152,4 @@ export {
   TableHeaderCellElement,
   TableRowElement,
   TermLink,
-  renderListItem,
 };

@@ -70,7 +70,7 @@ class UserInbox {
 
   public constructor(ctx: DurableObjectState, _env: InboxBindings) {
     this.ctx = ctx;
-    ctx.blockConcurrencyWhile(() => Promise.resolve(this.migrate()));
+    this.migrate();
   }
 
   private migrate(): void {
@@ -142,13 +142,12 @@ class UserInbox {
       return Promise.resolve();
     }
     this.markRead(parsed.ids);
-    const inbox = this;
     return Effect.runPromise(
-      Effect.gen(function* pushSnapshot() {
+      Effect.gen({ self: this }, function* pushSnapshot() {
         socket.send(
           yield* encodeEventJson({
-            notifications: inbox.listNotifications(),
-            posts: inbox.listFeedPosts(),
+            notifications: this.listNotifications(),
+            posts: this.listFeedPosts(),
             type: "snapshot",
           }),
         );
@@ -157,52 +156,47 @@ class UserInbox {
   }
 
   private createNotification(request: Request): Promise<Response> {
-    const inbox = this;
     return Effect.runPromise(
-      Effect.gen(function* create() {
+      Effect.gen({ self: this }, function* create() {
         const decoded = Schema.decodeResult(Schema.fromJsonString(CreateNotification))(
           yield* Effect.promise(() => request.text()),
         );
         if (Result.isFailure(decoded)) {
           return new Response(undefined, { status: 400 });
         }
-        const record = inbox.insertNotification(decoded.success);
-        yield* Effect.promise(() =>
-          inbox.broadcast({ notification: record, type: "notification" }),
-        );
+        const record = this.insertNotification(decoded.success);
+        yield* Effect.promise(() => this.broadcast({ notification: record, type: "notification" }));
         return Response.json(record);
       }),
     );
   }
 
   private createFeedPost(request: Request): Promise<Response> {
-    const inbox = this;
     return Effect.runPromise(
-      Effect.gen(function* create() {
+      Effect.gen({ self: this }, function* create() {
         const decoded = Schema.decodeResult(Schema.fromJsonString(CreateFeedPost))(
           yield* Effect.promise(() => request.text()),
         );
         if (Result.isFailure(decoded)) {
           return new Response(undefined, { status: 400 });
         }
-        const record = inbox.insertFeedPost(decoded.success);
-        yield* Effect.promise(() => inbox.broadcast({ post: record, type: "feed_post" }));
+        const record = this.insertFeedPost(decoded.success);
+        yield* Effect.promise(() => this.broadcast({ post: record, type: "feed_post" }));
         return Response.json(record);
       }),
     );
   }
 
   private markNotificationsRead(request: Request): Promise<Response> {
-    const inbox = this;
     return Effect.runPromise(
-      Effect.gen(function* mark() {
+      Effect.gen({ self: this }, function* mark() {
         const decoded = Schema.decodeResult(Schema.fromJsonString(MarkRead))(
           yield* Effect.promise(() => request.text()),
         );
         if (Result.isFailure(decoded)) {
           return new Response(undefined, { status: 400 });
         }
-        inbox.markRead(decoded.success.ids);
+        this.markRead(decoded.success.ids);
         return Response.json({ ok: true });
       }),
     );

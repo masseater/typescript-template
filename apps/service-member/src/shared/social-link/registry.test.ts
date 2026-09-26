@@ -13,12 +13,11 @@ describe("classifySocialUrl", () => {
     ["https://youtu.be/dQw4w9WgXcQ", "youtube"],
   ] as const)("detects %s as %s", ([url, id]) => {
     expect.hasAssertions();
-    const classified = classifySocialUrl(url);
-    expect(classified.ok).toBe(true);
-    if (classified.ok) {
-      expect(classified.network?.id).toBe(id);
-      expect(classified.url).toBe(new URL(url).href);
-    }
+    expect(classifySocialUrl(url)).toMatchObject({
+      network: { id },
+      ok: true,
+      url: new URL(url).href,
+    });
   });
 
   it("accepts an unknown https host without a network", () => {
@@ -34,11 +33,10 @@ describe("classifySocialUrl", () => {
     "rejects non-https %s",
     (url) => {
       expect.hasAssertions();
-      const classified = classifySocialUrl(url);
-      expect(classified.ok).toBe(false);
-      if (!classified.ok) {
-        expect(classified.reason).toBe(url.includes("://") ? "not-https" : "invalid");
-      }
+      expect(classifySocialUrl(url)).toStrictEqual({
+        ok: false,
+        reason: url.includes("://") ? "not-https" : "invalid",
+      });
     },
   );
 

@@ -1,6 +1,6 @@
 import { TextLink } from "@repo/ui";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { memberPageSize } from "#shared/contracts/index.ts";
 import { MemberCard } from "#widgets/member-search/index.ts";
@@ -19,6 +19,7 @@ type Listing = Readonly<{
 }>;
 
 const rowEstimate = 168;
+const subscribeToNothing = (): (() => void) => () => undefined;
 const columns = 3;
 
 function StaticGrid({ members }: Readonly<{ members: readonly Member[] }>): ReactElement {
@@ -51,7 +52,7 @@ function VirtualizedGrid({
       lastRow !== undefined &&
       lastRow.index >= rowCount - 2 &&
       hasNextPage &&
-      isFetchingNextPage === false
+      !isFetchingNextPage
     ) {
       void fetchNextPage();
     }
@@ -87,10 +88,11 @@ function VirtualizedGrid({
 
 function ResultList(listing: Listing): ReactElement {
   const { members, total } = listing;
-  const [virtualReady, setVirtualReady] = useState(false);
-  useLayoutEffect(() => {
-    setVirtualReady(true);
-  }, []);
+  const virtualReady = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
   if (total === 0 || members.length === 0) {
     return (
       <p className="text-base leading-normal">

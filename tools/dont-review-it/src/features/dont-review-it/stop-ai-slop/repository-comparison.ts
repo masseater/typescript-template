@@ -2,6 +2,7 @@ import { Effect, Schema } from "effect";
 import { attempt, uniqBy, zip } from "es-toolkit";
 
 import { posixPath } from "../platform/path.ts";
+import { BlobUnreadable } from "./blob-unreadable.ts";
 import { failingWhenThrown } from "./expected-throw.ts";
 import { runGitBuffer, runGitText } from "./git-text.ts";
 import {
@@ -73,10 +74,6 @@ export class UndecodableSource extends Schema.TaggedError<UndecodableSource>()(
   "UndecodableSource",
   { message: Schema.String, cause: Schema.Defect() },
 ) {}
-
-export class BlobUnreadable extends Schema.TaggedError<BlobUnreadable>()("BlobUnreadable", {
-  message: Schema.String,
-}) {}
 
 export type Side = "base" | "head";
 

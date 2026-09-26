@@ -45,7 +45,9 @@ function RecordingView({
             type="button"
             variant="primary"
             disabled={actions.blocked}
-            action={actions.handleRetry}
+            action={() => {
+              actions.handleRetry();
+            }}
           >
             やり直す
           </Button>

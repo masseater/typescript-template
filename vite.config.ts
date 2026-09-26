@@ -198,5 +198,7 @@ export default defineConfig({
     reporters: ["default", new MergifyReporter()],
     restoreMocks: true,
     testTimeout: 30_000,
+    unstubEnvs: true,
+    unstubGlobals: true,
   },
 });

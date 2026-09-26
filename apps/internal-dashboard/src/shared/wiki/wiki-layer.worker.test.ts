@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
-import { appEnvironment } from "@repo/runtime/testing";
+import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { serveApp, workerRuntime } from "@repo/runtime/worker";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { Effect, Schema } from "effect";
@@ -50,7 +50,7 @@ function servedUnavailable(
     });
     const context = createExecutionContext();
     const response = yield* Effect.promise(() =>
-      worker.fetch(new Request("http://localhost:3001/"), {}, context),
+      worker.fetch(new Request(fixtureOrigin), {}, context),
     );
     yield* Effect.promise(() => waitOnExecutionContext(context));
     return {

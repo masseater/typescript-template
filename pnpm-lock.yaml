@@ -367,6 +367,8 @@ overrides:
   valibot@*: 1.5.0
   eslint-plugin-react-hooks>zod-validation-error: 4.0.2
 
+packageExtensionsChecksum: sha256-na0zE2kOZohYvk8Hulv2l9GkxrZN40iFCgJ4QR1zuu0=
+
 patchedDependencies:
   '@better-auth/oauth-provider@1.7.5': 1ab2e21676aee36496443c4993fc64405f3fcc50b7683ec7d4b0d17a6816a417
   '@cloudflare/vitest-plugin@1.1.12': ad4b4e4469c0e6c5e1ae318b674aebcd640186a3cea12ca3f55e543fae4a1c4e
@@ -2290,7 +2292,7 @@ importers:
         version: 0.45.0
       '@feature-sliced/steiger-plugin':
         specifier: 0.7.0
-        version: 0.7.0(typescript@7.0.2)
+        version: 0.7.0(typescript@7.0.2)(vitest@5.0.1)
       '@opentelemetry/api':
         specifier: 'catalog:'
         version: 1.9.1
@@ -2353,7 +2355,7 @@ importers:
         version: 4.2.0
       steiger:
         specifier: 0.6.0
-        version: 0.6.0(typescript@7.0.2)
+        version: 0.6.0(typescript@7.0.2)(vitest@5.0.1)
       textlint:
         specifier: 15.8.0
         version: 15.8.0(supports-color@10.2.2)
@@ -7671,6 +7673,14 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@steiger/toolkit@0.2.3':
+    resolution: {integrity: sha512-egAgPVSN5+bqmRDc0oGm4cXZtkF8puaBY7A7lft7nxJwb+v/J5aaFJ3vzQ9WxTR/qYl2bK5uKOIAGaj63Z0F1A==}
+    peerDependencies:
+      vitest: 5.0.1
+    peerDependenciesMeta:
+      vitest:
+        optional: true
 
   '@storybook/addon-a11y@10.6.0':
     resolution: {integrity: sha512-Z/CZor/F8H74/+IoeLroEQXQoVxvmjVtUgATJ95KPBolHxMaHLXLsYU0wosIiiORxmfRCnpen5pQl1n4+pBWQw==}
@@ -16418,9 +16428,10 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  '@feature-sliced/steiger-plugin@0.7.0(typescript@7.0.2)':
+  '@feature-sliced/steiger-plugin@0.7.0(typescript@7.0.2)(vitest@5.0.1)':
     dependencies:
       '@feature-sliced/filesystem': 3.1.1
+      '@steiger/toolkit': 0.2.3(vitest@5.0.1)
       fastest-levenshtein: 1.0.16
       lodash-es: 4.18.1
       pluralize: 8.0.0
@@ -16428,6 +16439,7 @@ snapshots:
       web-tree-sitter: 0.26.13
     transitivePeerDependencies:
       - typescript
+      - vitest
 
   '@floating-ui/core@1.8.0':
     dependencies:
@@ -19582,6 +19594,10 @@ snapshots:
   '@stablelib/base64@1.0.1': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@steiger/toolkit@0.2.3(vitest@5.0.1)':
+    optionalDependencies:
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@5.0.1)(@vitest/browser-preview@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(@voidzero-dev/vite-plus-core@1.0.0-rc.0(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
 
   '@storybook/addon-a11y@10.6.0(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0)(vite-plus@1.0.0-rc.0(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)))':
     dependencies:
@@ -26734,10 +26750,10 @@ snapshots:
 
   stdin-discarder@0.2.2: {}
 
-  steiger@0.6.0(typescript@7.0.2):
+  steiger@0.6.0(typescript@7.0.2)(vitest@5.0.1):
     dependencies:
       '@clack/prompts': 0.9.1
-      '@feature-sliced/steiger-plugin': 0.7.0(typescript@7.0.2)
+      '@feature-sliced/steiger-plugin': 0.7.0(typescript@7.0.2)(vitest@5.0.1)
       chokidar: 4.0.3
       cosmiconfig: 9.0.2(typescript@7.0.2)
       effector: 23.4.4
@@ -26755,6 +26771,7 @@ snapshots:
       zod-validation-error: 3.5.4(zod@3.25.76)
     transitivePeerDependencies:
       - typescript
+      - vitest
 
   storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0)(vite-plus@1.0.0-rc.0(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1)):
     dependencies:

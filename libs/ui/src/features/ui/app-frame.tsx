@@ -17,7 +17,7 @@ const AppFrame = ({
   collapsedMark,
   defaultCollapsed = false,
   density = "regular",
-  footer,
+  renderFooter,
   headerActions,
   headerLeading,
   homeTo,
@@ -32,7 +32,7 @@ const AppFrame = ({
   collapsedMark: string;
   defaultCollapsed?: boolean;
   density?: "compact" | "regular";
-  footer: (frame: Readonly<{ collapsed: boolean }>) => ReactElement;
+  renderFooter: (frame: Readonly<{ collapsed: boolean }>) => ReactElement;
   headerActions?: UiNode;
   headerLeading?: UiNode;
   homeTo?: string;
@@ -70,7 +70,7 @@ const AppFrame = ({
           navigationId={navigationId}
           sections={sections}
         />
-        <div className="mt-auto border-t border-border p-2">{footer({ collapsed })}</div>
+        <div className="mt-auto border-t border-border p-2">{renderFooter({ collapsed })}</div>
       </aside>
       {navigationOpen ? (
         <button

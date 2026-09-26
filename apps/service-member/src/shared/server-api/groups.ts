@@ -259,30 +259,28 @@ const findGroup = Effect.fn("findGroup")(function* findGroup(
   } satisfies GroupView;
 });
 
-const joinGroup = Effect.fn("joinGroup")(function* joinGroup(
-  viewerId: string,
+const admitInvite = Effect.fn("admitInvite")(function* admitInvite(
   groupId: string,
   inviteToken?: string,
 ) {
-  const member = yield* requireMessagingMember(viewerId);
-  const group = yield* loadGroupRow(groupId);
-  const existingMembership = yield* membershipOf(viewerId, groupId);
-  if (existingMembership !== undefined) {
-    return group.conversationId;
+  if (inviteToken === undefined) {
+    return yield* new GroupNotFound();
   }
-  if (group.joinPolicy === GROUP_JOIN_POLICY.invite) {
-    if (inviteToken === undefined) {
-      return yield* new GroupNotFound();
-    }
-    const invite = yield* inviteFor(groupId);
-    const now = yield* clockDate;
-    if (invite === undefined || invite.token !== inviteToken) {
-      return yield* new GroupNotFound();
-    }
-    if (invite.expiresAt.getTime() <= now.getTime()) {
-      return yield* new GroupInviteExpired();
-    }
+  const invite = yield* inviteFor(groupId);
+  const now = yield* clockDate;
+  if (invite === undefined || invite.token !== inviteToken) {
+    return yield* new GroupNotFound();
   }
+  if (invite.expiresAt.getTime() <= now.getTime()) {
+    return yield* new GroupInviteExpired();
+  }
+  return undefined;
+});
+
+const ensureRoomToJoin = Effect.fn("ensureRoomToJoin")(function* ensureRoomToJoin(
+  viewerId: string,
+  groupId: string,
+) {
   const [joined] = yield* query((database) =>
     database
       .select({ count: count() })
@@ -301,6 +299,24 @@ const joinGroup = Effect.fn("joinGroup")(function* joinGroup(
   if ((members?.count ?? 0) >= maximumGroupMembers) {
     return yield* new GroupLimitReached();
   }
+  return undefined;
+});
+
+const joinGroup = Effect.fn("joinGroup")(function* joinGroup(
+  viewerId: string,
+  groupId: string,
+  inviteToken?: string,
+) {
+  const member = yield* requireMessagingMember(viewerId);
+  const group = yield* loadGroupRow(groupId);
+  const existingMembership = yield* membershipOf(viewerId, groupId);
+  if (existingMembership !== undefined) {
+    return group.conversationId;
+  }
+  if (group.joinPolicy === GROUP_JOIN_POLICY.invite) {
+    yield* admitInvite(groupId, inviteToken);
+  }
+  yield* ensureRoomToJoin(viewerId, groupId);
   const now = yield* clockDate;
   yield* query((database) =>
     database.batch([

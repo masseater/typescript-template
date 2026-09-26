@@ -1,11 +1,13 @@
 import { layer } from "@effect/vitest";
 import { Effect, Layer, Redacted, Schema } from "effect";
+import { constVoid } from "effect/Function";
 import { FetchHttpClient, HttpClientError } from "effect/unstable/http";
 import { http, HttpResponse, type HttpHandler } from "msw";
 import { setupServer } from "msw/node";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
-import { GitHubAnswerUnexpected, gitHubApiFor, GitHubRequestFailed } from "./github-request.ts";
+import { GitHubAnswerUnexpected } from "./github-answer-unexpected.ts";
+import { gitHubApiFor, GitHubRequestFailed } from "./github-request.ts";
 
 const githubApi = setupServer();
 
@@ -65,65 +67,6 @@ const unexpectedContents = (message: string) =>
   });
 
 layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (it) => {
-  describe("a compare the API answered", () => {
-    const answeredCompare = Effect.gen(function* answeredCompare() {
-      const received = vi.fn<(url: string, headers: Readonly<Record<string, string>>) => void>();
-      yield* answeringWith(
-        http.get(isGitHubApi, ({ request }) => {
-          received(request.url, {
-            accept: request.headers.get("accept") ?? "",
-            authorization: request.headers.get("authorization") ?? "",
-            "x-github-api-version": request.headers.get("x-github-api-version") ?? "",
-          });
-          return HttpResponse.json({
-            merge_base_commit: { sha: "basesha", url: "ignored" },
-            files: [
-              {
-                filename: "src/moved.ts",
-                status: "renamed",
-                previous_filename: "src/was.ts",
-                changes: 0,
-              },
-            ],
-          });
-        }),
-      );
-      return {
-        compared: yield* (yield* api).compare("owner/name", { base: "a", head: "b" }),
-        received,
-      };
-    });
-
-    it.effect("answers the decoded compare", () =>
-      Effect.gen(function* program() {
-        expect((yield* answeredCompare).compared).toStrictEqual({
-          merge_base_commit: { sha: "basesha" },
-          files: [
-            {
-              filename: "src/moved.ts",
-              status: "renamed",
-              previous_filename: "src/was.ts",
-              changes: 0,
-            },
-          ],
-        });
-      }),
-    );
-
-    it.effect("asks the compare endpoint once under the token headers", () =>
-      Effect.gen(function* program() {
-        expect((yield* answeredCompare).received).toHaveBeenCalledExactlyOnceWith(
-          "https://api.github.com/repos/owner/name/compare/a...b",
-          {
-            accept: "application/vnd.github+json",
-            authorization: "Bearer token",
-            "x-github-api-version": "2022-11-28",
-          },
-        );
-      }),
-    );
-  });
-
   describe("a file the contents API answered", () => {
     it.effect("answers the bytes the base64 content carries", () =>
       Effect.gen(function* program() {
@@ -278,5 +221,74 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
         ).toStrictEqual(unexpectedContents('Expected "base64"\n  at ["encoding"]'));
       }),
     );
+  });
+});
+
+const answeredCompare = (
+  received: (url: string, headers: Readonly<Record<string, string>>) => void,
+) =>
+  Effect.gen(function* answeredCompare() {
+    yield* answeringWith(
+      http.get(isGitHubApi, ({ request }) => {
+        received(request.url, {
+          accept: request.headers.get("accept") ?? "",
+          authorization: request.headers.get("authorization") ?? "",
+          "x-github-api-version": request.headers.get("x-github-api-version") ?? "",
+        });
+        return HttpResponse.json({
+          merge_base_commit: { sha: "basesha", url: "ignored" },
+          files: [
+            {
+              filename: "src/moved.ts",
+              status: "renamed",
+              previous_filename: "src/was.ts",
+              changes: 0,
+            },
+          ],
+        });
+      }),
+    );
+    return yield* (yield* api).compare("owner/name", { base: "a", head: "b" });
+  }).pipe(Effect.scoped, Effect.provide(Layer.merge(listeningGitHubApi, FetchHttpClient.layer)));
+
+describe("gitHubApiFor", () => {
+  describe("a compare the API answered", () => {
+    const it = test
+      .extend("comparedAnswer", () => Effect.runPromise(answeredCompare(constVoid)))
+      .extend("compareRequests", () =>
+        Effect.runPromise(
+          Effect.gen(function* compareRequests() {
+            const received =
+              vi.fn<(url: string, headers: Readonly<Record<string, string>>) => void>();
+            yield* answeredCompare(received);
+            return received;
+          }),
+        ),
+      );
+
+    it("answers the decoded compare", ({ comparedAnswer }) => {
+      expect(comparedAnswer).toStrictEqual({
+        merge_base_commit: { sha: "basesha" },
+        files: [
+          {
+            filename: "src/moved.ts",
+            status: "renamed",
+            previous_filename: "src/was.ts",
+            changes: 0,
+          },
+        ],
+      });
+    });
+
+    it("asks the compare endpoint once under the token headers", ({ compareRequests }) => {
+      expect(compareRequests).toHaveBeenCalledExactlyOnceWith(
+        "https://api.github.com/repos/owner/name/compare/a...b",
+        {
+          accept: "application/vnd.github+json",
+          authorization: "Bearer token",
+          "x-github-api-version": "2022-11-28",
+        },
+      );
+    });
   });
 });

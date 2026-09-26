@@ -22,16 +22,13 @@ function renderAdminFrame(defaultCollapsed: boolean): Promise<string> {
   return Effect.runPromise(
     Effect.gen(function* loadFrame() {
       const rootRoute = createRootRoute({
-        component: () =>
-          createElement(AppProviders, {
-            children: createElement(AdminFrame, {
-              children: createElement("p", null, "本文"),
-              defaultCollapsed,
-              email: "ada@example.com",
-              name: "Ada",
-            }),
-            fieldValidationMessages: fieldValidationMessages("ja"),
-          }),
+        component: () => (
+          <AppProviders fieldValidationMessages={fieldValidationMessages("ja")}>
+            <AdminFrame defaultCollapsed={defaultCollapsed} email="ada@example.com" name="Ada">
+              <p>本文</p>
+            </AdminFrame>
+          </AppProviders>
+        ),
       });
       const router = createRouter({
         history: createMemoryHistory({ initialEntries: ["/members"] }),

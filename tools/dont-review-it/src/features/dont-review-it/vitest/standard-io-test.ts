@@ -42,10 +42,10 @@ const forward = (property: PropertyKey): unknown => {
   return typeof value === "function" ? value.bind(api) : value;
 };
 
-const unbound = (() => undefined) as unknown as StandardIoTest;
+const unbound: (...argumentsList: never[]) => unknown = () => undefined;
 
 /** @public */
-export const standardIoTest: StandardIoTest = new Proxy(unbound, {
+export const standardIoTest = new Proxy(unbound, {
   apply(_target, thisArgument, argumentsList) {
     const api = loadStandardIoTest() as (...args: unknown[]) => unknown;
     return Reflect.apply(api, thisArgument, argumentsList);
@@ -53,5 +53,5 @@ export const standardIoTest: StandardIoTest = new Proxy(unbound, {
   get(_target, property) {
     return forward(property);
   },
-});
+}) as StandardIoTest;
 export type { StandardIoTest };

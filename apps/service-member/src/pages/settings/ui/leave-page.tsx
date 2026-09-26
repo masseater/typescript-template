@@ -18,7 +18,7 @@ function LeavePage(): ReactElement {
         <CheckboxField
           checked={form.immediate}
           label="すぐに完全に削除する"
-          onCheckedChange={(checked) => form.setImmediate(checked === true)}
+          onCheckedChange={(checked) => form.setImmediate(checked)}
         />
         <Button
           type="button"

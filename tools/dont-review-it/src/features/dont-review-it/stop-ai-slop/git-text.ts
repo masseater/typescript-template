@@ -1,14 +1,10 @@
-import { Config, Context, Effect, Layer, Option, Schema, Stream } from "effect";
+import { Config, Context, Effect, Layer, Option, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { gitExecutablePath } from "../repository-checks/index.ts";
+import { GitCommandFailed } from "./git-command-failed.ts";
 
 import type { PlatformError } from "effect/PlatformError";
-
-export class GitCommandFailed extends Schema.TaggedError<GitCommandFailed>()("GitCommandFailed", {
-  message: Schema.String,
-  cause: Schema.optional(Schema.Defect()),
-}) {}
 
 class GitEnvironment extends Context.Service<
   GitEnvironment,

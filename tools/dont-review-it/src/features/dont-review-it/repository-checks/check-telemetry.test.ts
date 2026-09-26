@@ -192,27 +192,30 @@ describe("measureCheck", () => {
 
     describe("the span opened for a check that fails", () => {
       const refusal = new Error("check refused");
-      const it = test.extend("spanForFailedCheck", () =>
-        Effect.runPromise(
-          Effect.gen(function* spanForFailedCheck() {
-            vi.stubEnv("MST_TELEMETRY", "1");
-            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            vi.stubEnv("TRACEPARENT", undefined);
-            forgetTelemetry();
-            vi.resetModules();
-            vi.spyOn(process, "argv", "get").mockReturnValue(["/usr/local/bin/node"]);
-            const traceExporterModule = yield* Effect.promise(
-              () => import("@opentelemetry/exporter-trace-otlp-http"),
-            );
-            const exported =
-              vi.fn<
-                (span: {
-                  readonly events: readonly string[];
-                  readonly status: Readonly<{ code: number; message?: string }>;
-                }) => void
-              >();
-            vi.spyOn(traceExporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
-              (batch, resultCallback) => {
+      const it = test
+        .extend("failureSeenByCaller", () =>
+          Effect.runPromise(
+            Effect.gen(function* failureSeenByCaller() {
+              vi.stubEnv("MST_TELEMETRY", "1");
+              vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+              vi.stubEnv("TRACEPARENT", undefined);
+              forgetTelemetry();
+              vi.resetModules();
+              vi.spyOn(process, "argv", "get").mockReturnValue(["/usr/local/bin/node"]);
+              const traceExporterModule = yield* Effect.promise(
+                () => import("@opentelemetry/exporter-trace-otlp-http"),
+              );
+              const exported =
+                vi.fn<
+                  (span: {
+                    readonly events: readonly string[];
+                    readonly status: Readonly<{ code: number; message?: string }>;
+                  }) => void
+                >();
+              vi.spyOn(
+                traceExporterModule.OTLPTraceExporter.prototype,
+                "export",
+              ).mockImplementation((batch, resultCallback) => {
                 for (const span of batch.filter(
                   (candidate) => candidate.instrumentationScope.name === INSTRUMENTATION_NAME,
                 )) {
@@ -222,48 +225,114 @@ describe("measureCheck", () => {
                   });
                 }
                 resultCallback({ code: 0 });
-              },
-            );
-            const stopped = vi
-              .spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown")
-              .mockResolvedValue();
-            const metricExporterModule = yield* Effect.promise(
-              () => import("@opentelemetry/exporter-metrics-otlp-http"),
-            );
-            vi.spyOn(
-              metricExporterModule.OTLPMetricExporter.prototype,
-              "export",
-            ).mockImplementation((_batch, resultCallback) => {
-              resultCallback({ code: 0 });
-            });
-            vi.spyOn(
-              metricExporterModule.OTLPMetricExporter.prototype,
-              "shutdown",
-            ).mockResolvedValue();
-            const started = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
-            const running = started.startTelemetry("mst-check");
-            onTestFinished(() => running.shutdown().then(forgetTelemetry));
-            const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
-            const rejected = yield* Effect.promise(() =>
-              telemetry
-                .measureCheck(() => Promise.reject(refusal))
-                .then(
-                  () => undefined,
-                  (failure: unknown) => failure,
-                ),
-            );
-            process.emit("beforeExit", 0);
-            yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
-            return { exported, rejected };
-          }),
-        ));
+              });
+              const stopped = vi
+                .spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown")
+                .mockResolvedValue();
+              const metricExporterModule = yield* Effect.promise(
+                () => import("@opentelemetry/exporter-metrics-otlp-http"),
+              );
+              vi.spyOn(
+                metricExporterModule.OTLPMetricExporter.prototype,
+                "export",
+              ).mockImplementation((_batch, resultCallback) => {
+                resultCallback({ code: 0 });
+              });
+              vi.spyOn(
+                metricExporterModule.OTLPMetricExporter.prototype,
+                "shutdown",
+              ).mockResolvedValue();
+              const started = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
+              const running = started.startTelemetry("mst-check");
+              onTestFinished(() => running.shutdown().then(forgetTelemetry));
+              const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
+              const rejected = yield* Effect.promise(() =>
+                telemetry
+                  .measureCheck(() => Promise.reject(refusal))
+                  .then(
+                    () => undefined,
+                    (failure: unknown) => failure,
+                  ),
+              );
+              process.emit("beforeExit", 0);
+              yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
+              return rejected;
+            }),
+          ))
+        .extend("failedSpanExport", () =>
+          Effect.runPromise(
+            Effect.gen(function* failedSpanExport() {
+              vi.stubEnv("MST_TELEMETRY", "1");
+              vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+              vi.stubEnv("TRACEPARENT", undefined);
+              forgetTelemetry();
+              vi.resetModules();
+              vi.spyOn(process, "argv", "get").mockReturnValue(["/usr/local/bin/node"]);
+              const traceExporterModule = yield* Effect.promise(
+                () => import("@opentelemetry/exporter-trace-otlp-http"),
+              );
+              const exported =
+                vi.fn<
+                  (span: {
+                    readonly events: readonly string[];
+                    readonly status: Readonly<{ code: number; message?: string }>;
+                  }) => void
+                >();
+              vi.spyOn(
+                traceExporterModule.OTLPTraceExporter.prototype,
+                "export",
+              ).mockImplementation((batch, resultCallback) => {
+                for (const span of batch.filter(
+                  (candidate) => candidate.instrumentationScope.name === INSTRUMENTATION_NAME,
+                )) {
+                  exported({
+                    events: span.events.map((event) => event.name),
+                    status: span.status,
+                  });
+                }
+                resultCallback({ code: 0 });
+              });
+              const stopped = vi
+                .spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown")
+                .mockResolvedValue();
+              const metricExporterModule = yield* Effect.promise(
+                () => import("@opentelemetry/exporter-metrics-otlp-http"),
+              );
+              vi.spyOn(
+                metricExporterModule.OTLPMetricExporter.prototype,
+                "export",
+              ).mockImplementation((_batch, resultCallback) => {
+                resultCallback({ code: 0 });
+              });
+              vi.spyOn(
+                metricExporterModule.OTLPMetricExporter.prototype,
+                "shutdown",
+              ).mockResolvedValue();
+              const started = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
+              const running = started.startTelemetry("mst-check");
+              onTestFinished(() => running.shutdown().then(forgetTelemetry));
+              const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
+              yield* Effect.promise(() =>
+                telemetry
+                  .measureCheck(() => Promise.reject(refusal))
+                  .then(
+                    () => undefined,
+                    (failure: unknown) => failure,
+                  ),
+              );
+              process.emit("beforeExit", 0);
+              yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
+              return exported;
+            }),
+          ),
+        );
 
-      it("still reaches whoever measured it", ({ spanForFailedCheck }) => {
-        expect(spanForFailedCheck.rejected).toBe(refusal);
+      it("still reaches whoever measured it", ({ failureSeenByCaller }) => {
+        expect(failureSeenByCaller).toBe(refusal);
       });
 
-      it("is closed with the failure recorded on it", ({ spanForFailedCheck }) => {
-        expect(spanForFailedCheck.exported).toHaveBeenCalledExactlyOnceWith({
+      it("is closed with the failure recorded on it", ({ failedSpanExport }) => {
+        expect(failedSpanExport).toHaveBeenCalledExactlyOnceWith({
           events: ["exception"],
           status: { code: SpanStatusCode.ERROR, message: "check refused" },
         });

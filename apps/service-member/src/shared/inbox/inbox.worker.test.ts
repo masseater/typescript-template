@@ -18,6 +18,12 @@ declare global {
   }
 }
 
+const askInbox = (
+  stub: Pick<DurableObjectStub, "fetch">,
+  url: string,
+  init?: RequestInit,
+): Effect.Effect<Response> => Effect.promise(() => stub.fetch(url, init));
+
 it.effect("stores a notification and a feed post for one user", () =>
   Effect.gen(function* program() {
     const namespace = env[userInboxBinding];
@@ -30,13 +36,11 @@ it.effect("stores a notification and a feed post for one user", () =>
     ): Effect.Effect<Stored> =>
       Effect.gen(function* publish() {
         const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(created))(body);
-        const response = yield* Effect.promise(() =>
-          stub.fetch(`https://inbox.internal/${path}`, {
-            body: encoded,
-            headers: { "content-type": "application/json" },
-            method: "POST",
-          }),
-        );
+        const response = yield* askInbox(stub, `https://inbox.internal/${path}`, {
+          body: encoded,
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        });
         return yield* Schema.decodeEffect(Schema.fromJsonString(stored))(
           yield* Effect.promise(() => response.text()),
         );
@@ -55,7 +59,7 @@ it.effect("stores a notification and a feed post for one user", () =>
     });
     assert.strictEqual(notification.id, "n1");
     assert.strictEqual(post.id, "p1");
-    const response = yield* Effect.promise(() => stub.fetch("https://inbox.internal/snapshot"));
+    const response = yield* askInbox(stub, "https://inbox.internal/snapshot");
     const snapshot = yield* Effect.promise(() => response.json());
     assert.deepStrictEqual(snapshot, {
       notifications: [notification],

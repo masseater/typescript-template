@@ -209,7 +209,9 @@ describe("react-doctor integration", () => {
     const spreadingFiles = Object.entries(workspaceConfigs).flatMap(([file, config]) => {
       const workspace = file.replace(/\/doctor\.config\.json$/u, "");
       return (config.ignore?.overrides ?? [])
-        .filter((override) => override.rules?.includes("react-doctor/jsx-props-no-spreading"))
+        .filter((override) =>
+          (override.rules ?? []).includes("react-doctor/jsx-props-no-spreading"),
+        )
         .flatMap((override) => override.files.map((target) => `${workspace}/${target}`));
     });
     expect(spreadingFiles.toSorted()).toStrictEqual(

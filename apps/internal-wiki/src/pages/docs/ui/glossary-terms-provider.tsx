@@ -1,11 +1,9 @@
 "use client";
 
-import { createContext, use } from "react";
+import { GlossaryTermsContext } from "#pages/docs/model/glossary-terms.ts";
 
 import type { GlossaryTerm } from "#shared/glossary-term/index.ts";
 import type { ReactElement, ReactNode } from "react";
-
-const GlossaryTermsContext = createContext<readonly GlossaryTerm[]>([]);
 
 function GlossaryTermsProvider({
   children,
@@ -14,8 +12,4 @@ function GlossaryTermsProvider({
   return <GlossaryTermsContext value={terms}>{children}</GlossaryTermsContext>;
 }
 
-function useGlossaryTerms(): readonly GlossaryTerm[] {
-  return use(GlossaryTermsContext);
-}
-
-export { GlossaryTermsProvider, useGlossaryTerms };
+export { GlossaryTermsProvider };

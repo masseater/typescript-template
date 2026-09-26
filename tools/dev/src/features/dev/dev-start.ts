@@ -92,7 +92,7 @@ const isolatedDatabase = Effect.acquireRelease(
   }),
   (directory) =>
     Effect.gen(function* cleanupDatabase() {
-      delete processEnvironment[localDatabaseVariable];
+      Reflect.deleteProperty(processEnvironment, localDatabaseVariable);
       const fs = yield* FileSystem.FileSystem;
       yield* fs.remove(directory, { force: true, recursive: true }).pipe(Effect.ignore);
     }),

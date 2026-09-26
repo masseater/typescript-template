@@ -8,7 +8,7 @@ import { Schema } from "effect";
 import { SignUpSubmission } from "#shared/contracts/index.ts";
 import { EmailField, NameField, fieldError } from "#shared/forms/index.ts";
 
-import type { FormEvent, ReactElement } from "react";
+import type { ReactElement, SubmitEvent } from "react";
 
 const signUpSchema = Schema.toStandardSchemaV1(SignUpSubmission);
 
@@ -39,7 +39,7 @@ const SignUpFields = ({
     },
     validators: { onSubmit: signUpSchema },
   });
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>): void {
     event.preventDefault();
     event.stopPropagation();
     void form.handleSubmit();

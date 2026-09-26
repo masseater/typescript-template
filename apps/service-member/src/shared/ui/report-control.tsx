@@ -4,7 +4,7 @@ import { Button, SelectField, localState, useAction } from "@repo/ui";
 import { fileReport } from "#shared/api/index.ts";
 
 import type { ReportReason, ReportSubject } from "@repo/config";
-import type { FormEvent, ReactElement } from "react";
+import type { ReactElement, SubmitEvent } from "react";
 const reasonOptions = [
   {
     label: "迷惑行為",
@@ -47,7 +47,7 @@ function ReportControl({
       </Button>
     );
   }
-  function submit(event: FormEvent<HTMLFormElement>): void {
+  function submit(event: SubmitEvent<HTMLFormElement>): void {
     event.preventDefault();
     if (!isReason(reason)) {
       return;

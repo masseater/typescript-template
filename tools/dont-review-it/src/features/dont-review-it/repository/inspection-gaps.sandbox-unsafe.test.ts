@@ -3,13 +3,9 @@ import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { overridePluginMismatches } from "./lint-test-fixture.ts";
-import {
-  awaitingPresetPackages,
-  softPresetPackages,
-  lintOptions,
-  templateWorkspaces,
-} from "./lint.ts";
+import { awaitingPresetPackages, lintOptions, templateWorkspaces } from "./lint.ts";
 import { repositoryRoot } from "./repository-root.ts";
+import { softPresetPackages } from "./soft-preset.ts";
 import { commands, reachable, taskNames } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 

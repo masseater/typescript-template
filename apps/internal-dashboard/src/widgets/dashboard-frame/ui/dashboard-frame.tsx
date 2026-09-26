@@ -35,7 +35,9 @@ function DashboardFrame({
     <AppFrame
       collapsedMark={collapsedDashboardMark}
       defaultCollapsed={defaultCollapsed}
-      footer={({ collapsed }) => <AccountMenu collapsed={collapsed} email={email} name={name} />}
+      renderFooter={({ collapsed }) => (
+        <AccountMenu collapsed={collapsed} email={email} name={name} />
+      )}
       headerActions={
         <>
           <a

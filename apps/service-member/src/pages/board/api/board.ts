@@ -24,7 +24,7 @@ function loadThread(id: string, page: number): Promise<Thread> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.thread.get({ query: { id, page: String(page) } }).then((response) => {
       const thread = apiDataOrNoneFor(absent.notFound)(BoardThreadView, response);
-      if (thread == null) {
+      if (thread === undefined) {
         throw notFound();
       }
       return thread as Thread;

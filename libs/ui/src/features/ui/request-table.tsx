@@ -14,12 +14,12 @@ const RequestTable = <Listing extends object>({
   columns,
   listing,
   onReload,
-  row,
+  renderRow,
 }: Readonly<{
   columns: readonly string[];
   listing: Listing;
   onReload: () => void;
-  row: (listed: ListedValue<Listing>) => ReactElement;
+  renderRow: (listed: ListedValue<Listing>) => ReactElement;
 }>): ReactElement => {
   const failure = resultError(listing);
   if (failure !== undefined) {
@@ -44,7 +44,7 @@ const RequestTable = <Listing extends object>({
         {loaded === undefined ? (
           <LoadingRow columnCount={columns.length} />
         ) : (
-          loaded.map((listed) => row(listed))
+          loaded.map((listed) => renderRow(listed))
         )}
       </TableBody>
     </Table>

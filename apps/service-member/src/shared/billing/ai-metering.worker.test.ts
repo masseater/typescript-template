@@ -48,7 +48,13 @@ function stripeAnswering(
         http.post(meterEvents, ({ request }) =>
           request.formData().then((form) => {
             const status = statuses[Math.min(sent.length, statuses.length - 1)] ?? 200;
-            sent.push(new URLSearchParams([...form].map(([key, value]) => [key, String(value)])));
+            sent.push(
+              new URLSearchParams(
+                [...form].flatMap(([key, value]) =>
+                  typeof value === "string" ? [[key, value]] : [],
+                ),
+              ),
+            );
             return status === 200
               ? HttpResponse.json({ event_name: "ai_interview_turn" })
               : HttpResponse.json({ error: { message: "unavailable" } }, { status });

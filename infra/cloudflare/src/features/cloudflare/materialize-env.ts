@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { runCli } from "@repo/cli";
+import { logAt } from "@repo/observability";
 import { Effect } from "effect";
 
 import { writeCiSecretsFile } from "./ci-env.ts";
 import { secretsFile } from "./deployment.ts";
-import { encodeJson } from "./platform.ts";
 import { projectName } from "./project.ts";
 import { causeRecord } from "./secrets.ts";
 
@@ -14,12 +14,13 @@ runCli(
   Effect.gen(function* program() {
     const preparation = yield* writeCiSecretsFile(process.env, secretsFile(yield* projectName));
     if (preparation.status === "unconfigured") {
-      yield* Effect.log(yield* encodeJson({ event: "cloudflare.env_unconfigured" }));
+      yield* logAt("Info", { eventName: "cloudflare.env_unconfigured" });
       return;
     }
-    yield* Effect.log(
-      yield* encodeJson({ event: "cloudflare.env_ready", filename: preparation.filename }),
-    );
+    yield* logAt("Info", {
+      attributes: { filename: preparation.filename },
+      eventName: "cloudflare.env_ready",
+    });
   }),
   (cause) => causeRecord(EVENT, cause),
 );

@@ -30,6 +30,12 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
+        send(mail: {
+          readonly from: string;
+          readonly subject: string;
+          readonly text: string;
+          readonly to: readonly string[];
+        }): Promise<void>;
         taken(): Promise<
           ReadonlyArray<{
             readonly from: string;

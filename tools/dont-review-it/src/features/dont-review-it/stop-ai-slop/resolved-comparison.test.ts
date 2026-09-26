@@ -2,7 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Config, Effect, FileSystem, Layer, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { gitEnvironmentLayer } from "./git-text.ts";
 import { ComparisonUnresolved, resolvedComparison } from "./resolved-comparison.ts";
@@ -139,13 +139,14 @@ const checkoutHoldingOnlyThePullRequestMerge = Effect.gen(
       mergeCommit,
     } = yield* repositoryHoldingThePullRequestMerge;
     const repositoryRoot = yield* mergeCheckoutOf(originRoot, mergeCommit);
-    const compare = vi.fn<GitHubApi["compare"]>(() =>
-      Effect.succeed({ merge_base_commit: { sha: baseCommit }, files: [] }),
-    );
-    const contents = vi.fn<GitHubApi["contents"]>(() => Effect.succeed(new Uint8Array()));
-    return { repositoryRoot, compare, api: { compare, contents } };
+    return { baseCommit, repositoryRoot };
   },
 );
+
+const answeringApiFor = (baseCommit: string): GitHubApi => ({
+  compare: () => Effect.succeed({ merge_base_commit: { sha: baseCommit }, files: [] }),
+  contents: () => Effect.succeed(new Uint8Array()),
+});
 
 layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComparison", (it) => {
   describe("a checkout that holds the integration branch", () => {
@@ -312,17 +313,14 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
 
   describe("a checkout that holds only the merge of a pull request", () => {
     const pullRequestComparison = Effect.gen(function* pullRequestComparison() {
-      const { repositoryRoot, api } = yield* checkoutHoldingOnlyThePullRequestMerge;
+      const { repositoryRoot, baseCommit } = yield* checkoutHoldingOnlyThePullRequestMerge;
       return {
         repositoryRoot,
-        comparison: yield* resolvedComparison(repositoryRoot, { repository: "owner/name", api }),
+        comparison: yield* resolvedComparison(repositoryRoot, {
+          repository: "owner/name",
+          api: answeringApiFor(baseCommit),
+        }),
       };
-    });
-
-    const pullRequestCompareCall = Effect.gen(function* pullRequestCompareCall() {
-      const { repositoryRoot, compare, api } = yield* checkoutHoldingOnlyThePullRequestMerge;
-      yield* resolvedComparison(repositoryRoot, { repository: "owner/name", api });
-      return compare;
     });
 
     const refusalWithoutApi = Effect.gen(function* refusalWithoutApi() {
@@ -340,15 +338,6 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
           baseRevision: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
           headRevision: "d8fde84998100e7b6119bddff27a36a2e20e9ad6",
           files: [],
-        });
-      }),
-    );
-
-    it.effect("asks the compare endpoint for the range spanned by the merged parents", () =>
-      Effect.gen(function* program() {
-        expect(yield* pullRequestCompareCall).toHaveBeenCalledExactlyOnceWith("owner/name", {
-          base: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
-          head: "d8fde84998100e7b6119bddff27a36a2e20e9ad6",
         });
       }),
     );
@@ -375,5 +364,36 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
         );
       }),
     );
+  });
+});
+
+describe("resolvedComparison", () => {
+  describe("a checkout that holds only the merge of a pull request", () => {
+    const it = test.extend("pullRequestCompareCall", () =>
+      Effect.runPromise(
+        Effect.gen(function* pullRequestCompareCall() {
+          const { repositoryRoot, baseCommit } = yield* checkoutHoldingOnlyThePullRequestMerge;
+          const compare = vi.fn<GitHubApi["compare"]>(() =>
+            Effect.succeed({ merge_base_commit: { sha: baseCommit }, files: [] }),
+          );
+          yield* resolvedComparison(repositoryRoot, {
+            repository: "owner/name",
+            api: { ...answeringApiFor(baseCommit), compare },
+          });
+          return compare;
+        }).pipe(
+          Effect.scoped,
+          Effect.provide(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer)),
+        ),
+      ));
+
+    it("asks the compare endpoint for the range spanned by the merged parents", ({
+      pullRequestCompareCall,
+    }) => {
+      expect(pullRequestCompareCall).toHaveBeenCalledExactlyOnceWith("owner/name", {
+        base: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
+        head: "d8fde84998100e7b6119bddff27a36a2e20e9ad6",
+      });
+    });
   });
 });

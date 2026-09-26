@@ -169,7 +169,7 @@ const calledFrom = (
 const underMktemp = (inspection: LintContext, node: Node): boolean => {
   let current: Node | null | undefined =
     "parent" in node ? (node.parent as Node | null | undefined) : undefined;
-  while (current != null) {
+  while (current !== null && current !== undefined) {
     if (
       current.type === "CallExpression" &&
       calledFrom(inspection, current, fsModules, mktempNames)

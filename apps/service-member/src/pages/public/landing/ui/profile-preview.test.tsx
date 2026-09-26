@@ -5,7 +5,6 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -24,10 +23,9 @@ const renderedPreview = (locale: Locale): string => {
     routeTree,
   });
   return renderToStaticMarkup(
-    createElement(RouterContextProvider, {
-      children: createElement(ProfilePreview),
-      router,
-    }),
+    <RouterContextProvider router={router}>
+      <ProfilePreview />
+    </RouterContextProvider>,
   );
 };
 

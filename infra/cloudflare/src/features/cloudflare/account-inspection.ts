@@ -1,4 +1,5 @@
 import { applications } from "@repo/config";
+import { logAt } from "@repo/observability";
 import { Effect } from "effect";
 
 import {
@@ -12,7 +13,6 @@ import { isUnreadable, readVerdict, unreadableState, unreadableVerdict } from ".
 import { databaseVerdict } from "./database-guard.ts";
 import { STATE_STORE_SCRIPT_NAME, missingPermissions } from "./deploy-token.ts";
 import { alertQuotaVerdict, emailBlocked, emailVerdicts } from "./email-guard.ts";
-import { encodeJson } from "./platform.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
 
 import type { StateService } from "alchemy/State";
@@ -92,9 +92,10 @@ const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: Ac
     Effect.tap((granted) =>
       missingPermissions(granted).length === 0
         ? Effect.void
-        : Effect.flatMap(encodeJson({ event: "account.token_permissions", granted }), (line) =>
-            Effect.log(line),
-          ),
+        : logAt("Info", {
+            attributes: { granted: granted.map((group) => group.name).join(",") },
+            eventName: "account.token_permissions",
+          }),
     ),
     Effect.map((granted) => missingPermissions(granted)),
     Effect.catchTag("CloudflareFailure", unreadableVerdict),

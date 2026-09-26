@@ -8,6 +8,23 @@ import { buildCatalog } from "./catalog.ts";
 import { fingerprintValues } from "./fingerprint.ts";
 import { importRouteStatus } from "./import-route.ts";
 
+import type { CanonicalValuesEntry } from "./catalog.ts";
+
+const orderStatusDeclaration = (
+  declaration: Pick<CanonicalValuesEntry, "declarationPath" | "importRoutes">,
+): CanonicalValuesEntry => ({
+  annotationStart: 0,
+  binding: "ORDER_STATUSES",
+  bindingStart: 40,
+  conceptId: "order.status",
+  declarationEnd: 80,
+  declarationStart: 20,
+  packageName: "@mst/order-vocabulary",
+  values: ["draft", "published"],
+  fingerprint: fingerprintValues(["draft", "published"]),
+  ...declaration,
+});
+
 layer(NodeServices.layer)("importRouteStatus", (it) => {
   describe("a binding the public specifier does not export", () => {
     const it = test.extend("statusOfAShadowBindingOnThePublicSpecifier", () =>
@@ -19,14 +36,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -39,10 +50,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -61,14 +69,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -81,10 +83,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -103,19 +102,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -151,14 +141,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -171,10 +155,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -193,14 +174,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -213,10 +188,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -303,19 +275,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -353,19 +316,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -403,19 +357,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -453,19 +398,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -488,14 +424,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -508,10 +438,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -545,19 +472,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -595,19 +513,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -630,14 +539,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -650,10 +553,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -672,14 +572,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -692,10 +586,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -744,19 +635,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -809,19 +691,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -878,19 +751,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -943,19 +807,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -1008,19 +863,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -1073,19 +919,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -1138,19 +975,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -1408,14 +1236,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -1428,10 +1250,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -1450,14 +1269,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -1470,10 +1283,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -1515,14 +1325,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/statuses.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -1530,10 +1334,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "#internal/statuses",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -1556,14 +1357,8 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/order-status.ts",
-            declarationStart: 20,
             importRoutes: [
               {
                 exportName: "ORDER_STATUSES",
@@ -1576,10 +1371,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
                 specifier: "@mst/order-vocabulary/alias",
               },
             ],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 
@@ -1613,19 +1405,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot,
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "src/index.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       );
     });
@@ -1648,19 +1431,10 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
           repositoryRoot: "/repository",
         },
         buildCatalog([
-          {
-            annotationStart: 0,
-            binding: "ORDER_STATUSES",
-            bindingStart: 40,
-            conceptId: "order.status",
-            declarationEnd: 80,
+          orderStatusDeclaration({
             declarationPath: "packages/order-vocabulary/src/status/index.ts",
-            declarationStart: 20,
             importRoutes: [],
-            packageName: "@mst/order-vocabulary",
-            values: ["draft", "published"],
-            fingerprint: fingerprintValues(["draft", "published"]),
-          },
+          }),
         ]),
       ));
 

@@ -55,7 +55,7 @@ export const writeCachedEntries = (
   };
   const [unwritableCache] = attempt(() => {
     mkdirSync(path.dirname(filePath), { recursive: true });
-    writeFileSync(temporaryPath, JSON.stringify(cacheDocument), "utf8");
+    writeFileSync(temporaryPath, JSON.stringify(cacheDocument), "utf-8");
     renameSync(temporaryPath, filePath);
   });
   if (unwritableCache !== null) return;

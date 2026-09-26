@@ -7,7 +7,7 @@ function Mermaid({
   svg,
 }: Readonly<{ aspect: string; chart: string; svg: string }>): ReactElement {
   return (
-    <figure className="bg-fd-background not-prose my-6">
+    <figure className="bg-fd-background my-6">
       <SvgDiagram aspect={aspect} svg={svg} />
     </figure>
   );

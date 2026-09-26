@@ -547,7 +547,7 @@ describe("mergify ci insights", () => {
   it("hands MERGIFY_TOKEN to every job that runs vp, at the job level", () => {
     expect.hasAssertions();
     const vpJobs = jobs.filter(([, job]) =>
-      (job.steps ?? []).some((step) => step.run?.includes("vp ")),
+      (job.steps ?? []).some((step) => (step.run ?? "").includes("vp ")),
     );
     expect(vpJobs.length).toBeGreaterThan(0);
     expect(

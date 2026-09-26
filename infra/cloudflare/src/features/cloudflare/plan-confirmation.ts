@@ -5,7 +5,6 @@ import { Crypto, Effect, Predicate, Redacted } from "effect";
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
 
 import type { Stack as StackRoute } from "alchemy/Alchemist";
-import type { Plan } from "alchemy/Plan";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";
 
 type RowAction = PlannedAction["action"] | PlannedResource["action"];
@@ -189,22 +188,26 @@ function refusedRows(planned: PlannedStack): readonly Refusal[] {
   ];
 }
 
-function resourceProps(nodes: Plan["resources"]): readonly (readonly [string, unknown])[] {
+type PlannedNodes = Readonly<{
+  actions: Readonly<Record<string, Readonly<{ action: string; input?: unknown }>>>;
+  resources: Readonly<Record<string, Readonly<{ action: string; props?: unknown }>>>;
+}>;
+
+function resourceProps(nodes: PlannedNodes["resources"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
-      [fqn, node.action === "noop" ? undefined : node.props] as const,
+    ([fqn, node]) => [fqn, node.action === "noop" ? undefined : node.props] as const,
   );
 }
 
-function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unknown])[] {
+function actionInputs(nodes: PlannedNodes["actions"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    ([fqn, node]: readonly [string, Plan["actions"][string]]) =>
-      [fqn, node.action === "run" ? node.input : undefined] as const,
+    ([fqn, node]) => [fqn, node.action === "run" ? node.input : undefined] as const,
   );
 }
 
 function plannedStack(
-  snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "native" | "resources" | "stack">,
+  snapshot: Pick<StackRoute.PlanSnapshot, "actions" | "resources" | "stack"> &
+    Readonly<{ native: PlannedNodes }>,
 ): PlannedStack {
   return {
     actions: snapshot.actions,

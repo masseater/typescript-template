@@ -116,7 +116,7 @@ const candidatesFor = (label: Label): readonly Readonly<{ box: Box; onLine: bool
         ];
       }),
     )
-    .toSorted((left, right) => Number(left.onLine === false) - Number(right.onLine === false));
+    .toSorted((left, right) => Number(!left.onLine) - Number(!right.onLine));
 
 const closestToItsOwnRoute = (geometry: DiagramGeometry, label: Label, box: Box): boolean => {
   const middle = center(box);

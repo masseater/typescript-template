@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { RECORDING_STATUS } from "@repo/config";
+import { runStatement } from "@repo/db/testing";
 import { FileStore } from "@repo/runtime";
 import { applyD1Migrations, reset, type D1Migration } from "cloudflare:test";
 import { env } from "cloudflare:workers";
@@ -52,13 +53,12 @@ const storedRecording = Effect.fn("storedRecording")(function* storedRecording(w
     });
   }
   const ownerId = crypto.randomUUID();
-  yield* Effect.promise(() =>
-    env.DB.prepare(
-      "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
-    )
-      .bind(ownerId, "host", `${ownerId}@example.test`)
-      .run(),
-  );
+  yield* runStatement(
+    "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
+    ownerId,
+    "host",
+    `${ownerId}@example.test`,
+  ).pipe(Effect.orDie);
   yield* (yield* CoreRecords).createRecording({
     byteSize: 3,
     contentType: "audio/mp4",

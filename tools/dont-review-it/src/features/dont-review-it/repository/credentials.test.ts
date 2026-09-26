@@ -9,17 +9,11 @@ const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 const project = "template-project";
 
 const stubbedEnvironment = (entries: Readonly<Record<string, string | undefined>>) =>
-  Effect.acquireRelease(
-    Effect.sync(() => {
-      for (const [name, value] of Object.entries(entries)) {
-        vi.stubEnv(name, value);
-      }
-    }),
-    () =>
-      Effect.sync(() => {
-        vi.unstubAllEnvs();
-      }),
-  );
+  Effect.sync(() => {
+    for (const [name, value] of Object.entries(entries)) {
+      vi.stubEnv(name, value);
+    }
+  });
 
 const fixture = Effect.gen(function* fixture() {
   const filesystem = yield* FileSystem.FileSystem;

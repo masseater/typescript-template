@@ -1,7 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
 import { buildRepositoryBodyIndex, loadRepositoryBodyIndex } from "./builder.ts";
@@ -81,40 +81,6 @@ layer(NodeServices.layer)("buildRepositoryBodyIndex", (it) => {
       }),
     );
   });
-
-  describe("a repository holding a source that vanished after the listing", () => {
-    const fixture = Effect.gen(function* indexedPaths() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const paths = yield* Path.Path;
-      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "duplicated-bodies-builder-",
-      });
-
-      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
-      yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", "a.ts"), TWICE);
-      yield* filesystem.writeFileString(
-        paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
-        TWICE,
-      );
-      const listedSources = yield* Effect.promise(() =>
-        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
-          "../canonical-values/source-files.ts",
-        ),
-      );
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still readable is settled by the file system between the listing and the read, and that window is inside the boundary this spec replaces
-      vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
-      );
-      return Array.from(buildRepositoryBodyIndex({ repositoryRoot }).bodiesByPath.keys());
-    });
-
-    it.effect("leaves that source out of the index", () =>
-      Effect.gen(function* program() {
-        const indexedPaths = yield* fixture;
-        expect(indexedPaths).toStrictEqual(["src/a.ts"]);
-      }),
-    );
-  });
 });
 
 layer(NodeServices.layer)("loadRepositoryBodyIndex", (it) => {
@@ -140,5 +106,41 @@ layer(NodeServices.layer)("loadRepositoryBodyIndex", (it) => {
         expect(sameIndexHandedBack).toBe(true);
       }),
     );
+  });
+});
+
+describe("buildRepositoryBodyIndex", () => {
+  describe("a repository holding a source that vanished after the listing", () => {
+    const it = test.extend("indexedPaths", () =>
+      Effect.runPromise(
+        Effect.gen(function* indexedPaths() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "duplicated-bodies-builder-",
+          });
+
+          yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+          yield* filesystem.writeFileString(paths.join(repositoryRoot, "src", "a.ts"), TWICE);
+          yield* filesystem.writeFileString(
+            paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
+            TWICE,
+          );
+          const listedSources = yield* Effect.promise(() =>
+            vi.importActual<typeof import("../canonical-values/source-files.ts")>(
+              "../canonical-values/source-files.ts",
+            ),
+          );
+          // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still readable is settled by the file system between the listing and the read, and that window is inside the boundary this spec replaces
+          vi.mocked(readTextFile).mockImplementation((path) =>
+            path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
+          );
+          return Array.from(buildRepositoryBodyIndex({ repositoryRoot }).bodiesByPath.keys());
+        }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+      ));
+
+    it("leaves that source out of the index", ({ indexedPaths }) => {
+      expect(indexedPaths).toStrictEqual(["src/a.ts"]);
+    });
   });
 });

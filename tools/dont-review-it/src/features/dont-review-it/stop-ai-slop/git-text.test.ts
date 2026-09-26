@@ -4,22 +4,17 @@ import { Config, Effect, FileSystem, Layer } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
 import { gitExecutablePath } from "../repository-checks/index.ts";
-import { GitCommandFailed, gitEnvironmentLayer, runGitText } from "./git-text.ts";
+import { GitCommandFailed } from "./git-command-failed.ts";
+import { gitEnvironmentLayer, runGitText } from "./git-text.ts";
 
 const scratchDirectory = Effect.flatMap(FileSystem.FileSystem, (filesystem) =>
   filesystem.makeTempDirectoryScoped({ prefix: "stop-ai-slop-git-text-" }),
 );
 
 const stubbedVariable = (name: string, value: string) =>
-  Effect.acquireRelease(
-    Effect.sync(() => {
-      vi.stubEnv(name, value);
-    }),
-    () =>
-      Effect.sync(() => {
-        vi.unstubAllEnvs();
-      }),
-  );
+  Effect.sync(() => {
+    vi.stubEnv(name, value);
+  });
 
 const aliasRun = (alias: string) =>
   Effect.flatMap(scratchDirectory, (repositoryRoot) =>

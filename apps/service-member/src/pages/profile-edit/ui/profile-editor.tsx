@@ -7,14 +7,14 @@ import { ProfileActions } from "./profile-actions.tsx";
 import { SocialLinksEditor } from "./social-links-editor.tsx";
 
 import type { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
-import type { FormEvent, ReactElement } from "react";
+import type { ReactElement, SubmitEvent } from "react";
 
 function ProfileEditor({
   formState,
   homeId,
 }: Readonly<{ formState: ReturnType<typeof useProfileForm>; homeId: string }>): ReactElement {
   const { blocked, form, pending } = formState;
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>): void {
     event.preventDefault();
     event.stopPropagation();
     void form.handleSubmit();

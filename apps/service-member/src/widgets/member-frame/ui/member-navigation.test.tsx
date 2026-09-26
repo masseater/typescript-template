@@ -40,16 +40,13 @@ function markup(locale: Locale, path: string): Promise<string> {
     Effect.gen(function* loadFrame() {
       overwriteGetLocale(() => locale);
       const rootRoute = createRootRoute({
-        component: () =>
-          createElement(
-            RegistryProvider,
-            null,
-            createElement(MemberFrame, {
-              children: createElement("p", null, "本文"),
-              navBadges: { notifications: 0 },
-              user: member,
-            }),
-          ),
+        component: () => (
+          <RegistryProvider>
+            <MemberFrame navBadges={{ notifications: 0 }} user={member}>
+              <p>本文</p>
+            </MemberFrame>
+          </RegistryProvider>
+        ),
       });
       const router = createRouter({
         history: createMemoryHistory({ initialEntries: [path] }),

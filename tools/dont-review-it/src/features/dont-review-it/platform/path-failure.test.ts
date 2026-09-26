@@ -7,10 +7,8 @@ import { describe, expect, test } from "vite-plus/test";
 import { failureCodeOf, readUnlessMissing } from "./path-failure.ts";
 
 class RuntimeRefusal extends Schema.TaggedError<RuntimeRefusal>()("RuntimeRefusal", {
-  code: Schema.Union([Schema.String, Schema.Finite]),
+  code: Schema.optional(Schema.Union([Schema.String, Schema.Finite])),
 }) {}
-
-class UncodedFailure extends Schema.TaggedError<UncodedFailure>()("UncodedFailure", {}) {}
 
 const presentFile = Effect.gen(function* presentFile() {
   const filesystem = yield* FileSystem.FileSystem;
@@ -29,7 +27,7 @@ const statRefusalAt = (targetPath: string) =>
   });
 
 const raisedBy = (thrown: unknown): unknown => {
-  const [failure] = attempt<unknown, unknown>(() =>
+  const [failure] = attempt(() =>
     readUnlessMissing(() => {
       throw thrown;
     }),
@@ -91,7 +89,7 @@ describe("readUnlessMissing", () => {
   });
 
   describe("a failure the runtime did not raise", () => {
-    const uncoded = new UncodedFailure();
+    const uncoded = new RuntimeRefusal({});
     const it = test.extend("raisedUncoded", () => raisedBy(uncoded));
 
     it("is passed on untouched", ({ raisedUncoded }) => {

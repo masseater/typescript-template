@@ -37,7 +37,7 @@ export const nearestPackageDirectory = (
 };
 
 export const readTextFile = (targetPath: string): string | null =>
-  readUnlessMissing(() => readFileSync(targetPath, "utf8"));
+  readUnlessMissing(() => readFileSync(targetPath, "utf-8"));
 
 const SCRIPT_FILE_NAME_PATTERN = /\.[cm]?[jt]sx?$/u;
 

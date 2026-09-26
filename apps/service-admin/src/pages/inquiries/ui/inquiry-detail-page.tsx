@@ -8,6 +8,10 @@ import { InquiryReplyForm } from "./inquiry-reply-form.tsx";
 
 import type { ReactElement } from "react";
 
+const memberSummaryOf = (memberId: string): ReactElement => (
+  <InquiryMemberSummary memberId={memberId} />
+);
+
 function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): ReactElement {
   const listing = useInquiryList();
   const { reload, thread } = useInquiryThread(inquiryId);
@@ -16,7 +20,7 @@ function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
       error={firstResultError(thread, listing)}
       inquiries={resultValue(listing)}
       inquiry={resultValue(thread)}
-      memberSummary={(memberId) => <InquiryMemberSummary memberId={memberId} />}
+      memberSummary={memberSummaryOf}
       replyForm={<InquiryReplyForm inquiryId={inquiryId} onChanged={reload} />}
     />
   );

@@ -129,7 +129,7 @@ const propertySpecifier = (text: string, index: number): Read | undefined => {
 };
 
 const remember = (found: string[], read: Read | undefined): void => {
-  if (read !== undefined && read.value.startsWith("@repo/")) {
+  if (read?.value.startsWith("@repo/") === true) {
     found.push(read.value);
   }
 };

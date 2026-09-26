@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { getSchemaShape } from "@repo/db/testing";
 import { Effect, Schema } from "effect";
-import { expect } from "vite-plus/test";
+import { expect, expectTypeOf } from "vite-plus/test";
 
 import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
 import {
@@ -14,19 +14,8 @@ import {
 
 import type { UserRecord } from "@repo/db";
 
-type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserRecord, Fields>]
-  ? [Pick<UserRecord, Fields>] extends [View]
-    ? true
-    : false
-  : false;
-
 const derivedFields = ["photos"] as const;
 type DerivedField = (typeof derivedFields)[number];
-
-const profileViewMatchesRecord: Matches<
-  Omit<typeof ProfileView.Type, DerivedField>,
-  "email" | "id" | "name" | "profile" | "socialLinks"
-> = true;
 
 const noPhotos = { company: null, face: null };
 
@@ -172,7 +161,9 @@ describe("member list response", () => {
 describe("profile view", () => {
   it("describes the same field types as the user row", () => {
     expect.hasAssertions();
-    expect(profileViewMatchesRecord).toBe(true);
+    expectTypeOf<Omit<typeof ProfileView.Type, DerivedField>>().toEqualTypeOf<
+      Pick<UserRecord, "email" | "id" | "name" | "profile" | "socialLinks">
+    >();
     const columns = new Set(getSchemaShape()["user"]);
     expect(Object.keys(ProfileView.fields).filter((field) => !columns.has(field))).toStrictEqual(
       derivedFields,

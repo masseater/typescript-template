@@ -1,7 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect, test, vi } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
 import { loadRepositoryCellClassIndex } from "./builder.ts";
@@ -91,29 +91,6 @@ layer(NodeServices.layer)("loadRepositoryCellClassIndex", (it) => {
     );
   });
 
-  describe("a source that vanished after the listing", () => {
-    const fixture = Effect.gen(function* cellClassIndex() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const paths = yield* Path.Path;
-      const root = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "mutable-cell-classes-builder-",
-      });
-
-      yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
-      yield* filesystem.writeFileString(paths.join(root, "src", "vanished.ts"), TALLY);
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether the source still exists between the listing and the read is settled inside the boundary this spec replaces
-      vi.mocked(readTextFile).mockReturnValueOnce(null);
-      return loadRepositoryCellClassIndex({ repositoryRoot: root });
-    });
-
-    it.effect("is left out of the index", () =>
-      Effect.gen(function* program() {
-        const cellClassIndex = yield* fixture;
-        expect(cellClassIndex).toStrictEqual({ findingsByPath: new Map() });
-      }),
-    );
-  });
-
   describe("the index of a repository", () => {
     const fixture = Effect.gen(function* sameIndexOnASecondAsk() {
       const filesystem = yield* FileSystem.FileSystem;
@@ -136,5 +113,30 @@ layer(NodeServices.layer)("loadRepositoryCellClassIndex", (it) => {
         expect(sameIndexOnASecondAsk).toBe(true);
       }),
     );
+  });
+});
+
+describe("loadRepositoryCellClassIndex", () => {
+  describe("a source that vanished after the listing", () => {
+    const it = test.extend("cellClassIndex", () =>
+      Effect.runPromise(
+        Effect.gen(function* cellClassIndex() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const root = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "mutable-cell-classes-builder-",
+          });
+
+          yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+          yield* filesystem.writeFileString(paths.join(root, "src", "vanished.ts"), TALLY);
+          // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether the source still exists between the listing and the read is settled inside the boundary this spec replaces
+          vi.mocked(readTextFile).mockReturnValueOnce(null);
+          return loadRepositoryCellClassIndex({ repositoryRoot: root });
+        }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+      ));
+
+    it("is left out of the index", ({ cellClassIndex }) => {
+      expect(cellClassIndex).toStrictEqual({ findingsByPath: new Map() });
+    });
   });
 });

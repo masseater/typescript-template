@@ -37,7 +37,9 @@ function AdminFrame({
     <AppFrame
       collapsedMark={collapsedAdminMark}
       defaultCollapsed={defaultCollapsed}
-      footer={({ collapsed }) => <AccountMenu collapsed={collapsed} email={email} name={name} />}
+      renderFooter={({ collapsed }) => (
+        <AccountMenu collapsed={collapsed} email={email} name={name} />
+      )}
       navigationId="admin-navigation"
       productName={adminProductName}
       sections={adminNavGroups.map((section) => ({

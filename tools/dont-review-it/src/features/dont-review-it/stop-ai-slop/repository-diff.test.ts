@@ -50,9 +50,7 @@ const git = Effect.fn("git")(function* git(
 }, Effect.scoped);
 
 const refusalOf = (inventoryOutput: string, diff: string): unknown => {
-  const [rejection] = attempt<unknown, unknown>(() =>
-    parseRepositoryChanges({ inventoryOutput, diff }),
-  );
+  const [rejection] = attempt(() => parseRepositoryChanges({ inventoryOutput, diff }));
   return rejection;
 };
 

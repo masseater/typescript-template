@@ -4,6 +4,7 @@ import { dashboardStaff, type ReadOnlyDashboardStaff } from "@repo/db";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { Effect } from "effect";
+import { expect } from "vite-plus/test";
 
 import { dashboardApi } from "./dashboard-api.ts";
 import { reporting, runtime } from "./runtime.ts";
@@ -43,9 +44,11 @@ it.effect("rejects write requests on dashboard routes", () =>
 describe("the staff surface", () => {
   it("exposes only read-only dashboard staff operations", () => {
     const staff: ReadOnlyDashboardStaff = dashboardStaff;
-    assert.isFunction(staff.auditEvents);
-    assert.isFunction(staff.metricTrend);
-    assert.isFunction(staff.overview);
-    assert.notProperty(staff, "refreshMetricSnapshots");
+    expect(staff).toStrictEqual({
+      auditEvents: expect.any(Function),
+      metricTrend: expect.any(Function),
+      overview: expect.any(Function),
+      overviewWithoutPii: expect.any(Function),
+    });
   });
 });

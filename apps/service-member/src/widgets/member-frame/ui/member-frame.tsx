@@ -40,7 +40,7 @@ function MemberFrame({
       bottomTabs
       collapsedMark={collapsedMemberMark}
       density="compact"
-      footer={() => <AccountMenu compact name={user.name} userId={user.id} />}
+      renderFooter={() => <AccountMenu compact name={user.name} userId={user.id} />}
       headerLeading={<AccountMenu compact name={user.name} userId={user.id} />}
       homeTo="/home"
       navigationId="member-navigation"

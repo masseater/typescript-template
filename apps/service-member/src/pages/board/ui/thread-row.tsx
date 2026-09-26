@@ -1,6 +1,6 @@
 import { CardLink, formatWarekiDateTime } from "@repo/ui";
 
-import { unavailableAuthor } from "./author-name.tsx";
+import { unavailableAuthor } from "#pages/board/model/author-labels.ts";
 
 import type { ThreadList } from "#pages/board/api/board.ts";
 import type { ReactElement } from "react";

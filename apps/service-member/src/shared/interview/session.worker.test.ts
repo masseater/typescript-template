@@ -55,8 +55,7 @@ function services(
   | Layer.Success<typeof TestDatabase>
   | Interviewer
   | ProfileLayoutAssembler
-  | Layer.Success<typeof stripeTestLayer>,
-  Layer.Error<typeof TestDatabase>
+  | Layer.Success<typeof stripeTestLayer>
 > {
   return Layer.mergeAll(
     TestDatabase,

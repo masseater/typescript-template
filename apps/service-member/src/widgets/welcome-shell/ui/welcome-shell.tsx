@@ -9,7 +9,7 @@ function WelcomeShell({
   return (
     <div className="flex min-h-dvh flex-col items-center gap-6 p-4">
       <p className="text-sm leading-tight text-muted-foreground">{progress}</p>
-      <div className="max-w-lg w-full">{children ?? <Outlet />}</div>
+      <div className="w-full max-w-column">{children ?? <Outlet />}</div>
     </div>
   );
 }

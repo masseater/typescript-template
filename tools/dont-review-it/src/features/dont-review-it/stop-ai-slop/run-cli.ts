@@ -9,18 +9,17 @@ import {
 } from "../repository-checks/index.ts";
 import { SourceUnparsable } from "./checks/verification-source.ts";
 import { failingWhenThrown } from "./expected-throw.ts";
-import { gitEnvironmentLayer, type GitCommandFailed } from "./git-text.ts";
-import {
-  gitHubApiFor,
-  type GitHubAnswerUnexpected,
-  type GitHubRequestFailed,
-} from "./github-request.ts";
+import { gitEnvironmentLayer } from "./git-text.ts";
+import { gitHubApiFor, type GitHubRequestFailed } from "./github-request.ts";
 import { formatProblem, type SlopProblem } from "./problem.ts";
 import { resolvedComparison, type ComparisonUnresolved } from "./resolved-comparison.ts";
 import { runChecks } from "./run-checks.ts";
 
+import type { BlobUnreadable } from "./blob-unreadable.ts";
+import type { GitCommandFailed } from "./git-command-failed.ts";
+import type { GitHubAnswerUnexpected } from "./github-answer-unexpected.ts";
 import type { GitHubComparisonIncomplete } from "./github-comparison.ts";
-import type { BlobUnreadable, UndecodableSource } from "./repository-comparison.ts";
+import type { UndecodableSource } from "./repository-comparison.ts";
 import type { DiffUnreadable } from "./repository-diff.ts";
 
 export type StopAiSlopOptions = Readonly<{

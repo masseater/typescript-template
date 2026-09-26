@@ -34,7 +34,7 @@ function tooLarge(request: Request, limit: number): boolean {
 }
 
 function readBounded(
-  body: ReadableStream<Uint8Array>,
+  body: ReadableStream<unknown>,
   limit: number,
 ): Effect.Effect<Bytes, PhotoMissing | PhotoTooLarge> {
   return Stream.fromReadableStream({
@@ -43,7 +43,10 @@ function readBounded(
   }).pipe(
     Stream.runFoldEffect(
       (): Collected => ({ byteLength: 0, chunks: [] }),
-      (collected, chunk) => {
+      (collected, chunk): Effect.Effect<Collected, PhotoMissing | PhotoTooLarge> => {
+        if (!(chunk instanceof Uint8Array)) {
+          return Effect.fail(new PhotoMissing());
+        }
         const byteLength = collected.byteLength + chunk.byteLength;
         return byteLength > limit
           ? Effect.fail(new PhotoTooLarge())
@@ -84,7 +87,7 @@ function fileOf(bytes: Bytes, contentType: string): Effect.Effect<Bytes, PhotoMi
   );
 }
 
-const readPhotoUpload = Effect.fn("readPhotoUpload")(function* readPhotoUpload(request: Request) {
+const admittedLimit = Effect.fn("admittedLimit")(function* admittedLimit(request: Request) {
   if (crossOrigin(request, yield* AppOrigin)) {
     return yield* new RequestRejected({ reason: "origin_denied" });
   }
@@ -97,6 +100,11 @@ const readPhotoUpload = Effect.fn("readPhotoUpload")(function* readPhotoUpload(r
   if (tooLarge(request, limit)) {
     return yield* new PhotoTooLarge();
   }
+  return { limit, multipart };
+});
+
+const readPhotoUpload = Effect.fn("readPhotoUpload")(function* readPhotoUpload(request: Request) {
+  const { limit, multipart } = yield* admittedLimit(request);
   if (request.body === null) {
     return yield* new PhotoMissing();
   }

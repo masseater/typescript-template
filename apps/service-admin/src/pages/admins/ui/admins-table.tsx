@@ -18,7 +18,7 @@ function AdminsTable({
       columns={adminsTableColumns}
       listing={listing}
       onReload={onReload}
-      row={(admin) => <AdminRow key={admin.id} admin={admin} onChanged={onReload} />}
+      renderRow={(admin) => <AdminRow key={admin.id} admin={admin} onChanged={onReload} />}
     />
   );
 }

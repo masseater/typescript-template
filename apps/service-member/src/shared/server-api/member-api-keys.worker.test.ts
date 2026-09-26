@@ -111,12 +111,11 @@ it.effect("lets API keys read allowed resources and rejects writes", () => {
     yield* addMember("hidden", false);
     const created = yield* Effect.gen(function* issueKey() {
       const auth = yield* Auth;
+      const createApiKey = yield* Effect.fromNullishOr(auth.instance.api.createApiKey).pipe(
+        Effect.orDie,
+      );
       return yield* Effect.promise(() =>
-        (
-          auth.instance.api as unknown as {
-            createApiKey: (input: unknown) => Promise<{ id: string; key: string }>;
-          }
-        ).createApiKey({
+        createApiKey({
           body: { name: "read-only", userId: "owner" },
         }),
       );
@@ -145,12 +144,11 @@ it.effect("lets API keys read allowed resources and rejects writes", () => {
     );
     yield* Effect.gen(function* revokeKey() {
       const auth = yield* Auth;
+      const updateApiKey = yield* Effect.fromNullishOr(auth.instance.api.updateApiKey).pipe(
+        Effect.orDie,
+      );
       yield* Effect.promise(() =>
-        (
-          auth.instance.api as unknown as {
-            updateApiKey: (input: unknown) => Promise<{ id: string }>;
-          }
-        ).updateApiKey({
+        updateApiKey({
           body: { enabled: false, keyId: created.id, userId: "owner" },
         }),
       );

@@ -1,10 +1,12 @@
 import { lintOptions } from "./lint.ts";
 
+import type { OxlintOverride } from "oxlint";
+
 const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
   {},
   lintOptions.rules,
   ...lintOptions.overrides
-    .filter((override) => override.files?.includes("libs/**") === true)
+    .filter((override) => override.files.includes("libs/**"))
     .map((override) => override.rules ?? {}),
 );
 
@@ -26,7 +28,7 @@ const builtInPlugins: ReadonlySet<string> = new Set([
   "vue",
 ]);
 
-const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
+const overridePluginMismatches = (overrides: readonly OxlintOverride[]): readonly string[] => {
   return overrides.flatMap((override, index) => {
     const plugins = override.plugins;
     if (plugins === undefined) {

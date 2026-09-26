@@ -40,7 +40,19 @@ const pages = new Map(
 );
 
 const links = [...pages].flatMap(([page, { links: hrefs }]) =>
-  hrefs.map((href) => ({ href, page })),
+  hrefs.map((href) => {
+    const [path = "", anchor] = href.split("#");
+    return {
+      anchor: anchor === undefined ? undefined : decodeURIComponent(anchor),
+      href,
+      page,
+      target: path.replace(/\/$/u, "") || "/",
+    };
+  }),
+);
+
+const anchoredLinks = links.flatMap(({ anchor, ...link }) =>
+  anchor === undefined ? [] : [{ ...link, anchor }],
 );
 
 describe("links between wiki pages", () => {
@@ -48,12 +60,11 @@ describe("links between wiki pages", () => {
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it.each(links)("$href in $page points at an existing page and heading", ({ href }) => {
-    const [path = "", anchor] = href.split("#");
-    const target = pages.get(path.replace(/\/$/u, "") || "/");
-    expect(target).toBeDefined();
-    if (anchor !== undefined) {
-      expect(target?.anchors).toContain(decodeURIComponent(anchor));
-    }
+  it.each(links)("$href in $page points at an existing page", ({ target }) => {
+    expect(pages.get(target)).toBeDefined();
+  });
+
+  it.each(anchoredLinks)("$href in $page points at an existing heading", ({ anchor, target }) => {
+    expect(pages.get(target)?.anchors).toContain(anchor);
   });
 });
