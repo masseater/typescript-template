@@ -21,59 +21,11 @@ import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { BatchSpanProcessor, TracerProvider } from "@opentelemetry/sdk-trace";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-import { Config, ConfigProvider, Effect, Option } from "effect";
+import { telemetrySettings, type TelemetrySettings } from "@repo/config/process-environment";
+import { ConfigProvider, Effect } from "effect";
 import { attemptAsync, once } from "es-toolkit";
 
 import { reportExportFailure } from "./export-failure.ts";
-import { ENABLE_VARIABLE } from "./optional-setting.ts";
-
-const DISABLE_VARIABLE = "OTEL_SDK_DISABLED";
-
-const SHARED_ENDPOINT_VARIABLE = "OTEL_EXPORTER_OTLP_ENDPOINT";
-
-const settingOf = (variable: string): Config.Config<string | undefined> =>
-  Config.option(Config.String(variable)).pipe(Config.map(Option.getOrUndefined));
-
-const signalEndpoint = (signal: string): Config.Config<string | undefined> =>
-  Config.all({
-    own: settingOf(`OTEL_EXPORTER_OTLP_${signal.toUpperCase()}_ENDPOINT`),
-    shared: settingOf(SHARED_ENDPOINT_VARIABLE),
-  }).pipe(
-    Config.map(
-      ({ own, shared }) =>
-        own ?? (shared === undefined ? undefined : `${shared.replace(/\/+$/u, "")}/v1/${signal}`),
-    ),
-  );
-
-type Settings = {
-  readonly measured: boolean;
-  readonly logs: string | undefined;
-  readonly metrics: string | undefined;
-  readonly traces: string | undefined;
-};
-
-const TelemetrySettings: Config.Config<Settings> = Config.all({
-  asked: settingOf(ENABLE_VARIABLE),
-  disabled: settingOf(DISABLE_VARIABLE),
-  logs: signalEndpoint("logs"),
-  metrics: signalEndpoint("metrics"),
-  traces: signalEndpoint("traces"),
-}).pipe(
-  Config.map(
-    ({
-      asked,
-      disabled,
-      logs: logsEndpoint,
-      metrics: metricsEndpoint,
-      traces: tracesEndpoint,
-    }) => ({
-      measured: asked !== undefined && disabled !== "true",
-      logs: logsEndpoint,
-      metrics: metricsEndpoint,
-      traces: tracesEndpoint,
-    }),
-  ),
-);
 
 export type Telemetry = {
   readonly enabled: boolean;
@@ -103,7 +55,7 @@ type Providers = {
   readonly loggerProvider: Readonly<LoggerProvider>;
 };
 
-const registerProviders = (serviceName: string, settings: Settings): Providers => {
+const registerProviders = (serviceName: string, settings: TelemetrySettings): Providers => {
   const resource = resourceNamed(serviceName);
   const tracerProvider = new TracerProvider({
     resource,
@@ -158,7 +110,10 @@ const stopAfterEveryOtherExitHandler = (stop: () => Promise<void>): (() => Promi
   return shutdownOnce;
 };
 
-const measuringStart = (serviceName: string, settings: Settings): Effect.Effect<Telemetry> =>
+const measuringStart = (
+  serviceName: string,
+  settings: TelemetrySettings,
+): Effect.Effect<Telemetry> =>
   Effect.gen(function* measuring() {
     const services = yield* Effect.context();
     setGlobalErrorHandler((thrown) => {
@@ -181,7 +136,7 @@ const firstStart = once((start: () => Telemetry): Telemetry => start());
 
 export const measuredTelemetry = (serviceName: string): Effect.Effect<Telemetry> =>
   Effect.gen(function* measured() {
-    const settings = yield* Effect.orDie(TelemetrySettings);
+    const settings = yield* Effect.orDie(telemetrySettings);
     const services = yield* Effect.context();
     return firstStart(() =>
       Effect.runSyncWith(services)(

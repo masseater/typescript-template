@@ -160,6 +160,29 @@ describe("measuredTelemetry", () => {
     });
   });
 
+  describe("an environment that switched telemetry off with 0", () => {
+    const it = harnessed.extend("signalsCollectedWhenSwitchedOff", ({ harness }) =>
+      Effect.runPromise(
+        Effect.gen(function* switchedOff() {
+          const started = yield* harness.started(MEASURED_SERVICE, {
+            MST_TELEMETRY: "0",
+            OTEL_EXPORTER_OTLP_ENDPOINT: ACCEPTING_COLLECTOR,
+          });
+          trace.getTracer(MEASURED_TRACER).startActiveSpan(MEASURED_SPAN, (span) => {
+            span.end();
+          });
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => started.shutdown());
+          return yield* harness.signals;
+        }),
+      ),
+    );
+
+    it("sends the collector nothing at all", ({ signalsCollectedWhenSwitchedOff }) => {
+      expect(signalsCollectedWhenSwitchedOff).toStrictEqual([]);
+    });
+  });
+
   describe("an environment that asked for telemetry but disabled the sdk", () => {
     const it = harnessed.extend("signalsCollectedWithADisabledSdk", ({ harness }) =>
       Effect.runPromise(

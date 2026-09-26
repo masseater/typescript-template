@@ -1,4 +1,4 @@
-import { telemetryAsked } from "@repo/telemetry/optional-setting";
+import { telemetryMeasured } from "@repo/telemetry/optional-setting";
 import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
@@ -29,7 +29,7 @@ export default defineConfig({
   test: {
     experimental: {
       openTelemetry: {
-        enabled: telemetryAsked,
+        enabled: telemetryMeasured,
         sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
       },
     },

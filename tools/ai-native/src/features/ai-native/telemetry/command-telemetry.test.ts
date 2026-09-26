@@ -74,6 +74,7 @@ describe("childEnvironment", () => {
         Effect.gen(function* () {
           vi.stubEnv("MST_TELEMETRY", undefined);
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          vi.stubEnv("MST_CHILD_ENVIRONMENT_MARKER", "inherited");
           process.removeAllListeners("beforeExit");
           context.disable();
           propagation.disable();
@@ -91,12 +92,12 @@ describe("childEnvironment", () => {
           });
           vi.resetModules();
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
-          return commandTelemetry.childEnvironment();
+          return commandTelemetry.childEnvironment()["MST_CHILD_ENVIRONMENT_MARKER"];
         }),
       ));
 
     it("is the environment the wrapper itself runs in", ({ childEnvironmentWithoutTelemetry }) => {
-      expect(childEnvironmentWithoutTelemetry).toBe(process.env);
+      expect(childEnvironmentWithoutTelemetry).toBe("inherited");
     });
   });
 

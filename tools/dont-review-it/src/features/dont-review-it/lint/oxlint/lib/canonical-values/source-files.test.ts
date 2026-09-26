@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect } from "vite-plus/test";
 
@@ -939,7 +940,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
       const pathService = yield* Path.Path;
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
 
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
         recursive: true,
       });
@@ -976,7 +977,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
       const pathService = yield* Path.Path;
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
 
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "generated", "nested"), {
         recursive: true,
       });
@@ -1028,7 +1029,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
       const pathService = yield* Path.Path;
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
 
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src/app"), {
         recursive: true,
       });
@@ -1074,7 +1075,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
             prefix: "source-files-",
           });
 
-          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
           yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
             recursive: true,
           });
@@ -1082,7 +1083,10 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
             pathService.join(repositoryRoot, "ignored/status.ts"),
             'export const status = "draft";\n',
           );
-          gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+          gitOutput(["add", "ignored/status.ts"], {
+            cwd: repositoryRoot,
+            env: inheritedEnvironment(),
+          });
           yield* filesystem.writeFileString(
             pathService.join(repositoryRoot, ".gitignore"),
             "ignored\n",
@@ -1098,7 +1102,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
             prefix: "source-files-",
           });
 
-          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
           yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
             recursive: true,
           });
@@ -1106,7 +1110,10 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
             pathService.join(repositoryRoot, "ignored/status.ts"),
             'export const status = "draft";\n',
           );
-          gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+          gitOutput(["add", "ignored/status.ts"], {
+            cwd: repositoryRoot,
+            env: inheritedEnvironment(),
+          });
           yield* filesystem.writeFileString(
             pathService.join(repositoryRoot, ".gitignore"),
             "ignored\n",
@@ -1124,7 +1131,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
             prefix: "source-files-",
           });
 
-          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
           yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
             recursive: true,
           });
@@ -1132,7 +1139,10 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
             pathService.join(repositoryRoot, "ignored/status.ts"),
             'export const status = "draft";\n',
           );
-          gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+          gitOutput(["add", "ignored/status.ts"], {
+            cwd: repositoryRoot,
+            env: inheritedEnvironment(),
+          });
           yield* filesystem.writeFileString(
             pathService.join(repositoryRoot, ".gitignore"),
             "ignored\n",
@@ -1181,7 +1191,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
 
       const repositoryRoot = pathService.join(enclosingDirectory, "repository");
       yield* filesystem.makeDirectory(repositoryRoot, { recursive: true });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(
         pathService.join(repositoryRoot, ".gitignore"),
         "ignored.ts\n",
@@ -1223,7 +1233,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
 
       const repositoryRoot = pathService.join(enclosingDirectory, "repository");
       yield* filesystem.makeDirectory(repositoryRoot, { recursive: true });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(
         pathService.join(enclosingDirectory, "external.ts"),
         'export const status = "draft";\n',
@@ -1232,7 +1242,7 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
         pathService.join(enclosingDirectory, "external.ts"),
         pathService.join(repositoryRoot, "ignored.ts"),
       );
-      gitOutput(["add", "ignored.ts"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["add", "ignored.ts"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(
         pathService.join(repositoryRoot, ".gitignore"),
         "ignored.ts\n",

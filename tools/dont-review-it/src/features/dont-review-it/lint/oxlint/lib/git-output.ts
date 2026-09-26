@@ -8,7 +8,7 @@ import { isEnvironmentFailure } from "./path-failure.ts";
 
 export type GitEnvironment = {
   readonly cwd: string;
-  readonly env: NodeJS.ProcessEnv;
+  readonly env: Readonly<Record<string, string>>;
   readonly input?: string;
 };
 

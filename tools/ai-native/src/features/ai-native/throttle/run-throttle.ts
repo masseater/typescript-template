@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { joinPath, optionalSetting, temporaryDirectory } from "../host.ts";
+import { joinPath, processSetting, temporaryDirectory, throttleLimit } from "../host.ts";
 import { runWithSlot } from "./run-command.ts";
 import { ensureSlots, tryAcquireAny, type SlotHold } from "./slots.ts";
 import { parseInvocation } from "./usage.ts";
@@ -21,7 +21,7 @@ export type ThrottleSeams = {
 const DEFAULT_LIMIT = 1;
 
 const limitFromEnvironment = (): number => {
-  const raw = optionalSetting("MST_THROTTLE_LIMIT");
+  const raw = processSetting(throttleLimit);
   return raw !== undefined && /^[0-9]+$/.test(raw) && Number(raw) > 0 ? Number(raw) : DEFAULT_LIMIT;
 };
 

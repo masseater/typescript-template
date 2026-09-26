@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import * as ts from "typescript-6";
 import { describe, expect } from "vite-plus/test";
@@ -947,7 +948,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
         pathService.join(repositoryRoot, "src/consumer.ts"),
         "export {};\n",
       );
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       return importRouteStatus(
         {
           filename: pathService.join(repositoryRoot, "src/consumer.ts"),
@@ -993,8 +994,11 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
         pathService.join(repositoryRoot, "src/consumer.ts"),
         "export {};\n",
       );
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-      gitOutput(["add", "-f", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
+      gitOutput(["add", "-f", "ignored/status.ts"], {
+        cwd: repositoryRoot,
+        env: inheritedEnvironment(),
+      });
       return importRouteStatus(
         {
           filename: pathService.join(repositoryRoot, "src/consumer.ts"),
@@ -1035,7 +1039,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
         pathService.join(repositoryRoot, "src/schema.ts"),
         "export {};\n",
       );
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.symlink("src", pathService.join(repositoryRoot, "ignored"));
       return importRouteStatus(
         {
@@ -1079,7 +1083,7 @@ layer(NodeServices.layer)("importRouteStatus", (it) => {
         pathService.join(repositoryRoot, "src/schema.ts"),
         "export {};\n",
       );
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.symlink("src", pathService.join(repositoryRoot, "ignored"));
       return importRouteStatus(
         {

@@ -637,6 +637,7 @@ const lintOptions = {
                 name: [
                   "Codec",
                   "Command",
+                  "Config",
                   "Deferred",
                   "Duration",
                   "Effect",

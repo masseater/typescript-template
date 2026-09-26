@@ -1,4 +1,5 @@
 import { cliStderr, cliStdout } from "@repo/cli";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, PlatformError, Schema, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 
@@ -48,7 +49,7 @@ function spawnAlchemy(
 ): Effect.Effect<number, AlchemyFailure> {
   return Effect.gen(function* runAlchemyChild() {
     const handle = yield* ChildProcess.make(alchemyBinary, [...args], {
-      env: { ...process.env, ALCHEMY_TELEMETRY_DISABLED: "1" },
+      env: { ...inheritedEnvironment(), ALCHEMY_TELEMETRY_DISABLED: "1" },
       extendEnv: false,
       stdin: "ignore",
     }).pipe(Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })));

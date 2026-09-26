@@ -13,6 +13,8 @@ import {
 import { Effect } from "effect";
 import { once } from "es-toolkit";
 
+import { inheritedEnvironment } from "../host.ts";
+
 import type { Command } from "../spool/parse-command.ts";
 
 const INSTRUMENTATION_NAME = "@repo/ai-native";
@@ -28,8 +30,8 @@ const SERVICE_NAME = "mst-command";
 
 const instrumented = (): boolean => startTelemetry(SERVICE_NAME).enabled;
 
-export const childEnvironment = (): NodeJS.ProcessEnv | undefined =>
-  instrumented() ? environmentCarryingContext() : process.env;
+export const childEnvironment = (): Readonly<Record<string, string>> =>
+  instrumented() ? environmentCarryingContext() : inheritedEnvironment();
 
 const measureSpan = (input: {
   readonly command: Command;

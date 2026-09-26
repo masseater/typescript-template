@@ -1,5 +1,10 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
+import {
+  continuousIntegration,
+  inheritedEnvironment,
+  processSetting,
+  throttleLimit,
+} from "@repo/ai-native-telemetry/optional-setting";
 import { Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
@@ -66,17 +71,19 @@ const wallClockDate = (): Date => DateTime.toDate(DateTime.makeUnsafe(epochMilli
 
 export {
   baseName,
+  continuousIntegration,
   epochMillis,
   fileExists,
   filesystem,
   homeDirectory,
+  inheritedEnvironment,
   isSignalName,
   joinPath,
   makeDirectory,
   nativeFailure,
   onDisk,
-  optionalSetting,
   parentPath,
+  processSetting,
   randomHex,
   readDirectory,
   readFileString,
@@ -85,6 +92,7 @@ export {
   signalNumber,
   spawner,
   temporaryDirectory,
+  throttleLimit,
   wallClockDate,
   writeFileString,
 };

@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -42,7 +43,7 @@ layer(NodeServices.layer)("worktreeFilePathsUnder", (it) => {
       const pathService = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
 
-      gitOutput(["init", "--quiet"], { cwd: root, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: root, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(pathService.join(root, ".gitignore"), ".local/\n");
       yield* filesystem.makeDirectory(pathService.join(root, ".local", "source-maps"), {
         recursive: true,

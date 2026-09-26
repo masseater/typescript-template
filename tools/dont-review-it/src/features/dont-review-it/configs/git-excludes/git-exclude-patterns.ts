@@ -1,5 +1,7 @@
 import { homedir } from "node:os";
 
+import { inheritedEnvironment } from "@repo/config/process-environment";
+
 import { readTextFile } from "../../lint/oxlint/lib/canonical-values/source-files.ts";
 import { gitOutput, type GitEnvironment } from "../../lint/oxlint/lib/git-output.ts";
 import { path } from "../../platform/path.ts";
@@ -53,6 +55,6 @@ const patternsOf = (excludeFile: string): readonly string[] => {
 };
 
 export const gitExcludePatterns = (
-  environment: GitEnvironment = { cwd: process.cwd(), env: process.env },
+  environment: GitEnvironment = { cwd: process.cwd(), env: inheritedEnvironment() },
 ): readonly string[] =>
   [globalExcludeFile(environment), ...repositoryExcludeFiles(environment)].flatMap(patternsOf);

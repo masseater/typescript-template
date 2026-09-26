@@ -2,7 +2,7 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { isPassthroughSignalled, passThrough } from "./run-passthrough.ts";
+import { passThrough } from "./run-passthrough.ts";
 
 const NODE = process.execPath;
 
@@ -15,40 +15,6 @@ const EXIT_FIVE_SCRIPT = "process.exit(5)";
 const EXIT_FIVE_COMMAND_LINE = [NODE, "-e", EXIT_FIVE_SCRIPT].join(" ");
 
 const MISSING_EXECUTABLE = "/nonexistent/never-here";
-
-describe("isPassthroughSignalled", () => {
-  describe("a signal that is neither empty nor a denial", () => {
-    const it = test.extend("theReading", () => isPassthroughSignalled("1"));
-
-    it("reads the run as one that passes the streams through", ({ theReading }) => {
-      expect(theReading).toBe(true);
-    });
-  });
-
-  describe("a signal denying it is CI", () => {
-    const it = test.extend("theReading", () => isPassthroughSignalled("false"));
-
-    it("reads the run as one that records", ({ theReading }) => {
-      expect(theReading).toBe(false);
-    });
-  });
-
-  describe("an empty signal", () => {
-    const it = test.extend("theReading", () => isPassthroughSignalled(""));
-
-    it("reads the run as one that records", ({ theReading }) => {
-      expect(theReading).toBe(false);
-    });
-  });
-
-  describe("a signal that was never set", () => {
-    const it = test.extend("theReading", () => isPassthroughSignalled(undefined));
-
-    it("reads the run as one that records", ({ theReading }) => {
-      expect(theReading).toBe(false);
-    });
-  });
-});
 
 describe("passThrough", () => {
   describe("a command exiting with a code of its own", () => {

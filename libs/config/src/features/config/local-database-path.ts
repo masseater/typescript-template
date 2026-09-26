@@ -1,4 +1,6 @@
-import { Config, ConfigProvider, Effect, Option, Path } from "effect";
+import { Effect, Path } from "effect";
+
+import { processSetting, textSetting } from "./process-environment.ts";
 
 const localDatabaseVariable = "TEMPLATE_LOCAL_DATABASE";
 const paths = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
@@ -10,17 +12,11 @@ const localDatabase = {
   database_name: "template-shared",
 };
 
+const localDatabaseOverride = textSetting(localDatabaseVariable);
+
 const localDatabaseDirectory = (): string => {
-  const override = Effect.runSync(
-    Config.option(Config.String(localDatabaseVariable)).pipe(
-      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
-    ),
-  );
-  return Option.match(override, {
-    onNone: () => repositoryDirectory,
-    onSome: (overridePath) =>
-      overridePath === "" ? repositoryDirectory : paths.resolve(overridePath),
-  });
+  const overridePath = processSetting(localDatabaseOverride);
+  return overridePath === undefined ? repositoryDirectory : paths.resolve(overridePath);
 };
 
 const localDatabasePersistence = localDatabaseDirectory();

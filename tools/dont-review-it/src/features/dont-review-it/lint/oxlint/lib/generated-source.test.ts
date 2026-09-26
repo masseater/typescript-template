@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect } from "vite-plus/test";
 
@@ -14,7 +15,7 @@ layer(NodeServices.layer)("generatedSourcePaths", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "generated-source-marked-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(
         paths.join(repositoryRoot, ".gitattributes"),
         "**/routes.gen.ts linguist-generated\nworker.js linguist-generated=true\nhand.ts -linguist-generated\n",

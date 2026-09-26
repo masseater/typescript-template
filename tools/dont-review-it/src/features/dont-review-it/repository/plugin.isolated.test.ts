@@ -17,6 +17,21 @@ const forbiddenCode = [
   ],
   ["apps/service-member/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
   [
+    "infra/cloudflare/src/features/cloudflare/probe.ts",
+    "export const value = process.env;",
+    "environment-boundary",
+  ],
+  [
+    "tools/dev/src/features/dev/observe/probe.ts",
+    "export const value = process.env;",
+    "environment-boundary",
+  ],
+  [
+    "tools/ai-native/src/features/ai-native/probe.ts",
+    'import { env } from "node:process"; export const value = env;',
+    "environment-boundary",
+  ],
+  [
     "libs/ui/src/features/ui/probe.ts",
     'import { useCallback } from "react"; export const fn = () => useCallback(() => 0, []);',
     "no-manual-memoization",
@@ -438,8 +453,6 @@ const validBoundaries = [
     "tools/dev/src/features/dev/probe.ts",
     "export const load = (process: { readonly getBuiltinModule: () => number }) => process.getBuiltinModule();",
   ],
-  ["infra/cloudflare/src/features/cloudflare/probe.ts", "export const value = process.env;"],
-  ["tools/dev/src/features/dev/observe/probe.ts", "export const value = process.env;"],
   ["libs/db/src/features/db/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/features/auth/probe.test.ts", 'export * from "@repo/db/admin";'],
   ["libs/auth/src/features/auth/probe-test-fixture.ts", 'export * from "@repo/db/testing";'],

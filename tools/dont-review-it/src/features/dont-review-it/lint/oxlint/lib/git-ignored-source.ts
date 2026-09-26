@@ -1,6 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { attempt, memoize } from "es-toolkit";
 
 import { measureStage } from "../../../lint-rule-authoring/index.ts";
@@ -48,7 +49,7 @@ const gitIgnoredPaths = (directory: string): ReadonlySet<string> => {
   const ignoredPathOutput = measureStage("canonical.scope.git", () =>
     gitOutput(["ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z"], {
       cwd: directory,
-      env: process.env,
+      env: inheritedEnvironment(),
     }),
   );
   return ignoredPathOutput !== null

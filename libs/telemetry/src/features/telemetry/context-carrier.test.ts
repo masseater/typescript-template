@@ -1,7 +1,7 @@
 import { context, propagation, trace, TraceFlags } from "@opentelemetry/api";
 import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-hooks";
 import { W3CTraceContextPropagator } from "@opentelemetry/core";
-import { definedEnvironment } from "@repo/config/process-environment";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { describe, expect, test } from "vite-plus/test";
 
 import { environmentCarryingContext, inheritedContext } from "./context-carrier.ts";
@@ -55,7 +55,7 @@ describe("inheritedContext", () => {
     const it = propagating
       .extend("spanContextInheritedFromTheProcess", () => trace.getSpanContext(inheritedContext()))
       .extend("spanContextInheritedFromItsDefinedValues", () =>
-        trace.getSpanContext(inheritedContext(definedEnvironment())),
+        trace.getSpanContext(inheritedContext(inheritedEnvironment())),
       );
 
     it("is read when no environment is handed", ({
@@ -119,7 +119,7 @@ describe("environmentCarryingContext", () => {
     const it = propagating
       .extend("environmentCarriedFromTheProcess", () => environmentCarryingContext())
       .extend("environmentCarriedFromItsDefinedValues", () =>
-        environmentCarryingContext(definedEnvironment()),
+        environmentCarryingContext(inheritedEnvironment()),
       );
 
     it("is carried when no environment is handed", ({

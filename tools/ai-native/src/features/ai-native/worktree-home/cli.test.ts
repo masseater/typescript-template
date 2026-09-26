@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, inheritedEnvironment, joinPath } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { hook } from "./hook.ts";
 
@@ -72,7 +72,7 @@ describe("worktree-home cli", () => {
             return yield* runCaptured({
               executable: process.execPath,
               handed: [CLI_PATH],
-              env: { ...process.env, HOME: joinPath(theSandbox, "home") },
+              env: { ...inheritedEnvironment(), HOME: joinPath(theSandbox, "home") },
               input: hookInput,
             });
           }),
@@ -103,7 +103,7 @@ describe("worktree-home cli", () => {
           runCaptured({
             executable: process.execPath,
             handed: [CLI_PATH],
-            env: { ...process.env, HOME: theSandbox },
+            env: { ...inheritedEnvironment(), HOME: theSandbox },
             input: JSON.stringify({
               cwd: theSandbox,
               hook_event_name: "WorktreeCreate",

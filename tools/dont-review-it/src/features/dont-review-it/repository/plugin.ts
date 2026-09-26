@@ -50,7 +50,7 @@ const isEnvironment = (origin: Origin): boolean => {
 };
 
 const environmentVisitor = (inspection: LintContext): Visitor => {
-  if (/\/(?:libs\/config|infra|tools)\//u.test(filename(inspection))) {
+  if (/\/libs\/config\//u.test(filename(inspection))) {
     return {};
   }
   return {
@@ -311,7 +311,7 @@ const projectPlugin = definePlugin({
     "environment-boundary": {
       create: environmentVisitor,
       meta: metadata(
-        "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め libs/config の検証境界へ集約してください。運用 CLI とインフラの境界では Effect の Schema で検証してください。",
+        "環境値の直接参照は禁止です。process.env / import.meta.env は別名・分割代入も含め、運用 CLI・インフラ・ツールでも libs/config の検証境界（@repo/config/process-environment）を経由してください。子プロセスへ渡す環境は inheritedEnvironment から組み立ててください。",
       ),
     },
     "example-values": {

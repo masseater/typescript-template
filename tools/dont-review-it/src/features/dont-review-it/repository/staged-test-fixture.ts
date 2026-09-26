@@ -1,3 +1,4 @@
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Config, Effect, FileSystem, Path, Schema } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { vi } from "vite-plus/test";
@@ -92,7 +93,9 @@ const GIT_VARIABLE = "GIT_";
 
 const withoutInheritedGitEnvironment = Effect.acquireRelease(
   Effect.sync(() => {
-    for (const name of Object.keys(process.env).filter((each) => each.startsWith(GIT_VARIABLE))) {
+    for (const name of Object.keys(inheritedEnvironment()).filter((each) =>
+      each.startsWith(GIT_VARIABLE),
+    )) {
       vi.stubEnv(name, undefined);
     }
   }),

@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -12,7 +13,7 @@ const generatedAttribute = "linguist-generated";
 const byText = (left: string, right: string): number => left.localeCompare(right);
 
 const listedPaths = (gitArguments: readonly string[]): readonly string[] =>
-  (gitOutput(gitArguments, { cwd: repositoryRoot, env: process.env }) ?? "")
+  (gitOutput(gitArguments, { cwd: repositoryRoot, env: inheritedEnvironment() }) ?? "")
     .split("\0")
     .filter((listedPath) => listedPath !== "");
 

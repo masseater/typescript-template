@@ -2,12 +2,13 @@ import { Effect, Result, Stream, type FileSystem, type PlatformError, type Scope
 
 import { childEndOf, type ChildEnd } from "../child-process.ts";
 import {
+  continuousIntegration,
   filesystem,
   joinPath,
   makeDirectory,
   nativeFailure,
   onDisk,
-  optionalSetting,
+  processSetting,
   randomHex,
   removePath,
   spawner,
@@ -19,10 +20,10 @@ import { formatElapsed } from "./format-elapsed.ts";
 import { defaultSpoolRoot } from "./log-destination.ts";
 import { parseCommand, type Command } from "./parse-command.ts";
 import { recordNameOf } from "./record-name.ts";
-import { isPassthroughSignalled, passThrough, spoolChildCommand } from "./run-passthrough.ts";
+import { passThrough, spoolChildCommand } from "./run-passthrough.ts";
 import { stripEscapes } from "./strip-escapes.ts";
 
-const defaultIsPassthrough = (): boolean => isPassthroughSignalled(optionalSetting("CI"));
+const defaultIsPassthrough = (): boolean => processSetting(continuousIntegration);
 
 export type SpoolDeps = {
   stdout: { write: (part: string) => unknown };
@@ -293,7 +294,7 @@ const usageText = [
   "under the repository's .spool directory, and prints a fixed-size summary",
   "instead of the output. Terminal escape sequences are removed from the record.",
   "On a non-zero exit the summary is followed by the last 20 recorded lines.",
-  'When the CI environment variable is set to a non-empty value other than "false",',
+  'When the CI environment variable is "1" or "true",',
   "the command's stdio passes through untouched and no log file is created.",
   "",
   "exit codes: the command's own code (128+signal when killed by a signal),",

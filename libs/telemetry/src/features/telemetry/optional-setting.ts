@@ -1,7 +1,11 @@
-import { optionalSetting } from "@repo/config/process-environment";
+import {
+  processSetting,
+  telemetryEnableVariable,
+  telemetrySettings,
+} from "@repo/config/process-environment";
 
-const ENABLE_VARIABLE = "MST_TELEMETRY";
+const ENABLE_VARIABLE = telemetryEnableVariable;
 
-const telemetryAsked: boolean = optionalSetting(ENABLE_VARIABLE) !== undefined;
+const telemetryMeasured: boolean = processSetting(telemetrySettings).measured;
 
-export { ENABLE_VARIABLE, telemetryAsked };
+export { ENABLE_VARIABLE, telemetryMeasured };

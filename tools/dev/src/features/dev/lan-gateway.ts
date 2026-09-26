@@ -1,4 +1,5 @@
 import { loopbackAddress } from "@repo/config";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Crypto, Effect, FileSystem, Path, Schema } from "effect";
 
 import { spkiFromCertificatePem } from "./certificate-pin.ts";
@@ -58,7 +59,7 @@ function launchGateway() {
 const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
   const portlessHomePath = yield* urlPath(portlessHome);
   const portlessEnvironment = {
-    ...process.env,
+    ...inheritedEnvironment(),
     PORTLESS_STATE_DIR: portlessHomePath,
     PORTLESS_SYNC_HOSTS: "0",
   };

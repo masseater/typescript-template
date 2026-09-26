@@ -9,9 +9,6 @@ import { formatElapsed } from "./format-elapsed.ts";
 
 import type { Command } from "./parse-command.ts";
 
-export const isPassthroughSignalled = (ciSignal: string | undefined): boolean =>
-  ciSignal !== undefined && ciSignal !== "" && ciSignal !== "false";
-
 export type PassthroughDeps = {
   stdout: { write: (part: string) => unknown };
   stderr: { write: (part: string) => unknown };
@@ -22,9 +19,8 @@ export const spoolChildCommand = (
   command: Command,
   childStreams: "inherit" | "pipe",
 ): ChildProcess.Command => {
-  const environment = childEnvironment();
   return ChildProcess.make(command[0], command.slice(1), {
-    ...(environment === undefined ? {} : { env: environment }),
+    env: childEnvironment(),
     detached: false,
     stdin: "inherit",
     stdout: childStreams,

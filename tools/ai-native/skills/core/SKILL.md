@@ -26,7 +26,7 @@ Both wrappers read their own options first, then `--`, then the command. Everyth
 
 - **A local filesystem for the slot area.** `throttle` puts its slots in the operating system's temporary directory and relies on OS file locks to release them when a holder exits. NFS and SMB do not provide that contract, so a slot area on a network filesystem lets two runs hold the same slot while both report success.
 - **Claude Code, for `unabridged` and `sync-base`.** Both are hooks, not wrappers: each reads a hook payload on stdin and writes a decision on stdout. Invoked from a terminal with no payload either exits with `Unexpected end of JSON input`, which is the hook contract working, not a broken install. `sync-base` also needs `gh` on `PATH` and a repository where the current branch may have an open pull request.
-- **A reachable sink, whenever `MST_TELEMETRY` is set.** Telemetry is off unless that variable is defined, and an export failure sets `process.exitCode = 1` and writes the reason to stderr. A command that succeeded still reports failure when the sink is down, so unset the variable rather than leaving it pointed at nothing.
+- **A reachable sink, whenever `MST_TELEMETRY` is set.** Telemetry is off unless that variable is `1` or `true`, and an export failure sets `process.exitCode = 1` and writes the reason to stderr. A command that succeeded still reports failure when the sink is down, so unset the variable rather than leaving it pointed at nothing.
 
 ## Setup
 
@@ -248,11 +248,11 @@ spool                        exit: the child's own code (128+signal when signall
                              2 on usage errors
 .spool/                      one log file per run, never cleaned, discarded with the
                              work tree; located by walking up to the nearest package.json
-CI                           set to any non-empty value other than "false" makes spool
-                             pass stdio through and write no file
+CI                           "1" or "true" makes spool pass stdio through and write
+                             no file; "0", "false", or empty records; anything else fails
 
-MST_TELEMETRY                defined turns measurement on
-OTEL_SDK_DISABLED            "true" turns it back off
+MST_TELEMETRY                "1" or "true" turns measurement on, "0" or "false" leaves it off
+OTEL_SDK_DISABLED            "1" or "true" turns it back off
 OTEL_EXPORTER_OTLP_ENDPOINT  where spans, metrics, and log records are sent
 ```
 

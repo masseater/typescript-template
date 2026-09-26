@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { runCli } from "@repo/cli";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect } from "effect";
 
 import { writeCiSecretsFile } from "./ci-env.ts";
@@ -12,7 +13,10 @@ const EVENT = "cloudflare.env_rejected";
 
 runCli(
   Effect.gen(function* program() {
-    const preparation = yield* writeCiSecretsFile(process.env, secretsFile(yield* projectName));
+    const preparation = yield* writeCiSecretsFile(
+      inheritedEnvironment(),
+      secretsFile(yield* projectName),
+    );
     if (preparation.status === "unconfigured") {
       yield* Effect.log(yield* encodeJson({ event: "cloudflare.env_unconfigured" }));
       return;

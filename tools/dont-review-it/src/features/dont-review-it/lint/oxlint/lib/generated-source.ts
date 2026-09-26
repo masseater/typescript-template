@@ -1,3 +1,4 @@
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { chunk } from "es-toolkit";
 
 import { gitOutput } from "./git-output.ts";
@@ -19,7 +20,7 @@ export const generatedSourcePaths = ({
 
   const answer = gitOutput(["check-attr", "-z", "--stdin", GENERATED_ATTRIBUTE], {
     cwd: repositoryRoot,
-    env: process.env,
+    env: inheritedEnvironment(),
     input: relativePaths.join("\0"),
   });
   if (answer === null) return new Set();

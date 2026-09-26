@@ -3,6 +3,8 @@ import { Effect, FileSystem, Schema } from "effect";
 
 import { layer, path } from "./platform.ts";
 
+import type { inheritedEnvironment } from "@repo/config/process-environment";
+
 const OWNER_ONLY_FILE_MODE = 0o600;
 const APP_DOMAIN_KEY = "TEMPLATE_APP_DOMAIN";
 const retiredKeys = [
@@ -22,26 +24,18 @@ class PrepareCiEnvFailure extends Schema.TaggedError<PrepareCiEnvFailure>()("Pre
   keys: Schema.Array(Schema.String),
 }) {}
 
+type Environment = ReturnType<typeof inheritedEnvironment>;
+
 type CiEnvPreparation =
   | { readonly filename: string; readonly status: "ready" }
   | { readonly status: "unconfigured" };
-
-function envValue(
-  key: string,
-  environment: Readonly<Record<string, string | undefined>>,
-): string | undefined {
-  const value = environment[key];
-  return value === undefined || value === "" ? undefined : value;
-}
 
 function dotenvLine(key: string, value: string): string {
   return `${key}=${JSON.stringify(value)}`;
 }
 
-function presentRetiredKeys(
-  environment: Readonly<Record<string, string | undefined>>,
-): readonly string[] {
-  return retiredKeys.filter((key) => envValue(key, environment) !== undefined);
+function presentRetiredKeys(environment: Environment): readonly string[] {
+  return retiredKeys.filter((key) => environment[key] !== undefined);
 }
 
 function unwritable(): PrepareCiEnvFailure {
@@ -49,11 +43,11 @@ function unwritable(): PrepareCiEnvFailure {
 }
 
 const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecretsFile(
-  environment: Readonly<Record<string, string | undefined>>,
+  environment: Environment,
   destination: string | undefined,
 ) {
   const required = deploymentKeys.map((key) => {
-    const value = envValue(key, environment);
+    const value = environment[key];
     return { key, value } as const;
   });
   const present = required.flatMap(({ key, value }) => (value === undefined ? [] : [key]));
@@ -74,7 +68,7 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
   const lines = [
     ...required.flatMap(({ key, value }) => (value === undefined ? [] : [dotenvLine(key, value)])),
     ...optionalDeploymentKeys.flatMap((key) => {
-      const value = envValue(key, environment);
+      const value = environment[key];
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),
   ];
@@ -94,7 +88,7 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
     .pipe(Effect.mapError(unwritable));
   yield* filesystem.chmod(filename, OWNER_ONLY_FILE_MODE).pipe(Effect.mapError(unwritable));
   const githubEnv = environment["GITHUB_ENV"];
-  if (githubEnv !== undefined && githubEnv !== "") {
+  if (githubEnv !== undefined) {
     yield* filesystem
       .writeFileString(githubEnv, `TEMPLATE_CLOUDFLARE_ENV_FILE=${filename}\n`, { flag: "a" })
       .pipe(Effect.mapError(unwritable));
@@ -103,18 +97,18 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
 });
 
 function writeCiSecretsFileProvided(
-  environment: Readonly<Record<string, string | undefined>>,
+  environment: Environment,
   destination?: string,
 ): Effect.Effect<CiEnvPreparation, PrepareCiEnvFailure> {
   return writeCiSecretsFile(environment, destination).pipe(Effect.provide(layer));
 }
 
 function writeConfiguredOutput(
-  environment: Readonly<Record<string, string | undefined>>,
+  environment: Environment,
   configured: boolean,
 ): Effect.Effect<void, PrepareCiEnvFailure> {
   const output = environment["GITHUB_OUTPUT"];
-  if (output === undefined || output === "") {
+  if (output === undefined) {
     return Effect.fail(new PrepareCiEnvFailure({ code: "ci_env_output_missing", keys: [] }));
   }
   return Effect.gen(function* appendOutput() {

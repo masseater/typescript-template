@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath, optionalSetting, writeFileString } from "../host.ts";
+import { filesystem, inheritedEnvironment, joinPath, writeFileString } from "../host.ts";
 import { hook } from "./hook.ts";
 import { instructionFor } from "./message.ts";
 
@@ -41,8 +41,8 @@ describe("sync-base cli", () => {
             executable: process.execPath,
             handed: [CLI_PATH],
             env: {
-              ...process.env,
-              PATH: `/nonexistent-gh-bin:${optionalSetting("PATH") ?? ""}`,
+              ...inheritedEnvironment(),
+              PATH: `/nonexistent-gh-bin:${inheritedEnvironment()["PATH"] ?? ""}`,
             },
             input: JSON.stringify({
               cwd: theWorkTreeWithoutAPullRequest,
@@ -107,8 +107,8 @@ describe("sync-base cli", () => {
             executable: process.execPath,
             handed: [CLI_PATH],
             env: {
-              ...process.env,
-              PATH: `${theBinWithABehindGh}:${optionalSetting("PATH") ?? ""}`,
+              ...inheritedEnvironment(),
+              PATH: `${theBinWithABehindGh}:${inheritedEnvironment()["PATH"] ?? ""}`,
             },
             input: JSON.stringify({
               cwd: theWorkTree,

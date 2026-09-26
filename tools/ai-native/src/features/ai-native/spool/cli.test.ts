@@ -6,6 +6,7 @@ import { runCaptured } from "../child-process.ts";
 import {
   fileExists,
   filesystem,
+  inheritedEnvironment,
   joinPath,
   readDirectory,
   readFileString,
@@ -59,7 +60,7 @@ describe("spool cli", () => {
             executable: process.execPath,
             handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
             cwd: theWorkTreeOfALargeOutput,
-            env: { ...process.env, CI: "" },
+            env: { ...inheritedEnvironment(), CI: "" },
           }),
         ),
       )
@@ -106,7 +107,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
             return yield* readDirectory(joinPath(workTree, ".spool"));
           }),
@@ -133,7 +134,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
             const recorded = (yield* readDirectory(joinPath(workTree, ".spool"))).at(0);
             if (recorded === undefined) return yield* Effect.die("the run left no record behind");
@@ -212,7 +213,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "true" },
+              env: { ...inheritedEnvironment(), CI: "true" },
             });
           }),
         );
@@ -247,7 +248,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "true" },
+              env: { ...inheritedEnvironment(), CI: "true" },
             });
             return yield* fileExists(joinPath(workTree, ".spool"));
           }),
@@ -314,7 +315,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
           }),
         );
@@ -384,7 +385,7 @@ describe("spool cli", () => {
                 NESTED_OUTPUT_SCRIPT,
               ],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
           }),
         );
@@ -426,7 +427,7 @@ describe("spool cli", () => {
                 NESTED_OUTPUT_SCRIPT,
               ],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
             return yield* Effect.forEach(
               yield* readDirectory(joinPath(workTree, ".spool")),
@@ -570,7 +571,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
             return status;
           }),
@@ -593,7 +594,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
             const { length } = yield* readDirectory(joinPath(workTree, ".spool"));
             return length;
@@ -617,7 +618,7 @@ describe("spool cli", () => {
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               cwd: workTree,
-              env: { ...process.env, CI: "" },
+              env: { ...inheritedEnvironment(), CI: "" },
             });
             const recorded = (yield* readDirectory(joinPath(workTree, ".spool"))).at(0);
             if (recorded === undefined) return yield* Effect.die("the run left no record behind");
@@ -648,7 +649,7 @@ describe("spool cli", () => {
                   [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
                   {
                     cwd: workTree,
-                    env: { ...process.env, CI: "" },
+                    env: { ...inheritedEnvironment(), CI: "" },
                     detached: false,
                     stdin: "ignore",
                   },

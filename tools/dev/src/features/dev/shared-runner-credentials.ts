@@ -1,5 +1,5 @@
 import { appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
-import { optionalSetting } from "@repo/config/process-environment";
+import { continuousIntegration, processSetting } from "@repo/config/process-environment";
 import { receiverOrigin } from "@repo/local";
 import { Crypto, Effect } from "effect";
 
@@ -63,6 +63,6 @@ function appVariables(
   };
 }
 
-const ciCredentials = (): boolean => optionalSetting("CI") !== undefined;
+const ciCredentials = (): boolean => processSetting(continuousIntegration);
 
 export { appVariables, ciCredentials, sharedRunnerCredentials };

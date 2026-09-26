@@ -1,7 +1,7 @@
 ---
 name: core
 description: >
-  Measure a process with @repo/ai-native-telemetry: `startTelemetry(serviceName)` registers one OpenTelemetry tracer, meter, and logger provider per process and exports them over OTLP when `MST_TELEMETRY` is defined, `inheritedContext` and `environmentCarryingContext` carry the trace across a child process through environment variables, and `@repo/ai-native-telemetry/vitest-sdk` is the entry for Vitest's `experimental.openTelemetry.sdkPath`, switched by `telemetryAsked` from `@repo/ai-native-telemetry/optional-setting`. Load when a command or a test block has to report spans, metrics, or log records, when spans arrive under the wrong service name, when a run that succeeded exits 1 after measuring, or when a child process starts a trace of its own instead of continuing its parent's.
+  Measure a process with @repo/ai-native-telemetry: `startTelemetry(serviceName)` registers one OpenTelemetry tracer, meter, and logger provider per process and exports them over OTLP when `MST_TELEMETRY` is `1` or `true`, `inheritedContext` and `environmentCarryingContext` carry the trace across a child process through environment variables, and `@repo/ai-native-telemetry/vitest-sdk` is the entry for Vitest's `experimental.openTelemetry.sdkPath`, switched by `telemetryMeasured` from `@repo/ai-native-telemetry/optional-setting`. Load when a command or a test block has to report spans, metrics, or log records, when spans arrive under the wrong service name, when a run that succeeded exits 1 after measuring, or when a child process starts a trace of its own instead of continuing its parent's.
 
 metadata:
   type: core
@@ -22,7 +22,7 @@ import { startTelemetry } from "@repo/ai-native-telemetry";
 const telemetry = startTelemetry("my-command");
 ```
 
-Nothing is measured unless `MST_TELEMETRY` is defined. When it is, spans, metrics, and log records are exported over OTLP HTTP to `OTEL_EXPORTER_OTLP_ENDPOINT`, and `OTEL_SDK_DISABLED=true` turns measurement back off without unsetting the first variable.
+Nothing is measured unless `MST_TELEMETRY` is `1` or `true`; `0`, `false`, or empty leave it off, and any other spelling fails at startup. When it is on, spans, metrics, and log records are exported over OTLP HTTP to `OTEL_EXPORTER_OTLP_ENDPOINT`, and `OTEL_SDK_DISABLED=true` turns measurement back off without unsetting the first variable.
 
 ## Core Patterns
 
@@ -33,11 +33,11 @@ Nothing is measured unless `MST_TELEMETRY` is defined. When it is, spans, metric
 ### Measure a Vitest test block
 
 ```ts
-import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
+import { telemetryMeasured } from "@repo/ai-native-telemetry/optional-setting";
 import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
 
 const openTelemetry = {
-  enabled: telemetryAsked,
+  enabled: telemetryMeasured,
   sdkPath: sdkFilePath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
 };
 ```
@@ -97,7 +97,7 @@ Source: masseater/typescript-template:tools/ai-native-telemetry/src/features/ai-
 ## Reference
 
 ```
-MST_TELEMETRY                defined turns measurement on
-OTEL_SDK_DISABLED            "true" turns it back off
+MST_TELEMETRY                "1" or "true" turns measurement on, "0" or "false" leaves it off
+OTEL_SDK_DISABLED            "1" or "true" turns it back off
 OTEL_EXPORTER_OTLP_ENDPOINT  where spans, metrics, and log records are sent
 ```

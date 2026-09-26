@@ -1,3 +1,5 @@
+import { inheritedEnvironment } from "@repo/config/process-environment";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
@@ -133,7 +135,7 @@ export const forbidTrackedPath = createDontReviewItRule({
           ...deadReleaseFindings(releases),
           ...trackedFindings({
             registrations,
-            trackedFiles: trackedFilesIn({ cwd: workspaceRoot, env: process.env }),
+            trackedFiles: trackedFilesIn({ cwd: workspaceRoot, env: inheritedEnvironment() }),
           }),
           ...unignoredFindings({ registrations, listing: ignoreListingAt(workspaceRoot) }),
         ];

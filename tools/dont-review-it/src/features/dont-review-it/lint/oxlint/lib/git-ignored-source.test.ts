@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
+import { inheritedEnvironment } from "@repo/config/process-environment";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
@@ -14,7 +15,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-directory-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "dist/status.ts"), "export {};");
@@ -38,7 +39,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-directory-itself-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "dist/status.ts"), "export {};");
@@ -60,7 +61,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-package-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       const packageRoot = paths.join(repositoryRoot, "packages/app");
       yield* filesystem.makeDirectory(paths.join(packageRoot, "dist"), { recursive: true });
@@ -96,7 +97,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-suffix-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(
         paths.join(repositoryRoot, ".gitignore"),
         "*.generated.ts\n",
@@ -126,7 +127,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-unmatched-source-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(
         paths.join(repositoryRoot, ".gitignore"),
         "dist\n*.generated.ts\n",
@@ -153,10 +154,10 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-tracked-source-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "dist/status.ts"), "export {};");
-      gitOutput(["add", "dist/status.ts"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["add", "dist/status.ts"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       return readGitSourceScope(repositoryRoot).isIgnored(
         paths.join(repositoryRoot, "dist/status.ts"),
@@ -178,7 +179,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-link-ancestor-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       const externalDirectory = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-link-target-",
       });
@@ -208,7 +209,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-foreign-index-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "dist/status.ts"), "export {};");
@@ -233,7 +234,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-inside-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "*.ts\n");
       const outsideDirectory = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-ignored-outside-",
@@ -259,7 +260,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-source-scope-filter-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"));
@@ -350,7 +351,7 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
         prefix: "git-symbolic-root-target-",
       });
-      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: inheritedEnvironment() });
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
       yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
       yield* filesystem.writeFileString(paths.join(repositoryRoot, "dist/status.ts"), "export {};");

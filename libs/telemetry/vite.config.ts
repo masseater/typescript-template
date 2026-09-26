@@ -1,7 +1,7 @@
 import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-import { telemetryAsked } from "./src/features/telemetry/optional-setting.ts";
+import { telemetryMeasured } from "./src/features/telemetry/optional-setting.ts";
 import { sdkFilePath } from "./src/features/telemetry/vitest-sdk-path.ts";
 
 export default defineConfig({
@@ -9,7 +9,7 @@ export default defineConfig({
   test: {
     experimental: {
       openTelemetry: {
-        enabled: telemetryAsked,
+        enabled: telemetryMeasured,
         sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
       },
     },
