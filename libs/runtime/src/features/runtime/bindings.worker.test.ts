@@ -1,4 +1,4 @@
-import { ConfigurationInvalid } from "@repo/config";
+import { readConfig } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -7,7 +7,7 @@ import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fix
 import { readWorkerConfig } from "./bindings.ts";
 
 describe("readWorkerConfig", () => {
-  describe("the effect-cf bindings layer", () => {
+  describe("a complete worker environment", () => {
     const it = test
       .extend("workerEnvironment", () => appEnvironment())
       .extend("workerConfig", ({ workerEnvironment }) =>
@@ -74,36 +74,30 @@ describe("readWorkerConfig", () => {
     });
   });
 
-  describe("an environment without a database", () => {
-    const it = test.extend("configurationRefusal", () =>
-      Effect.runPromise(Effect.flip(readWorkerConfig(appEnvironment({ DB: undefined })))));
-
-    it("names the missing database", ({ configurationRefusal }) => {
-      expect(configurationRefusal).toStrictEqual(
-        new ConfigurationInvalid({
-          reason: 'Cloudflare binding "DB" was not found in WorkerEnvironment',
-        }),
+  describe.for([
+    ["without a database", ["DB"], {}],
+    ["without a mail binding or Mailpit", ["EMAIL", "MAILPIT_URL"], {}],
+    ["whose FLAGS binding is not Flagship", [], { FLAGS: {} }],
+  ] as const)("an environment %s", ([, absent, overrides]) => {
+    const it = test
+      .extend("workerEnvironment", () =>
+        Object.fromEntries(
+          Object.entries(appEnvironment(overrides)).filter(
+            ([binding]) => !absent.some((absentBinding) => absentBinding === binding),
+          ),
+        ))
+      .extend("workerRefusal", ({ workerEnvironment }) =>
+        Effect.runPromise(Effect.flip(readWorkerConfig(workerEnvironment))),
+      )
+      .extend("configRefusal", ({ workerEnvironment }) =>
+        Effect.runPromise(Effect.flip(readConfig(workerEnvironment))),
       );
-    });
-  });
 
-  describe("an environment without a mail binding", () => {
-    const it = test.extend("configurationRefusal", () =>
-      Effect.runPromise(Effect.flip(readWorkerConfig(appEnvironment({ EMAIL: undefined })))));
-
-    it("names the missing mail binding", ({ configurationRefusal }) => {
-      expect(configurationRefusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: "An email delivery binding is required" }),
-      );
-    });
-  });
-
-  describe("a FLAGS binding that is not Flagship", () => {
-    const it = test.extend("configurationRefusal", () =>
-      Effect.runPromise(Effect.flip(readWorkerConfig(appEnvironment({ FLAGS: {} })))));
-
-    it("refuses to start naming FLAGS", ({ configurationRefusal }) => {
-      expect(configurationRefusal).toStrictEqual(new ConfigurationInvalid({ reason: "FLAGS" }));
+    it("is refused exactly as the config boundary refuses it", ({
+      workerRefusal,
+      configRefusal,
+    }) => {
+      expect(workerRefusal).toStrictEqual(configRefusal);
     });
   });
 });

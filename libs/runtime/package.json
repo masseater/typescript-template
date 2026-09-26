@@ -24,7 +24,6 @@
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
     "effect": "catalog:",
-    "effect-cf": "0.47.0",
     "elysia": "catalog:"
   },
   "devDependencies": {

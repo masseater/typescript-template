@@ -883,20 +883,6 @@ const lintOptions = {
       },
     },
     {
-      files: ["libs/runtime/src/features/runtime/bindings.ts"],
-      rules: {
-        "eslint/max-classes-per-file": LINT_SEVERITY.OFF,
-        "new-cap": [
-          LINT_SEVERITY.ERROR,
-          {
-            capIsNewExceptionPattern:
-              "^(?:Schema|Context|Data|Config|Binding|D1|Email|WorkersAi)\\.",
-          },
-        ],
-        "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
-      },
-    },
-    {
       files: cloudflareSourceFiles,
       rules: {
         "new-cap": [LINT_SEVERITY.ERROR, cloudflareNewCapExceptions],
