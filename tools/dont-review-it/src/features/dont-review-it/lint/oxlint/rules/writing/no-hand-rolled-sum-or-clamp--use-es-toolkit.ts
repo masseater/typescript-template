@@ -80,7 +80,7 @@ export const noHandRolledSumOrClamp = createDontReviewItRule({
     docs: {
       description:
         "Disallow a `reduce` whose callback only adds each element onto the accumulator and a `Math.min` nested in `Math.max` or the reverse, so a total is written with `sum` or `sumBy` and a bound with `clamp` from es-toolkit instead of being rebuilt at each call site",
-      relatedGuidelines: [".claude/skills/reviews/references/ownership-and-duplication.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/give-every-concept-one-owner.md"],
     },
     messages: {
       handRolledSum:

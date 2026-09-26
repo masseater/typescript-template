@@ -28,9 +28,6 @@
 - `EMAIL_FROM`・`OPS_EMAIL`: 環境ごとの送信元とアラートの宛先。
 - `OTLP_ENDPOINT`: 環境ごとの送り先。送らない環境は表で空にする。
 - `CLOUDFLARE_ZONE_ID`・D1 のデータベース名・R2 のバケット名。
-
-## 環境変数の代わりに使うもの
-
 - `SESSION_TTL_SECONDS=86400`・`MAX_UPLOAD_MB=10`・`RETRY_COUNT=3`・`PAGE_SIZE=20`・`DEFAULT_LOCALE=ja`・`CURRENCY=JPY`: コードの定数にする。
 - `APP_DOMAIN=example.com` と並べた `ADMIN_ORIGIN=https://admin.example.com`: ドメインから 1 か所の処理で組み立てる。
 - `DATABASE_ID`・`BUCKET_NAME`・`CORE_URL`: D1・R2・サービスの binding で渡す。

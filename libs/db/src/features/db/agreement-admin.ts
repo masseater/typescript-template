@@ -7,6 +7,7 @@ import { AgreementVersionTaken } from "./agreement-version-taken.ts";
 import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts";
 import { auditWhen } from "./audit.ts";
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 
 const canPublishAgreements = Effect.fn("canPublishAgreements")(function* canPublishAgreements(
@@ -76,6 +77,7 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
   }) {
     const actor = yield* requireAdmin(draft.sessionId);
     const createdAt = DateTime.toDate(yield* DateTime.now);
+    const draftId = yield* freshId;
     const [createdDraft] = yield* query((database) =>
       database
         .insert(agreementVersion)
@@ -83,7 +85,7 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
           body: draft.body,
           createdAt,
           createdBy: actor.user.id,
-          id: crypto.randomUUID(),
+          id: draftId,
           kind: draft.kind,
           summary: blankToNull(draft.summary),
           version: draft.version,
@@ -130,6 +132,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     const change = {
       action: AUDIT_ACTION.agreementPublished,
       actorId: actor.user.id,
+      id: yield* freshId,
       targetId: published.id,
     } as const;
     const [, publishedVersions] = yield* query((database) => {

@@ -10,7 +10,9 @@ export const noDoubleTypeAssertion = createDontReviewItRule({
     docs: {
       description:
         "Disallow asserting the type of an expression that is already the result of a type assertion, so no value arrives at its declared type through a route the type checker was told to stop checking",
-      relatedGuidelines: [".claude/skills/reviews/references/io-boundaries-and-types.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/parse-external-input-at-the-boundary.md",
+      ],
     },
     messages: {
       stackedTypeAssertion:

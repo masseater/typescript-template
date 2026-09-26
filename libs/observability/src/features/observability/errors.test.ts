@@ -12,8 +12,7 @@ class LocatedTypeError extends TypeError {
 }
 
 describe("errorAttributes", () => {
-  const it = test.extend("typedErrorAttributes", async () =>
-    errorAttributes(new LocatedTypeError()));
+  const it = test.extend("typedErrorAttributes", () => errorAttributes(new LocatedTypeError()));
 
   it("keeps useful error locations without secrets", ({ typedErrorAttributes }) => {
     expect(typedErrorAttributes).toStrictEqual({
@@ -25,8 +24,7 @@ describe("errorAttributes", () => {
 });
 
 describe("errorAttributes for a plain object", () => {
-  const it = test.extend("plainObjectAttributes", async () =>
-    errorAttributes({ password: "secret" }));
+  const it = test.extend("plainObjectAttributes", () => errorAttributes({ password: "secret" }));
 
   it("does not serialize thrown objects", ({ plainObjectAttributes }) => {
     expect(plainObjectAttributes).toStrictEqual({

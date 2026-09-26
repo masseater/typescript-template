@@ -12,6 +12,7 @@ import { sumBy } from "es-toolkit";
 
 import { AGGREGATE_CLIENT_KIND, clientKindOf, type ClientKind } from "./client-kind.ts";
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { metricSnapshot, session, user, type MetricKey, type MetricPeriod } from "./schema.ts";
 
 const dailyBucket = (instant: Date): string => instant.toISOString().slice(0, 10);
@@ -89,6 +90,7 @@ const refreshMetricSnapshots = Effect.fn("refreshMetricSnapshots")(
     for (const period of metricPeriods) {
       const bucket = bucketFor(period, computedAt);
       for (const snapshotValue of snapshotValues) {
+        const snapshotId = yield* freshId;
         yield* query((database) =>
           database
             .insert(metricSnapshot)
@@ -96,7 +98,7 @@ const refreshMetricSnapshots = Effect.fn("refreshMetricSnapshots")(
               bucket,
               clientKind: snapshotValue.clientKind,
               computedAt,
-              id: crypto.randomUUID(),
+              id: snapshotId,
               metric: snapshotValue.metric,
               period,
               value: snapshotValue.value,

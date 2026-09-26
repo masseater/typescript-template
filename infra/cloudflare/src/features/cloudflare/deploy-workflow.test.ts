@@ -8,6 +8,7 @@ import { monitorStacks } from "./monitors.ts";
 import { fileUrlPath, layer } from "./platform.ts";
 
 const workflow = repositoryFile(".github/workflows/deploy.yml");
+const environmentWorkflow = repositoryFile(".github/workflows/deploy-environment.yml");
 const setupGuide = repositoryFile(
   "apps/internal-dashboard/content/docs/getting-started/first-steps.md",
 );
@@ -32,18 +33,44 @@ it.effect("deploy workflow sends main to staging and promote to production", () 
     assert.include(source, "branches: [main]");
     assert.include(source, "workflow_dispatch:");
     assert.include(source, "options: [staging, production]");
+    assert.include(source, "ref: main");
+    assert.include(source, "uses: ./.github/workflows/deploy-environment.yml");
+    assert.include(source, "secrets: inherit");
+  }),
+);
+
+it.effect("each environment deploys with every secret and probes what it applied", () =>
+  Effect.gen(function* program() {
+    const source = yield* readText(environmentWorkflow);
+    assert.include(source, "workflow_call:");
+    assert.include(source, "environment: ${{ inputs.environment }}");
     assert.include(source, "deploy:ordered");
     assert.include(source, "probe:origins");
     assert.include(source, "prepare:ci-env");
     assert.include(source, "steps.prepare.outputs.configured == 'true'");
-    assert.include(source, "ref: main");
-    assert.include(source, "TEMPLATE_APP_DOMAIN");
-    assert.include(source, "TEMPLATE_SERVICE_MEMBER_ORIGIN");
-    assert.include(source, "TEMPLATE_SERVICE_ADMIN_ORIGIN");
-    assert.include(source, "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN");
     for (const key of documentedSecrets) {
       assert.include(source, key);
     }
+  }),
+);
+
+it.effect("a plan that removes resources waits for the approval job and then applies", () =>
+  Effect.gen(function* program() {
+    const caller = yield* readText(workflow);
+    const callee = yield* readText(environmentWorkflow);
+    for (const output of ["approval-stack", "approval-confirmation"]) {
+      assert.include(callee, `steps.deploy.outputs.${output}`);
+      assert.include(callee, `jobs.deploy.outputs.${output}`);
+      assert.include(caller, `needs.staging.outputs.${output}`);
+      assert.include(caller, `needs.production.outputs.${output}`);
+    }
+    assert.include(callee, 'deploy:ordered --approve "$APPROVAL_STACK" "$APPROVAL_CONFIRMATION"');
+    assert.include(callee, "require:removal-approval");
+    assert.include(callee, "commit: ${{ steps.checkout.outputs.commit }}");
+    assert.include(caller, "ref: ${{ needs.staging.outputs.commit }}");
+    assert.include(caller, "ref: ${{ needs.production.outputs.commit }}");
+    assert.include(caller, "needs: [staging, staging-removal-approval]");
+    assert.include(caller, "needs: [production, production-removal-approval]");
   }),
 );
 
