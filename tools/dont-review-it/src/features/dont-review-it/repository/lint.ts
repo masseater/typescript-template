@@ -1055,6 +1055,15 @@ const lintOptions = {
       },
     },
     {
+      files: ["infra/cloudflare/src/features/cloudflare/**/*.ts"],
+      rules: {
+        "dont-review-it/no-caller-name-branch--read-the-per-caller-table": [
+          LINT_SEVERITY.ERROR,
+          { callers: [{ source: "@repo/config", name: "APPLICATION" }] },
+        ],
+      },
+    },
+    {
       files: softPresetPackages,
       rules: softPresetRules,
     },

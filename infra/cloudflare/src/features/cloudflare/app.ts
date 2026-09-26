@@ -1,5 +1,5 @@
 import {
-  APPLICATION,
+  applicationWorkerTraits,
   grants,
   jobsWorkflowClass,
   userInboxBinding,
@@ -28,7 +28,6 @@ import { workerCompatibilityOptions, workerObservability, workerSubdomain } from
 import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
-import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings, wikiPublishSettings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
@@ -76,7 +75,8 @@ const wikiBindings = Effect.fn("wikiBindings")(function* wikiBindings() {
 });
 
 function analyticsEnv(target: Application, config: SharedConfig): Partial<SharedEnv> {
-  return target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+  return applicationWorkerTraits[target].analytics &&
+    config.googleAnalyticsMeasurementId !== undefined
     ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
     : {};
 }
@@ -109,7 +109,7 @@ const targetEnv = Effect.fn("targetEnv")(function* targetEnv(
   shared: DeclaredEnv,
   flags: Effect.Success<ReturnType<typeof flagshipAppRef>>,
 ) {
-  if (target !== APPLICATION.wiki) {
+  if (!applicationWorkerTraits[target].wiki) {
     return shared;
   }
   return {
@@ -133,10 +133,8 @@ function jobsEnv(jobsQueue: Queues.Queue | undefined) {
 }
 
 function workerCrons(target: Application): { crons?: string[] } {
-  return {
-    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
-  };
+  const { crons } = applicationWorkerTraits[target];
+  return crons.length === 0 ? {} : { crons: [...crons] };
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
