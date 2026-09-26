@@ -4,13 +4,7 @@ import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
 
-import {
-  observabilitySampling,
-  parseDeploymentCommand,
-  traceDestination,
-  workerObservability,
-} from "./config.ts";
-import { stackNames } from "./stacks.ts";
+import { observabilitySampling, traceDestination, workerObservability } from "./config.ts";
 import { verificationSettings } from "./verification-settings.ts";
 
 import type {
@@ -97,44 +91,6 @@ const userBindings: AppBindings<"service-member"> = {
     idFromName: (): undefined => undefined,
   }),
 };
-
-const confirmation = "0".repeat(16);
-
-it.effect(
-  "deployment commands reject ignored arguments instead of selecting an unintended stack",
-  () =>
-    Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "service-admin"]), {
-        operation: "plan",
-        stacks: ["service-admin"],
-      });
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["plan", "all"]), {
-        operation: "plan",
-        stacks: [...stackNames],
-      });
-      assert.deepStrictEqual(
-        yield* parseDeploymentCommand(["deploy", "service-member", "--confirm-plan", confirmation]),
-        { confirmation, operation: "deploy", stack: "service-member" },
-      );
-      assert.deepStrictEqual(yield* parseDeploymentCommand(["deploy", "all"]), {
-        operation: "deploy-all",
-        stacks: [...stackNames],
-      });
-      for (const args of [
-        ["deploy", "service-member"],
-        ["deploy", "all", "--confirm-plan", confirmation],
-        ["deploy", "service-member", "--confirm-plan", confirmation, "--stage", "other"],
-        ["deploy", "service-member", "--confirm-plan", "not-a-confirmation"],
-        ["deploy", "service-member", "--yes"],
-        ["deploy", "unknown", "--confirm-plan", confirmation],
-        ["plan", "all", "--confirm-plan", confirmation],
-        ["up", "all"],
-      ]) {
-        const failure = yield* parseDeploymentCommand(args).pipe(Effect.flip);
-        assert.strictEqual(failure.code, "deployment_command_invalid");
-      }
-    }),
-);
 
 it.effect("a Worker without an OTLP endpoint declares no trace destination", () =>
   Effect.sync(() => {

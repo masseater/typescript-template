@@ -1,12 +1,20 @@
 #!/usr/bin/env node
-import { parseDeploymentCommand } from "./config.ts";
-import { runDeploymentCommand } from "./deployment-access.ts";
+import { NodeServices } from "@effect/platform-node";
+import { runCli, runCommand } from "@repo/cli";
+import { Effect } from "effect";
+
+import { withDeploymentAccess } from "./deployment-access.ts";
+import { deploymentCommand } from "./deployment-command.ts";
+import { causeRecord } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 
-const FIRST_USER_ARGUMENT_INDEX = 2;
+const EVENT = "cloudflare.command_rejected";
 
-runDeploymentCommand(
-  "cloudflare.command_rejected",
-  parseDeploymentCommand(process.argv.slice(FIRST_USER_ARGUMENT_INDEX)),
-  (request, { access, config, secrets }) => runDeployment(request, { access, config, secrets }),
+runCli(
+  deploymentCommand((request) =>
+    withDeploymentAccess(EVENT, ({ access, config, secrets }) =>
+      runDeployment(request, { access, config, secrets }),
+    ),
+  ).pipe(runCommand({ version: "0.0.0" }), Effect.provide(NodeServices.layer)),
+  (cause) => causeRecord(EVENT, cause),
 );

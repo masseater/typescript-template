@@ -55,9 +55,9 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/features/runtime/responses.ts`）。
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。
 - Alchemy によるインフラ適用:
-  - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。
-  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールを作ります。
-  - `infra/wiki-publisher` の `vp run plan` と `vp run deploy` は、同じログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。
+  - `infra/cloudflare` の `vp run preview` で全 stack の変更と stack ごとの確認コードを出し、`vp run deploy <stack> --confirm-plan <確認コード>` で 1 つの stack を Cloudflare アカウントへデプロイします。引数が足りないときは受け付ける stack と引数の形を出して止まります。
+  - `infra/github` の `vp run plan` は変更と確認コードを出し、`vp run deploy --confirm-plan <確認コード>` は手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールを作ります。
+  - `infra/wiki-publisher` の `vp run plan` と `vp run deploy --confirm-plan <確認コード>` は、同じログインで wiki 公開用の GitHub App と production の secrets を作ります。main のルールとは別に適用します。
     - 初回の deploy は端末に `http://127.0.0.1:<port>/` を出して待ちます。ブラウザで開くと GitHub の App 作成画面へ進むので、作成を押します。App の名前は `{TEMPLATE_PREFIX} wiki publisher` で、権限は Contents と Pull requests の書き込みだけです。
     - 作成の後はインストール画面へ移ります。このリポジトリを選んでインストールすると、deploy が App ID、秘密鍵、`owner/repository` を Environment `production` の secret に書き込みます。
     - 作成画面で 15 分待っても作成されないときは、何も作らずに deploy が失敗します。もう一度 deploy します。

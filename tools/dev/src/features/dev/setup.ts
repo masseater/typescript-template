@@ -82,13 +82,10 @@ function writeAppVariables(
 }
 
 const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(
-  args: readonly string[],
+  requested: typeof OriginMode.Type | undefined,
 ) {
   const stored = yield* loadOrCreateCredentials();
-  const [requested = stored.origins ?? "lan"] = args;
-  const origins = yield* Schema.decodeUnknownEffect(OriginMode)(requested).pipe(
-    Effect.mapError(() => failure("origin_mode_invalid")),
-  );
+  const origins = requested ?? stored.origins ?? "lan";
   const credentials = { ...stored, origins };
   if (stored.origins !== origins) {
     const content = yield* Schema.encodeEffect(
@@ -104,7 +101,7 @@ const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(
   return credentials;
 });
 
-const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
+const setup = Effect.fn("setup")(function* setup(requested: typeof OriginMode.Type | undefined) {
   const localPath = yield* urlPath(local);
   yield* withFileSystem((fs) =>
     fs.makeDirectory(localPath, { mode: privateDirectoryMode, recursive: true }),
@@ -116,7 +113,7 @@ const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
   yield* refreshBrowserConfig();
   const credentials = ciCredentials()
     ? yield* sharedRunnerCredentials()
-    : yield* rememberOrigins(args);
+    : yield* rememberOrigins(requested);
   yield* Effect.forEach(applications, (app) =>
     writeAppVariables(app, credentials, credentials.origins),
   );

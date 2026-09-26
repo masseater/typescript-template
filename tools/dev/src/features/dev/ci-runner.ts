@@ -28,7 +28,6 @@ interface CiRunnerReport {
 }
 
 const sleepGuard = ["/usr/bin/caffeinate", "-s"] as const;
-const writeFlag = "--write";
 const plistSuffix = ".plist";
 
 function programArguments(root: string): Effect.Effect<readonly string[], never, Path.Path> {
@@ -152,21 +151,22 @@ function renderService(
 }
 
 function ciRunner(
-  args: readonly string[],
+  roots: readonly string[],
+  write: boolean,
 ): Effect.Effect<CiRunnerReport, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
-  const write = args.includes(writeFlag);
-  const roots = args.filter((argument) => argument !== writeFlag);
-  return roots.length === 0
-    ? Effect.fail(failure("ci_runner_root_required"))
-    : Effect.forEach(roots, (root) => renderService(root, write)).pipe(
-        Effect.map((services) => ({
-          event: "local.ci_runner_services_rendered" as const,
-          ok: true as const,
-          services,
-          written: write,
-        })),
-      );
+  return Effect.forEach(roots, (root) => renderService(root, write)).pipe(
+    Effect.map((services) => ({
+      event: "local.ci_runner_services_rendered" as const,
+      ok: true as const,
+      services,
+      written: write,
+    })),
+  );
 }
 
-export { ciRunner };
+const diffCiRunner = (roots: readonly string[]) => ciRunner(roots, false);
+
+const writeCiRunner = (roots: readonly string[]) => ciRunner(roots, true);
+
+export { diffCiRunner, writeCiRunner };
 export type { CiRunnerReport, ServiceReport };

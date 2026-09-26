@@ -79,22 +79,31 @@ function stateStore(secrets: DeploymentSecrets): ReturnType<typeof StateRoute.st
 
 type DeploymentAccess = Effect.Success<ReturnType<typeof deploymentAccess>>;
 
+const withDeploymentAccess = <CommandFailure>(
+  event: string,
+  command: (deployment: DeploymentAccess) => Effect.Effect<unknown, CommandFailure>,
+) =>
+  Effect.gen(function* program() {
+    const deployment = yield* deploymentAccess();
+    yield* command(deployment).pipe(
+      Effect.catchCause((cause) => reportCause(event, cause, deployment.confidential)),
+    );
+  });
+
 function runDeploymentCommand<Input, InputFailure, CommandFailure>(
   event: string,
   input: Effect.Effect<Input, InputFailure>,
   command: (input: Input, deployment: DeploymentAccess) => Effect.Effect<unknown, CommandFailure>,
 ): void {
   runCli(
-    Effect.gen(function* program() {
-      const given = yield* input;
-      const deployment = yield* deploymentAccess();
-      yield* command(given, deployment).pipe(
-        Effect.catchCause((cause) => reportCause(event, cause, deployment.confidential)),
-      );
-    }),
+    input.pipe(
+      Effect.flatMap((given) =>
+        withDeploymentAccess(event, (deployment) => command(given, deployment)),
+      ),
+    ),
     (cause) => causeRecord(event, cause),
   );
 }
 
-export { deploymentAccess, runDeploymentCommand, stateStore };
+export { deploymentAccess, runDeploymentCommand, stateStore, withDeploymentAccess };
 export type { DeploymentAccess };

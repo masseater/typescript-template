@@ -2,9 +2,6 @@ import { Schema } from "effect";
 
 class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("LocalCommandFailure", {
   reason: Schema.Literals([
-    "command_unsupported",
-    "origin_mode_invalid",
-    "app_invalid",
     "file_io_failed",
     "process_failed",
     "credentials_permissions_invalid",
@@ -15,7 +12,6 @@ class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("Loc
     "browser_start_failed",
     "browser_authentication_failed",
     "browser_command_required",
-    "ci_runner_root_required",
     "ci_runner_service_invalid",
     "operator_credentials_stale",
     "operator_provision_failed",

@@ -34,7 +34,6 @@ const browserConfig = new URL("browser.json", local);
 const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(root));
 const rootHash = Buffer.from(rootDigest).toString("hex").slice(0, ROOT_HASH_LENGTH);
 const socket = `template-${rootHash}`;
-const AppName = Schema.Literals(applications);
 const OriginMode = Schema.Literals(["lan", "loopback"]);
 const StripeTestCredentials = Schema.Struct({
   meteredPriceId: Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u)),
@@ -104,12 +103,6 @@ function running(
   );
 }
 
-function application(value: string | undefined): Effect.Effect<App, LocalCommandFailure> {
-  return Schema.decodeUnknownEffect(AppName)(value).pipe(
-    Effect.mapError(() => failure("app_invalid")),
-  );
-}
-
 const readCredentials = Effect.fn("readCredentials")(function* readCredentials() {
   yield* assertOwnerOnly(credentialsFile);
   const path = yield* urlPath(credentialsFile);
@@ -143,7 +136,6 @@ const refreshBrowserConfig = Effect.fn("refreshBrowserConfig")(function* refresh
 });
 
 export {
-  application,
   browserConfig,
   credentialsFile,
   lanOrigin,

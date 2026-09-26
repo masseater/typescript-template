@@ -14,14 +14,11 @@ import { deploymentKey } from "@repo/observability/deployment-keys";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
 import { Effect, Schema } from "effect";
 
-import { stackNames } from "./stacks.ts";
-
 import type { WorkerObservability } from "alchemy/Cloudflare";
 import type { StackName } from "./stacks.ts";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
   code: Schema.Literals([
-    "deployment_command_invalid",
     "account_read_unavailable",
     "database_input_invalid",
     "database_name_taken",
@@ -152,35 +149,6 @@ function workerObservability(config: SharedConfig): WorkerObservability {
   };
 }
 
-const PlanCommand = Schema.Tuple([Schema.Literal("plan"), Schema.Literals(["all", ...stackNames])]);
-const DeployAllCommand = Schema.Tuple([Schema.Literal("deploy"), Schema.Literal("all")]);
-const DeployCommand = Schema.Tuple([
-  Schema.Literal("deploy"),
-  Schema.Literals(stackNames),
-  Schema.Literal("--confirm-plan"),
-  Confirmation,
-]);
-const DeploymentCommand = Schema.Union([PlanCommand, DeployAllCommand, DeployCommand]);
-
-const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* parseDeploymentCommand(
-  args: readonly string[],
-) {
-  const parsed = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
-    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid", keys: [] })),
-  );
-  if (parsed[0] === "deploy" && parsed[1] === "all") {
-    return { operation: "deploy-all", stacks: stackNames } as const;
-  }
-  if (parsed[0] === "deploy") {
-    return { confirmation: parsed[3], operation: "deploy", stack: parsed[1] } as const;
-  }
-  const [, target] = parsed;
-  const stacks: readonly StackName[] = stackNames.filter(
-    (stack) => target === "all" || stack === target,
-  );
-  return { operation: "plan", stacks } as const;
-});
-
 function sendingDomain(mailFrom: string): string {
   return mailFrom.slice(mailFrom.indexOf("@") + 1);
 }
@@ -200,7 +168,9 @@ const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedCo
   return config;
 });
 
-type DeploymentRequest = Effect.Success<ReturnType<typeof parseDeploymentCommand>>;
+type DeploymentRequest =
+  | { readonly operation: "plan" | "deploy-all"; readonly stacks: readonly StackName[] }
+  | { readonly operation: "deploy"; readonly stack: StackName; readonly confirmation: string };
 type DeploymentTarget = Pick<SharedConfig, "accountId" | "prefix">;
 
 export {
@@ -221,7 +191,6 @@ export {
   deriveOrigins,
   hstsSetting,
   observabilitySampling,
-  parseDeploymentCommand,
   sendingDomain,
   traceDestination,
   workerCompatibilityOptions,
