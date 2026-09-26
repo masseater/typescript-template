@@ -14,6 +14,7 @@ export { observeRequest, reportFailure } from "./request-span.ts";
 export { logAt, logCause, statusSeverity } from "./severity.ts";
 export type { Severity } from "./severity.ts";
 export { redactSecrets, redactedField } from "./redact.ts";
+export { causeField } from "./structured-logs.ts";
 export { reportUnavailable } from "./unavailable.ts";
 export {
   RequestId,

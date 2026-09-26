@@ -143,7 +143,8 @@ const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(aske
   return snapshot;
 });
 
-const httpFailed = (): BudgetFailure => new BudgetFailure({ code: "billing_http_failed" });
+const httpFailed = (cause: unknown): BudgetFailure =>
+  new BudgetFailure({ cause, code: "billing_http_failed" });
 
 const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
   readonly accountId: string;
@@ -157,7 +158,10 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
     headers: { Accept: "application/json", Authorization: `Bearer ${Redacted.value(asked.token)}` },
   }).pipe(Effect.provide(FetchHttpClient.layer), Effect.mapError(httpFailed));
   if (billingResponse.status < 200 || billingResponse.status >= 300) {
-    return yield* fail("billing_http_failed");
+    return yield* new BudgetFailure({
+      code: "billing_http_failed",
+      status: billingResponse.status,
+    });
   }
   const billingPayload = yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(
     billingResponse,

@@ -169,9 +169,9 @@ describe("authorization failure", () => {
     return Effect.runPromise(Effect.flip(fetchErrorGroups(queryWindow)));
   });
 
-  it("fails closed without carrying the provider body", ({ queryFailure }) => {
+  it("fails closed with the status but without the provider body", ({ queryFailure }) => {
     expect(queryFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "telemetry_http_failed", keys: [] }),
+      new ErrorMonitorFailure({ code: "telemetry_http_failed", keys: [], status: 403 }),
     );
   });
 });

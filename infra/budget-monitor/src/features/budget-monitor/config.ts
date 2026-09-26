@@ -20,6 +20,8 @@ class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure",
     "exchange_rate_response_invalid",
     "exchange_rate_stale",
   ]),
+  cause: Schema.optional(Schema.Unknown),
+  status: Schema.optional(Schema.Finite),
 }) {}
 
 const fail = (failureCode: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> =>

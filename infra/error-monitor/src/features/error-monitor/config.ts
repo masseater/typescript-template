@@ -11,6 +11,8 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
     "telemetry_response_invalid",
   ]),
   keys: Schema.Array(Schema.String),
+  cause: Schema.optional(Schema.Unknown),
+  status: Schema.optional(Schema.Finite),
 }) {}
 
 const ErrorMonitorEnvironment = Schema.Struct({

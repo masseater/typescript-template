@@ -28,16 +28,17 @@ const logAt = (
   logged: {
     readonly eventName: string;
     readonly attributes?: Attributes;
+    readonly cause?: Readonly<Cause.Cause<unknown>>;
   },
 ): Effect.Effect<void> =>
-  Effect.logWithLevel(severity)(logged.eventName).pipe(annotateLogs(logged.attributes ?? {}));
+  (logged.cause === undefined
+    ? Effect.logWithLevel(severity)(logged.eventName)
+    : Effect.logWithLevel(severity)(logged.eventName, logged.cause)
+  ).pipe(annotateLogs(logged.attributes ?? {}));
 const logCause = (logged: {
   readonly eventName: string;
   readonly cause: Readonly<Cause.Cause<unknown>>;
   readonly attributes?: Attributes;
-}): Effect.Effect<void> =>
-  Effect.logWithLevel("Error")(logged.eventName, logged.cause).pipe(
-    annotateLogs(logged.attributes ?? {}),
-  );
+}): Effect.Effect<void> => logAt("Error", logged);
 export { logAt, logCause, statusSeverity };
 export type { Severity };

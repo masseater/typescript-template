@@ -2,7 +2,7 @@ import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai
 import { logAt, withSpan } from "@repo/observability";
 import { readWorkerConfig } from "@repo/runtime/bindings";
 import { chat } from "@tanstack/ai";
-import { Context, Effect, Layer, Option, Schema } from "effect";
+import { Cause, Context, Effect, Layer, Option, Schema } from "effect";
 
 import { displayValue, fieldDefinitions, fieldKeys } from "#shared/interview/sheet.ts";
 import { interviewProfileLayout } from "./default.ts";
@@ -140,14 +140,8 @@ function assembleProfileLayout(
       Effect.catchTag("LayoutFailed", (failure) =>
         Effect.as(
           logAt("Warn", {
-            attributes: {
-              ...(failure.cause === undefined
-                ? {}
-                : {
-                    cause: String(failure.cause),
-                  }),
-              reason: failure.reason,
-            },
+            attributes: { reason: failure.reason },
+            cause: Cause.fail(failure),
             eventName: "profile-layout.model_failed",
           }),
           undefined,
