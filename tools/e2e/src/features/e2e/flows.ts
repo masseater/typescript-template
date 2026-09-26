@@ -38,6 +38,21 @@ const signUp = (visit: Visit): Effect.Effect<void, JourneyFailure> =>
     yield* press(visit.page, signUpButton);
   });
 
+const confirmVerificationLink = (
+  opened: Readonly<{ link: string; origin: string; page: Page }>,
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* pressToConfirm() {
+    yield* pageStep(() => opened.page.goto(opened.link));
+    const confirm = yield* readyButton(opened.page, "メールアドレスを確認する");
+    if (new URL(opened.page.url()).pathname !== "/verify-email") {
+      return yield* Effect.fail(failed("E2E_EMAIL_VERIFIED_ON_OPEN", opened.page.url()));
+    }
+    yield* pageStep(() => confirm.click());
+    yield* pageStep(() =>
+      opened.page.waitForURL(`${opened.origin}/login`, { timeout: appearanceTimeout }),
+    );
+  });
+
 const confirmEmail = (
   delivery: Visit & { readonly mail: MailSink },
 ): Effect.Effect<void, JourneyFailure> =>
@@ -46,10 +61,7 @@ const confirmEmail = (
       delivery.account.email,
       `${delivery.origin}/verify-email`,
     );
-    yield* pageStep(() => delivery.page.goto(link));
-    yield* pageStep(() =>
-      delivery.page.waitForURL(`${delivery.origin}/login`, { timeout: appearanceTimeout }),
-    );
+    yield* confirmVerificationLink({ link, origin: delivery.origin, page: delivery.page });
   });
 
 const signInButton = "ログイン";
@@ -222,6 +234,7 @@ const updateProfile = (
 export {
   answerTotpChallenge,
   confirmEmail,
+  confirmVerificationLink,
   enrollTotp,
   homePattern,
   registerPasskey,

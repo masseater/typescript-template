@@ -11,7 +11,7 @@ import { useNotice } from "./use-notice";
 import type { ReactElement, SyntheticEvent } from "react";
 
 const requestedNotice =
-  "新しいメールアドレスに確認メールを送りました。届いたリンクを開くと変更が確定します。いまのメールアドレスにもお知らせを送りました。";
+  "新しいメールアドレスに確認メールを送りました。届いたリンクを開き、確定のボタンを押すと変更が確定します。いまのメールアドレスにもお知らせを送りました。";
 
 const stepUp = (method: StrongAuthenticationMethod, code: string): Effect.Effect<void> =>
   method === AUTHENTICATION_METHOD.passwordTotp

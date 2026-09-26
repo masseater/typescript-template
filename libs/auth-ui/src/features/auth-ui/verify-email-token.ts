@@ -1,13 +1,9 @@
-import { Effect, Option, Ref } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 
 import { browserHttp } from "./browser-http.ts";
 
 const verificationEndpoint = "/api/verify-email";
-
-const pendingVerification = Ref.makeUnsafe<
-  { readonly result: Promise<boolean>; readonly token: string } | undefined
->(undefined);
 
 const postVerification = (token: string): Effect.Effect<boolean> =>
   Effect.gen(function* postVerificationToken() {
@@ -19,19 +15,23 @@ const postVerification = (token: string): Effect.Effect<boolean> =>
     return Option.isSome(served) && served.value.status >= 200 && served.value.status < 300;
   }).pipe(Effect.orDie);
 
-const verifyEmailToken = (): Promise<boolean> => {
-  const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
-  if (token === null || token === "") {
-    Effect.runSync(Ref.set(pendingVerification, undefined));
-    return Promise.resolve(false);
-  }
-  const cached = Effect.runSync(Ref.get(pendingVerification));
-  if (cached?.token === token) {
-    return cached.result;
-  }
-  const accepted = Effect.runPromise(postVerification(token));
-  Effect.runSync(Ref.set(pendingVerification, { result: accepted, token }));
-  return accepted;
-};
+class VerificationRejected extends Schema.TaggedError<VerificationRejected>()(
+  "VerificationRejected",
+  { message: Schema.String },
+) {}
+
+const clearToken = Effect.sync(() => {
+  globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
+});
+
+const verifyEmailToken = (invalidLink: string): Effect.Effect<void, VerificationRejected> =>
+  Effect.gen(function* confirmVerification() {
+    const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
+    const accepted = token === null || token === "" ? false : yield* postVerification(token);
+    yield* clearToken;
+    if (!accepted) {
+      return yield* new VerificationRejected({ message: invalidLink });
+    }
+  });
 
 export { verifyEmailToken };

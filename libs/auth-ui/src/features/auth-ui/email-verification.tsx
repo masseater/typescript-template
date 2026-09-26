@@ -1,30 +1,32 @@
-import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, type ReactElement } from "react";
+import { ActionStatus, Button, FormColumn, useAction } from "@repo/ui";
+import { Effect } from "effect";
 
-import { emailVerificationOptions } from "./api/verify-email.ts";
+import { verifyEmailToken } from "./verify-email-token.ts";
+
+import type { ReactElement } from "react";
+
+const invalidLink =
+  "確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。";
+
+const afterVerification = Effect.sync(() => {
+  globalThis.location.replace("/login");
+});
 
 const EmailVerification = (): ReactElement => {
-  const verification = useQuery(emailVerificationOptions);
-  const verified = verification.data;
-  useEffect(() => {
-    if (verified === undefined) {
-      return;
-    }
-    if (verified) {
-      globalThis.location.replace("/login");
-      return;
-    }
-    globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
-  }, [verified]);
-  return verified === false ? (
-    <StatusMessage variant={STATUS_VARIANT.failure}>
-      {"確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。"}
-    </StatusMessage>
-  ) : (
-    <StatusMessage variant={STATUS_VARIANT.pending}>
-      {"メールアドレスを確認しています。"}
-    </StatusMessage>
+  const action = useAction();
+  const confirm = (): void => {
+    action.run(() =>
+      Effect.runPromise(verifyEmailToken(invalidLink).pipe(Effect.andThen(afterVerification))),
+    );
+  };
+  return (
+    <FormColumn>
+      <p>{"下のボタンを押すと、このメールアドレスの確認が済みます。"}</p>
+      <Button action={confirm} disabled={action.blocked} type="button" variant="primary">
+        {"メールアドレスを確認する"}
+      </Button>
+      <ActionStatus action={action} pendingMessage="メールアドレスを確認しています。" />
+    </FormColumn>
   );
 };
 
