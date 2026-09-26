@@ -29,7 +29,7 @@ declare global {
 }
 
 const routes = { "/api/recordings": "recordings" };
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 const migrated = Effect.promise(() => reset()).pipe(
   Effect.andThen(Effect.promise(() => applyD1Migrations(env.DB, env.D1_MIGRATIONS))),
 );
@@ -45,7 +45,7 @@ type App = ReturnType<typeof recordingsApp>;
 
 function recordingsApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes })),
+    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.serviceMember, routes })),
   );
   const api = apiRoutes(runtime, reporting);
   return createApi(apiRoot).use(accountApi(api)).use(recordingsApi(api));

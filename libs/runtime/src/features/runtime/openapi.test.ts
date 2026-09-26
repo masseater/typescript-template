@@ -30,15 +30,15 @@ describe("an api that serves its own reference", () => {
       Effect.gen(function* coverageProgram() {
         const appContext = Layer.succeed(AppOrigin, origin).pipe(
           Layer.provideMerge(
-            Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.user }),
+            Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.serviceMember }),
           ),
         );
         const api = apiRoutes(
           workerRuntime(() => appContext),
-          { service: APPLICATION.user },
+          { service: APPLICATION.serviceMember },
         );
         const app = createApi(apiRoot)
-          .use(apiDocs(APPLICATION.user))
+          .use(apiDocs(APPLICATION.serviceMember))
           .get(
             "/profile",
             ...api.route(

@@ -31,13 +31,13 @@ type Privilege = Readonly<{
 }>;
 
 const adminPrivilege: Privilege = {
-  audience: APPLICATION.admin,
+  audience: APPLICATION.serviceAdmin,
   levels: adminPermissions,
-  role: ROLE.administrator,
+  role: ROLE.admin,
 };
 
 const staffPrivilege: Privilege = {
-  audience: APPLICATION.wiki,
+  audience: APPLICATION.internalDashboard,
   levels: staffPermissions,
   role: ROLE.staff,
 };

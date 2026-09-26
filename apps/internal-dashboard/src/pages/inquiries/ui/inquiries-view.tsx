@@ -87,7 +87,7 @@ function InquiriesView({ lookup }: Readonly<{ lookup: InquiryLookup }>): ReactEl
             {selected.messages.map((message) => (
               <li key={message.id} className="rounded-lg border border-border p-3">
                 <p className="text-sm font-medium">
-                  {message.authorKind === ROLE.administrator ? "運営" : "会員"}
+                  {message.authorKind === ROLE.admin ? "運営" : "会員"}
                 </p>
                 <p className="whitespace-pre-wrap">{message.body}</p>
                 <p className="text-xs text-muted-foreground">

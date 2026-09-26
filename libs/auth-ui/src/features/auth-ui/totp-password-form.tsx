@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD, ROLE } from "@repo/config";
+import { ROLE } from "@repo/config";
 import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
 import { Effect } from "effect";
 
@@ -85,8 +85,8 @@ const TotpPasswordForm = ({
         />
         <Field
           label="設定変更を確認するパスワード"
-          name={AUTHENTICATION_METHOD.password}
-          type={AUTHENTICATION_METHOD.password}
+          name="password"
+          type="password"
           autoComplete="current-password"
           value={password.value}
           onValueChange={password.handleChange}

@@ -175,7 +175,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
         entry: {
           action: suspended ? AUDIT_ACTION.memberSuspended : AUDIT_ACTION.memberUnsuspended,
           actorId: actor.user.id,
-          actorKind: ROLE.administrator,
+          actorKind: ROLE.admin,
           channel: AUDIT_CHANNEL.ui,
           targetId,
         },

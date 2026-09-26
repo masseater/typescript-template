@@ -14,14 +14,14 @@ const BootstrapKind = Schema.Literals(bootstrapKinds);
 type BootstrapKind = typeof BootstrapKind.Type;
 
 const bootstrapRoles = {
-  [BOOTSTRAP_KIND.admin]: { permission: ADMIN_PERMISSION.owner, role: ROLE.administrator },
+  [BOOTSTRAP_KIND.admin]: { permission: ADMIN_PERMISSION.owner, role: ROLE.admin },
   [BOOTSTRAP_KIND.staff]: { permission: STAFF_PERMISSION.editor, role: ROLE.staff },
 } as const satisfies Readonly<Record<BootstrapKind, { permission: string; role: Role }>>;
 
 const BootstrappedAdmin = Schema.Struct({
   ...Struct.pick(UserRow.fields, ["email", "id"]),
   permission: Schema.Literals([ADMIN_PERMISSION.owner, STAFF_PERMISSION.editor]),
-  role: Schema.Literals([ROLE.administrator, ROLE.staff]),
+  role: Schema.Literals([ROLE.admin, ROLE.staff]),
 });
 
 type RolePromotion = Readonly<{

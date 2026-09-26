@@ -34,9 +34,9 @@ const healthMonitorWorker = {
 } as const;
 
 const healthOriginKey = {
-  [APPLICATION.wiki]: "INTERNAL_DASHBOARD_ORIGIN",
-  [APPLICATION.admin]: "SERVICE_ADMIN_ORIGIN",
-  [APPLICATION.user]: "SERVICE_MEMBER_ORIGIN",
+  [APPLICATION.internalDashboard]: "INTERNAL_DASHBOARD_ORIGIN",
+  [APPLICATION.serviceAdmin]: "SERVICE_ADMIN_ORIGIN",
+  [APPLICATION.serviceMember]: "SERVICE_MEMBER_ORIGIN",
 } as const satisfies Record<Application, string>;
 
 export {

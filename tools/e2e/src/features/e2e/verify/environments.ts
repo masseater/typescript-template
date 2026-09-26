@@ -31,11 +31,11 @@ const resolveLocalVerifyEnvironment = (
 ): ResolvedVerifyEnvironment => {
   const mailpit = readOptionalEnv("MAILPIT_URL") ?? mailpitOrigin;
   return {
-    adminOrigin: applicationOrigins[APPLICATION.admin],
+    adminOrigin: applicationOrigins[APPLICATION.serviceAdmin],
     environment,
     mailpitOrigin: mailpit,
-    memberOrigin: applicationOrigins[APPLICATION.user],
-    wikiOrigin: applicationOrigins[APPLICATION.wiki],
+    memberOrigin: applicationOrigins[APPLICATION.serviceMember],
+    wikiOrigin: applicationOrigins[APPLICATION.internalDashboard],
   };
 };
 

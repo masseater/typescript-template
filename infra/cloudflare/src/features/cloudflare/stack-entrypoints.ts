@@ -7,9 +7,9 @@ import type { MonitorStack } from "./monitors.ts";
 import type { PackageStack, StackName } from "./stacks.ts";
 
 const applicationEntrypoints = {
-  [APPLICATION.admin]: path.join(repositoryRoot, "apps", APPLICATION.admin, "alchemy.run.ts"),
-  [APPLICATION.user]: path.join(repositoryRoot, "apps", APPLICATION.user, "alchemy.run.ts"),
-  [APPLICATION.wiki]: path.join(repositoryRoot, "apps", APPLICATION.wiki, "alchemy.run.ts"),
+  [APPLICATION.serviceAdmin]: path.join(repositoryRoot, "apps", APPLICATION.serviceAdmin, "alchemy.run.ts"),
+  [APPLICATION.serviceMember]: path.join(repositoryRoot, "apps", APPLICATION.serviceMember, "alchemy.run.ts"),
+  [APPLICATION.internalDashboard]: path.join(repositoryRoot, "apps", APPLICATION.internalDashboard, "alchemy.run.ts"),
   core: path.join(repositoryRoot, "apps", "core", "alchemy.run.ts"),
   [wikiWorker]: path.join(repositoryRoot, "apps", wikiWorker, "alchemy.run.ts"),
 } as const satisfies Readonly<Record<PackageStack, string>>;

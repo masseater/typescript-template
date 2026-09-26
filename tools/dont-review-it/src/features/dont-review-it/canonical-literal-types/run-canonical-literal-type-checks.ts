@@ -26,6 +26,7 @@ import {
 import { canonicalLiteralSitesIn, type CanonicalLiteralSite } from "./literal-sites.ts";
 import { ownersReferencedBySymbol } from "./referenced-owners.ts";
 import { vocabularyExtensionsIn } from "./vocabulary-extensions.ts";
+import { vocabularyKeyProblems } from "./vocabulary-keys.ts";
 import {
   finiteMembersOf,
   membersOfValues,
@@ -175,7 +176,12 @@ const derivesFromOwners = (input: {
     .find((holderOwners) => holderOwners.length > 0);
   if (referenced !== undefined) return referenced;
   const finiteMembers = finiteMembersOf({ checker: input.checker, type: context.type });
-  if (finiteMembers === null) return input.owners;
+  if (finiteMembers === null) {
+    const heldOutside = context.holders.some((holder) =>
+      declaredOutsideRepository({ holder, program: input.program }),
+    );
+    return heldOutside ? [] : input.owners;
+  }
   const { origin } = context;
   if (origin !== undefined) {
     if (declaredOutsideRepository({ holder: origin, program: input.program })) return [];
@@ -294,15 +300,18 @@ export const runCanonicalLiteralTypeChecks = (input: {
     groupBy(candidates, (candidate) => configKeyFor({ candidate, repositoryRoot })),
   );
   return {
-    problems: measureStage("canonical-literal-types.analysis", () =>
-      candidatesByConfig.flatMap((candidatesInGroup) =>
-        problemsInGroup({
-          candidates: candidatesInGroup,
-          catalog: input.catalog,
-          repositoryRoot,
-        }),
+    problems: [
+      ...measureStage("canonical-literal-types.keys", () => vocabularyKeyProblems(input)),
+      ...measureStage("canonical-literal-types.analysis", () =>
+        candidatesByConfig.flatMap((candidatesInGroup) =>
+          problemsInGroup({
+            candidates: candidatesInGroup,
+            catalog: input.catalog,
+            repositoryRoot,
+          }),
+        ),
       ),
-    ),
+    ],
     scanned: input.declarationSources.length,
   };
 };

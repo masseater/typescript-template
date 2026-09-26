@@ -64,7 +64,7 @@ const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
         />
         <Field
           label="パスワード"
-          name={AUTHENTICATION_METHOD.password}
+          name="password"
           type="password"
           autoComplete="current-password"
           value={password.value}

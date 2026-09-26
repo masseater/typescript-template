@@ -38,13 +38,13 @@ const operatorFile = new URL("operators.json", local);
 type OperatorAccount = Readonly<{ email: string; kind?: BootstrapKind; name: string }>;
 
 const operatorAccounts: Readonly<Record<Application, OperatorAccount>> = {
-  [APPLICATION.admin]: {
+  [APPLICATION.serviceAdmin]: {
     email: "local-admin@example.test",
     kind: "admin",
     name: "Local Admin",
   },
-  [APPLICATION.user]: { email: "local-member@example.test", name: "Local Member" },
-  [APPLICATION.wiki]: {
+  [APPLICATION.serviceMember]: { email: "local-member@example.test", name: "Local Member" },
+  [APPLICATION.internalDashboard]: {
     email: "local-staff@example.test",
     kind: "staff",
     name: "Local Staff",
@@ -275,13 +275,13 @@ const ensureOperators = Effect.fn("ensureOperators")(function* ensureOperators()
     return yield* readOperators();
   }
   const credentials = yield* readCredentials();
-  const origin = applicationOrigins[APPLICATION.user];
+  const origin = applicationOrigins[APPLICATION.serviceMember];
   return yield* Effect.scoped(
     Effect.gen(function* provision() {
       const sink = yield* mailSink;
       const { env } = yield* localDatabasePlatform;
       const authLayer = Auth.layer({
-        audience: APPLICATION.user,
+        audience: APPLICATION.serviceMember,
         baseURL: origin,
         mail: {
           APP_ORIGIN: origin,

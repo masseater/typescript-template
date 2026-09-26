@@ -5,6 +5,7 @@ import { HttpResponse, http } from "msw";
 
 import { begin } from "./engine.ts";
 import { Interviewer } from "./interviewer.ts";
+import { SPEAKER } from "./state.ts";
 
 import type { Scope } from "effect";
 
@@ -145,7 +146,7 @@ it.effect("the member's words reach the model only as data beside the instructio
       "messages[1]": {
         content: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           current: "nickname",
-          messages: [{ role: "interviewer", text: "はじめまして。なんて呼べばいいですか？" }],
+          messages: [{ role: SPEAKER.interviewer, text: "はじめまして。なんて呼べばいいですか？" }],
           phase: "asking",
           sheet: {},
           skipped: [],

@@ -5,13 +5,13 @@ import { sessionRedirect } from "./session-redirect.ts";
 
 const settled = { error: undefined, loading: false } as const;
 const strongMember = { strong: true, user: { role: ROLE.member } } as const;
-const weakAdministrator = { strong: false, user: { role: ROLE.administrator } } as const;
+const weakAdministrator = { strong: false, user: { role: ROLE.admin } } as const;
 const wikiPage = { href: "/wiki", pathname: "/wiki", role: undefined, securityExempt: false };
 const nestedWikiPage = { ...wikiPage, href: "/wiki/a?b=1", pathname: "/wiki/a" };
 const exemptSecurityPage = {
   href: "/security",
   pathname: "/security",
-  role: ROLE.administrator,
+  role: ROLE.admin,
   securityExempt: true,
 };
 const guardedSecurityPage = { ...exemptSecurityPage, role: undefined, securityExempt: false };

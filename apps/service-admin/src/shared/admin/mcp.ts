@@ -71,7 +71,7 @@ const failureCodes: ReadonlyMap<string, string> = new Map([
 ]);
 
 function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
-  const server = new McpServer({ name: APPLICATION.admin, version: mcpVersion });
+  const server = new McpServer({ name: APPLICATION.serviceAdmin, version: mcpVersion });
   const { sessionId } = actor;
   const channel = AUDIT_CHANNEL.mcp;
   const run = toolRunner(runAdmin, failureCodes);

@@ -16,9 +16,9 @@ class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
 ) {}
 
 const HealthMonitorEnvironment = Schema.Struct({
-  [healthOriginKey[APPLICATION.wiki]]: HttpsOrigin,
-  [healthOriginKey[APPLICATION.admin]]: HttpsOrigin,
-  [healthOriginKey[APPLICATION.user]]: HttpsOrigin,
+  [healthOriginKey[APPLICATION.internalDashboard]]: HttpsOrigin,
+  [healthOriginKey[APPLICATION.serviceAdmin]]: HttpsOrigin,
+  [healthOriginKey[APPLICATION.serviceMember]]: HttpsOrigin,
 });
 
 type HealthMonitorEnv = typeof HealthMonitorEnvironment.Encoded;

@@ -1,7 +1,7 @@
 /** @canonical-values config.role */
 export const roles = ["member", "admin", "staff"] as const;
 export type Role = (typeof roles)[number];
-export const ROLE = { member: roles[0], administrator: roles[1], staff: roles[2] } as const;
+export const ROLE = { member: roles[0], admin: roles[1], staff: roles[2] } as const;
 
 /** @canonical-values config.account-state */
 export const accountStates = ["active", "suspended"] as const;
@@ -56,6 +56,6 @@ export type AuthenticationMethod = (typeof authenticationMethods)[number];
 export const AUTHENTICATION_METHOD = {
   password: authenticationMethods[0],
   passwordTotp: authenticationMethods[1],
-  passkey: authenticationMethods[2],
+  passkeyUv: authenticationMethods[2],
   recovery: authenticationMethods[3],
 } as const satisfies Record<string, AuthenticationMethod>;

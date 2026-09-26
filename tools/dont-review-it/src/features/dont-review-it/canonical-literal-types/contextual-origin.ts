@@ -37,6 +37,7 @@ const enclosingHolder = (input: {
   if (ts.isPropertyAssignment(parent) && ts.isObjectLiteralExpression(parent.parent)) {
     return propertyHolder({ assignment: parent, checker: input.checker });
   }
+  if (ts.isJsxAttribute(parent)) return input.checker.getSymbolAtLocation(parent.name);
   return ts.isCallExpression(parent) || ts.isNewExpression(parent)
     ? argumentHolder({ call: parent, checker: input.checker, node: input.node })
     : undefined;

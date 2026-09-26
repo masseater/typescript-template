@@ -16,7 +16,7 @@ import { memberApi } from "./member-api.ts";
 import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 const routes = { "/api/profile": "profile" };
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 const password = "consent-gate-password-123";
 const email = "member@example.test";
 const adminEmail = "admin@example.test";
@@ -30,7 +30,7 @@ const ConsentRequiredBody = Schema.Struct({
 function memberApp() {
   const environment = appEnvironment();
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
+    const base = Layer.orDie(appLayer({ audience: APPLICATION.serviceMember, env: environment, routes }));
     return Layer.mergeAll(
       base,
       Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
@@ -124,7 +124,7 @@ const strongAdminSession = Effect.fn("strongAdminSession")(function* strongAdmin
   yield* runStatement(
     "INSERT INTO user (id, email, email_verified, name, role, permission, created_at, updated_at) VALUES ('admin', ?, 1, 'admin', ?, ?, ?, ?)",
     adminEmail,
-    ROLE.administrator,
+    ROLE.admin,
     ADMIN_PERMISSION.owner,
     now,
     now,
@@ -133,7 +133,7 @@ const strongAdminSession = Effect.fn("strongAdminSession")(function* strongAdmin
     "INSERT INTO session (id, user_id, token, audience, authentication_method, security_version, created_at, updated_at, expires_at) VALUES (?, 'admin', ?, ?, 'password_totp', 0, ?, ?, ?)",
     sessionId,
     crypto.randomUUID(),
-    APPLICATION.admin,
+    APPLICATION.serviceAdmin,
     now,
     now,
     now + 60_000,

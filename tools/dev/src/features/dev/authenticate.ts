@@ -31,9 +31,9 @@ const submitLoginForm = [
 ] as const;
 
 const postLoginPaths: Readonly<Record<App, string>> = {
-  [APPLICATION.admin]: "/members",
-  [APPLICATION.user]: "/home",
-  [APPLICATION.wiki]: "/",
+  [APPLICATION.serviceAdmin]: "/members",
+  [APPLICATION.serviceMember]: "/home",
+  [APPLICATION.internalDashboard]: "/",
 };
 
 const agent = Effect.fn("agent")(function* agent(

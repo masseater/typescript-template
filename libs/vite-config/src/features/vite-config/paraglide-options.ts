@@ -2,7 +2,7 @@ import { APPLICATION } from "@repo/config";
 
 import type { CompilerOptions } from "@inlang/paraglide-js";
 
-const localizedApps = [APPLICATION.user, APPLICATION.admin] as const;
+const localizedApps = [APPLICATION.serviceMember, APPLICATION.serviceAdmin] as const;
 
 const paraglideStrategy = ["url", "cookie", "preferredLanguage", "baseLocale"] as const;
 

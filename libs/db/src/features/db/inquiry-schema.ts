@@ -4,10 +4,10 @@ import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-cor
 
 import { user } from "./identity-schema.ts";
 
-export const inquiryAuthorKinds = [ROLE.member, ROLE.administrator] as const;
+export const inquiryAuthorKinds = [ROLE.member, ROLE.admin] as const;
 export type InquiryAuthorKind = (typeof inquiryAuthorKinds)[number];
 export const INQUIRY_AUTHOR_KIND = {
-  admin: ROLE.administrator,
+  admin: ROLE.admin,
   member: ROLE.member,
 } as const;
 

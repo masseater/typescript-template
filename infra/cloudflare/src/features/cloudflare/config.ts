@@ -1,11 +1,12 @@
 import {
+  APPLICATION,
   CloudflareId,
   Email,
   GoogleAnalyticsMeasurementId,
   HttpsOrigin,
-  ROLE,
   distinctOrigins,
   minimumAuthSecretLength,
+  type Application,
 } from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
 import { Recipients } from "@repo/monitor";
@@ -100,12 +101,22 @@ const SharedSettings = Schema.Struct({
 
 type SharedConfig = typeof SharedSettings.Type;
 
+/** @canonical-values cloudflare.origin-label */
+const originLabels = ["dashboard", "admin", "member"] as const;
+type OriginLabel = (typeof originLabels)[number];
+const applicationOriginLabels: Readonly<Record<Application, OriginLabel>> = {
+  "internal-dashboard": originLabels[0],
+  "service-admin": originLabels[1],
+  "service-member": originLabels[2],
+};
+
 function deriveOrigins(prefix: string, appDomain: string): SharedConfig["origins"] {
-  const origin = (label: string): string => `https://${prefix}-${label}.${appDomain}`;
+  const origin = (app: Application): string =>
+    `https://${prefix}-${applicationOriginLabels[app]}.${appDomain}`;
   return {
-    "internal-dashboard": origin("dashboard"),
-    "service-admin": origin(ROLE.administrator),
-    "service-member": origin(ROLE.member),
+    "internal-dashboard": origin(APPLICATION.internalDashboard),
+    "service-admin": origin(APPLICATION.serviceAdmin),
+    "service-member": origin(APPLICATION.serviceMember),
   };
 }
 

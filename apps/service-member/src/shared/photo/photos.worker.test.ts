@@ -253,7 +253,7 @@ it.effect(
 
 it.effect("a refused withdrawal keeps the photos", () =>
   Effect.gen(function* program() {
-    yield* addUser("administrator", PROFILE_VISIBILITY.allMembers, ROLE.administrator);
+    yield* addUser("administrator", PROFILE_VISIBILITY.allMembers, ROLE.admin);
     const face = yield* uploadPhoto("administrator", PHOTO_SLOT.face, jpegWithExif);
     assert.strictEqual(
       yield* failureTag(withdrawWithPhotos("administrator", { immediate: true })),

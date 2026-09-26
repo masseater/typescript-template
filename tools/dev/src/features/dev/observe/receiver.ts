@@ -169,7 +169,7 @@ const deliver = Effect.fn("deliver")(function* deliver(origin: string) {
         otlp: { endpoint: origin },
         release: "receiver-check",
         routes: { "/": "home" },
-        serviceName: APPLICATION.user,
+        serviceName: APPLICATION.serviceMember,
       }),
     ),
     Effect.mapError((invalid) => new ReceiverCheckFailure({ reason: invalid.reason })),

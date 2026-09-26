@@ -30,9 +30,9 @@ const stackReferences = {
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
-    Record<typeof APPLICATION.admin, typeof servedApplication> &
-      Record<typeof APPLICATION.user, typeof memberServed> &
-      Record<typeof APPLICATION.wiki, typeof wikiServed>
+    Record<typeof APPLICATION.serviceAdmin, typeof servedApplication> &
+      Record<typeof APPLICATION.serviceMember, typeof memberServed> &
+      Record<typeof APPLICATION.internalDashboard, typeof wikiServed>
   > &
   Readonly<Record<MonitorStack, readonly string[]>>;
 
@@ -70,18 +70,18 @@ const stackNames = [
   "internal-wiki",
   "tokens",
   ...monitorStacks,
-  APPLICATION.user,
-  APPLICATION.admin,
-  APPLICATION.wiki,
+  APPLICATION.serviceMember,
+  APPLICATION.serviceAdmin,
+  APPLICATION.internalDashboard,
 ] as const satisfies readonly StackName[];
 
 const onboardingStack = "email" as const satisfies StackName;
 const sendingStacks = [
   "core",
   ...monitorStacks,
-  APPLICATION.user,
-  APPLICATION.admin,
-  APPLICATION.wiki,
+  APPLICATION.serviceMember,
+  APPLICATION.serviceAdmin,
+  APPLICATION.internalDashboard,
 ] as const satisfies readonly StackName[];
 
 function applyOrderViolations(order: readonly StackName[]): readonly StackName[] {

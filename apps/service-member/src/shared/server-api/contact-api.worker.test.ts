@@ -32,7 +32,7 @@ declare global {
 const contactRateLimitMax = 5;
 
 const routes = { "/api/contact": "contact-api" };
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 const opsEmail = "ops@example.test";
 
@@ -56,7 +56,7 @@ function contactApp() {
   const environment = appEnvironment({ OPS_EMAIL: opsEmail });
   const runtime = workerRuntime(() =>
     Layer.merge(
-      Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes: routes })),
+      Layer.orDie(appLayer({ env: environment, audience: APPLICATION.serviceMember, routes: routes })),
       Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
     ),
   );

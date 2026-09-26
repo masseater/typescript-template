@@ -34,8 +34,8 @@ const afterSeededAgreements = Effect.fn("afterSeededAgreements")(function* after
 const clearVersions = query((database) => database.delete(agreementVersion));
 
 const adminSession = Effect.fn("adminSession")(function* adminSession(userId: string) {
-  yield* addUser({ role: ROLE.administrator, userId });
-  return yield* addSession({ audience: APPLICATION.admin, userId });
+  yield* addUser({ role: ROLE.admin, userId });
+  return yield* addSession({ audience: APPLICATION.serviceAdmin, userId });
 });
 
 const publishDraft = Effect.fn("publishDraft")(function* publishDraft(draft: {
@@ -179,7 +179,7 @@ it.effect("reports canPublish for a strong admin and refuses a member", () =>
     const sessionId = yield* adminSession("publisher");
     assert.strictEqual((yield* listAgreementVersions(sessionId)).canPublish, true);
     yield* addUser({ userId: "member" });
-    const memberSession = yield* addSession({ audience: APPLICATION.admin, userId: "member" });
+    const memberSession = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "member" });
     const draft = yield* createAgreementDraft({
       body: "draft",
       kind: AGREEMENT_KIND.terms,
@@ -253,10 +253,10 @@ it.effect("lets a view-only admin draft an agreement but not publish it", () =>
     yield* afterSeededAgreements();
     yield* addUser({
       permission: ADMIN_PERMISSION.viewer,
-      role: ROLE.administrator,
+      role: ROLE.admin,
       userId: "viewer",
     });
-    const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "viewer" });
+    const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "viewer" });
     assert.strictEqual((yield* listAgreementVersions(sessionId)).canPublish, false);
     const draft = yield* createAgreementDraft({
       body: "draft",
@@ -293,10 +293,10 @@ it.effect("refuses drafting and publishing to members and to weak admin sessions
   Effect.gen(function* program() {
     yield* afterSeededAgreements();
     yield* addUser({ userId: "member" });
-    const memberSession = yield* addSession({ audience: APPLICATION.admin, userId: "member" });
-    yield* addUser({ role: ROLE.administrator, userId: "weak" });
+    const memberSession = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "member" });
+    yield* addUser({ role: ROLE.admin, userId: "weak" });
     const weakSession = yield* addSession({
-      audience: APPLICATION.admin,
+      audience: APPLICATION.serviceAdmin,
       strong: false,
       userId: "weak",
     });

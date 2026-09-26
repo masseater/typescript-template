@@ -57,9 +57,9 @@ describe("replyAsAdmin", () => {
   const it = test.extend("adminReply", () =>
     Effect.runPromise(
       Effect.gen(function* replyToMember() {
-        yield* addUser({ role: ROLE.administrator, userId: "admin" });
+        yield* addUser({ role: ROLE.admin, userId: "admin" });
         yield* addUser({ userId: "member" });
-        const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "admin" });
+        const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "admin" });
         const memberInquiry = yield* createMemberInquiry("member", {
           body: "本文",
           subject: "件名",
@@ -91,8 +91,8 @@ describe("staffInquiryCounts", () => {
       Effect.gen(function* tallyInquiries() {
         yield* addUser({ userId: "member" });
         const answered = yield* createMemberInquiry("member", { body: "本文", subject: "件名" });
-        yield* addUser({ role: ROLE.administrator, userId: "admin" });
-        const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "admin" });
+        yield* addUser({ role: ROLE.admin, userId: "admin" });
+        const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "admin" });
         yield* replyAsAdmin({ body: "返信です", inquiryId: answered.id, sessionId });
         yield* createMemberInquiry("member", { body: "2件目", subject: "2件目" });
         const closed = yield* createMemberInquiry("member", { body: "3件目", subject: "3件目" });

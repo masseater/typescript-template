@@ -79,7 +79,7 @@ describe("transcribeJob", () => {
       const outcome = yield* transcribeJob(jobId);
       const found = yield* (yield* CoreRecords).findRecording({ recordingId: id });
       assert.deepStrictEqual(outcome, { jobId, outcome: "done" });
-      assert.strictEqual(found.recording.status, RECORDING_STATUS.done);
+      assert.strictEqual(found.recording.status, RECORDING_STATUS.transcribed);
       assert.strictEqual(found.recording.durationMs, heard.durationMs);
       assert.deepStrictEqual(found.segments, heard.segments);
       assert.deepStrictEqual(found.speakers, [
@@ -96,7 +96,7 @@ describe("transcribeJob", () => {
       const outcome = yield* transcribeJob(jobId);
       const found = yield* (yield* CoreRecords).findRecording({ recordingId: id });
       assert.deepStrictEqual(outcome, { jobId, outcome: "failed" });
-      assert.strictEqual(found.recording.status, RECORDING_STATUS.failed);
+      assert.strictEqual(found.recording.status, RECORDING_STATUS.transcriptionFailed);
       assert.strictEqual(found.recording.failure, "model_rejected");
     }).pipe(
       Effect.provide(

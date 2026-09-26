@@ -76,7 +76,7 @@ const wikiBindings = Effect.fn("wikiBindings")(function* wikiBindings() {
 });
 
 function analyticsEnv(target: Application, config: SharedConfig): Partial<SharedEnv> {
-  return target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+  return target === APPLICATION.serviceMember && config.googleAnalyticsMeasurementId !== undefined
     ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
     : {};
 }
@@ -109,7 +109,7 @@ const targetEnv = Effect.fn("targetEnv")(function* targetEnv(
   shared: DeclaredEnv,
   flags: Effect.Success<ReturnType<typeof flagshipAppRef>>,
 ) {
-  if (target !== APPLICATION.wiki) {
+  if (target !== APPLICATION.internalDashboard) {
     return shared;
   }
   return {
@@ -134,8 +134,8 @@ function jobsEnv(jobsQueue: Queues.Queue | undefined) {
 
 function workerCrons(target: Application): { crons?: string[] } {
   return {
-    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+    ...(target === APPLICATION.serviceMember ? { crons: [memberLeavePurgeCron] } : {}),
+    ...(target === APPLICATION.internalDashboard ? { crons: ["*/30 * * * *"] } : {}),
   };
 }
 

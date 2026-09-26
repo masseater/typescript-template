@@ -26,7 +26,7 @@ function thread(status: InquiryStatus): AdminInquiryDetail {
     messages: [
       {
         authorId: "admin-1",
-        authorKind: ROLE.administrator,
+        authorKind: ROLE.admin,
         body: "確認します。",
         createdAt: sentAt,
         id: "m-1",

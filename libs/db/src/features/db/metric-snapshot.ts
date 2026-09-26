@@ -59,7 +59,7 @@ const wikiSessionCounts = Effect.fn("wikiSessionCounts")(function* wikiSessionCo
     database
       .select({ count: count(), userAgent: session.userAgent })
       .from(session)
-      .where(eq(session.audience, APPLICATION.wiki))
+      .where(eq(session.audience, APPLICATION.internalDashboard))
       .groupBy(session.userAgent),
   );
   return clientKindTotals(sessionCounts);

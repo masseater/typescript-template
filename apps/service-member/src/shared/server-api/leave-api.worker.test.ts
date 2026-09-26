@@ -16,13 +16,13 @@ const routes = {
   "/api/recovery/decline": "recovery-decline-api",
   "/api/recovery-offer": "recovery-offer-api",
 };
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
 function leaveApp() {
   const environment = appEnvironment({});
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
+    const base = Layer.orDie(appLayer({ audience: APPLICATION.serviceMember, env: environment, routes }));
     return Layer.merge(
       base,
       Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),

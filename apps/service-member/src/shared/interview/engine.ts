@@ -1,4 +1,5 @@
 import { fieldDefinitions, fieldKeys, maximumInterests, readValue } from "./sheet.ts";
+import { SPEAKER } from "./state.ts";
 import { understandByRules } from "./understanding.ts";
 
 import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
@@ -37,7 +38,7 @@ function says(progress: Progress, message: Message): InterviewState["messages"] 
 function asking(progress: Progress, key: FieldName, asked: Asked): Asking {
   return {
     current: key,
-    messages: says(progress, { role: "interviewer", text: asked.text }),
+    messages: says(progress, { role: SPEAKER.interviewer, text: asked.text }),
     phase: "asking",
     sheet: progress.sheet,
     skipped: progress.skipped,
@@ -49,7 +50,7 @@ function summarizing(progress: Progress, opening: string): Settled {
   const { sheet, skipped } = progress;
   const text = `${opening}${summaryText}`;
   return {
-    messages: says(progress, { card: { sheet, skipped }, role: "interviewer", text }),
+    messages: says(progress, { card: { sheet, skipped }, role: SPEAKER.interviewer, text }),
     phase: "summary",
     sheet,
     skipped,
@@ -167,7 +168,7 @@ function afterAnswer(state: Asking, understanding: UnderstandingData): Interview
 function afterCorrection(state: Settled, understanding: UnderstandingData): Settled {
   if (Object.keys(understanding.values).length === 0) {
     const text = "どの項目をどう直すかを、「職種は〇〇」のように教えてください。";
-    return { ...state, messages: says(state, { role: "interviewer", text }) };
+    return { ...state, messages: says(state, { role: SPEAKER.interviewer, text }) };
   }
   return summarizing({ messages: state.messages, ...merged(state, understanding) }, "直しました。");
 }
@@ -178,7 +179,7 @@ function advance(
   understood?: UnderstandingData,
 ): InterviewState {
   const understanding = interpret(state, utterance, understood);
-  const messages = says(state, { role: "member", text: spoken(utterance) });
+  const messages = says(state, { role: SPEAKER.member, text: spoken(utterance) });
   return state.phase === "asking"
     ? afterAnswer({ ...state, messages }, understanding)
     : afterCorrection({ ...state, messages }, understanding);
@@ -186,7 +187,7 @@ function advance(
 
 function save(state: Settled): Settled {
   const text = "保存しました。";
-  return { ...state, messages: says(state, { role: "interviewer", text }), phase: "saved" };
+  return { ...state, messages: says(state, { role: SPEAKER.interviewer, text }), phase: "saved" };
 }
 
 const historyConsentText =
@@ -195,7 +196,7 @@ const historyConsentText =
 function requestHistoryConsent(state: Settled): Settled {
   return {
     ...state,
-    messages: says(state, { role: "interviewer", text: historyConsentText }),
+    messages: says(state, { role: SPEAKER.interviewer, text: historyConsentText }),
     phase: "history_consent",
   };
 }
@@ -203,7 +204,7 @@ function requestHistoryConsent(state: Settled): Settled {
 function clearConversation(state: Settled): Settled {
   const { sheet, skipped } = state;
   return {
-    messages: [{ role: "interviewer", text: "保存しました。" }],
+    messages: [{ role: SPEAKER.interviewer, text: "保存しました。" }],
     phase: "saved",
     sheet,
     skipped,

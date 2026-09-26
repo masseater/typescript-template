@@ -25,7 +25,7 @@ function presentThread(thread: InquiryThread) {
       authorId: message.authorId,
       body: message.body,
       createdAt: message.createdAt,
-      fromOperator: message.authorKind === ROLE.administrator,
+      fromOperator: message.authorKind === ROLE.admin,
       id: message.id,
     })),
   };

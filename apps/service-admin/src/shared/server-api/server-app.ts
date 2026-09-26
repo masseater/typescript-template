@@ -15,7 +15,7 @@ const api = apiRoutes(runtime, reporting);
 const adminApi = createApi(apiRoot)
   .use(
     apiDocs(
-      APPLICATION.admin,
+      APPLICATION.serviceAdmin,
       api.guard((request) => verifySession(request.headers), sessionFailures),
     ),
   )

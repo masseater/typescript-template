@@ -8,7 +8,7 @@ const wikiPagesBinding = "WIKI";
 const wikiApiBinding = "WIKI_API";
 const wikiApiEntrypoint = "WikiApi";
 const wikiDevOriginVariable = "WIKI_DEV_ORIGIN";
-const wikiHost = APPLICATION.wiki;
+const wikiHost = APPLICATION.internalDashboard;
 
 const wikiPort = 3004;
 

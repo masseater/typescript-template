@@ -1,13 +1,10 @@
-import { AUTHENTICATION_METHOD } from "@repo/config/identity";
-
 import { privateDeploymentKeys } from "./deployment-keys.ts";
+
 const listWords = ["cookie", "params"];
+/** @canonical-values observability.secret-word */
+const secretWordSpellings = ["secret", "token", "password", "passphrase", "authorization"] as const;
 const secretWords = [
-  "secret",
-  "token",
-  AUTHENTICATION_METHOD.password,
-  "passphrase",
-  "authorization",
+  ...secretWordSpellings,
   String.raw`api[_-]?key`,
   String.raw`private[_-]?key`,
   ...listWords,

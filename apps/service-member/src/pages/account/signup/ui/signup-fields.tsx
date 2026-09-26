@@ -1,5 +1,4 @@
 import { authClient, requireSuccess } from "@repo/auth-ui";
-import { AUTHENTICATION_METHOD } from "@repo/config";
 import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import { type ActionState, Button, Field, FormColumn } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
@@ -18,7 +17,7 @@ const signUp = (values: typeof SignUpSubmission.Type, onSent: () => void): Promi
       callbackURL: "/login",
       email: values.email,
       name: values.name,
-      password: values[AUTHENTICATION_METHOD.password],
+      password: values.password,
     })
     .then(requireSuccess)
     .then(() => {
@@ -33,7 +32,7 @@ const SignUpFields = ({
   onSent: () => void;
 }>): ReactElement => {
   const form = useForm({
-    defaultValues: { email: "", name: "", [AUTHENTICATION_METHOD.password]: "" },
+    defaultValues: { email: "", name: "", password: "" },
     onSubmit: ({ value }) => {
       action.run(() => signUp(value, onSent));
     },
@@ -51,12 +50,12 @@ const SignUpFields = ({
           {(field) => <NameField field={field} label="ユーザー名" maxLength={maximumNameLength} />}
         </form.Field>
         <form.Field name="email">{(field) => <EmailField field={field} />}</form.Field>
-        <form.Field name={AUTHENTICATION_METHOD.password}>
+        <form.Field name="password">
           {(field) => (
             <Field
               label="パスワード（12文字以上）"
-              name={AUTHENTICATION_METHOD.password}
-              type={AUTHENTICATION_METHOD.password}
+              name="password"
+              type="password"
               autoComplete="new-password"
               maxLength={maximumPasswordLength}
               value={field.state.value}

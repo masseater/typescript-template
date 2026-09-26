@@ -200,7 +200,7 @@ describe("bootstrapDatabase", () => {
               updatedAt: seededAt,
             }),
             database.insert(session).values({
-              audience: APPLICATION.user,
+              audience: APPLICATION.serviceMember,
               authenticationMethod: AUTHENTICATION_METHOD.password,
               createdAt: seededAt,
               expiresAt: DateTime.toDate(DateTime.add(openedAt, { minutes: 1 })),
@@ -213,7 +213,7 @@ describe("bootstrapDatabase", () => {
           ]),
         );
         yield* bootstrapDatabase({ database: database, email: "FIRST@example.test" });
-        assert.isUndefined(yield* getSessionSecurity("old-session", APPLICATION.user));
+        assert.isUndefined(yield* getSessionSecurity("old-session", APPLICATION.serviceMember));
       }).pipe(Effect.provide(EmptyTestDatabase)),
     TIMEOUT,
   );

@@ -25,7 +25,7 @@ describe("findWikiReader", () => {
 
   describe.for([
     ["a member", { userId: "member" }, "member"],
-    ["an administrator", { role: ROLE.administrator, userId: "admin" }, "admin"],
+    ["an administrator", { role: ROLE.admin, userId: "admin" }, "admin"],
     [
       "an unverified staff member",
       { emailVerified: false, role: ROLE.staff, userId: "unverified" },
@@ -57,7 +57,7 @@ describe("findWikiReader", () => {
         Effect.gen(function* removeReader() {
           yield* addUser({ role: ROLE.staff, userId: "actor" });
           yield* addUser({ role: ROLE.staff, userId: "reader" });
-          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "actor" });
+          const sessionId = yield* addSession({ audience: APPLICATION.internalDashboard, userId: "actor" });
           yield* removeStaff(sessionId, "reader");
           return yield* findWikiReader("reader");
         }).pipe(Effect.provide(TestDatabase)),
@@ -76,7 +76,7 @@ describe("OAuth grants", () => {
         Effect.gen(function* removeGrantee() {
           yield* addUser({ role: ROLE.staff, userId: "actor" });
           yield* addUser({ role: ROLE.staff, userId: "reader" });
-          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "actor" });
+          const sessionId = yield* addSession({ audience: APPLICATION.internalDashboard, userId: "actor" });
           yield* addOAuthGrant("reader");
           yield* removeStaff(sessionId, "reader");
           return yield* oauthGrantCounts("reader");
@@ -108,10 +108,10 @@ describe("OAuth grants", () => {
     const it = test.extend("grantCounts", () =>
       Effect.runPromise(
         Effect.gen(function* deleteGrantee() {
-          yield* addUser({ role: ROLE.administrator, userId: "actor" });
+          yield* addUser({ role: ROLE.admin, userId: "actor" });
           yield* addUser({ userId: "reader" });
           const sessionId = yield* addSession({
-            audience: APPLICATION.admin,
+            audience: APPLICATION.serviceAdmin,
             userId: "actor",
           });
           yield* addOAuthGrant("reader");
@@ -133,11 +133,11 @@ describe("revokeUserSessions", () => {
         Effect.gen(function* revokeWiki() {
           yield* addUser({ role: ROLE.staff, userId: "reader" });
           const sessionId = yield* addSession({
-            audience: APPLICATION.wiki,
+            audience: APPLICATION.internalDashboard,
             userId: "reader",
           });
           yield* revokeUserSessions("reader");
-          return yield* getSessionSecurity(sessionId, APPLICATION.wiki);
+          return yield* getSessionSecurity(sessionId, APPLICATION.internalDashboard);
         }).pipe(Effect.provide(TestDatabase)),
       ));
 
