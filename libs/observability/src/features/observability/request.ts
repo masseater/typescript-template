@@ -75,7 +75,7 @@ const readBody = (bounded: {
     ),
     Effect.matchEffect({
       onFailure: (cause) =>
-        cause instanceof RequestRejected ? Effect.fail(cause) : Effect.die(cause),
+        Schema.is(RequestRejected)(cause) ? Effect.fail(cause) : Effect.die(cause),
       onSuccess: (decoded) => Effect.succeed(decoded),
     }),
   );

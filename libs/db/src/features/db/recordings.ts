@@ -4,6 +4,7 @@ import { Effect } from "effect";
 
 import { clockDate } from "./clock-date.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { RecordingNotFound } from "./recording-not-found.ts";
 import { RecordingNotRetryable } from "./recording-not-retryable.ts";
 import { recording, recordingSegment, recordingSpeaker, speakerPerson, user } from "./schema.ts";
@@ -319,7 +320,7 @@ const registerPerson = Effect.fn("registerPerson")(function* registerPerson(
   consentRecordedBy: string,
 ) {
   const consentedAt = yield* clockDate;
-  const personId = crypto.randomUUID();
+  const personId = yield* freshId;
   yield* query((database) =>
     database
       .insert(speakerPerson)

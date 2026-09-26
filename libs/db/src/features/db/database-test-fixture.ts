@@ -31,7 +31,7 @@ const runStatement = (
 ): Effect.Effect<D1Result, DatabaseFailure> =>
   Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
-    try: async () =>
+    try: () =>
       env.DB.prepare(sql)
         .bind(...statementParams)
         .run(),
@@ -40,9 +40,9 @@ const runStatement = (
 const testDatabase = (migrated: boolean): Layer.Layer<Database> =>
   Layer.unwrap(
     Effect.gen(function* database() {
-      yield* Effect.promise(async () => reset());
+      yield* Effect.promise(() => reset());
       if (migrated) {
-        yield* Effect.promise(async () => applyD1Migrations(env.DB, env.D1_MIGRATIONS));
+        yield* Effect.promise(() => applyD1Migrations(env.DB, env.D1_MIGRATIONS));
       }
       return Database.layer(env.DB);
     }).pipe(Effect.orDie),
