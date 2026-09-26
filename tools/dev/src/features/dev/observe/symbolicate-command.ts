@@ -1,10 +1,8 @@
-#!/usr/bin/env node
-import { causeRecord, runCli, runCommand } from "@repo/cli";
 import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
-import { layer, urlPath } from "../platform.ts";
+import { urlPath } from "../platform.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
@@ -73,10 +71,6 @@ const symbolicateCommand = Command.make(
       release,
     });
   }),
-).pipe(
-  Command.withDescription("Resolve Workers log locations through release source maps"),
-  runCommand({ renderErrors: false, version: "0.0.0" }),
-  Effect.provide(layer),
-);
+).pipe(Command.withDescription("Resolve Workers log locations through release source maps"));
 
-runCli(symbolicateCommand, (cause) => causeRecord("observe.symbolicate_failed", { cause }));
+export { symbolicateCommand };

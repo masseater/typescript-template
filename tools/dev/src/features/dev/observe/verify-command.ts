@@ -1,12 +1,11 @@
-#!/usr/bin/env node
-import { causeRecord, runCli, runCommand } from "@repo/cli";
-import { APPLICATION, applicationOrigins, applications, httpStatus } from "@repo/config";
-import { Clock, Console, Effect, Option, Schema } from "effect";
+import { applicationOrigins, applications, httpStatus } from "@repo/config";
+import { Clock, Console, Effect, Schema } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
-import { layer } from "../platform.ts";
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
+
+import type { Application } from "@repo/config";
 
 interface Verified {
   readonly logs: number;
@@ -21,7 +20,6 @@ interface VerificationTarget {
 
 class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("VerificationFailure", {
   reason: Schema.Literals([
-    "arguments_invalid",
     "request_failed",
     "correlation_headers_missing",
     "telemetry_not_correlated",
@@ -32,12 +30,6 @@ class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("Ver
 const appTimeoutMilliseconds = 15_000;
 const correlationWindowMilliseconds = 45_000;
 const pollIntervalMilliseconds = 1000;
-const defaultService = "service-member-server";
-
-const VerifyInput = Schema.Struct({
-  app: Schema.String,
-  service: Schema.Literals(applications.map((application) => `${application}-server` as const)),
-});
 
 function fail(reason: VerificationFailure["reason"]): VerificationFailure {
   return new VerificationFailure({ reason });
@@ -108,25 +100,19 @@ const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<UR
   return { requestId, status: response.status };
 });
 
-const verify = Effect.fn("verify")(function* verify(parsed: {
-  readonly app: Option.Option<string>;
-  readonly service: string;
-}) {
-  const input = yield* Schema.decodeUnknownEffect(VerifyInput)({
-    app: Option.getOrUndefined(parsed.app),
-    service: parsed.service,
-  }).pipe(Effect.mapError(() => fail("arguments_invalid")));
-  const app = yield* explorerOrigin(input.app);
+const verify = Effect.fn("verify")(function* verify(application: Application) {
+  const service = `${application}-server`;
+  const app = yield* explorerOrigin(applicationOrigins[application]);
   const { requestId, status } = yield* requestApp(app);
   const verified = yield* waitForCorrelation(
-    { app: app.href, requestId, service: input.service },
+    { app: app.href, requestId, service },
     (yield* Clock.currentTimeMillis) + correlationWindowMilliseconds,
   );
   return {
     ok: true,
     requestId,
     responseStatus: status,
-    service: input.service,
+    service,
     signals: ["logs", "traces"],
     ...verified,
   };
@@ -135,31 +121,17 @@ const verify = Effect.fn("verify")(function* verify(parsed: {
 const verifyCommand = Command.make(
   "verify",
   {
-    app: Flag.String("app").pipe(
-      Flag.optional,
-      Flag.withDescription("Origin of the running local app to request"),
-    ),
-    service: Flag.String("service").pipe(
-      Flag.withDefault(defaultService),
+    app: Flag.Literals("app", applications).pipe(
       Flag.withDescription(
-        `Service name expected on the correlated request log, default ${defaultService}`,
+        "Running local application to request; its server logs must correlate with the request",
       ),
     ),
   },
-  (parsed) => verify(parsed).pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))),
+  ({ app }) => verify(app).pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))),
 ).pipe(
   Command.withDescription(
     "Request a local app and wait until Local Explorer holds its structured log and completed trace",
   ),
-  runCommand({ version: "0.0.0" }),
-  Effect.provide(layer),
 );
 
-runCli(verifyCommand, (cause) =>
-  causeRecord("observability.verification_failed", {
-    cause,
-    fields: {
-      remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.user]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
-    },
-  }),
-);
+export { verifyCommand };
