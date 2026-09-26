@@ -51,3 +51,37 @@ describe("a monitor check", () => {
     ]);
   });
 });
+
+describe("a monitor check whose stored state has the wrong shape", () => {
+  const it = test.extend("check", () =>
+    Effect.runPromise(
+      Effect.gen(function* checkMalformedProbe() {
+        const stub = env.MONITOR.get(env.MONITOR.idFromName("probe-malformed"));
+        yield* Effect.promise(() => env.EMAIL.taken());
+        yield* Effect.promise(() =>
+          runInDurableObject(stub, async (_probeMonitor, durableState) => {
+            await durableState.storage.put("outcome", 42);
+            await durableState.storage.put("failureNotifiedDay", { day: "yesterday" });
+          }),
+        );
+        const checkResponse = yield* Effect.promise(() =>
+          stub.fetch(monitorCheckUrl, { method: "POST" }),
+        );
+        const checkReport: unknown = yield* Effect.promise(() => checkResponse.json());
+        const sentMail = yield* Effect.promise(() => env.EMAIL.taken());
+        return {
+          checkReport,
+          mail: sentMail.map(({ subject, text }) => ({ subject, text })),
+          status: checkResponse.status,
+        };
+      }),
+    ));
+
+  it("fails the check naming the key and still mails the failure notice", ({ check }) => {
+    expect(check).toStrictEqual({
+      checkReport: { ok: false, reason: "StoredStateInvalid.stored_state_invalid:outcome" },
+      mail: [probeFailure],
+      status: 500,
+    });
+  });
+});

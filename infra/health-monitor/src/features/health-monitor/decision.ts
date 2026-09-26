@@ -1,6 +1,10 @@
+import { Schema } from "effect";
+
 import type { ProbeResult } from "./probe.ts";
 
-type HealthState = Readonly<Record<string, boolean>>;
+const HealthState = Schema.Record(Schema.String, Schema.Boolean);
+
+type HealthState = typeof HealthState.Type;
 
 const decideHealthAlerts = (
   healthProbes: readonly ProbeResult[],
@@ -28,4 +32,4 @@ const formatHealthMessage = (notifications: readonly ProbeResult[]): string =>
   ].join("\n");
 
 export { decideHealthAlerts, formatHealthMessage };
-export type { HealthState };
+export { HealthState };

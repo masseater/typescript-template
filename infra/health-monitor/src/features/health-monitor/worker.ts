@@ -1,4 +1,4 @@
-import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { monitorWorker, storedState, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -8,7 +8,7 @@ import {
   parseHealthMonitorConfig,
   type HealthMonitorEnv,
 } from "./config.ts";
-import { decideHealthAlerts, formatHealthMessage, type HealthState } from "./decision.ts";
+import { HealthState, decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
 const health = monitorWorker<MonitorBindings & HealthMonitorEnv>({
@@ -18,8 +18,13 @@ const health = monitorWorker<MonitorBindings & HealthMonitorEnv>({
       const healthProbes = yield* Effect.forEach(healthTargets(acceptedConfig), probeService, {
         concurrency: "unbounded",
       });
-      const priorState = yield* Effect.promise(() => ctx.storage.get<HealthState>("state"));
-      const decision = decideHealthAlerts(healthProbes, priorState ?? {});
+      const priorState = yield* storedState({
+        storage: ctx.storage,
+        key: "state",
+        schema: HealthState,
+        initial: {},
+      });
+      const decision = decideHealthAlerts(healthProbes, priorState);
       const down = healthProbes
         .filter((healthProbe) => !healthProbe.healthy)
         .map((healthProbe) => healthProbe.service);

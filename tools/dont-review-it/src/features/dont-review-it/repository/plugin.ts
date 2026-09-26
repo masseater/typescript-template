@@ -5,6 +5,7 @@ import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { appFrameSidebarVisitor } from "./app-frame-sidebar.ts";
 import { atomServerDataVisitor } from "./atom-server-data-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
+import { durableStorageReadVisitor } from "./durable-storage-read.ts";
 import {
   atomStateVisitor,
   effectFailuresVisitor,
@@ -288,6 +289,12 @@ const projectPlugin = definePlugin({
       create: crossRequestStateVisitor,
       meta: metadata(
         "Worker で動くコードでは ManagedRuntime と Effect.cached 系、Cache・ScopedCache・RcRef・RcMap・Pool・Resource を使えません。どれも未完了の結果を 1 本の fiber や latch にまとめ、後から来たリクエストにそれを待たせます。待たせた継続は作った側のリクエストが終わると捨てられ、応答を返さないまま固まります。libs/runtime の workerRuntime を通してください。",
+      ),
+    },
+    "durable-storage-read": {
+      create: durableStorageReadVisitor,
+      meta: metadata(
+        "Durable Object storage の値を get の型引数で型付けできません。型引数は値を確かめません。@repo/monitor の storedState にスキーマを渡し、decode した値を使ってください。",
       ),
     },
     "effect-failures": {

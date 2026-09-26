@@ -1,10 +1,11 @@
 import { readJobs } from "@repo/config";
 import { Process, consumeJobs } from "@repo/runtime/jobs";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 import { monitorWorker, type MonitorBindings } from "./index.ts";
 import { type SentMail } from "./mail-recorder.ts";
+import { storedState } from "./stored-state.ts";
 
 import type { DurableObjectNamespace } from "@cloudflare/workers-types";
 
@@ -34,7 +35,12 @@ const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
-      const recordedProbe = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
+      const recordedProbe = yield* storedState({
+        storage: ctx.storage,
+        key: "outcome",
+        schema: Schema.Literals(probeOutcomes),
+        initial: probeOutcomes[3],
+      });
       if (recordedProbe === probeOutcomes[1]) {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }
@@ -44,7 +50,7 @@ const probeMonitor = monitorWorker<MonitorBindings>({
       if (recordedProbe === probeOutcomes[2]) {
         yield* notify(probeAlert);
       }
-      return { outcome: recordedProbe ?? probeOutcomes[3] };
+      return { outcome: recordedProbe };
     });
   },
   event: probeEvent,

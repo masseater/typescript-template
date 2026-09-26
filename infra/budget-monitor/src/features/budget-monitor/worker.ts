@@ -1,4 +1,4 @@
-import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { monitorWorker, storedState, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
@@ -6,14 +6,22 @@ import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from ".
 import { shouldNotify } from "./decision.ts";
 import { measureBudget } from "./measure.ts";
 
+const SentNotifications = Schema.Struct({
+  keys: Schema.Array(Schema.String),
+  period: Schema.String,
+});
+
 const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
       const decision = yield* measureBudget(config);
-      const priorNotifications = yield* Effect.promise(() =>
-        ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
-      );
+      const priorNotifications = yield* storedState({
+        storage: ctx.storage,
+        key: "notifications",
+        schema: Schema.UndefinedOr(SentNotifications),
+        initial: undefined,
+      });
       const notificationKeys =
         priorNotifications?.period === decision.periodStart ? priorNotifications.keys : [];
       if (shouldNotify(decision, notificationKeys)) {

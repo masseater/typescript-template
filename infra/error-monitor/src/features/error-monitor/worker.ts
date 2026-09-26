@@ -1,4 +1,4 @@
-import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { monitorWorker, storedState, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
 import { Clock, Effect } from "effect";
 
@@ -8,7 +8,7 @@ import {
   parseErrorMonitorConfig,
   type ErrorMonitorEnv,
 } from "./config.ts";
-import { decideNotifications, formatMessage, type SeenFingerprints } from "./decision.ts";
+import { SeenFingerprints, decideNotifications, formatMessage } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
 
 const LOOKBACK_MS = 900_000;
@@ -25,14 +25,13 @@ const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
         to: observedAtMs,
         token: config.OBSERVABILITY_TOKEN,
       });
-      const seenFingerprints = yield* Effect.promise(() =>
-        ctx.storage.get<SeenFingerprints>("seen"),
-      );
-      const decision = decideNotifications({
-        errorGroups: groups,
-        observedAtMs,
-        seenFingerprints: seenFingerprints ?? {},
+      const seenFingerprints = yield* storedState({
+        storage: ctx.storage,
+        key: "seen",
+        schema: SeenFingerprints,
+        initial: {},
       });
+      const decision = decideNotifications({ errorGroups: groups, observedAtMs, seenFingerprints });
       if (decision.notifications.length > 0) {
         yield* notify({
           subject: `Cloudflare Workers: ${decision.notifications.length} new or regressed errors`,

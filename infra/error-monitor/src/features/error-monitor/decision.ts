@@ -1,6 +1,10 @@
+import { Schema } from "effect";
+
 import type { ErrorGroup } from "./telemetry.ts";
 
-type SeenFingerprints = Readonly<Record<string, number>>;
+const SeenFingerprints = Schema.Record(Schema.String, Schema.Finite);
+
+type SeenFingerprints = typeof SeenFingerprints.Type;
 type Notification = ErrorGroup & {
   readonly reason: "new" | "regressed";
 };
@@ -52,4 +56,5 @@ const formatMessage = (notifications: readonly Notification[]): string =>
   ].join("\n");
 
 export { decideNotifications, formatMessage };
-export type { Notification, SeenFingerprints };
+export { SeenFingerprints };
+export type { Notification };

@@ -577,6 +577,7 @@ const lintOptions = {
         "project/effect-failures": LINT_SEVERITY.ERROR,
         "project/effect-stack": LINT_SEVERITY.ERROR,
         "project/environment-boundary": LINT_SEVERITY.ERROR,
+        "project/durable-storage-read": LINT_SEVERITY.ERROR,
         "project/example-values": LINT_SEVERITY.ERROR,
         "project/git-environment": LINT_SEVERITY.ERROR,
         "project/layers": LINT_SEVERITY.ERROR,

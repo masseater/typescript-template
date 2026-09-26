@@ -12,6 +12,7 @@ import {
 } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
+import { storedState } from "./stored-state.ts";
 
 import type {
   DurableObjectNamespace,
@@ -145,10 +146,20 @@ abstract class Monitor<Bindings extends MonitorBindings> {
         }).pipe(Effect.orDie),
       );
       const day = DateTime.formatIsoDateUtc(DateTime.makeUnsafe(started));
-      if (
-        (yield* Effect.promise(() => durableState.storage.get<string>("failureNotifiedDay"))) !==
-        day
-      ) {
+      const notifiedDay = yield* storedState({
+        storage: durableState.storage,
+        key: "failureNotifiedDay",
+        schema: Schema.UndefinedOr(Schema.String),
+        initial: undefined,
+      }).pipe(
+        Effect.catchTag("StoredStateInvalid", (invalid) =>
+          Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+            event: `${monitorEvent}.stored_state_invalid`,
+            keys: invalid.keys,
+          }).pipe(Effect.orDie, Effect.flatMap(Console.error), Effect.as(undefined)),
+        ),
+      );
+      if (notifiedDay !== day) {
         yield* notify(failure);
         yield* Effect.promise(() => durableState.storage.put("failureNotifiedDay", day));
       }

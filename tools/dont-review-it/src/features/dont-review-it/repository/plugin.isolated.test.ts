@@ -17,6 +17,11 @@ const forbiddenCode = [
   ],
   ["apps/service-member/probe.ts", 'console.log(process.env["SECRET"]);', "environment-boundary"],
   [
+    "infra/error-monitor/src/features/error-monitor/probe.ts",
+    'export const read = (ctx: { storage: { get: <T>(key: string) => Promise<T> } }) => ctx.storage.get<number>("seen");',
+    "durable-storage-read",
+  ],
+  [
     "libs/ui/src/features/ui/probe.ts",
     'import { useCallback } from "react"; export const fn = () => useCallback(() => 0, []);',
     "no-manual-memoization",
