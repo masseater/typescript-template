@@ -70,4 +70,4 @@ const refuseLegacyState = Effect.fn("refuseLegacyState")(function* refuseLegacyS
   }
 });
 
-export { StateMigrationFailure, moveStackState, refuseLegacyState };
+export { moveStackState, refuseLegacyState };

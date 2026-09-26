@@ -5,24 +5,22 @@ import { Config, Effect, Schema } from "effect";
 const repositoryStage = "repository";
 const deploymentEnvironments = ["staging", "production"] as const;
 
-const ApplyUnit = Schema.Literals(["github", "wiki-publisher"]);
 const DeploymentEnvironment = Schema.Literals(deploymentEnvironments);
 
-type ApplyUnit = typeof ApplyUnit.Type;
 type DeploymentEnvironment = typeof DeploymentEnvironment.Type;
+type StackTarget = Readonly<{ stack: string; stage: string }>;
 type ApplyTarget =
   | Readonly<{ unit: "github" }>
   | Readonly<{ environment: DeploymentEnvironment; unit: "wiki-publisher" }>;
-type StackTarget = Readonly<{ stack: string; stage: string }>;
 
-const stackName = (unit: ApplyUnit): string => `template-${unit}`;
+const stackName = (unit: ApplyTarget["unit"]): string => `template-${unit}`;
 
 const applyTarget = (selection: ApplyTarget): StackTarget => ({
   stack: stackName(selection.unit),
   stage: selection.unit === "github" ? repositoryStage : selection.environment,
 });
 
-const legacyTarget = (unit: ApplyUnit, prefix: string): StackTarget => ({
+const legacyTarget = (unit: ApplyTarget["unit"], prefix: string): StackTarget => ({
   stack: `${prefix}-${unit}`,
   stage: prefix,
 });
@@ -42,7 +40,6 @@ const environmentRef = (environment: DeploymentEnvironment): Effect.Effect<GitHu
   GitHub.Environment.ref(environment, { stack: stackName("github"), stage: repositoryStage });
 
 export {
-  ApplyUnit,
   DeploymentEnvironment,
   applyTarget,
   deploymentEnvironments,

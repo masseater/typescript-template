@@ -54,18 +54,18 @@ const viewedRepository = Effect.fn("viewedRepository")(function* viewedRepositor
   return { owner: view.owner.login, repository: view.name } as const satisfies RepositoryAddress;
 });
 
-const matchingRepository = (
+const matchingRepository = Effect.fn("matchingRepository")(function* matchingRepository(
   declared: RepositoryAddress,
   viewed: RepositoryAddress,
-): Effect.Effect<RepositoryAddress, RepositoryFailure> =>
-  repositorySlug(declared).toLowerCase() === repositorySlug(viewed).toLowerCase()
-    ? Effect.succeed(declared)
-    : Effect.fail(
-        new RepositoryFailure({
-          code: "repository_mismatch",
-          keys: [repositoryKey, repositorySlug(declared), repositorySlug(viewed)],
-        }),
-      );
+) {
+  if (repositorySlug(declared).toLowerCase() !== repositorySlug(viewed).toLowerCase()) {
+    return yield* new RepositoryFailure({
+      code: "repository_mismatch",
+      keys: [repositoryKey, repositorySlug(declared), repositorySlug(viewed)],
+    });
+  }
+  return declared;
+});
 
 export { matchingRepository, repositorySlug, targetRepository, viewedRepository };
 export type { RepositoryAddress };
