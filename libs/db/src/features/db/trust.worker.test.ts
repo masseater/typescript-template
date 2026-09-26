@@ -22,9 +22,9 @@ it.effect("shows an administrator only the reported message, then records a susp
   Effect.gen(function* program() {
     yield* addUser({ userId: "reporter" });
     yield* addUser({ userId: "author" });
-    yield* addUser({ role: ROLE.administrator, userId: "operator" });
+    yield* addUser({ role: ROLE.admin, userId: "operator" });
     const sessionId = yield* addSession({
-      audience: APPLICATION.admin,
+      audience: APPLICATION.serviceAdmin,
       userId: "operator",
     });
     yield* query((database) =>
@@ -76,7 +76,7 @@ it.effect("shows an administrator only the reported message, then records a susp
     const filed = yield* fileReport({
       reason: REPORT_REASON.harassment,
       reporterId: "reporter",
-      subject: { id: "reported-message", kind: REPORT_SUBJECT.message },
+      subject: { id: "reported-message", kind: REPORT_SUBJECT.directMessage },
     });
     const listed = yield* listReports(sessionId, { limit: 20, offset: 0 });
     const detail = yield* readReport(sessionId, filed.id);

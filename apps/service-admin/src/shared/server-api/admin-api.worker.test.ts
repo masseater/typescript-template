@@ -25,7 +25,7 @@ type Call = Readonly<{
   path: string;
 }>;
 
-const reporting = { log: recordingSink().sink, service: APPLICATION.admin } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceAdmin } as const;
 const invitee = "newcomer@example.com";
 const inviteePassword = "invited-password-safe-123";
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
@@ -65,23 +65,23 @@ const tokenOf = (actor: Actor): string => `${actor}-session-token`;
 
 const seedAccounts = Effect.gen(function* seedAccounts() {
   for (const actor of adminActors) {
-    yield* addUser({ permission: adminLevels[actor], role: ROLE.administrator, userId: actor });
-    yield* addSession({ audience: APPLICATION.admin, token: tokenOf(actor), userId: actor });
+    yield* addUser({ permission: adminLevels[actor], role: ROLE.admin, userId: actor });
+    yield* addSession({ audience: APPLICATION.serviceAdmin, token: tokenOf(actor), userId: actor });
   }
   yield* addSession({
-    audience: APPLICATION.admin,
+    audience: APPLICATION.serviceAdmin,
     strong: false,
     token: tokenOf("weak-owner"),
     userId: "owner",
   });
   yield* addUser({ userId: "member" });
-  yield* addSession({ audience: APPLICATION.admin, token: tokenOf("member"), userId: "member" });
+  yield* addSession({ audience: APPLICATION.serviceAdmin, token: tokenOf("member"), userId: "member" });
   yield* addUser({ userId: "target" });
 }).pipe(Effect.provide(TestDatabase));
 
 function adminApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer({ audience: APPLICATION.admin, env: appEnvironment(), routes })),
+    Layer.orDie(appLayer({ audience: APPLICATION.serviceAdmin, env: appEnvironment(), routes })),
   );
   const app = createApi(apiRoot).use(adminRoutes(apiRoutes(runtime, reporting)));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>
@@ -194,7 +194,7 @@ describe("admin API authorization", () => {
         {
           action: "member_suspended",
           actorId: "operator",
-          actorKind: ROLE.administrator,
+          actorKind: ROLE.admin,
           channel: "ui",
         },
       ]);

@@ -1,11 +1,13 @@
-import { ROLE } from "@repo/config";
 import { Schema } from "effect";
 
 import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";
 
 const maximumUtterance = 500;
 
-const roles = ["interviewer", ROLE.member] as const;
+/** @canonical-values interview.speaker */
+export const speakers = ["interviewer", "member"] as const;
+export const SPEAKER = { interviewer: speakers[0], member: speakers[1] } as const;
+
 const settledPhases = ["summary", "history_consent", "saved"] as const;
 
 /** @canonical-values interview.field-status */
@@ -19,7 +21,7 @@ export const FIELD_STATUS = {
 const Progress = Schema.Struct({ sheet: Sheet, skipped: Schema.Array(FieldKey) });
 const Message = Schema.Struct({
   card: Schema.optionalKey(Progress),
-  role: Schema.Literals(roles),
+  role: Schema.Literals(speakers),
   text: Schema.String,
 });
 const conversation = { ...Progress.fields, messages: Schema.Array(Message) };
@@ -49,5 +51,5 @@ const Utterance = Schema.Union([
 type InterviewState = typeof State.Type;
 type MemberUtterance = typeof Utterance.Type;
 
-export { State, Utterance, maximumUtterance, roles, settledPhases };
+export { State, Utterance, maximumUtterance, settledPhases };
 export type { InterviewState, MemberUtterance };

@@ -57,8 +57,8 @@ const timeoutFired = (parameters: {
       }
       const firstSignal =
         parameters.dependencies.platform === "win32"
-          ? TREE_TERMINATION_SIGNAL.forced
-          : TREE_TERMINATION_SIGNAL.graceful;
+          ? TREE_TERMINATION_SIGNAL.SIGKILL
+          : TREE_TERMINATION_SIGNAL.SIGTERM;
       const terminationFailure = yield* parameters.dependencies.signalTree({
         pid: parameters.childPid,
         signal: firstSignal,
@@ -69,7 +69,7 @@ const timeoutFired = (parameters: {
       yield* Effect.sleep(`${parameters.dependencies.killGraceMs} millis`);
       const forcedFailure = yield* parameters.dependencies.signalTree({
         pid: parameters.childPid,
-        signal: TREE_TERMINATION_SIGNAL.forced,
+        signal: TREE_TERMINATION_SIGNAL.SIGKILL,
       });
       return { fired: true, terminationFailure: terminationFailure ?? forcedFailure };
     }),

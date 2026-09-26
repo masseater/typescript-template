@@ -25,8 +25,8 @@ export const reportSubjects = [
 export type ReportSubject = (typeof reportSubjects)[number];
 export const REPORT_SUBJECT = {
   boardPost: reportSubjects[0],
+  directMessage: reportSubjects[1],
   groupMessage: reportSubjects[2],
-  message: reportSubjects[1],
 } as const;
 
 /** @canonical-values db.moderation-kind */

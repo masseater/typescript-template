@@ -125,7 +125,7 @@ const createEmailVerification = (
 ): NonNullable<BetterAuthOptions["emailVerification"]> => {
   return {
     autoSignInAfterVerification: false,
-    sendOnSignIn: authOptions.audience !== APPLICATION.wiki,
+    sendOnSignIn: authOptions.audience !== APPLICATION.internalDashboard,
     sendOnSignUp: true,
     sendVerificationEmail: ({
       user,
@@ -232,7 +232,7 @@ const createSessionOptions = (audience: Application): NonNullable<BetterAuthOpti
       securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
     },
     cookieCache: { enabled: false },
-    expiresIn: audience === APPLICATION.user ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
+    expiresIn: audience === APPLICATION.serviceMember ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
     freshAge: FRESH_SESSION_SECONDS,
   };
 };
@@ -244,7 +244,7 @@ const createEmailAndPassword = (
   { origin, run }: Readonly<{ origin: string; run: Run }>,
 ): NonNullable<BetterAuthOptions["emailAndPassword"]> => {
   return {
-    disableSignUp: authOptions.audience !== APPLICATION.user,
+    disableSignUp: authOptions.audience !== APPLICATION.serviceMember,
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
     onExistingUserSignUp: ({
@@ -328,7 +328,7 @@ export const createAuth = ({
         role: { defaultValue: ROLE.member, input: false, required: true, type: [...roles] },
         securityVersion: { defaultValue: 0, input: false, required: true, type: "number" },
       },
-      changeEmail: { enabled: audience === APPLICATION.user },
+      changeEmail: { enabled: audience === APPLICATION.serviceMember },
       deleteUser: { enabled: false },
     },
   }) as BetterAuthInstance;

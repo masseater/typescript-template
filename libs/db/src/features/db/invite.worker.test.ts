@@ -10,8 +10,8 @@ import { findUser } from "./security.ts";
 import { inviteStaff } from "./staff.ts";
 
 const ownerSession = Effect.fn("ownerSession")(function* ownerSession() {
-  yield* addUser({ role: ROLE.administrator, userId: "owner" });
-  return yield* addSession({ audience: APPLICATION.admin, userId: "owner" });
+  yield* addUser({ role: ROLE.admin, userId: "owner" });
+  return yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "owner" });
 });
 
 const accepted = { name: "Invited", passwordHash: "hashed", rawToken: "" } as const;
@@ -27,16 +27,16 @@ describe("an admin invite", () => {
             permission: ADMIN_PERMISSION.operator,
             sessionId,
           });
-          const preview = yield* previewInvite(invite.token, APPLICATION.admin);
+          const preview = yield* previewInvite(invite.token, APPLICATION.serviceAdmin);
           const createdAdmin = yield* acceptInvite({
             ...accepted,
-            audience: APPLICATION.admin,
+            audience: APPLICATION.serviceAdmin,
             rawToken: invite.token,
           });
           const reused = yield* Effect.flip(
-            acceptInvite({ ...accepted, audience: APPLICATION.admin, rawToken: invite.token }),
+            acceptInvite({ ...accepted, audience: APPLICATION.serviceAdmin, rawToken: invite.token }),
           );
-          const previewAfter = yield* previewInvite(invite.token, APPLICATION.admin);
+          const previewAfter = yield* previewInvite(invite.token, APPLICATION.serviceAdmin);
           const createdUser = yield* findUser(createdAdmin.userId);
           const auditTrail = yield* auditActionsOf(invite.id);
           return {
@@ -70,13 +70,13 @@ describe("an admin invite", () => {
     }) => {
       expect(acceptedAdmin).toStrictEqual({
         audit: [
-          ["admin_invited", ROLE.administrator],
-          ["invite_accepted", ROLE.administrator],
+          ["admin_invited", ROLE.admin],
+          ["invite_accepted", ROLE.admin],
         ],
         created: {
           email: "new.admin@example.com",
           permission: ADMIN_PERMISSION.operator,
-          role: ROLE.administrator,
+          role: ROLE.admin,
         },
         preview: { email: "new.admin@example.com", permission: ADMIN_PERMISSION.operator },
         previewAfter: undefined,
@@ -85,7 +85,7 @@ describe("an admin invite", () => {
           accountState: "active",
           emailVerified: true,
           permission: ADMIN_PERMISSION.operator,
-          role: ROLE.administrator,
+          role: ROLE.admin,
         },
       });
     });
@@ -103,7 +103,7 @@ describe("an admin invite", () => {
           });
           const rejected = yield* acceptInvite({
             ...accepted,
-            audience: APPLICATION.wiki,
+            audience: APPLICATION.internalDashboard,
             rawToken: invite.token,
           }).pipe(Effect.flip);
           return rejected._tag;
@@ -165,7 +165,7 @@ describe("an admin invite", () => {
         Effect.gen(function* unknownToken() {
           const rejected = yield* acceptInvite({
             ...accepted,
-            audience: APPLICATION.admin,
+            audience: APPLICATION.serviceAdmin,
             rawToken: "unknown",
           }).pipe(Effect.flip);
           return rejected._tag;
@@ -182,13 +182,13 @@ describe("an admin invite", () => {
       Effect.runPromise(
         Effect.gen(function* expired() {
           const invite = yield* issueInvite({
-            audience: APPLICATION.admin,
-            audit: { action: "admin_invited", actorId: "owner", actorKind: ROLE.administrator },
+            audience: APPLICATION.serviceAdmin,
+            audit: { action: "admin_invited", actorId: "owner", actorKind: ROLE.admin },
             email: "new@example.com",
             lifetimeMilliseconds: -1,
             permission: ADMIN_PERMISSION.viewer,
           });
-          return yield* previewInvite(invite.token, APPLICATION.admin);
+          return yield* previewInvite(invite.token, APPLICATION.serviceAdmin);
         }).pipe(Effect.provide(TestDatabase)),
       ));
 
@@ -204,7 +204,7 @@ describe("a staff invite", () => {
       Effect.runPromise(
         Effect.gen(function* acceptStaff() {
           yield* addUser({ role: ROLE.staff, userId: "editor" });
-          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "editor" });
+          const sessionId = yield* addSession({ audience: APPLICATION.internalDashboard, userId: "editor" });
           const invite = yield* inviteStaff({
             email: "staff@example.com",
             permission: STAFF_PERMISSION.viewer,
@@ -212,7 +212,7 @@ describe("a staff invite", () => {
           });
           const createdStaff = yield* acceptInvite({
             ...accepted,
-            audience: APPLICATION.wiki,
+            audience: APPLICATION.internalDashboard,
             rawToken: invite.token,
           });
           const auditTrail = yield* auditActionsOf(invite.id);

@@ -28,9 +28,9 @@ describe("request hooks", () => {
           Effect.gen(function* openWeakSession() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
             return yield* sessionBeforeEnrollment({
-              audience: APPLICATION.admin,
+              audience: APPLICATION.serviceAdmin,
               email: "admin@example.com",
-              enrollOn: APPLICATION.admin,
+              enrollOn: APPLICATION.serviceAdmin,
             });
           }),
         ),
@@ -66,7 +66,7 @@ describe("request hooks", () => {
     });
   });
 
-  describe.for([APPLICATION.admin, APPLICATION.wiki] as const)(
+  describe.for([APPLICATION.serviceAdmin, APPLICATION.internalDashboard] as const)(
     "a privileged account signed in to %s with a recovery code",
     (audience) => {
       const it = authTest.extend("denied", ({ auth }) =>
@@ -74,7 +74,7 @@ describe("request hooks", () => {
           Effect.gen(function* recover() {
             yield* bootstrapVerifiedAdmin(
               "admin@example.com",
-              audience === APPLICATION.admin ? "admin" : "staff",
+              audience === APPLICATION.serviceAdmin ? "admin" : "staff",
             );
             const { backupCodes } = yield* enableTotp(
               yield* signInAs(audience, "admin@example.com"),
@@ -106,9 +106,9 @@ describe("request hooks", () => {
           Effect.gen(function* openOldSession() {
             yield* registerVerified("reader@example.com");
             return yield* sessionBeforeEnrollment({
-              audience: APPLICATION.user,
+              audience: APPLICATION.serviceMember,
               email: "reader@example.com",
-              enrollOn: APPLICATION.user,
+              enrollOn: APPLICATION.serviceMember,
             });
           }),
         ),
@@ -132,9 +132,9 @@ describe("request hooks", () => {
           Effect.gen(function* enrollBeside() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
             const { old } = yield* sessionBeforeEnrollment({
-              audience: APPLICATION.admin,
+              audience: APPLICATION.serviceAdmin,
               email: "admin@example.com",
-              enrollOn: APPLICATION.admin,
+              enrollOn: APPLICATION.serviceAdmin,
             });
             return old;
           }),
@@ -165,10 +165,10 @@ describe("request hooks", () => {
         Effect.gen(function* transfer() {
           yield* registerVerified("member@example.com");
           const pending = yield* signInAgainAfterTotp({
-            audience: APPLICATION.user,
+            audience: APPLICATION.serviceMember,
             email: "member@example.com",
           });
-          const admin = (yield* AuthApps)[APPLICATION.admin];
+          const admin = (yield* AuthApps)[APPLICATION.serviceAdmin];
           return yield* pending.client
             .transferTo(admin)
             .json("/two-factor/verify-totp", { code: pending.authenticator.generate() });
@@ -190,7 +190,7 @@ describe("request hooks", () => {
         Effect.gen(function* continueWeakly() {
           const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
-          const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
+          const weak = yield* signInAs(APPLICATION.internalDashboard, "owner@example.com");
           return yield* weak.json("/oauth2/continue", {
             oauth_query: flow.oauthQuery,
             postLogin: true,
@@ -213,7 +213,7 @@ describe("request hooks", () => {
         Effect.gen(function* smuggle() {
           const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
-          const client = yield* clientOf(APPLICATION.wiki);
+          const client = yield* clientOf(APPLICATION.internalDashboard);
           return yield* client.json("/sign-in/email", {
             email: "owner@example.com",
             oauth_query: flow.oauthQuery,

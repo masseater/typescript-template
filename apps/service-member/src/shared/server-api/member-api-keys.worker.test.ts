@@ -20,7 +20,7 @@ import { memberApi } from "./member-api.ts";
 import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 const { planSubscription, user } = schema;
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 const routes = {
   "/api/member": "member",
   "/api/members": "members",
@@ -91,7 +91,7 @@ function request(
 
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
-  const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
+  const base = Layer.orDie(appLayer({ audience: APPLICATION.serviceMember, env: environment, routes }));
   const services = Layer.mergeAll(
     base,
     Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),

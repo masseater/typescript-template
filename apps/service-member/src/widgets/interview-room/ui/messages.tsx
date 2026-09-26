@@ -1,3 +1,4 @@
+import { SPEAKER } from "#shared/interview/index.ts";
 import { InterviewBubble } from "./bubble.tsx";
 
 import type { InterviewViewData } from "#shared/interview/index.ts";
@@ -36,8 +37,8 @@ function InterviewMessages({
           text={message.text}
         />
       ))}
-      {heard !== undefined && <InterviewBubble speaker="member" text={heard} />}
-      {typing && <InterviewBubble speaker="interviewer" text="入力中" />}
+      {heard !== undefined && <InterviewBubble speaker={SPEAKER.member} text={heard} />}
+      {typing && <InterviewBubble speaker={SPEAKER.interviewer} text="入力中" />}
     </ol>
   );
 }

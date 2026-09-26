@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
-import { FIELD_STATUS } from "#shared/interview/index.ts";
+import { FIELD_STATUS, SPEAKER } from "#shared/interview/index.ts";
 import { InterviewScreen } from "./screen.tsx";
 
 import type { InterviewViewData } from "#shared/interview/index.ts";
@@ -23,7 +23,7 @@ const unansweredFields = [
 function screenView(phase: InterviewViewData["phase"], text: string): InterviewViewData {
   return {
     fields: unansweredFields,
-    messages: [{ role: "interviewer", text }],
+    messages: [{ role: SPEAKER.interviewer, text }],
     phase,
   };
 }

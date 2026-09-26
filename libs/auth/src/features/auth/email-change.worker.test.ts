@@ -28,7 +28,7 @@ const MILLISECONDS_PER_MINUTE = 60_000;
 
 const strongMember = Effect.fn("strongMember")(function* strongMemberProgram() {
   yield* registerVerified(OLD_EMAIL);
-  const client = yield* signInAs(APPLICATION.user, OLD_EMAIL);
+  const client = yield* signInAs(APPLICATION.serviceMember, OLD_EMAIL);
   yield* enableTotp(client);
   yield* clearMailbox;
   return client;
@@ -43,8 +43,8 @@ const confirmEmailChange = Effect.fn("confirmEmailChange")(function* confirmEmai
 });
 
 const signInStatuses = Effect.fn("signInStatuses")(function* signInStatusesProgram() {
-  const oldAddress = yield* signIn(yield* clientOf(APPLICATION.user), OLD_EMAIL);
-  const newAddress = yield* signIn(yield* clientOf(APPLICATION.user), NEW_EMAIL);
+  const oldAddress = yield* signIn(yield* clientOf(APPLICATION.serviceMember), OLD_EMAIL);
+  const newAddress = yield* signIn(yield* clientOf(APPLICATION.serviceMember), NEW_EMAIL);
   return { newAddress, oldAddress };
 });
 
@@ -55,7 +55,7 @@ describe("email change", () => {
         runWith(auth, () =>
           Effect.gen(function* requestWeakly() {
             yield* registerVerified(OLD_EMAIL);
-            const client = yield* signInAs(APPLICATION.user, OLD_EMAIL);
+            const client = yield* signInAs(APPLICATION.serviceMember, OLD_EMAIL);
             yield* clearMailbox;
             return yield* requestEmailChange(client, NEW_EMAIL);
           }),
@@ -65,7 +65,7 @@ describe("email change", () => {
         runWith(auth, () =>
           Effect.gen(function* requestWeaklyMail() {
             yield* registerVerified(OLD_EMAIL);
-            const client = yield* signInAs(APPLICATION.user, OLD_EMAIL);
+            const client = yield* signInAs(APPLICATION.serviceMember, OLD_EMAIL);
             yield* clearMailbox;
             yield* requestEmailChange(client, NEW_EMAIL);
             return yield* mailRecipients;
@@ -190,7 +190,7 @@ describe("email change", () => {
           Effect.gen(function* confirmAnonymously() {
             const client = yield* strongMember();
             yield* requestEmailChange(client, NEW_EMAIL);
-            return yield* confirmEmailChange(yield* clientOf(APPLICATION.user));
+            return yield* confirmEmailChange(yield* clientOf(APPLICATION.serviceMember));
           }),
         ),
       )
@@ -199,7 +199,7 @@ describe("email change", () => {
           Effect.gen(function* signInAfterAnonymousConfirm() {
             const client = yield* strongMember();
             yield* requestEmailChange(client, NEW_EMAIL);
-            yield* confirmEmailChange(yield* clientOf(APPLICATION.user));
+            yield* confirmEmailChange(yield* clientOf(APPLICATION.serviceMember));
             return yield* signInStatuses();
           }),
         ),
@@ -315,7 +315,7 @@ describe("email change", () => {
       runWith(auth, () =>
         Effect.gen(function* requestAsAdmin() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
-          const client = yield* signInAs(APPLICATION.admin, "admin@example.com");
+          const client = yield* signInAs(APPLICATION.serviceAdmin, "admin@example.com");
           yield* enableTotp(client);
           return yield* client.status("/change-email", { newEmail: NEW_EMAIL });
         }),

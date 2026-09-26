@@ -27,10 +27,10 @@ describe("an administrator invite", () => {
     runWith(auth, () =>
       Effect.gen(function* inviteAndAccept() {
         yield* bootstrapVerifiedAdmin("owner@example.com");
-        const owner = yield* signInAs(APPLICATION.admin, "owner@example.com");
+        const owner = yield* signInAs(APPLICATION.serviceAdmin, "owner@example.com");
         yield* enableTotp(owner);
         const authority = yield* owner.verify();
-        const admin = (yield* AuthApps)[APPLICATION.admin];
+        const admin = (yield* AuthApps)[APPLICATION.serviceAdmin];
         const invited = yield* inviteAdmin({
           email: "invited@example.com",
           permission: ADMIN_PERMISSION.operator,
@@ -50,16 +50,16 @@ describe("an administrator invite", () => {
             Effect.provideService(Auth, admin),
           ),
         );
-        const client = yield* signInAs(APPLICATION.admin, "invited@example.com");
+        const client = yield* signInAs(APPLICATION.serviceAdmin, "invited@example.com");
         const session = yield* client.verify(true);
         const memberSignIn = yield* signIn(
-          yield* clientOf(APPLICATION.user),
+          yield* clientOf(APPLICATION.serviceMember),
           "invited@example.com",
         );
         return {
           accepted: { permission: accepted.permission, role: accepted.role },
           link: {
-            origin: link.origin === origins[APPLICATION.admin],
+            origin: link.origin === origins[APPLICATION.serviceAdmin],
             path: link.pathname.replace(token, "{token}"),
           },
           memberSignIn,
@@ -91,7 +91,7 @@ describe("a staff invite", () => {
       Effect.gen(function* inviteStaffMember() {
         const editor = yield* wikiStaff("editor@example.com");
         const authority = yield* editor.verify();
-        const wiki = (yield* AuthApps)[APPLICATION.wiki];
+        const wiki = (yield* AuthApps)[APPLICATION.internalDashboard];
         const invited = yield* inviteStaff({
           email: "reader@example.com",
           permission: STAFF_PERMISSION.viewer,
@@ -104,11 +104,11 @@ describe("a staff invite", () => {
           password: PASSWORD,
           token: decodeURIComponent(link.pathname.split("/").at(-1) ?? ""),
         }).pipe(Effect.provideService(Auth, wiki));
-        const client = yield* signInAs(APPLICATION.wiki, "reader@example.com");
+        const client = yield* signInAs(APPLICATION.internalDashboard, "reader@example.com");
         const session = yield* client.verify(true);
         return {
           accepted: { permission: accepted.permission, role: accepted.role },
-          linkOrigin: link.origin === origins[APPLICATION.wiki],
+          linkOrigin: link.origin === origins[APPLICATION.internalDashboard],
           session: { permission: session.user.permission, role: session.user.role },
         };
       }),

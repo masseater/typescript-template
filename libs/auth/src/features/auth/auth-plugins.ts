@@ -122,11 +122,11 @@ const authPlugins = ({
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin({ audience, origin, run }),
-    ...(audience === APPLICATION.user
+    ...(audience === APPLICATION.serviceMember
       ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
       : []),
-    ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
-    ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.internalDashboard ? wikiAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.serviceAdmin ? adminAuthorizationServer(origin) : []),
   ];
 };
 

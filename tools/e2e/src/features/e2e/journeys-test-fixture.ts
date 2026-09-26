@@ -12,6 +12,7 @@ import {
   signUp,
 } from "./flows.ts";
 import { failed, type JourneyFailure } from "./journey-failure.ts";
+import { JOURNEY_ROLE } from "./journey-roles.ts";
 import {
   appearanceTimeout,
   fill,
@@ -69,7 +70,7 @@ const signUpAndConfirm = (
   Crypto.Crypto
 > =>
   Effect.gen(function* registerAndEnter() {
-    const origin = stage.environment.originOf("member");
+    const origin = stage.environment.originOf(JOURNEY_ROLE.member);
     const account = yield* newAccount(role);
     yield* signUp({ account, origin, page: stage.page });
     yield* seeHeading(stage.page, "確認メールを送りました");
@@ -95,7 +96,7 @@ const browseMainScreens = (
   account: Account,
 ): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* browseMemberScreens() {
-    const origin = stage.environment.originOf("member");
+    const origin = stage.environment.originOf(JOURNEY_ROLE.member);
     yield* seeHeading(stage.page, "ホーム");
     yield* openMainNav(stage, { heading: account.name, linkName: "プロフィール" });
     yield* openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
@@ -288,7 +289,7 @@ const runMemberJourney = (
   Crypto.Crypto
 > =>
   Effect.gen(function* walkMemberJourney() {
-    const { account, origin } = yield* signUpAndConfirm(stage, "member");
+    const { account, origin } = yield* signUpAndConfirm(stage, JOURNEY_ROLE.member);
     yield* browseMainScreens(stage, account);
     const board = yield* postOnBoard(stage, origin);
     const settings = yield* browseSettings(stage, origin);
@@ -341,10 +342,10 @@ const runOperatorJourney = (
 > =>
   Effect.gen(function* walkOperatorJourney() {
     const { environment, page } = stage;
-    const { account, origin } = yield* signUpAndConfirm(stage, "operator");
+    const { account, origin } = yield* signUpAndConfirm(stage, JOURNEY_ROLE.operator);
     const enrollment = yield* enrollTotp({ account, origin, page });
     yield* environment.promoteToAdministrator(account.email);
-    const operatorOrigin = environment.originOf("operator");
+    const operatorOrigin = environment.originOf(JOURNEY_ROLE.operator);
     yield* signIn({ account, origin: operatorOrigin, page });
     yield* answerTotpChallenge(page, enrollment.uri);
     return yield* operatorHome({ email: account.email, operatorOrigin, page });
@@ -368,7 +369,7 @@ const runDocumentJourney = (
 > =>
   Effect.gen(function* walkDocumentJourney() {
     const { environment, page } = stage;
-    const origin = environment.originOf("knowledge");
+    const origin = environment.originOf(JOURNEY_ROLE.knowledge);
     const [firstDocument = "", secondDocument = ""] = environment.documents;
     yield* readDocument(stage, `${origin}${firstDocument}`);
     yield* readDocument(stage, `${origin}${secondDocument}`);
@@ -413,7 +414,7 @@ const runVerifyMemberJourney = (
   Crypto.Crypto
 > =>
   Effect.gen(function* verifyMemberThroughApps() {
-    const origin = stage.environment.originOf("member");
+    const origin = stage.environment.originOf(JOURNEY_ROLE.member);
     const verified = yield* runVerifyMember({
       mail: stage.environment.mail,
       origin,

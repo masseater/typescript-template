@@ -2,10 +2,10 @@
 
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli, runCommand } from "@repo/cli";
-import { ROLE } from "@repo/config";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
+import { JOURNEY_ROLE } from "../journey-roles.ts";
 import { resolveVerifyEnvironment, VerifyEnvironment } from "./environments.ts";
 import { failure } from "./failure.ts";
 import { verifyMember } from "./member.ts";
@@ -17,7 +17,7 @@ const verifyCommand = Command.make(
     role: Argument.String("role").pipe(Argument.withDefault("")),
   },
   Effect.fn(function* routeVerify({ environment, role }) {
-    if (role !== ROLE.member) {
+    if (role !== JOURNEY_ROLE.member) {
       return yield* failure("command_unsupported");
     }
     const decoded = yield* Schema.decodeUnknownEffect(VerifyEnvironment)(

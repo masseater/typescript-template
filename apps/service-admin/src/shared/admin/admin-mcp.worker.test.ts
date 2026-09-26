@@ -29,11 +29,11 @@ import { serveMcp } from "./mcp.ts";
 
 const adminOrigin = "http://127.0.0.1:3002";
 const authSecret = "integration-test-secret-at-least-32-characters-long";
-const reporting = { service: APPLICATION.admin } as const;
+const reporting = { service: APPLICATION.serviceAdmin } as const;
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
-  const admin = (yield* AuthApps)[APPLICATION.admin];
+  const admin = (yield* AuthApps)[APPLICATION.serviceAdmin];
   const handler = admin.instance.handler;
   if (typeof handler !== "function") {
     return yield* Effect.die("ADMIN_HANDLER_UNAVAILABLE");
@@ -53,13 +53,13 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
   fetchMcp: FetchMcp;
   stop: Effect.Effect<void>;
 } {
-  const adminAuth = Context.get(auth, AuthApps)[APPLICATION.admin];
+  const adminAuth = Context.get(auth, AuthApps)[APPLICATION.serviceAdmin];
   const runtime = workerRuntime(() =>
     Layer.orDie(
       Layer.merge(
         Layer.succeed(Auth, adminAuth),
         appLayer({
-          audience: APPLICATION.admin,
+          audience: APPLICATION.serviceAdmin,
           env: appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
           routes,
         }),

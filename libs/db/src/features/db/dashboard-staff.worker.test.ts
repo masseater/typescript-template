@@ -22,7 +22,7 @@ import { auditEvent, metricSnapshot, session } from "./schema.ts";
 const seedMembers = Effect.gen(function* seedMembersProgram() {
   yield* addUser({ userId: "member-a" });
   yield* addUser({ userId: "member-b" });
-  yield* addUser({ role: ROLE.administrator, userId: "admin-a" });
+  yield* addUser({ role: ROLE.admin, userId: "admin-a" });
 });
 
 const seedAudit = query((database) =>
@@ -155,7 +155,7 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
     yield* query((database) =>
       database.insert(session).values([
         {
-          audience: APPLICATION.wiki,
+          audience: APPLICATION.internalDashboard,
           authenticationMethod: "password_totp",
           createdAt: recordedAt,
           expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
@@ -167,7 +167,7 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
           userId: "staff",
         },
         {
-          audience: APPLICATION.wiki,
+          audience: APPLICATION.internalDashboard,
           authenticationMethod: "password_totp",
           createdAt: recordedAt,
           expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),

@@ -3,8 +3,8 @@ import { RECORDING_STATUS } from "@repo/config";
 import type { RecordingStatus } from "@repo/config";
 
 const statusLabels: Readonly<Record<RecordingStatus, string>> = {
-  [RECORDING_STATUS.done]: "完了",
-  [RECORDING_STATUS.failed]: "失敗",
+  [RECORDING_STATUS.transcribed]: "完了",
+  [RECORDING_STATUS.transcriptionFailed]: "失敗",
   [RECORDING_STATUS.queued]: "順番待ち",
   [RECORDING_STATUS.transcribing]: "文字起こし中",
 };

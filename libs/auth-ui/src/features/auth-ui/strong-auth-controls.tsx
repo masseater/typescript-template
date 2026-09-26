@@ -22,7 +22,7 @@ const StrongAuthControls = ({
 }>): ReactElement => {
   const { passkeys } = usePasskeys();
   const confirmWithPasskey = (): void => {
-    onConfirm(AUTHENTICATION_METHOD.passkey);
+    onConfirm(AUTHENTICATION_METHOD.passkeyUv);
   };
   const passkeyEnrolled = passkeys !== undefined && passkeys.length > 0;
   return (

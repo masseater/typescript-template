@@ -1,4 +1,3 @@
-import { AUTHENTICATION_METHOD } from "@repo/config";
 import { type TextInput, Field } from "@repo/ui";
 
 import { TotpField } from "./totp-field";
@@ -13,7 +12,7 @@ const ChallengeCodeField = ({
     <Field
       label="バックアップコード"
       name="backup-code"
-      type={AUTHENTICATION_METHOD.password}
+      type="password"
       autoComplete="off"
       value={code.value}
       onValueChange={code.handleChange}

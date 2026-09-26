@@ -493,9 +493,9 @@ const staticExpected: Readonly<
       cron: healthMonitorWorker.cron,
       name: healthMonitorWorker.name,
       variables: [
-        plainText(healthOriginKey[APPLICATION.admin], origins[APPLICATION.admin]),
-        plainText(healthOriginKey[APPLICATION.user], origins[APPLICATION.user]),
-        plainText(healthOriginKey[APPLICATION.wiki], origins[APPLICATION.wiki]),
+        plainText(healthOriginKey[APPLICATION.serviceAdmin], origins[APPLICATION.serviceAdmin]),
+        plainText(healthOriginKey[APPLICATION.serviceMember], origins[APPLICATION.serviceMember]),
+        plainText(healthOriginKey[APPLICATION.internalDashboard], origins[APPLICATION.internalDashboard]),
       ],
     }),
   }),

@@ -9,8 +9,8 @@ export type RecordingStatus = (typeof recordingStatuses)[number];
 export const RECORDING_STATUS = {
   queued: recordingStatuses[0],
   transcribing: recordingStatuses[1],
-  done: recordingStatuses[2],
-  failed: recordingStatuses[3],
+  transcribed: recordingStatuses[2],
+  transcriptionFailed: recordingStatuses[3],
 } as const;
 
 /** @canonical-values config.transcription-failure */

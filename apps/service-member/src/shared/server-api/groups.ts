@@ -41,7 +41,7 @@ interface GroupView {
   readonly inviteExpired: boolean;
   readonly isMember: boolean;
   readonly isOwner: boolean;
-  readonly joinPolicy: typeof GROUP_JOIN_POLICY.invite | typeof GROUP_JOIN_POLICY.open;
+  readonly joinPolicy: typeof GROUP_JOIN_POLICY.inviteOnly | typeof GROUP_JOIN_POLICY.openJoin;
   readonly memberCount: number;
   readonly members: readonly GroupMemberView[];
   readonly name: string;
@@ -86,7 +86,7 @@ const canViewGroup = Effect.fn("canViewGroup")(function* canViewGroup(
   viewerId: string,
   group: {
     readonly id: string;
-    readonly joinPolicy: typeof GROUP_JOIN_POLICY.invite | typeof GROUP_JOIN_POLICY.open;
+    readonly joinPolicy: typeof GROUP_JOIN_POLICY.inviteOnly | typeof GROUP_JOIN_POLICY.openJoin;
   },
   inviteToken: string | undefined,
 ) {
@@ -94,7 +94,7 @@ const canViewGroup = Effect.fn("canViewGroup")(function* canViewGroup(
   if (membership !== undefined) {
     return true;
   }
-  if (group.joinPolicy === GROUP_JOIN_POLICY.open) {
+  if (group.joinPolicy === GROUP_JOIN_POLICY.openJoin) {
     return true;
   }
   if (inviteToken === undefined) {
@@ -153,7 +153,7 @@ const loadMembers = Effect.fn("loadMembers")(function* loadMembers(groupId: stri
 const createGroup = Effect.fn("createGroup")(function* createGroup(
   ownerId: string,
   draft: {
-    readonly joinPolicy: typeof GROUP_JOIN_POLICY.invite | typeof GROUP_JOIN_POLICY.open;
+    readonly joinPolicy: typeof GROUP_JOIN_POLICY.inviteOnly | typeof GROUP_JOIN_POLICY.openJoin;
     readonly name: string;
   },
 ) {
@@ -271,7 +271,7 @@ const joinGroup = Effect.fn("joinGroup")(function* joinGroup(
   if (existingMembership !== undefined) {
     return group.conversationId;
   }
-  if (group.joinPolicy === GROUP_JOIN_POLICY.invite) {
+  if (group.joinPolicy === GROUP_JOIN_POLICY.inviteOnly) {
     if (inviteToken === undefined) {
       return yield* new GroupNotFound();
     }
@@ -442,7 +442,7 @@ const canReadGroupConversation = Effect.fn("canReadGroupConversation")(
     if (group === undefined) {
       return false;
     }
-    if (group.joinPolicy === GROUP_JOIN_POLICY.open) {
+    if (group.joinPolicy === GROUP_JOIN_POLICY.openJoin) {
       return yield* isGroupMember(viewerId, conversationId);
     }
     return yield* isGroupMember(viewerId, conversationId);

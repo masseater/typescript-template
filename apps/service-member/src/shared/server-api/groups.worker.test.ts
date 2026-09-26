@@ -52,8 +52,8 @@ const openGroup = Effect.fn("openGroup")(function* openGroup(
   ownerId: string,
   name: string,
   joinPolicy:
-    | typeof GROUP_JOIN_POLICY.invite
-    | typeof GROUP_JOIN_POLICY.open = GROUP_JOIN_POLICY.invite,
+    | typeof GROUP_JOIN_POLICY.inviteOnly
+    | typeof GROUP_JOIN_POLICY.openJoin = GROUP_JOIN_POLICY.inviteOnly,
 ) {
   yield* TestClock.adjust("1 minute");
   return yield* createGroup(ownerId, { joinPolicy, name });
@@ -62,7 +62,7 @@ const openGroup = Effect.fn("openGroup")(function* openGroup(
 describe("who may use groups", () => {
   it.effect.each([
     { emailVerified: false, role: ROLE.member, userId: "unverified" },
-    { emailVerified: true, role: ROLE.administrator, userId: "operator" },
+    { emailVerified: true, role: ROLE.admin, userId: "operator" },
   ])("refuses $userId for reading and writing", ({ emailVerified, role, userId }) =>
     Effect.gen(function* program() {
       yield* addUser({ emailVerified, role, userId });
@@ -74,7 +74,7 @@ describe("who may use groups", () => {
       );
       assert.strictEqual(
         yield* failureTag(
-          createGroup(userId, { joinPolicy: GROUP_JOIN_POLICY.open, name: "新規" }),
+          createGroup(userId, { joinPolicy: GROUP_JOIN_POLICY.openJoin, name: "新規" }),
         ),
         "MessagingMemberRequired",
       );
@@ -91,7 +91,7 @@ describe("creating groups", () => {
       assert.strictEqual(group.name, "勉強会");
       assert.strictEqual(group.isOwner, true);
       assert.strictEqual(group.isMember, true);
-      assert.strictEqual(group.joinPolicy, GROUP_JOIN_POLICY.invite);
+      assert.strictEqual(group.joinPolicy, GROUP_JOIN_POLICY.inviteOnly);
       assert.strictEqual(group.memberCount, 1);
       assert.strictEqual(group.members[0]?.id, "owner");
     }).pipe(Effect.provide(TestDatabase)),
@@ -100,9 +100,9 @@ describe("creating groups", () => {
   it.effect("creates an open group", () =>
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
-      const created = yield* openGroup("owner", "公開", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "公開", GROUP_JOIN_POLICY.openJoin);
       const group = yield* findGroup("owner", created.groupId);
-      assert.strictEqual(group.joinPolicy, GROUP_JOIN_POLICY.open);
+      assert.strictEqual(group.joinPolicy, GROUP_JOIN_POLICY.openJoin);
     }).pipe(Effect.provide(TestDatabase)),
   );
 });
@@ -172,7 +172,7 @@ describe("joining and leaving", () => {
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
       yield* addUser({ userId: "guest" });
-      const created = yield* openGroup("owner", "公開", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "公開", GROUP_JOIN_POLICY.openJoin);
       yield* joinGroup("guest", created.groupId);
       const group = yield* findGroup("guest", created.groupId);
       assert.strictEqual(group.isMember, true);
@@ -192,7 +192,7 @@ describe("joining and leaving", () => {
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
       yield* addUser({ userId: "guest" });
-      const created = yield* openGroup("owner", "勉強会", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "勉強会", GROUP_JOIN_POLICY.openJoin);
       yield* joinGroup("guest", created.groupId);
       yield* leaveGroup("guest", created.groupId);
       const guestView = yield* findGroup("guest", created.groupId);
@@ -216,7 +216,7 @@ describe("ownership and posting", () => {
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
       yield* addUser({ userId: "guest" });
-      const created = yield* openGroup("owner", "旧名", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "旧名", GROUP_JOIN_POLICY.openJoin);
       yield* joinGroup("guest", created.groupId);
       yield* renameGroup("owner", created.groupId, "新名");
       assert.strictEqual((yield* findGroup("guest", created.groupId)).name, "新名");
@@ -231,7 +231,7 @@ describe("ownership and posting", () => {
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
       yield* addUser({ userId: "guest" });
-      const created = yield* openGroup("owner", "勉強会", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "勉強会", GROUP_JOIN_POLICY.openJoin);
       yield* joinGroup("guest", created.groupId);
       yield* TestClock.adjust("1 minute");
       yield* sendConversationMessage("owner", created.conversationId, "はじめまして");
@@ -259,7 +259,7 @@ describe("ownership and posting", () => {
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
       yield* addUser({ userId: "guest" });
-      const created = yield* openGroup("owner", "公開グループ", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "公開グループ", GROUP_JOIN_POLICY.openJoin);
       yield* joinGroup("guest", created.groupId);
       const hiddenBody = "ブロックされる本文";
       yield* sendConversationMessage("guest", created.conversationId, hiddenBody);
@@ -282,7 +282,7 @@ describe("limits", () => {
       }
       assert.strictEqual(
         yield* failureTag(
-          createGroup("owner", { joinPolicy: GROUP_JOIN_POLICY.open, name: "上限超え" }),
+          createGroup("owner", { joinPolicy: GROUP_JOIN_POLICY.openJoin, name: "上限超え" }),
         ),
         "GroupLimitReached",
       );
@@ -297,12 +297,12 @@ describe("limits", () => {
         const created = yield* openGroup(
           `owner-${index}`,
           `グループ ${index}`,
-          GROUP_JOIN_POLICY.open,
+          GROUP_JOIN_POLICY.openJoin,
         );
         yield* joinGroup("guest", created.groupId);
       }
       yield* addUser({ userId: "one-more-owner" });
-      const overflow = yield* openGroup("one-more-owner", "溢れる", GROUP_JOIN_POLICY.open);
+      const overflow = yield* openGroup("one-more-owner", "溢れる", GROUP_JOIN_POLICY.openJoin);
       assert.strictEqual(
         yield* failureTag(joinGroup("guest", overflow.groupId)),
         "GroupLimitReached",
@@ -313,7 +313,7 @@ describe("limits", () => {
   it.effect("refuses joining a full group", () =>
     Effect.gen(function* program() {
       yield* addUser({ userId: "owner" });
-      const created = yield* openGroup("owner", "満員", GROUP_JOIN_POLICY.open);
+      const created = yield* openGroup("owner", "満員", GROUP_JOIN_POLICY.openJoin);
       for (let index = 0; index < maximumGroupMembers - 1; index += 1) {
         yield* addUser({ userId: `member-${index}` });
         yield* joinGroup(`member-${index}`, created.groupId);

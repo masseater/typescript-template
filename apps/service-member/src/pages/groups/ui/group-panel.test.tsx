@@ -16,7 +16,7 @@ const group = {
   inviteExpired: false,
   isMember: false,
   isOwner: false,
-  joinPolicy: GROUP_JOIN_POLICY.open,
+  joinPolicy: GROUP_JOIN_POLICY.openJoin,
   memberCount: 2,
   members: [],
   name: "読書会",

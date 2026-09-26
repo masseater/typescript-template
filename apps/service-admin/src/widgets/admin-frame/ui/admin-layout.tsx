@@ -9,7 +9,7 @@ import type { ReactElement } from "react";
 
 function AdminLayout(): ReactElement {
   return (
-    <SessionGate role={ROLE.administrator}>
+    <SessionGate role={ROLE.admin}>
       {(session) => (
         <SessionUserProvider user={session.user}>
           <AdminFrame email={session.user.email} name={session.user.name}>

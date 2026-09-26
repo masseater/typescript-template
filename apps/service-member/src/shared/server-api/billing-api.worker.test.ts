@@ -33,7 +33,7 @@ import type { BrowserClient } from "@repo/auth/testing";
 
 type App = ReturnType<typeof billingApp>;
 
-const origin = origins[APPLICATION.user];
+const origin = origins[APPLICATION.serviceMember];
 const stripeApi = "https://api.stripe.com/v1";
 const priceId = "price_TestMonthly";
 const meteredPriceId = "price_TestMetered";
@@ -56,7 +56,7 @@ const byteWidth = 2;
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 const routes = { "/api/billing/*": "billing-api", "/api/members": "members-api" };
-const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const reporting = { log: recordingSink().sink, service: APPLICATION.serviceMember } as const;
 
 function billingApp() {
   const environment = appEnvironment({
@@ -68,7 +68,7 @@ function billingApp() {
     [stripeEnvKey.webhookSecret]: webhookSecret,
   });
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
+    const base = Layer.orDie(appLayer({ audience: APPLICATION.serviceMember, env: environment, routes }));
     return Layer.mergeAll(
       base,
       Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
@@ -371,7 +371,7 @@ const acceptEverythingPending = Effect.fn("acceptEverythingPending")(
 const member = Effect.fn("member")(function* member(app: App) {
   const email = "member@example.com";
   yield* registerVerified(email);
-  const client = yield* signInAs(APPLICATION.user, email);
+  const client = yield* signInAs(APPLICATION.serviceMember, email);
   const session = yield* client.verify();
   yield* acceptEverythingPending(app, client);
   return { client, id: session.user.id };

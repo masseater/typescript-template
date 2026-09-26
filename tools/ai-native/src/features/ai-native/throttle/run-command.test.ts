@@ -821,7 +821,7 @@ describe("runWithSlot", () => {
               Deferred.succeed(lingeringEnd, {
                 kind: "exit",
                 exitCode: null,
-                bySignal: TREE_TERMINATION_SIGNAL.forced,
+                bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
               }).pipe(Effect.as(null)),
           },
         });
@@ -840,7 +840,7 @@ describe("runWithSlot", () => {
               Deferred.succeed(lingeringEnd, {
                 kind: "exit",
                 exitCode: null,
-                bySignal: TREE_TERMINATION_SIGNAL.forced,
+                bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
               }).pipe(Effect.as(null)),
             );
             yield* Effect.promise(() =>
@@ -890,7 +890,7 @@ describe("runWithSlot", () => {
                     Deferred.succeed(lingeringEnd, {
                       kind: "exit",
                       exitCode: null,
-                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                      bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
                     }).pipe(Effect.as(null)),
                 },
               }),
@@ -924,7 +924,7 @@ describe("runWithSlot", () => {
                     Deferred.succeed(lingeringEnd, {
                       kind: "exit",
                       exitCode: null,
-                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                      bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
                     }).pipe(Effect.as(null)),
                 },
               }),
@@ -943,7 +943,7 @@ describe("runWithSlot", () => {
     }) => {
       expect(theTreeSignalOfARunTimedOutWithoutAGracePeriod).toHaveBeenCalledExactlyOnceWith({
         pid: KNOWN_CHILD_PID,
-        signal: TREE_TERMINATION_SIGNAL.forced,
+        signal: TREE_TERMINATION_SIGNAL.SIGKILL,
       });
     });
 
@@ -982,7 +982,7 @@ describe("runWithSlot", () => {
               Deferred.succeed(lingeringEnd, {
                 kind: "exit",
                 exitCode: null,
-                bySignal: TREE_TERMINATION_SIGNAL.forced,
+                bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
               }).pipe(Effect.as(new Error("taskkill denied"))),
           },
         });
@@ -1012,7 +1012,7 @@ describe("runWithSlot", () => {
                     Deferred.succeed(lingeringEnd, {
                       kind: "exit",
                       exitCode: null,
-                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                      bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
                     }).pipe(Effect.as(new Error("taskkill denied"))),
                 },
               }),
@@ -1048,7 +1048,7 @@ describe("runWithSlot", () => {
                     Deferred.succeed(lingeringEnd, {
                       kind: "exit",
                       exitCode: null,
-                      bySignal: TREE_TERMINATION_SIGNAL.forced,
+                      bySignal: TREE_TERMINATION_SIGNAL.SIGKILL,
                     }).pipe(Effect.as(new Error("taskkill denied"))),
                 },
               }),

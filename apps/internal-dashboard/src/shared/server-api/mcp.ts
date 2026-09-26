@@ -44,7 +44,7 @@ function callWiki(
 }
 
 function createServer(binding: ServiceFetcher, context: Context.Context<WikiServices>): McpServer {
-  const server = new McpServer({ name: APPLICATION.wiki, version: mcpVersion });
+  const server = new McpServer({ name: APPLICATION.internalDashboard, version: mcpVersion });
   server.registerTool(
     "search",
     {

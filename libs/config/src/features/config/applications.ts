@@ -5,9 +5,9 @@ import { ROLE, type Role } from "./identity.ts";
 /** @canonical-values config.application */
 export const applications = ["service-member", "service-admin", "internal-dashboard"] as const;
 export const APPLICATION = {
-  user: applications[0],
-  admin: applications[1],
-  wiki: applications[2],
+  serviceMember: applications[0],
+  serviceAdmin: applications[1],
+  internalDashboard: applications[2],
 } as const;
 
 export const ApplicationName = Schema.Literals(applications);
@@ -57,14 +57,14 @@ export const grants = (app: Application, capability: Capability): boolean => {
 
 export const audienceRoles: Readonly<Record<Application, Role>> = {
   "internal-dashboard": ROLE.staff,
-  "service-admin": ROLE.administrator,
+  "service-admin": ROLE.admin,
   "service-member": ROLE.member,
 };
 
 export const coreEntrypoints = {
-  [APPLICATION.admin]: "AdminApi",
-  [APPLICATION.user]: "MemberApi",
-  [APPLICATION.wiki]: "InternalApi",
+  [APPLICATION.serviceAdmin]: "AdminApi",
+  [APPLICATION.serviceMember]: "MemberApi",
+  [APPLICATION.internalDashboard]: "InternalApi",
 } as const satisfies Readonly<Record<Application, string>>;
 
 export const loopbackAddress = "127.0.0.1";

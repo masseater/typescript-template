@@ -64,10 +64,10 @@ function InquiryConversation({
         {inquiry.messages.map((message) => (
           <li
             key={message.id}
-            className={`rounded-lg border border-border p-3 ${message.authorKind === ROLE.administrator ? "bg-muted" : ""}`}
+            className={`rounded-lg border border-border p-3 ${message.authorKind === ROLE.admin ? "bg-muted" : ""}`}
           >
             <p className="text-sm leading-normal font-medium">
-              {message.authorKind === ROLE.administrator ? "運営" : "会員"}
+              {message.authorKind === ROLE.admin ? "運営" : "会員"}
             </p>
             <p className="text-base leading-normal whitespace-pre-wrap">{message.body}</p>
             <p className="text-xs leading-normal text-muted-foreground">

@@ -6,7 +6,7 @@ import { SOURCE_MAP_MANIFEST, sourceMapDirectories, sourceMapManifest } from "./
 
 describe("source map locations", () => {
   const repositoryRoot = "/repo";
-  const app = APPLICATION.user;
+  const app = APPLICATION.serviceMember;
   const root = paths.join(repositoryRoot, ".local", "source-maps", app);
   const it = test
     .extend("mapDirectories", () => sourceMapDirectories(repositoryRoot, app))

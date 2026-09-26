@@ -17,7 +17,7 @@ const api = apiRoutes(runtime, reporting);
 const wikiApi = createApi("")
   .use(
     createApi(apiRoot)
-      .use(apiDocs(APPLICATION.wiki))
+      .use(apiDocs(APPLICATION.internalDashboard))
       .use(sessionApi(api))
       .use(staffApi(api))
       .use(flagsApi(api))

@@ -25,7 +25,7 @@ describe("an api key issued to a member", () => {
           }),
         );
         yield* registerVerified("owner@example.com");
-        yield* signInAs(APPLICATION.user, "owner@example.com");
+        yield* signInAs(APPLICATION.serviceMember, "owner@example.com");
         const accounts = yield* query((database) =>
           database.select({ email: user.email, id: user.id }).from(user),
         );
@@ -33,7 +33,7 @@ describe("an api key issued to a member", () => {
         if (owner === undefined) {
           return yield* Effect.die("owner missing");
         }
-        const { api } = (yield* AuthApps)[APPLICATION.user].instance;
+        const { api } = (yield* AuthApps)[APPLICATION.serviceMember].instance;
         const createApiKey = yield* Effect.fromNullishOr(api.createApiKey).pipe(Effect.orDie);
         const issued = yield* Effect.promise(() =>
           createApiKey({ body: { name: "integration", userId: owner.id } }),
@@ -63,7 +63,7 @@ describe("an api key revoked by its member", () => {
     runWith(auth, () =>
       Effect.gen(function* revokeKey() {
         yield* registerVerified("reader@example.com");
-        yield* signInAs(APPLICATION.user, "reader@example.com");
+        yield* signInAs(APPLICATION.serviceMember, "reader@example.com");
         const accounts = yield* query((database) =>
           database.select({ email: user.email, id: user.id }).from(user),
         );
@@ -71,7 +71,7 @@ describe("an api key revoked by its member", () => {
         if (reader === undefined) {
           return yield* Effect.die("reader missing");
         }
-        const { api } = (yield* AuthApps)[APPLICATION.user].instance;
+        const { api } = (yield* AuthApps)[APPLICATION.serviceMember].instance;
         const createApiKey = yield* Effect.fromNullishOr(api.createApiKey).pipe(Effect.orDie);
         const updateApiKey = yield* Effect.fromNullishOr(api.updateApiKey).pipe(Effect.orDie);
         const verifyApiKey = yield* Effect.fromNullishOr(api.verifyApiKey).pipe(Effect.orDie);

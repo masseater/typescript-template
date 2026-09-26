@@ -32,7 +32,7 @@ const testClockRuntime = (
   routes: Readonly<Record<string, string>>,
 ): WorkerRuntime<AppServices | TestClock.TestClock, never> => {
   const services = Layer.orDie(
-    appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes }),
+    appLayer({ env: appEnvironment(), audience: APPLICATION.serviceMember, routes }),
   );
   return workerRuntime(() => Layer.merge(services, TestClock.layer()));
 };

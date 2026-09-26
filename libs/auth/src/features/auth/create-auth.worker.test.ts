@@ -55,7 +55,7 @@ describe("createAuth", () => {
     const it = authTest.extend("signUp", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* signUpToAdmin() {
-          const client = yield* clientOf(APPLICATION.admin);
+          const client = yield* clientOf(APPLICATION.serviceAdmin);
           return yield* client.status("/sign-up/email", {
             email: "admin@example.com",
             name: "admin",
@@ -75,15 +75,15 @@ describe("createAuth", () => {
       .extend("userList", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* listUsers() {
-            return yield* (yield* clientOf(APPLICATION.user)).status("/admin/list-users");
+            return yield* (yield* clientOf(APPLICATION.serviceMember)).status("/admin/list-users");
           }),
         ),
       )
       .extend("roleChange", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* setRole() {
-            return yield* (yield* clientOf(APPLICATION.user)).status("/admin/set-role", {
-              role: ROLE.administrator,
+            return yield* (yield* clientOf(APPLICATION.serviceMember)).status("/admin/set-role", {
+              role: ROLE.admin,
               userId: "x",
             });
           }),
@@ -105,7 +105,7 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* signInToWiki() {
             yield* register("pending@example.com");
-            yield* signIn(yield* clientOf(APPLICATION.wiki), "pending@example.com");
+            yield* signIn(yield* clientOf(APPLICATION.internalDashboard), "pending@example.com");
             return yield* mailRecipients;
           }),
         ),
@@ -114,7 +114,7 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* signInToUser() {
             yield* register("pending@example.com");
-            yield* signIn(yield* clientOf(APPLICATION.user), "pending@example.com");
+            yield* signIn(yield* clientOf(APPLICATION.serviceMember), "pending@example.com");
             return yield* mailRecipients;
           }),
         ),
@@ -129,7 +129,7 @@ describe("createAuth", () => {
     });
   });
 
-  describe.for([APPLICATION.user, APPLICATION.wiki] as const)("the %s app", (audience) => {
+  describe.for([APPLICATION.serviceMember, APPLICATION.internalDashboard] as const)("the %s app", (audience) => {
     const it = authTest
       .extend("missingFields", ({ auth }) => runWith(auth, () => missingSchemaFields(audience)))
       .extend("inputs", ({ auth }) => runWith(auth, () => audienceInputs(audience)));
@@ -153,7 +153,7 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* signInBeside() {
             yield* spendSignInWindow({ email: "spender@example.com", network: spender });
-            const bystander = yield* clientOf(APPLICATION.user, {
+            const bystander = yield* clientOf(APPLICATION.serviceMember, {
               "cf-connecting-ip": "203.0.113.11",
             });
             return yield* signIn(bystander, "spender@example.com");
@@ -164,7 +164,7 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* forward() {
             yield* spendSignInWindow({ email: "spender@example.com", network: spender });
-            const forwarder = yield* clientOf(APPLICATION.user, {
+            const forwarder = yield* clientOf(APPLICATION.serviceMember, {
               ...spender,
               "x-forwarded-for": "203.0.113.21",
             });
@@ -192,14 +192,14 @@ describe("createAuth", () => {
         runWith(auth, () =>
           Effect.gen(function* signInMember() {
             yield* registerVerified("member@example.com");
-            return yield* signIn(yield* clientOf(APPLICATION.wiki), "member@example.com");
+            return yield* signIn(yield* clientOf(APPLICATION.internalDashboard), "member@example.com");
           }),
         ),
       )
       .extend("signUpStatus", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signUpMember() {
-            return yield* (yield* clientOf(APPLICATION.wiki)).status("/sign-up/email", {
+            return yield* (yield* clientOf(APPLICATION.internalDashboard)).status("/sign-up/email", {
               email: "new@example.com",
               name: "new",
               password: PASSWORD,
@@ -253,7 +253,7 @@ describe("createAuth", () => {
     }) => {
       expect(verifiedNotice).toStrictEqual({
         keptSession: 200,
-        noticeHref: new URL("/login", origins[APPLICATION.user]).href,
+        noticeHref: new URL("/login", origins[APPLICATION.serviceMember]).href,
         throttled: true,
       });
     });

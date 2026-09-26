@@ -48,7 +48,7 @@ describe("canViewProfile outside the open member directory", () => {
         Effect.gen(function* viewClosedProfile() {
           yield* addUser({ userId: "viewer" });
           yield* addUser({ emailVerified: false, userId: "unverified" });
-          yield* addUser({ role: ROLE.administrator, userId: "operator" });
+          yield* addUser({ role: ROLE.admin, userId: "operator" });
           return yield* canViewProfile(viewerId, targetId);
         }).pipe(Effect.provide(TestDatabase)),
       ));

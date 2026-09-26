@@ -20,7 +20,7 @@ const maxQueryLimit = 500;
 const millisecondsPerMinute = 60_000;
 const defaultLimit = "100";
 const defaultMinutes = "15";
-const defaultApp = `${applicationOrigins[APPLICATION.user]}/`;
+const defaultApp = `${applicationOrigins[APPLICATION.serviceMember]}/`;
 
 const QueryLimit = Schema.Int.check(Schema.isBetween({ maximum: maxQueryLimit, minimum: 1 }));
 const QueryMinutes = Schema.Int.check(Schema.isBetween({ maximum: minutesPerDay, minimum: 1 }));

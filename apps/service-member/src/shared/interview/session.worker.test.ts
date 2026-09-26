@@ -12,13 +12,14 @@ import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { Interviewer } from "./interviewer.ts";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
+import { SPEAKER } from "./state.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
 
 type Understand = Parameters<typeof Interviewer.of>[0]["understand"];
 
 const DAILY_TURNS = 60;
 const NICKNAME_LIMIT = 30;
-const greeting = { role: "interviewer", text: "はじめまして。なんて呼べばいいですか？" } as const;
+const greeting = { role: SPEAKER.interviewer, text: "はじめまして。なんて呼べばいいですか？" } as const;
 const layoutEndpoint =
   "https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions";
 const layoutAccess = { accountId: "account", apiKey: "test-token" } as const;
@@ -116,7 +117,7 @@ it.effect("what the model understood is applied to the sheet", () => {
         { key: "message", status: "unanswered" },
       ],
     );
-    assert.deepStrictEqual(view.messages.at(-1), { role: "interviewer", text: message });
+    assert.deepStrictEqual(view.messages.at(-1), { role: SPEAKER.interviewer, text: message });
   }).pipe(Effect.provide(services(understand)));
 });
 

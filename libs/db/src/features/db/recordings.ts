@@ -84,7 +84,7 @@ const transcriptStatements = (
         completedAt: stored.completedAt,
         durationMs: stored.durationMs,
         failure: null,
-        status: RECORDING_STATUS.done,
+        status: RECORDING_STATUS.transcribed,
       })
       .where(eq(recording.id, stored.recordingId)),
   ] as const;
@@ -232,7 +232,7 @@ const failRecording = Effect.fn("failRecording")(function* failRecording(
   yield* query((database) =>
     database
       .update(recording)
-      .set({ failure, status: RECORDING_STATUS.failed })
+      .set({ failure, status: RECORDING_STATUS.transcriptionFailed })
       .where(eq(recording.id, recordingId)),
   );
 });
@@ -245,7 +245,7 @@ const retryRecording = Effect.fn("retryRecording")(function* retryRecording(
     database
       .update(recording)
       .set({ failure: null, jobId, status: RECORDING_STATUS.queued })
-      .where(and(eq(recording.id, recordingId), eq(recording.status, RECORDING_STATUS.failed)))
+      .where(and(eq(recording.id, recordingId), eq(recording.status, RECORDING_STATUS.transcriptionFailed)))
       .returning({ id: recording.id }),
   );
   if (retried === undefined) {

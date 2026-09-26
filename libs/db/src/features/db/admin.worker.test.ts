@@ -28,8 +28,8 @@ const page = { limit: 10, offset: 0 } as const;
 const signInAs = Effect.fn("signInAs")(function* signInAs(
   permission: (typeof ADMIN_PERMISSION)[keyof typeof ADMIN_PERMISSION],
 ) {
-  yield* addUser({ permission, role: ROLE.administrator, userId: `actor-${permission}` });
-  return yield* addSession({ audience: APPLICATION.admin, userId: `actor-${permission}` });
+  yield* addUser({ permission, role: ROLE.admin, userId: `actor-${permission}` });
+  return yield* addSession({ audience: APPLICATION.serviceAdmin, userId: `actor-${permission}` });
 });
 
 describe("admin permission levels", () => {
@@ -38,7 +38,7 @@ describe("admin permission levels", () => {
       Effect.runPromise(
         Effect.gen(function* viewerActs() {
           yield* addUser({ userId: "member" });
-          yield* addUser({ role: ROLE.administrator, userId: "owner" });
+          yield* addUser({ role: ROLE.admin, userId: "owner" });
           const sessionId = yield* signInAs(ADMIN_PERMISSION.viewer);
           const listed = yield* listUsers(sessionId, page);
           const suspend = yield* Effect.exit(
@@ -115,7 +115,7 @@ describe("admin permission levels", () => {
       Effect.runPromise(
         Effect.gen(function* operatorActs() {
           yield* addUser({ userId: "member" });
-          yield* addUser({ role: ROLE.administrator, userId: "owner" });
+          yield* addUser({ role: ROLE.admin, userId: "owner" });
           const sessionId = yield* signInAs(ADMIN_PERMISSION.operator);
           const suspended = yield* setMemberState({
             accountState: ACCOUNT_STATE.suspended,
@@ -167,7 +167,7 @@ describe("admin permission levels", () => {
         Effect.gen(function* ownerActs() {
           yield* addUser({
             permission: ADMIN_PERMISSION.viewer,
-            role: ROLE.administrator,
+            role: ROLE.admin,
             userId: "other",
           });
           const sessionId = yield* signInAs(ADMIN_PERMISSION.owner);
@@ -254,7 +254,7 @@ describe("admin permission levels", () => {
       Effect.runPromise(
         Effect.gen(function* memberActs() {
           yield* addUser({ userId: "member" });
-          const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "member" });
+          const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "member" });
           return yield* listUsers(sessionId, page);
         }).pipe(
           Effect.flip,
@@ -275,14 +275,14 @@ describe("member suspension", () => {
       Effect.runPromise(
         Effect.gen(function* suspendMember() {
           yield* addUser({ userId: "member" });
-          const memberSession = yield* addSession({ audience: APPLICATION.user, userId: "member" });
+          const memberSession = yield* addSession({ audience: APPLICATION.serviceMember, userId: "member" });
           const sessionId = yield* signInAs(ADMIN_PERMISSION.operator);
           yield* setMemberState({
             accountState: ACCOUNT_STATE.suspended,
             memberId: "member",
             sessionId,
           });
-          const session = yield* getSessionSecurity(memberSession, APPLICATION.user);
+          const session = yield* getSessionSecurity(memberSession, APPLICATION.serviceMember);
           const listed = yield* listUsers(sessionId, {
             ...page,
             accountState: ACCOUNT_STATE.suspended,
@@ -312,8 +312,8 @@ describe("member suspension", () => {
     }) => {
       expect(suspensionTrail).toStrictEqual({
         audit: [
-          ["member_suspended", "actor-operator", ROLE.administrator, "ui"],
-          ["member_unsuspended", "actor-operator", ROLE.administrator, "ui"],
+          ["member_suspended", "actor-operator", ROLE.admin, "ui"],
+          ["member_unsuspended", "actor-operator", ROLE.admin, "ui"],
         ],
         listed: [["member", ACCOUNT_STATE.suspended]],
         restored: { accountState: ACCOUNT_STATE.active, id: "member" },
@@ -326,7 +326,7 @@ describe("member suspension", () => {
     const it = test.extend("tag", () =>
       Effect.runPromise(
         Effect.gen(function* suspendAdmin() {
-          yield* addUser({ role: ROLE.administrator, userId: "other" });
+          yield* addUser({ role: ROLE.admin, userId: "other" });
           const sessionId = yield* signInAs(ADMIN_PERMISSION.operator);
           return yield* setMemberState({
             accountState: ACCOUNT_STATE.suspended,
@@ -360,8 +360,8 @@ describe("admin reads and interview conversations", () => {
             sheet: { nickname: "たろう" },
             skipped: [],
           });
-          yield* addUser({ role: ROLE.administrator, userId: "admin" });
-          const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "admin" });
+          yield* addUser({ role: ROLE.admin, userId: "admin" });
+          const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "admin" });
           const listed = yield* listUsers(sessionId, { limit: 20, offset: 0 });
           const serialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
             listed,
@@ -386,8 +386,8 @@ describe("admin reads and interview conversations", () => {
             sheet: {},
             skipped: [],
           });
-          yield* addUser({ role: ROLE.administrator, userId: "admin" });
-          const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "admin" });
+          yield* addUser({ role: ROLE.admin, userId: "admin" });
+          const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "admin" });
           const listed = yield* listAgreementVersions(sessionId);
           const [listedVersion] = listed.versions;
           const readVersion =
@@ -453,8 +453,8 @@ describe("admin and staff reads and direct messages", () => {
             senderName: "sender",
           }),
         );
-        yield* addUser({ role: ROLE.administrator, userId: "operator" });
-        const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "operator" });
+        yield* addUser({ role: ROLE.admin, userId: "operator" });
+        const sessionId = yield* addSession({ audience: APPLICATION.serviceAdmin, userId: "operator" });
         const listed = yield* listUsers(sessionId, { limit: 20, offset: 0 });
         const member = yield* getMember(sessionId, "sender");
         const overview = yield* dashboardStaff.overviewWithoutPii();
