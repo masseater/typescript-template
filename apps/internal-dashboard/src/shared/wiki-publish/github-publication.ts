@@ -39,24 +39,22 @@ const publishToGitHub = Effect.fn("publishWikiToGitHub")(function* publishToGitH
 ) {
   const token = yield* installationToken(config);
   const repository = repositoryPath(config);
-  const call = <Decoded extends Schema.Top & { readonly DecodingServices: never }>(
+  const read = <Decoded extends Schema.Top & { readonly DecodingServices: never }>(
     schema: Decoded,
     step: string,
     path: string,
-    body?: unknown,
-  ) =>
-    gitHubRequest(schema, {
-      body,
-      method: body === undefined ? "GET" : "POST",
-      path: `${repository}${path}`,
-      step,
-      token,
-    });
-  const { default_branch: base } = yield* call(Repository, "repository", "");
-  const head = yield* call(Reference, "base-ref", `/git/ref/heads/${base}`);
-  const baseCommit = yield* call(Commit, "base-commit", `/git/commits/${head.object.sha}`);
+  ) => gitHubRequest(schema, { method: "GET", path: `${repository}${path}`, step, token });
+  const create = <Decoded extends Schema.Top & { readonly DecodingServices: never }>(
+    schema: Decoded,
+    step: string,
+    path: string,
+    body: Readonly<Record<string, unknown>>,
+  ) => gitHubRequest(schema, { body, method: "POST", path: `${repository}${path}`, step, token });
+  const { default_branch: base } = yield* read(Repository, "repository", "");
+  const head = yield* read(Reference, "base-ref", `/git/ref/heads/${base}`);
+  const baseCommit = yield* read(Commit, "base-commit", `/git/commits/${head.object.sha}`);
   const documentPath = `${wikiDocsDirectory}/${publication.pagePath}`;
-  const current = yield* call(
+  const current = yield* read(
     Created,
     "base-content",
     `/contents/${documentPath}?ref=${head.object.sha}`,
@@ -71,7 +69,7 @@ const publishToGitHub = Effect.fn("publishWikiToGitHub")(function* publishToGitH
   const images = yield* Effect.forEach(
     publication.images,
     (image) =>
-      call(Created, "image-blob", "/git/blobs", {
+      create(Created, "image-blob", "/git/blobs", {
         content: Encoding.encodeBase64(image.bytes),
         encoding: "base64",
       }).pipe(
@@ -84,7 +82,7 @@ const publishToGitHub = Effect.fn("publishWikiToGitHub")(function* publishToGitH
       ),
     { concurrency: blobUploads },
   );
-  const tree = yield* call(Created, "tree", "/git/trees", {
+  const tree = yield* create(Created, "tree", "/git/trees", {
     base_tree: baseCommit.tree.sha,
     tree: [
       { content: publication.markdown, mode: fileMode, path: documentPath, type: "blob" },
@@ -92,14 +90,14 @@ const publishToGitHub = Effect.fn("publishWikiToGitHub")(function* publishToGitH
     ],
   });
   const title = `docs: 「${publication.title}」を更新`;
-  const commit = yield* call(Created, "commit", "/git/commits", {
+  const commit = yield* create(Created, "commit", "/git/commits", {
     message: title,
     parents: [head.object.sha],
     tree: tree.sha,
   });
   const branch = branchName(publication.pagePath, commit.sha);
-  yield* call(Reference, "branch", "/git/refs", { ref: `refs/heads/${branch}`, sha: commit.sha });
-  const pullRequest = yield* call(PullRequest, "pull-request", "/pulls", {
+  yield* create(Reference, "branch", "/git/refs", { ref: `refs/heads/${branch}`, sha: commit.sha });
+  const pullRequest = yield* create(PullRequest, "pull-request", "/pulls", {
     base,
     body: `wiki の編集画面から公開した変更です。\n\n文書: \`${documentPath}\``,
     head: branch,

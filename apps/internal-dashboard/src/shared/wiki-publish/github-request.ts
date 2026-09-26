@@ -16,13 +16,18 @@ const GitHubError = Schema.Struct({
   message: Schema.String,
 });
 
-type GitHubCall = Readonly<{
-  body?: unknown;
-  method: "GET" | "PATCH" | "POST";
+type GitHubTarget = Readonly<{
   path: string;
   step: string;
   token: Redacted.Redacted;
 }>;
+
+type GitHubRead = GitHubTarget & Readonly<{ body?: never; method: "GET" }>;
+
+type GitHubWrite = GitHubTarget &
+  Readonly<{ body: Readonly<Record<string, unknown>>; method: "PATCH" | "POST" }>;
+
+type GitHubCall = GitHubRead | GitHubWrite;
 
 const send = (call: GitHubCall) => {
   const headers = {
@@ -34,7 +39,7 @@ const send = (call: GitHubCall) => {
   const url = `${gitHubApiOrigin}${call.path}`;
   return call.method === "GET"
     ? HttpClient.get(url, { headers })
-    : Effect.flatMap(HttpBody.json(call.body ?? {}), (body) =>
+    : Effect.flatMap(HttpBody.json(call.body), (body) =>
         (call.method === "PATCH" ? HttpClient.patch : HttpClient.post)(url, { body, headers }),
       );
 };
