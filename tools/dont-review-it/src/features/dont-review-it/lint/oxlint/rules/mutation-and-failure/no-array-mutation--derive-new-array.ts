@@ -180,7 +180,7 @@ export const noArrayMutation = createDontReviewItRule({
     docs: {
       description:
         "Disallow calling an array method that changes the receiver in place, so a changed array always appears as a newly derived binding",
-      relatedGuidelines: [".claude/skills/reviews/references/failure-handling-and-fallbacks.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/never-hide-a-failure.md"],
     },
     messages: {
       inPlaceArrayMutation:

@@ -150,7 +150,9 @@ export const noFixtureConstructInUse = createDontReviewItRule({
     docs: {
       description:
         "Disallow a fixture factory handing back a value the spec built instead of the value the code under test produced, so a green assertion says something about the production and not about the stand-in the spec packed for it",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       builtSubject:

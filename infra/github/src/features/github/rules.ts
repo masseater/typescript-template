@@ -1,13 +1,10 @@
-import type { RulesetProps } from "alchemy/GitHub";
+import type { EnvironmentProps, RulesetProps } from "alchemy/GitHub";
 import type { RepositoryAddress } from "./repository.ts";
 
-const MAIN_BRANCH_REF = "refs/heads/main";
-const MAIN_RULESET_NAME = "main";
-
 const mainBranchRuleset = (address: RepositoryAddress): RulesetProps => ({
-  conditions: { include: [MAIN_BRANCH_REF] },
+  conditions: { include: ["refs/heads/main"] },
   enforcement: "active",
-  name: MAIN_RULESET_NAME,
+  name: "main-branch",
   owner: address.owner,
   repository: address.repository,
   rules: {
@@ -18,4 +15,13 @@ const mainBranchRuleset = (address: RepositoryAddress): RulesetProps => ({
   target: "branch",
 });
 
-export { mainBranchRuleset };
+const rulesApplyEnvironment = "repository-settings";
+
+const rulesApplyEnvironmentSettings = (address: RepositoryAddress): EnvironmentProps => ({
+  deploymentBranchPolicy: { customBranchPolicies: ["main"] },
+  name: rulesApplyEnvironment,
+  owner: address.owner,
+  repository: address.repository,
+});
+
+export { mainBranchRuleset, rulesApplyEnvironment, rulesApplyEnvironmentSettings };

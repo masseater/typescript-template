@@ -155,7 +155,9 @@ export const noExpectOutsideIt = createDontReviewItRule({
     docs: {
       description:
         "Disallow an assertion standing anywhere other than inside a test block the runner handed over under the configured spelling, so every assertion a suite runs answers for the behaviour one named block describes",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       foreignTestBlockAssertion:

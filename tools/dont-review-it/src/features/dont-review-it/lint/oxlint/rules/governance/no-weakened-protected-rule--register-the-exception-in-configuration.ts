@@ -70,7 +70,9 @@ export const noWeakenedProtectedRule = createDontReviewItRule({
     docs: {
       description:
         "Disallow silencing a protected rule from a severity the lint configuration lowers, so an exception to one of these rules stands as one registered entry carrying the grounds somebody wrote for it",
-      relatedGuidelines: [".claude/skills/reviews/references/verification-and-automation.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/prove-every-guard-fails-on-a-violation.md",
+      ],
     },
     messages: {
       weakenedProtectedRule:

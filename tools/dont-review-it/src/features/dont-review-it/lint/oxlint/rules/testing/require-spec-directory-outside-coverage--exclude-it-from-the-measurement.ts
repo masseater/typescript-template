@@ -32,7 +32,10 @@ export const requireSpecDirectoryOutsideCoverage = createDontReviewItRule({
     docs: {
       description:
         "Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md", "AGENTS.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+        "AGENTS.md",
+      ],
     },
     messages: {
       unmeasuredCoverageExclusion:

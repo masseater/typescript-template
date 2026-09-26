@@ -22,6 +22,7 @@ const planSubscription = sqliteTable(
       .notNull()
       .default(false),
     currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
+    currentPeriodStart: integer("current_period_start", { mode: "timestamp_ms" }),
     memberId: text("member_id")
       .primaryKey()
       .notNull()

@@ -2,6 +2,7 @@ import {
   CONVERSATION_KIND,
   and,
   blockBetween,
+  clockDate,
   count,
   desc,
   eq,
@@ -20,7 +21,7 @@ import { DateTime, Effect } from "effect";
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
 import { canReadGroupConversation } from "./groups.ts";
 import { MessagingConversationNotFound } from "./messaging-conversation-not-found.ts";
-import { clockDate, requireMessagingMember, verifiedMember } from "./verified-member.ts";
+import { requireMessagingMember, verifiedMember } from "./verified-member.ts";
 
 import type { OffsetPage } from "./verified-member.ts";
 
