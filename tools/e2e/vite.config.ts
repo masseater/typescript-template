@@ -1,13 +1,7 @@
 import { MergifyReporter } from "@mergifyio/vitest";
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
-import {
-  effectDiagnostics,
-  lifecycle,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-} from "@repo/vite-config";
+import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { roleApplications } from "./src/features/e2e/journey-roles.ts";
@@ -20,20 +14,13 @@ const applicationChecks = Object.values(roleApplications).flatMap((application) 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...effectRun(import.meta.dirname).tasks,
       "test:e2e": {
         cache: false,
         command: "vp test run",
         dependsOn: ["@repo/dev#setup", ...applicationChecks],
       },
       verify: { cache: false, command: "./src/features/e2e/verify/cli.ts" },
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check:modular"],
-      }),
     },
   },
   test: {

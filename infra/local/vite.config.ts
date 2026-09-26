@@ -1,29 +1,16 @@
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
-import {
-  effectDiagnostics,
-  lifecycle,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-} from "@repo/vite-config";
+import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...effectRun(import.meta.dirname).tasks,
       config: { cache: false, command: "./src/features/local/compose.ts config" },
       logs: { cache: false, command: "./src/features/local/compose.ts logs" },
       status: { cache: false, command: "./src/features/local/compose.ts status" },
       up: { cache: false, command: "./src/features/local/compose.ts up" },
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check:modular"],
-      }),
     },
   },
   test: {

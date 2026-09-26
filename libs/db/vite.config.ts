@@ -1,22 +1,12 @@
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
-import {
-  awaitingEffectDiagnostics,
-  lifecycle,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-  telemetryEnv,
-} from "@repo/vite-config";
+import { awaitingEffectRun, telemetryEnv } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...awaitingEffectRun(import.meta.dirname, { prepush: ["check"] }).tasks,
       check: {
         command: "drizzle-kit check",
         env: [...telemetryEnv],
@@ -24,10 +14,6 @@ export default defineConfig({
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
       "db:generate": { cache: false, command: "drizzle-kit generate" },
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check", "check:modular"],
-      }),
     },
   },
   test: {

@@ -1,14 +1,5 @@
 import { repositoryRoot } from "@repo/config/repository-root";
-import {
-  checkCode,
-  effectDiagnostics,
-  lifecycle,
-  modularBoundaries,
-  paths,
-  taskInput,
-  telemetryEnv,
-  workspaceCheckImports,
-} from "@repo/vite-config";
+import { effectRun, paths, taskInput, telemetryEnv } from "@repo/vite-config";
 import { describe, expect, test } from "vite-plus/test";
 
 import { monitorWorkerVite } from "./vite.ts";
@@ -36,21 +27,14 @@ describe("monitorWorkerVite", () => {
       },
       run: {
         tasks: {
-          ...effectDiagnostics(errorMonitorRoot),
-          ...checkCode,
-          ...workspaceCheckImports,
-          ...modularBoundaries,
+          ...effectRun(errorMonitorRoot).tasks,
           build: {
             command: "vp pack",
             dependsOn: ["check:effect"],
             input: [...taskInput],
             env: [...telemetryEnv],
           },
-          ...lifecycle({
-            precommit: ["check:code"],
-            prepush: ["check:effect", "check:imports", "check:modular"],
-            prepr: ["build"],
-          }),
+          prepr: { command: [], dependsOn: ["prepush", "build"] },
         },
       },
       test: {
