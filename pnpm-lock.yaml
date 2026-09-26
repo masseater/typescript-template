@@ -2300,6 +2300,9 @@ importers:
       '@textlint-ja/textlint-rule-preset-ai-writing':
         specifier: 1.7.0
         version: 1.7.0
+      '@textlint/ast-node-types':
+        specifier: 15.8.0
+        version: 15.8.0
       '@textlint/kernel':
         specifier: 15.8.0
         version: 15.8.0(supports-color@10.2.2)

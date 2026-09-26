@@ -43,12 +43,18 @@ const CheckoutSession = Schema.Struct({
 });
 
 const PeriodItems = Schema.Struct({
-  data: Schema.Array(Schema.Struct({ current_period_end: Schema.optionalKey(Schema.Finite) })),
+  data: Schema.Array(
+    Schema.Struct({
+      current_period_end: Schema.optionalKey(Schema.Finite),
+      current_period_start: Schema.optionalKey(Schema.Finite),
+    }),
+  ),
 });
 
 const Subscription = Schema.Struct({
   cancel_at_period_end: Schema.Boolean,
   current_period_end: Schema.optionalKey(Schema.Finite),
+  current_period_start: Schema.optionalKey(Schema.Finite),
   customer: Schema.String,
   id: Schema.String,
   items: Schema.optionalKey(PeriodItems),
@@ -149,6 +155,7 @@ const completeCheckout = Effect.fn("completeCheckout")(function* completeCheckou
   const record: SubscriptionRecord = {
     cancelAtPeriodEnd: false,
     currentPeriodEnd: undefined,
+    currentPeriodStart: undefined,
     memberId,
     status: paidPaymentStatuses.has(session.payment_status)
       ? SUBSCRIPTION_STATUS.active
@@ -167,6 +174,9 @@ function subscriptionRecord(
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
     currentPeriodEnd: secondsToDate(
       subscription.current_period_end ?? subscription.items?.data[0]?.current_period_end,
+    ),
+    currentPeriodStart: secondsToDate(
+      subscription.current_period_start ?? subscription.items?.data[0]?.current_period_start,
     ),
     memberId,
     status: subscription.status,

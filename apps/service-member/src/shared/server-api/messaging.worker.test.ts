@@ -86,6 +86,7 @@ const makePaid = Effect.fn("makePaid")(function* makePaid(memberId: string) {
     {
       cancelAtPeriodEnd: false,
       currentPeriodEnd: monthLater,
+      currentPeriodStart: undefined,
       memberId,
       status: SUBSCRIPTION_STATUS.active,
       stripeCustomerId: `cus_${memberId}`,

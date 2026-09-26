@@ -1,4 +1,4 @@
-import { ConfigurationInvalid } from "@repo/config";
+import { ConfigurationInvalid, webCrypto } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Layer, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -11,7 +11,7 @@ describe("ReadCache", () => {
       Effect.runPromise(
         Effect.gen(function* cachedReadsProgram() {
           const cache = yield* ReadCache;
-          const cacheKey = `cache/${crypto.randomUUID()}`;
+          const cacheKey = `cache/${yield* webCrypto.randomUUIDv4.pipe(Effect.orDie)}`;
           const cacheServices = yield* Effect.context();
           onCleanup(() => Effect.runPromiseWith(cacheServices)(cache.remove(cacheKey)));
           const loadCount = yield* Ref.make(0);
@@ -44,7 +44,7 @@ describe("ReadCache", () => {
       Effect.runPromise(
         Effect.gen(function* removedValueProgram() {
           const cache = yield* ReadCache;
-          const cacheKey = `cache/${crypto.randomUUID()}`;
+          const cacheKey = `cache/${yield* webCrypto.randomUUIDv4.pipe(Effect.orDie)}`;
           yield* cache.getOrLoad(cacheKey, { load: Effect.succeed("value-1") });
           yield* cache.remove(cacheKey);
           return yield* cache.get(cacheKey);

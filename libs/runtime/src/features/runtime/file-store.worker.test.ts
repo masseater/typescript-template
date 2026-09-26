@@ -1,4 +1,4 @@
-import { ConfigurationInvalid } from "@repo/config";
+import { ConfigurationInvalid, webCrypto } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -12,7 +12,7 @@ describe("FileStore", () => {
       Effect.runPromise(
         Effect.gen(function* storedFileProgram() {
           const store = yield* FileStore;
-          const fileName = `files/${crypto.randomUUID()}.bin`;
+          const fileName = `files/${yield* webCrypto.randomUUIDv4.pipe(Effect.orDie)}.bin`;
           yield* store.put(fileName, {
             bytes: new Uint8Array([1, 2, 3, 4, 5]),
             contentType: "application/octet-stream",
@@ -36,7 +36,7 @@ describe("FileStore", () => {
       Effect.runPromise(
         Effect.gen(function* streamedFileProgram() {
           const store = yield* FileStore;
-          const fileName = `files/${crypto.randomUUID()}.bin`;
+          const fileName = `files/${yield* webCrypto.randomUUIDv4.pipe(Effect.orDie)}.bin`;
           const { body } = new Response(new Uint8Array([6, 7, 8]));
           if (body === null) {
             return yield* Effect.die(new Error("response body is missing"));
@@ -64,7 +64,7 @@ describe("FileStore", () => {
       Effect.runPromise(
         Effect.gen(function* removedFileProgram() {
           const store = yield* FileStore;
-          const fileName = `files/${crypto.randomUUID()}.bin`;
+          const fileName = `files/${yield* webCrypto.randomUUIDv4.pipe(Effect.orDie)}.bin`;
           yield* store.put(fileName, {
             bytes: new Uint8Array([1, 2, 3, 4, 5]),
             contentType: "application/octet-stream",
@@ -84,7 +84,7 @@ describe("FileStore", () => {
       Effect.runPromise(
         Effect.gen(function* prefixRemovalProgram() {
           const store = yield* FileStore;
-          const folder = `files/${crypto.randomUUID()}`;
+          const folder = `files/${yield* webCrypto.randomUUIDv4.pipe(Effect.orDie)}`;
           const fieldNames = [`${folder}/a.bin`, `${folder}/nested/b.bin`, `${folder}-other/c.bin`];
           yield* Effect.forEach(fieldNames, (fieldName) =>
             store.put(fieldName, { bytes: new Uint8Array([1]), contentType: undefined }),

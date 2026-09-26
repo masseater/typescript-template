@@ -172,7 +172,9 @@ export const requireItOnlyExpect = createDontReviewItRule({
     docs: {
       description:
         "Disallow a statement other than an assertion in the body of a test block, so the subject every assertion reads is the one its fixture handed over",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       setupStatement:

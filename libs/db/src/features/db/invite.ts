@@ -10,6 +10,7 @@ import { DateTime, Duration, Effect } from "effect";
 
 import { auditRow, type AuditEntry } from "./audit.ts";
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { InviteRejected } from "./invite-rejected.ts";
 import { account, auditEvent, invite, user } from "./schema.ts";
 
@@ -25,7 +26,9 @@ const hashInviteToken = (rawToken: string): Effect.Effect<string> =>
       [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
   );
 
-const freshToken = (): string => `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll("-", "");
+const freshToken = Effect.map(Effect.all([freshId, freshId]), ([head, tail]) =>
+  `${head}${tail}`.replaceAll("-", ""),
+);
 
 const mentionsConsumed = (cause: unknown): boolean =>
   cause instanceof Error &&
@@ -102,9 +105,9 @@ const issueInvite = Effect.fn("issueInvite")(function* issueInvite(draft: {
     ),
   );
   yield* rejectTaken({ audience: draft.audience, checkedAt: issuedAt, email });
-  const rawToken = freshToken();
+  const rawToken = yield* freshToken;
   const tokenHash = yield* hashInviteToken(rawToken);
-  const inviteId = crypto.randomUUID();
+  const [inviteId, auditId] = yield* Effect.all([freshId, freshId]);
   yield* query((database) =>
     database.batch([
       database.insert(invite).values({
@@ -117,7 +120,9 @@ const issueInvite = Effect.fn("issueInvite")(function* issueInvite(draft: {
         permission: draft.permission,
         tokenHash,
       }),
-      database.insert(auditEvent).values(auditRow({ ...draft.audit, targetId: inviteId })),
+      database
+        .insert(auditEvent)
+        .values(auditRow({ ...draft.audit, id: auditId, targetId: inviteId })),
     ]),
   );
   return { email, expiresAt, id: inviteId, token: rawToken };
@@ -136,7 +141,7 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
   if ((yield* findRegistered(open.email)) !== undefined) {
     return yield* new InviteRejected({ reason: "registered" });
   }
-  const userId = crypto.randomUUID();
+  const [userId, accountId, auditId] = yield* Effect.all([freshId, freshId, freshId]);
   const acceptedAt = DateTime.toDate(yield* DateTime.now);
   const role = audienceRoles[accepted.audience];
   yield* query((database) =>
@@ -156,7 +161,7 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
       database.insert(account).values({
         accountId: userId,
         createdAt: acceptedAt,
-        id: crypto.randomUUID(),
+        id: accountId,
         password: accepted.passwordHash,
         providerId: "credential",
         updatedAt: acceptedAt,
@@ -167,6 +172,7 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
           action: AUDIT_ACTION.inviteAccepted,
           actorId: userId,
           actorKind: role,
+          id: auditId,
           targetId: open.id,
         }),
       ),

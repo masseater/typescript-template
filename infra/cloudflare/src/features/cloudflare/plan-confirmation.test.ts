@@ -1,10 +1,16 @@
 import { assert, it } from "@effect/vitest";
 import { ResourceExpr } from "alchemy/Output";
-import { Effect, Redacted } from "effect";
+import { Effect, FileSystem, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH } from "./config.ts";
-import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
-import { encodeJson } from "./platform.ts";
+import {
+  acceptOrderedPlan,
+  acceptPlan,
+  planConfirmation,
+  planReport,
+  plannedStack,
+} from "./plan-confirmation.ts";
+import { encodeJson, layer } from "./platform.ts";
 import { verificationSettings } from "./verification-settings.ts";
 
 import type { Plan } from "alchemy/Plan";
@@ -67,6 +73,15 @@ const created = planned(
 function token(target: PlannedStack, account = accountId): string {
   return planConfirmation(target, account);
 }
+function unattended(target: PlannedStack) {
+  return acceptOrderedPlan(target, {
+    approval: undefined,
+    approvalOutput: undefined,
+    stack: "flagship",
+    subject: accountId,
+  });
+}
+
 function withProps(props: Readonly<Record<string, unknown>>): PlannedStack {
   return planned(created.resources, { [fqn("Worker")]: props });
 }
@@ -149,7 +164,7 @@ it.effect("applies only when the confirmation names the plan that was just compu
   }),
 );
 
-it.effect("refuses a plan that removes, replaces, adopts or drops a binding", () =>
+it.effect("refuses an unreviewed plan that removes, replaces, adopts or drops a binding", () =>
   Effect.gen(function* program() {
     const refusals = [
       [planned([resource("replace", "Worker")]), "plan_removes_resources"],
@@ -165,12 +180,12 @@ it.effect("refuses a plan that removes, replaces, adopts or drops a binding", ()
       ],
     ] as const;
     for (const [target, code] of refusals) {
-      const failure = yield* acceptPlan(target, {
-        confirmation: token(target),
-        subject: accountId,
-      }).pipe(Effect.flip);
+      const failure = yield* unattended(target).pipe(Effect.flip);
       assert.strictEqual(failure.code, code);
       assert.isAbove(failure.keys.length, 0);
+      assert.isUndefined(
+        yield* acceptPlan(target, { confirmation: token(target), subject: accountId }),
+      );
     }
   }),
 );
@@ -193,9 +208,7 @@ it.effect("lets a plan adopt Cloudflare zone settings that always exist", () =>
         resourceType: "Cloudflare.Zone.Setting",
       },
     ]);
-    assert.isUndefined(
-      yield* acceptPlan(settings, { confirmation: token(settings), subject: accountId }),
-    );
+    assert.strictEqual(yield* unattended(settings), "apply");
   }),
 );
 
@@ -250,13 +263,54 @@ it.effect("carries the resource props and the action input the engine planned", 
   }),
 );
 
-it.effect("refuses a resource the plan deletes outright", () =>
+it.effect("deletes a resource only with the confirmation of the plan that deletes it", () =>
   Effect.gen(function* program() {
     const removal = planned([resource("delete", "Worker")]);
-    const failure = yield* acceptPlan(removal, {
-      confirmation: token(removal),
+    const unreviewed = yield* unattended(removal).pipe(Effect.flip);
+    assert.strictEqual(unreviewed.code, "plan_removes_resources");
+    const stale = yield* acceptPlan(removal, {
+      confirmation: token(created),
       subject: accountId,
     }).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "plan_removes_resources");
+    assert.strictEqual(stale.code, "plan_confirmation_mismatch");
+    assert.isUndefined(
+      yield* acceptPlan(removal, { confirmation: token(removal), subject: accountId }),
+    );
   }),
+);
+
+it.effect("an ordered deploy holds a removal for approval and applies it once approved", () =>
+  Effect.gen(function* program() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const approvalOutput = yield* filesystem.makeTempFileScoped();
+    const removal = planned([resource("delete", "Worker")]);
+    const order = { approvalOutput, stack: "flagship", subject: accountId } as const;
+    assert.strictEqual(
+      yield* acceptOrderedPlan(removal, { ...order, approval: undefined }),
+      "hold",
+    );
+    assert.strictEqual(
+      yield* filesystem.readFileString(approvalOutput),
+      `approval-stack=flagship\napproval-confirmation=${token(removal)}\n`,
+    );
+    const approved = { confirmation: token(removal), stack: "flagship" } as const;
+    assert.strictEqual(
+      yield* acceptOrderedPlan(removal, { ...order, approval: approved }),
+      "apply",
+    );
+    assert.strictEqual(
+      yield* acceptOrderedPlan(created, { ...order, approval: undefined }),
+      "apply",
+    );
+    const elsewhere = { confirmation: token(removal), stack: "database" } as const;
+    const second = yield* acceptOrderedPlan(removal, { ...order, approval: elsewhere }).pipe(
+      Effect.flip,
+    );
+    assert.strictEqual(second.code, "plan_removes_resources");
+    const stale = { confirmation: token(created), stack: "flagship" } as const;
+    const mismatch = yield* acceptOrderedPlan(removal, { ...order, approval: stale }).pipe(
+      Effect.flip,
+    );
+    assert.strictEqual(mismatch.code, "plan_confirmation_mismatch");
+  }).pipe(Effect.provide(layer), Effect.scoped),
 );

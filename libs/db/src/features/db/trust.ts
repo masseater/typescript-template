@@ -12,6 +12,7 @@ import { Effect } from "effect";
 import { boardPost } from "./board-schema.ts";
 import { clockDate } from "./clock-date.ts";
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { user } from "./identity-schema.ts";
 import { follow } from "./member-social-schema.ts";
 import {
@@ -209,14 +210,14 @@ const fileReport = Effect.fn("fileReport")(function* fileReport({
     subject.kind === REPORT_SUBJECT.boardPost
       ? yield* boardSnapshot(reporterId, subject.id)
       : yield* messageSnapshot({ messageId: subject.id, reporterId, subjectKind: subject.kind });
-  const filedAt = yield* clockDate;
+  const [filedAt, reportId] = yield* Effect.all([clockDate, freshId]);
   const [filed] = yield* query((database) =>
     database
       .insert(memberReport)
       .values({
         body: snapshot.body,
         createdAt: filedAt,
-        id: crypto.randomUUID(),
+        id: reportId,
         reason,
         reporterId,
         status: REPORT_STATUS.open,
