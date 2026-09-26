@@ -61,7 +61,9 @@ const executeD1RawBatch = (
     return { result: executedStatements.map(rawStatementSuccess), success: true };
   });
 
-class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
+class TestBinding extends Context.Service<TestBinding, D1Database>()(
+  "@repo/db-local/features/db-local/testing-node/TestBinding",
+) {}
 
 const runStatement = (
   sql: string,
@@ -70,7 +72,7 @@ const runStatement = (
   Effect.gen(function* statement() {
     const database = yield* TestBinding;
     return yield* Effect.tryPromise({
-      catch: (cause) => new DatabaseFailure({ cause }),
+      catch: (cause) => DatabaseFailure.make({ cause }),
       try: () =>
         database
           .prepare(sql)

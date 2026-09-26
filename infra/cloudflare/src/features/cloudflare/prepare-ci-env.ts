@@ -14,7 +14,7 @@ runCli(
     const environment = process.env;
     const preparation = yield* writeCiSecretsFile(environment);
     if (preparation.status === "unconfigured") {
-      return yield* new PrepareCiEnvFailure({
+      return yield* PrepareCiEnvFailure.make({
         code: "ci_env_incomplete",
         keys: [...deploymentKeys],
       });

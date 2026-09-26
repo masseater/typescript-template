@@ -28,15 +28,15 @@ const QueryResult = Schema.Struct({ columns: Columns, rows: RowCells });
 const QueryResponse = Schema.Struct({ result: QueryResult, success: Schema.Literal(true) });
 
 function originInvalid(): ExplorerFailure {
-  return new ExplorerFailure({ reason: "origin_invalid" });
+  return ExplorerFailure.make({ reason: "origin_invalid" });
 }
 
 function queryFailed(): ExplorerFailure {
-  return new ExplorerFailure({ reason: "query_failed" });
+  return ExplorerFailure.make({ reason: "query_failed" });
 }
 
 function responseInvalid(): ExplorerFailure {
-  return new ExplorerFailure({ reason: "response_invalid" });
+  return ExplorerFailure.make({ reason: "response_invalid" });
 }
 
 function isLoopbackAppOrigin(url: Readonly<URL>): boolean {
@@ -120,7 +120,7 @@ const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetr
   requestId: string,
 ) {
   yield* Schema.decodeEffect(RequestId)(requestId).pipe(
-    Effect.mapError(() => new ExplorerFailure({ reason: "request_id_invalid" })),
+    Effect.mapError(() => ExplorerFailure.make({ reason: "request_id_invalid" })),
   );
   const pattern = String.raw`request_id\":\"${requestId}`;
   const [logs, spans] = yield* Effect.all(

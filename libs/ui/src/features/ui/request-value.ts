@@ -21,9 +21,8 @@ const settledValue = <Settled extends object>(
   return attempt.waiting ? undefined : resultValue(settled);
 };
 
-const firstResultError = (...settledResults: readonly object[]): string | undefined => {
-  return settledResults.map(resultError).find((failure) => failure !== undefined);
-};
+const firstResultError = (...settledResults: readonly object[]): string | undefined =>
+  settledResults.map(resultError).find((failure) => failure !== undefined);
 
 export { firstResultError, resultValue, settledValue };
 export type { ListedValue, ResultValue };

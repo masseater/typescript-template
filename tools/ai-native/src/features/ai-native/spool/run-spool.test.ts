@@ -1198,16 +1198,16 @@ describe("runSpool", () => {
             yield* removePath(CONCURRENT_ROOT);
             return yield* Effect.promise(() =>
               Promise.all(
-                Array.from({ length: 5 }, () => {
-                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                Array.from({ length: 5 }, () =>
+                  runSpool(["--", NODE, "-e", PID_SCRIPT], {
                     stdout: process.stdout,
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
                     now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
-                  });
-                }),
+                  }),
+                ),
               ),
             );
           }),
@@ -1220,16 +1220,16 @@ describe("runSpool", () => {
             yield* removePath(CONCURRENT_ROOT);
             yield* Effect.promise(() =>
               Promise.all(
-                Array.from({ length: 5 }, () => {
-                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                Array.from({ length: 5 }, () =>
+                  runSpool(["--", NODE, "-e", PID_SCRIPT], {
                     stdout: process.stdout,
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
                     now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
-                  });
-                }),
+                  }),
+                ),
               ),
             );
             return (yield* readDirectory(CONCURRENT_ROOT)).map((logFileName) =>
@@ -1245,16 +1245,16 @@ describe("runSpool", () => {
             yield* removePath(CONCURRENT_ROOT);
             yield* Effect.promise(() =>
               Promise.all(
-                Array.from({ length: 5 }, () => {
-                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                Array.from({ length: 5 }, () =>
+                  runSpool(["--", NODE, "-e", PID_SCRIPT], {
                     stdout: process.stdout,
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
                     now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
-                  });
-                }),
+                  }),
+                ),
               ),
             );
             return yield* Effect.forEach(yield* readDirectory(CONCURRENT_ROOT), (logFileName) =>
@@ -1272,16 +1272,16 @@ describe("runSpool", () => {
             yield* removePath(CONCURRENT_ROOT);
             yield* Effect.promise(() =>
               Promise.all(
-                Array.from({ length: 5 }, () => {
-                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                Array.from({ length: 5 }, () =>
+                  runSpool(["--", NODE, "-e", PID_SCRIPT], {
                     stdout: process.stdout,
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
                     now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
-                  });
-                }),
+                  }),
+                ),
               ),
             );
             const recordedPidLines = yield* Effect.forEach(

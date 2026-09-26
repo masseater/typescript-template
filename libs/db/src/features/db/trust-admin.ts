@@ -98,7 +98,7 @@ const readReport = Effect.fn("readReport")(function* readReport(
       .limit(1),
   );
   if (report === undefined) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   const targetMemberId = report.targetMemberId;
   const targetMember =
@@ -159,7 +159,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
   const [report] = yield* reportTarget(reportId);
   const targetId = report?.targetMemberId;
   if (targetId === undefined || targetId === null) {
-    return yield* new TrustTargetUnavailable();
+    return yield* TrustTargetUnavailable.make();
   }
   const suspendedAt = yield* clockDate;
   const [, suspendedMembers] = yield* query((database) => {
@@ -203,7 +203,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
     return database.batch([audit, suspension, moderation, filed] as const);
   });
   if (suspendedMembers.length === 0) {
-    return yield* new TrustTargetUnavailable();
+    return yield* TrustTargetUnavailable.make();
   }
 });
 
@@ -214,7 +214,7 @@ const warnTarget = Effect.fn("warnTarget")(function* warnTarget(
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
   const [report] = yield* reportTarget(reportId);
   if (report === undefined) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   const warnedAt = yield* clockDate;
   yield* query((database) =>
@@ -248,7 +248,7 @@ const dismissReport = Effect.fn("dismissReport")(function* dismissReport(
       .returning({ id: memberReport.id }),
   );
   if (dismissedReports.length === 0) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
 });
 

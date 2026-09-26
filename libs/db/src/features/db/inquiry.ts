@@ -172,7 +172,7 @@ const replyAsMember = Effect.fn("replyAsMember")(function* replyAsMember({
 }: Readonly<{ body: string; inquiryId: string; memberId: string }>) {
   const thread = yield* getMemberInquiry(memberId, inquiryId);
   if (thread.status === INQUIRY_STATUS.closed) {
-    return yield* new InquiryForbidden();
+    return yield* InquiryForbidden.make();
   }
   const repliedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
@@ -240,10 +240,10 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
       .limit(1),
   );
   if (!existing) {
-    return yield* new InquiryNotFound();
+    return yield* InquiryNotFound.make();
   }
   if (existing.status === INQUIRY_STATUS.closed) {
-    return yield* new InquiryForbidden();
+    return yield* InquiryForbidden.make();
   }
   const repliedAt = DateTime.toDate(yield* DateTime.now);
   const change = {
@@ -287,7 +287,7 @@ const closeInquiry = Effect.fn("closeInquiry")(function* closeInquiry(
       .returning({ id: inquiry.id }),
   );
   if (!closed) {
-    return yield* new InquiryNotFound();
+    return yield* InquiryNotFound.make();
   }
   return yield* getAdminInquiry(sessionId, inquiryId);
 });
@@ -303,7 +303,7 @@ const getInquiryMemberSummary = Effect.fn("getInquiryMemberSummary")(
         .limit(1),
     );
     if (!member) {
-      return yield* new InquiryNotFound();
+      return yield* InquiryNotFound.make();
     }
     return member satisfies MemberSummary;
   },

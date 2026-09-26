@@ -29,9 +29,8 @@ const assertBalancedShellQuotes = (command: string): void => {
   }
 };
 
-const stringTokens = (tokens: readonly unknown[]): string[] => {
-  return tokens.flatMap((token) => (typeof token === "string" ? [token] : []));
-};
+const stringTokens = (tokens: readonly unknown[]): string[] =>
+  tokens.flatMap((token) => (typeof token === "string" ? [token] : []));
 
 const separatesSegments = (token: unknown): boolean =>
   typeof token === "object" &&

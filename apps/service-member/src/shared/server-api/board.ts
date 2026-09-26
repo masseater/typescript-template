@@ -108,7 +108,7 @@ const requireBoardMember = Effect.fn("requireBoardMember")(function* requireBoar
       .limit(1),
   );
   if (member === undefined) {
-    return yield* new BoardMemberRequired();
+    return yield* BoardMemberRequired.make();
   }
 });
 
@@ -151,7 +151,7 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
     authoredThreads(database, eq(boardThread.id, threadId)).limit(1),
   );
   if (thread === undefined) {
-    return yield* new BoardThreadNotFound();
+    return yield* BoardThreadNotFound.make();
   }
   const posts = yield* query((database) =>
     database
@@ -215,7 +215,7 @@ const createBoardPost = Effect.fn("createBoardPost")(function* createBoardPost(
       .limit(1),
   );
   if (thread === undefined) {
-    return yield* new BoardThreadNotFound();
+    return yield* BoardThreadNotFound.make();
   }
   const now = yield* clockDate;
   const postId = crypto.randomUUID();

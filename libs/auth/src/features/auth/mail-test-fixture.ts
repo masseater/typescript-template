@@ -23,11 +23,12 @@ const MailpitMessage = Schema.Struct({
   To: Schema.Array(Schema.Struct({ Email: Schema.String })),
 });
 class Mailbox extends Context.Service<Mailbox, Ref.Ref<readonly Delivery[]>>()(
-  "@repo/auth/Mailbox",
+  "@repo/auth/features/auth/mail-test-fixture/Mailbox",
 ) {}
 
-const receiveMail = (deliveries: Mailbox["Service"]) => {
-  return ({
+const receiveMail =
+  (deliveries: Mailbox["Service"]) =>
+  ({
     request,
   }: {
     readonly request: { readonly json: () => Promise<unknown> };
@@ -53,7 +54,6 @@ const receiveMail = (deliveries: Mailbox["Service"]) => {
         return HttpResponse.json({ ID: "11111111-1111-4111-8111-111111111111" });
       }),
     );
-};
 
 const mailServer = Layer.effect(
   Mailbox,

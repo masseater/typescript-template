@@ -117,7 +117,7 @@ describe("FileStore", () => {
 
     it("refuses to start", ({ startupFailure }) => {
       expect(startupFailure).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["FILES"]' }),
+        ConfigurationInvalid.make({ reason: 'Missing key\n  at ["FILES"]' }),
       );
     });
   });
@@ -132,7 +132,7 @@ describe("FileStore", () => {
       ));
 
     it("reports unavailable only then", ({ storageFailure }) => {
-      expect(storageFailure).toStrictEqual(new StorageFailed({ reason: "unavailable" }));
+      expect(storageFailure).toStrictEqual(StorageFailed.make({ reason: "unavailable" }));
     });
   });
 });

@@ -8,12 +8,11 @@ const findLink = (search: {
   readonly deliveries: readonly string[];
   readonly prefix: string;
   readonly recipient: string;
-}): string | undefined => {
-  return search.deliveries
+}): string | undefined =>
+  search.deliveries
     .filter((delivery) => delivery.includes(search.recipient))
     .flatMap((delivery) => [...delivery.matchAll(mailLinkPattern)].map(([link]) => link))
     .find((link) => link.startsWith(search.prefix));
-};
 
 const readMessage = (
   fetchImpl: typeof fetch,

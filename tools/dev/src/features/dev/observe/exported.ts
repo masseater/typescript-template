@@ -66,13 +66,13 @@ const receiverJson = Effect.fn("receiverJson")(function* receiverJson(url: strin
   const response = yield* HttpClient.get(url, { acceptJson: true }).pipe(
     Effect.timeout(receiverTimeoutMilliseconds),
     Effect.provide(FetchHttpClient.layer),
-    Effect.mapError(() => new ReceiverFailure({ reason: "query_failed" })),
+    Effect.mapError(() => ReceiverFailure.make({ reason: "query_failed" })),
   );
   if (response.status < 200 || response.status >= 300) {
-    return yield* new ReceiverFailure({ reason: "query_failed" });
+    return yield* ReceiverFailure.make({ reason: "query_failed" });
   }
   return yield* response.json.pipe(
-    Effect.mapError(() => new ReceiverFailure({ reason: "response_invalid" })),
+    Effect.mapError(() => ReceiverFailure.make({ reason: "response_invalid" })),
   );
 });
 
@@ -81,7 +81,7 @@ function decoded<Decoded extends Schema.Top & { readonly DecodingServices: never
   body: unknown,
 ): Effect.Effect<Decoded["Type"], ReceiverFailure> {
   return Schema.decodeUnknownEffect(schema)(body).pipe(
-    Effect.mapError(() => new ReceiverFailure({ reason: "response_invalid" })),
+    Effect.mapError(() => ReceiverFailure.make({ reason: "response_invalid" })),
   );
 }
 

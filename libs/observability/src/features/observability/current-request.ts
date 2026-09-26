@@ -5,7 +5,7 @@ type RequestContext = {
   readonly traceparent: string;
 } & Correlation;
 class CurrentRequest extends Context.Service<CurrentRequest, RequestContext>()(
-  "@repo/observability/CurrentRequest",
+  "@repo/observability/features/observability/current-request/CurrentRequest",
 ) {}
 export { CurrentRequest };
 export type { RequestContext };

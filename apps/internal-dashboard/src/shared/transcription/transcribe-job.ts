@@ -37,7 +37,7 @@ const transcribeJob = Effect.fn("transcribeJob")(function* transcribeJob(jobId: 
   return yield* Effect.gen(function* transcribeRecording() {
     const audio = yield* (yield* FileStore).open(started.objectKey);
     if (audio === undefined) {
-      return yield* new TranscriptionFailed({ reason: RECORDING_FAILURE.audioMissing });
+      return yield* TranscriptionFailed.make({ reason: RECORDING_FAILURE.audioMissing });
     }
     const transcript = yield* (yield* Transcriber).transcribe({
       body: audio.body,

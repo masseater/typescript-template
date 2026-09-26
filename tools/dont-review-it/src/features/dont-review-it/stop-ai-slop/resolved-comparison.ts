@@ -45,7 +45,7 @@ export const resolvedComparison = Effect.fn("resolvedComparison")(function* reso
 
   const { repository, api } = environment;
   if (repository === undefined || api === null || base === undefined || head === undefined) {
-    return yield* new ComparisonUnresolved({
+    return yield* ComparisonUnresolved.make({
       message:
         "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor the parents of a pull request merge, and no GitHub API to read the merge through. Fetch the integration branch or the merge with its parents before checking.",
     });

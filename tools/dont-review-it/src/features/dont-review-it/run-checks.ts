@@ -417,5 +417,5 @@ export const runChecks = (
         ? entryComposition.failures.toSorted()
         : [],
     };
-  }).pipe(Effect.mapError((unread) => new RepositoryUnreadable({ cause: unread })));
+  }).pipe(Effect.mapError((unread) => RepositoryUnreadable.make({ cause: unread })));
 export type { RepositoryUnreadable };

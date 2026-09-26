@@ -43,7 +43,7 @@ type QueryScope = {
 };
 
 function argumentsInvalid(): QueryFailure {
-  return new QueryFailure({ reason: "arguments_invalid" });
+  return QueryFailure.make({ reason: "arguments_invalid" });
 }
 
 function required(value: string | undefined): Effect.Effect<string, QueryFailure> {

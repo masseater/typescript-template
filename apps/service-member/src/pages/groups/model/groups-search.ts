@@ -14,7 +14,7 @@ class InvalidGroupsSearch extends Schema.TaggedError<InvalidGroupsSearch>()(
 const decodeGroupsSearch = Schema.decodeUnknownOption(GroupsSearchParams);
 
 function normalizeGroupsSearch(raw: unknown): GroupsSearch {
-  return Option.getOrThrowWith(decodeGroupsSearch(raw), () => new InvalidGroupsSearch());
+  return Option.getOrThrowWith(decodeGroupsSearch(raw), () => InvalidGroupsSearch.make());
 }
 
 export { InvalidGroupsSearch, normalizeGroupsSearch };

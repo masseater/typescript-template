@@ -24,9 +24,9 @@ class InvalidBoardSearch extends Schema.TaggedError<InvalidBoardSearch>()(
 const decodeBoardSearch = Schema.decodeUnknownOption(BoardSearchParams);
 const decodeThreadSearch = Schema.decodeUnknownOption(ThreadSearchParams);
 
-const normalizeBoardSearch = searchValidator(decodeBoardSearch, () => new InvalidBoardSearch());
+const normalizeBoardSearch = searchValidator(decodeBoardSearch, () => InvalidBoardSearch.make());
 
-const normalizeThreadSearch = searchValidator(decodeThreadSearch, () => new InvalidBoardSearch());
+const normalizeThreadSearch = searchValidator(decodeThreadSearch, () => InvalidBoardSearch.make());
 
 function pageSearch(page: number): ThreadSearch {
   return page <= 1 ? {} : { page };

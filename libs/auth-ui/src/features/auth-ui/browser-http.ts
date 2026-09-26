@@ -13,7 +13,7 @@ const requestFromBrowser = (
 ): Effect.Effect<Response> =>
   Effect.tryPromise({
     try: (signal) => fetchImpl(requested.input, { ...requested.init, signal }),
-    catch: () => new BrowserHttpFailed({ reason: "request" }),
+    catch: () => BrowserHttpFailed.make({ reason: "request" }),
   }).pipe(Effect.orDie);
 
 const executeBrowserRequest = (
@@ -34,7 +34,7 @@ const executeBrowserRequest = (
     }
     const passkeyOptions: unknown = yield* Effect.tryPromise({
       try: () => served.clone().json(),
-      catch: () => new BrowserHttpFailed({ reason: "passkey_options" }),
+      catch: () => BrowserHttpFailed.make({ reason: "passkey_options" }),
     }).pipe(Effect.orDie);
     const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
       passkeyUVOptions(passkeyOptions, pathname),

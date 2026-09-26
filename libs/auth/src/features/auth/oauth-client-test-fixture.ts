@@ -68,7 +68,7 @@ const registerClient = Effect.fn("registerClient")(function* registerClient(
     token_endpoint_auth_method: "none",
   });
   if (registration.status !== httpStatus.created) {
-    return yield* new UnexpectedStatus({
+    return yield* UnexpectedStatus.make({
       endpoint: "/oauth2/register",
       status: registration.status,
     });

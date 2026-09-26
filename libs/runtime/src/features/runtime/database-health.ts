@@ -24,7 +24,7 @@ class DatabaseHealth extends Context.Service<
   {
     readonly check: Effect.Effect<void, DatabaseFailure>;
   }
->()("@repo/runtime/DatabaseHealth") {
+>()("@repo/runtime/features/runtime/database-health/DatabaseHealth") {
   public static readonly layer: Layer.Layer<DatabaseHealth, never, Database> = Layer.effect(
     DatabaseHealth,
     Effect.gen(function* databaseHealthLayer() {

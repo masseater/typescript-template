@@ -53,7 +53,7 @@ export const countInterviewTurn = Effect.fn("countInterviewTurn")(function* coun
       .returning({ turns: interview.turns }),
   );
   if (counted === undefined || counted.turns > limit) {
-    return yield* new InterviewLimitReached();
+    return yield* InterviewLimitReached.make();
   }
 });
 
@@ -75,7 +75,7 @@ export const storeInterview = Effect.fn("storeInterview")(function* storeIntervi
       .returning({ version: interview.version }),
   );
   if (storedVersion === undefined) {
-    return yield* new InterviewConflict();
+    return yield* InterviewConflict.make();
   }
 });
 

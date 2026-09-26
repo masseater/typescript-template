@@ -55,11 +55,11 @@ const frontmatter = (skill: string) =>
     );
     const body = frontmatterPattern.exec(source)?.groups?.["body"];
     if (body === undefined) {
-      return yield* new SkillFrontmatterUnreadable({ reason: "missing", skill });
+      return yield* SkillFrontmatterUnreadable.make({ reason: "missing", skill });
     }
     const parsed: unknown = parse(body);
     if (typeof parsed !== "object" || parsed === null) {
-      return yield* new SkillFrontmatterUnreadable({ reason: "not-a-mapping", skill });
+      return yield* SkillFrontmatterUnreadable.make({ reason: "not-a-mapping", skill });
     }
     return Object.fromEntries(Object.entries(parsed));
   });

@@ -116,7 +116,7 @@ const decodedSource = (
     : Effect.try({
         try: () => new TextDecoder("utf-8", { fatal: true }).decode(sourceBytes),
         catch: (cause) =>
-          new UndecodableSource({
+          UndecodableSource.make({
             message: `Source blob does not decode as UTF-8: ${sourcePath}`,
             cause,
           }),
@@ -273,7 +273,7 @@ const rawRecordAt = (fields: readonly string[], index: number): RawRecord | unde
 const rawInventoryOf = (rawOutput: string): Effect.Effect<RawInventory, DiffUnreadable> =>
   Effect.suspend(() => {
     const fields = rawOutput.split("\0");
-    const unreadableRecord = new DiffUnreadable({ message: "Invalid NUL-delimited Git raw diff" });
+    const unreadableRecord = DiffUnreadable.make({ message: "Invalid NUL-delimited Git raw diff" });
     if (fields.pop() !== "") return Effect.fail(unreadableRecord);
     const records: string[] = [];
     const objectAt = new Map<string, string>();
@@ -318,7 +318,7 @@ const batchedBlobs = (
         !Number.isSafeInteger(length) ||
         output[contentEnd] !== LINE_FEED
       ) {
-        return Effect.fail(new BlobUnreadable({ message: `Git holds no blob at ${objectName}` }));
+        return Effect.fail(BlobUnreadable.make({ message: `Git holds no blob at ${objectName}` }));
       }
       blobs.push(output.subarray(headerEnd + 1, contentEnd));
       offset = contentEnd + 1;
@@ -362,7 +362,7 @@ export const compareRevisions = Effect.fn("compareRevisions")(function* compareR
     const objectName = `${request.side === "base" ? baseObject : headObject}:${request.sourcePath}`;
     const blobObject = objectAt.get(requestKey(request));
     return blobObject === undefined
-      ? Effect.fail(new BlobUnreadable({ message: `Git diff lists no object at ${objectName}` }))
+      ? Effect.fail(BlobUnreadable.make({ message: `Git diff lists no object at ${objectName}` }))
       : Effect.succeed({ objectName, blobObject });
   };
   const readBlobs = (requests: readonly SourceRequest[]) => {

@@ -37,17 +37,13 @@ import { runsInWorkerRuntime } from "./test-runtime.ts";
 import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
 import { warekiFormatVisitor } from "./wareki-format.ts";
 
-const metadata = (violation: string): RuleMeta => {
-  return {
-    messages: { violation },
-    schema: [],
-    type: "problem",
-  };
-};
+const metadata = (violation: string): RuleMeta => ({
+  messages: { violation },
+  schema: [],
+  type: "problem",
+});
 
-const isEnvironment = (origin: Origin): boolean => {
-  return processMember(origin) === "env";
-};
+const isEnvironment = (origin: Origin): boolean => processMember(origin) === "env";
 
 const environmentVisitor = (inspection: LintContext): Visitor => {
   if (/\/(?:libs\/config|infra|tools)\//u.test(filename(inspection))) {
@@ -102,9 +98,7 @@ const isMock = (origin: Origin): boolean => {
   return mockSources.has(source ?? "") && members.some((member) => mockMethods.has(member));
 };
 
-const mockVisitor = (inspection: LintContext): Visitor => {
-  return originVisitor(inspection, isMock);
-};
+const mockVisitor = (inspection: LintContext): Visitor => originVisitor(inspection, isMock);
 
 const memoizationApis = new Set(["memo", "useCallback", "useMemo"]);
 
@@ -113,9 +107,8 @@ const isManualMemoization = (origin: Origin): boolean => {
   return source === "react" && members.some((member) => memoizationApis.has(member));
 };
 
-const memoizationVisitor = (inspection: LintContext): Visitor => {
-  return originVisitor(inspection, isManualMemoization);
-};
+const memoizationVisitor = (inspection: LintContext): Visitor =>
+  originVisitor(inspection, isManualMemoization);
 
 const annotationApis = new Set([
   "annotateCurrentSpan",
@@ -140,11 +133,10 @@ const isRawAnnotation = (origin: Origin): boolean => {
     : annotationApis.has(members[0] ?? "");
 };
 
-const annotationVisitor = (inspection: LintContext): Visitor => {
-  return filename(inspection).endsWith(observabilityAnnotations)
+const annotationVisitor = (inspection: LintContext): Visitor =>
+  filename(inspection).endsWith(observabilityAnnotations)
     ? {}
     : originVisitor(inspection, isRawAnnotation);
-};
 
 const logApis = new Set([
   "log",
@@ -167,11 +159,8 @@ const isRawLog = (origin: Origin): boolean => {
     : logApis.has(members[0] ?? "");
 };
 
-const logVisitor = (inspection: LintContext): Visitor => {
-  return filename(inspection).endsWith(observabilitySeverity)
-    ? {}
-    : originVisitor(inspection, isRawLog);
-};
+const logVisitor = (inspection: LintContext): Visitor =>
+  filename(inspection).endsWith(observabilitySeverity) ? {} : originVisitor(inspection, isRawLog);
 
 const spanMutationApis = new Set(["attribute", "event"]);
 

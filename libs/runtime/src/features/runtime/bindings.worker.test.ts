@@ -80,7 +80,7 @@ describe("readWorkerConfig", () => {
 
     it("names the missing database", ({ configurationRefusal }) => {
       expect(configurationRefusal).toStrictEqual(
-        new ConfigurationInvalid({
+        ConfigurationInvalid.make({
           reason: 'Cloudflare binding "DB" was not found in WorkerEnvironment',
         }),
       );
@@ -93,7 +93,7 @@ describe("readWorkerConfig", () => {
 
     it("names the missing mail binding", ({ configurationRefusal }) => {
       expect(configurationRefusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: "An email delivery binding is required" }),
+        ConfigurationInvalid.make({ reason: "An email delivery binding is required" }),
       );
     });
   });
@@ -103,7 +103,7 @@ describe("readWorkerConfig", () => {
       Effect.runPromise(Effect.flip(readWorkerConfig(appEnvironment({ FLAGS: {} })))));
 
     it("refuses to start naming FLAGS", ({ configurationRefusal }) => {
-      expect(configurationRefusal).toStrictEqual(new ConfigurationInvalid({ reason: "FLAGS" }));
+      expect(configurationRefusal).toStrictEqual(ConfigurationInvalid.make({ reason: "FLAGS" }));
     });
   });
 });

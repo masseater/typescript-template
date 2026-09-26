@@ -36,9 +36,9 @@ const sendThroughMailpit = ({
       Subject: outbound.subject,
       Text: outbound.text,
       To: [{ Email: outbound.to }],
-    }).pipe(Effect.mapError(() => new EmailDeliveryFailed({ reason: "unreachable" })));
+    }).pipe(Effect.mapError(() => EmailDeliveryFailed.make({ reason: "unreachable" })));
     const delivery = yield* Effect.tryPromise({
-      catch: () => new EmailDeliveryFailed({ reason: "unreachable" }),
+      catch: () => EmailDeliveryFailed.make({ reason: "unreachable" }),
       try: (signal) =>
         fetchImpl(mailpitSendUrl, {
           body: requestPayload,
@@ -49,7 +49,7 @@ const sendThroughMailpit = ({
         }),
     });
     if (!delivery.ok) {
-      return yield* new EmailDeliveryFailed({ reason: "rejected" });
+      return yield* EmailDeliveryFailed.make({ reason: "rejected" });
     }
   });
 
@@ -67,10 +67,10 @@ const sendThroughBinding = (
   outbound: OutboundEmail,
 ): Effect.Effect<void, EmailDeliveryFailed> => {
   if (binding === undefined) {
-    return Effect.fail(new EmailDeliveryFailed({ reason: "unreachable" }));
+    return Effect.fail(EmailDeliveryFailed.make({ reason: "unreachable" }));
   }
   return Effect.tryPromise({
-    catch: () => new EmailDeliveryFailed({ reason: "rejected" }),
+    catch: () => EmailDeliveryFailed.make({ reason: "rejected" }),
     try: () => binding.send(outbound),
   }).pipe(Effect.asVoid);
 };
@@ -111,7 +111,7 @@ const deliverLink = ({
   readonly template: { readonly lead: string; readonly span: string; readonly subject: string };
 }): Effect.Effect<void, EmailDeliveryFailed> => {
   if (URL.parse(linked.url)?.origin !== settings.APP_ORIGIN) {
-    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+    return Effect.fail(EmailDeliveryFailed.make({ reason: "origin_mismatch" }));
   }
   return deliver(settings, {
     subject: template.subject,
@@ -198,7 +198,7 @@ export const sendInviteEmail = (
   invitation: { readonly email: string; readonly url: string },
 ): Effect.Effect<void, EmailDeliveryFailed> => {
   if (URL.parse(invitation.url)?.origin !== settings.APP_ORIGIN) {
-    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+    return Effect.fail(EmailDeliveryFailed.make({ reason: "origin_mismatch" }));
   }
   return deliver(settings, {
     subject: mailSubjects.invite,
@@ -237,7 +237,7 @@ export const sendNotificationEmail = (
 ): Effect.Effect<void, EmailDeliveryFailed> => {
   const url = new URL(outbound.href, settings.APP_ORIGIN).href;
   if (URL.parse(url)?.origin !== settings.APP_ORIGIN) {
-    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+    return Effect.fail(EmailDeliveryFailed.make({ reason: "origin_mismatch" }));
   }
   const subject =
     outbound.kind === NOTIFICATION_KIND.conversationMessage

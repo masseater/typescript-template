@@ -50,15 +50,13 @@ const latencies = (metrics: Metrics): Readonly<Record<string, number>> =>
     }),
   );
 
-const summarise = (metrics: typeof Summary.Type.metrics): Report => {
-  return {
-    crossed: crossedThresholds(metrics),
-    errorRate: metrics.http_req_failed.value,
-    iterations: metrics.iterations.count,
-    latency: latencies(metrics),
-    requests: metrics.http_reqs.count,
-  };
-};
+const summarise = (metrics: typeof Summary.Type.metrics): Report => ({
+  crossed: crossedThresholds(metrics),
+  errorRate: metrics.http_req_failed.value,
+  iterations: metrics.iterations.count,
+  latency: latencies(metrics),
+  requests: metrics.http_reqs.count,
+});
 
 const readSummary = (file: string): Effect.Effect<Report, Schema.SchemaError> =>
   Effect.gen(function* readMeasuredSummary() {

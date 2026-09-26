@@ -16,7 +16,7 @@ class GitEnvironment extends Context.Service<
     readonly executable: string;
     readonly repositoryVariables: Readonly<Record<string, undefined>>;
   }
->()("@repo/dont-review-it/stop-ai-slop/GitEnvironment") {}
+>()("@repo/dont-review-it/features/dont-review-it/stop-ai-slop/git-text/GitEnvironment") {}
 
 const OUTPUT_LIMIT_BYTES = 100 * 1024 * 1024;
 
@@ -66,7 +66,7 @@ const spawnedGit = Effect.fnUntraced(
       }),
     );
     const overflowOn = (stream: string) => () =>
-      new GitCommandFailed({
+      GitCommandFailed.make({
         message: `Git command wrote more than ${OUTPUT_LIMIT_BYTES} bytes to ${stream}: ${spelled}`,
       });
     const [stdout, stderr, exitCode] = yield* Effect.all(
@@ -78,12 +78,12 @@ const spawnedGit = Effect.fnUntraced(
       { concurrency: "unbounded" },
     );
     if (exitCode !== 0) {
-      return yield* new GitCommandFailed({
+      return yield* GitCommandFailed.make({
         message: `Command failed: ${spelled}\n${lenientText(stderr)}`,
       });
     }
     if (stderr.length > 0) {
-      return yield* new GitCommandFailed({
+      return yield* GitCommandFailed.make({
         message: `Git command wrote to stderr: ${lenientText(stderr)}`,
       });
     }
@@ -91,7 +91,7 @@ const spawnedGit = Effect.fnUntraced(
   },
   Effect.scoped,
   Effect.catchTag("PlatformError", (failure) =>
-    Effect.fail(new GitCommandFailed({ message: failure.message, cause: failure })),
+    Effect.fail(GitCommandFailed.make({ message: failure.message, cause: failure })),
   ),
 );
 
@@ -147,7 +147,7 @@ export const runGitText = (
     Effect.try({
       try: () => new TextDecoder("utf-8", { fatal: true }).decode(stdout),
       catch: (cause) =>
-        new GitCommandFailed({
+        GitCommandFailed.make({
           message: `Git command wrote output that is not UTF-8: git ${command.args.join(" ")}`,
           cause,
         }),

@@ -26,11 +26,11 @@ type HealthMonitorEnv = typeof HealthMonitorEnvironment.Encoded;
 const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
   function* parseHealthMonitorConfig(input: unknown) {
     const acceptedConfig = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
-      Effect.mapError(() => new HealthMonitorFailure({ code: "health_monitor_config_invalid" })),
+      Effect.mapError(() => HealthMonitorFailure.make({ code: "health_monitor_config_invalid" })),
     );
     const origins = applications.map((serviceName) => acceptedConfig[healthOriginKey[serviceName]]);
     if (!distinctOrigins(origins)) {
-      return yield* new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" });
+      return yield* HealthMonitorFailure.make({ code: "health_monitor_origins_must_differ" });
     }
     return acceptedConfig;
   },

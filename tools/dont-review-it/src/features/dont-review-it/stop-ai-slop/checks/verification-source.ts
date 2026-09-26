@@ -39,7 +39,8 @@ export class SourceUnparsable extends Schema.TaggedError<SourceUnparsable>()("So
 const parsedSource = (file: string, source: string): ParseResult => {
   const parsedNode = parseSync(file, source, { preserveParens: false });
   const [problem] = parsedNode.errors;
-  if (problem !== undefined) throw new SourceUnparsable({ message: `${file}: ${problem.message}` });
+  if (problem !== undefined)
+    throw SourceUnparsable.make({ message: `${file}: ${problem.message}` });
   return parsedNode;
 };
 
@@ -137,12 +138,10 @@ const lineAtOffset = (source: string, offset: number): number =>
 const sourceRangeFor = (
   source: string,
   call: CallExpression,
-): { readonly line: number; readonly endLine: number } => {
-  return {
-    line: lineAtOffset(source, call.start),
-    endLine: lineAtOffset(source, Math.max(call.start, call.end - 1)),
-  };
-};
+): { readonly line: number; readonly endLine: number } => ({
+  line: lineAtOffset(source, call.start),
+  endLine: lineAtOffset(source, Math.max(call.start, call.end - 1)),
+});
 
 const fileVerificationFrom = ({
   file,

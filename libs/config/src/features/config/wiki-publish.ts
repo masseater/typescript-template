@@ -39,7 +39,7 @@ const readWikiPublishConfig = Effect.fn("readWikiPublishConfig")(function* readW
   input: unknown,
 ) {
   const scalars = yield* Schema.decodeUnknownEffect(WikiPublishScalars)(input).pipe(
-    Effect.mapError((issue) => new ConfigurationInvalid({ reason: issue.message })),
+    Effect.mapError((issue) => ConfigurationInvalid.make({ reason: issue.message })),
   );
   const appId = scalars[wikiPublishKey.appId];
   const privateKey = scalars[wikiPublishKey.privateKey];
@@ -48,7 +48,7 @@ const readWikiPublishConfig = Effect.fn("readWikiPublishConfig")(function* readW
     return undefined;
   }
   if (appId === undefined || privateKey === undefined || repository === undefined) {
-    return yield* new ConfigurationInvalid({
+    return yield* ConfigurationInvalid.make({
       reason: `${wikiPublishKeys.join(", ")} are set together or not at all`,
     });
   }

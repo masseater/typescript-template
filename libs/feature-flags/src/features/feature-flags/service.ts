@@ -30,7 +30,7 @@ type FeatureFlagsService = Readonly<{
 }>;
 
 class FeatureFlags extends Context.Service<FeatureFlags, FeatureFlagsService>()(
-  "@repo/feature-flags/FeatureFlags",
+  "@repo/feature-flags/features/feature-flags/service/FeatureFlags",
 ) {}
 
 const memoryConfiguration = Object.fromEntries(
@@ -113,7 +113,7 @@ const flagshipFeatureFlags = Effect.fn("flagshipFeatureFlags")(function* flagshi
   const client = OpenFeature.getClient();
   return featureFlagsFromClient(client, (flagKey, _enabled) =>
     Effect.fail(
-      new FlagshipWriteFailed({
+      FlagshipWriteFailed.make({
         detail: `remote write required for ${String(flagKey)}`,
       }),
     ),
@@ -143,7 +143,7 @@ const configuredFeatureFlagsLayer = (
   }
   return config.local
     ? Effect.succeed(memoryFeatureFlagsLayer)
-    : Effect.fail(new ConfigurationInvalid({ reason: "FLAGS" }));
+    : Effect.fail(ConfigurationInvalid.make({ reason: "FLAGS" }));
 };
 
 export {

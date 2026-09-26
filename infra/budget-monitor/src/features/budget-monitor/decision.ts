@@ -61,9 +61,7 @@ const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(aske
 const shouldNotify = (
   decision: Readonly<BudgetDecision>,
   notifiedKeys: readonly string[],
-): boolean => {
-  return decision.level !== 0 && !notifiedKeys.includes(decision.notificationKey);
-};
+): boolean => decision.level !== 0 && !notifiedKeys.includes(decision.notificationKey);
 
 export { evaluateBudget, shouldNotify };
 export type { BudgetDecision };

@@ -12,20 +12,18 @@ const ActionStatus = ({
   readonly action: ActionState;
   readonly notice?: string | undefined;
   readonly pendingMessage?: string;
-}): ReactElement => {
-  return (
-    <>
-      {action.pending && pendingMessage !== undefined && (
-        <StatusMessage variant={STATUS_VARIANT.pending}>{pendingMessage}</StatusMessage>
-      )}
-      {notice !== undefined && (
-        <StatusMessage variant={STATUS_VARIANT.success}>{notice}</StatusMessage>
-      )}
-      {action.error !== undefined && (
-        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
-      )}
-    </>
-  );
-};
+}): ReactElement => (
+  <>
+    {action.pending && pendingMessage !== undefined && (
+      <StatusMessage variant={STATUS_VARIANT.pending}>{pendingMessage}</StatusMessage>
+    )}
+    {notice !== undefined && (
+      <StatusMessage variant={STATUS_VARIANT.success}>{notice}</StatusMessage>
+    )}
+    {action.error !== undefined && (
+      <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
+    )}
+  </>
+);
 
 export { ActionStatus };

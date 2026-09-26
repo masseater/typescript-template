@@ -24,11 +24,8 @@ const decodeJson = <Contract extends Schema.Top & { readonly DecodingServices: n
   return decoded.success;
 };
 
-const errorMessage = (failure: unknown): string => {
-  return failure instanceof Error
-    ? failure.message
-    : "操作に失敗しました。もう一度お試しください。";
-};
+const errorMessage = (failure: unknown): string =>
+  failure instanceof Error ? failure.message : "操作に失敗しました。もう一度お試しください。";
 
 const failureReasons: Readonly<Record<string, string>> = {
   "Email is the same": "いまのメールアドレスと同じです。",
@@ -77,9 +74,8 @@ const requireSecureContext = (): void => {
 const authenticateOptionsPath = "/passkey/generate-authenticate-options";
 const registerOptionsPath = "/passkey/generate-register-options";
 
-const isPasskeyOptionsPath = (pathname: string): boolean => {
-  return pathname.endsWith(authenticateOptionsPath) || pathname.endsWith(registerOptionsPath);
-};
+const isPasskeyOptionsPath = (pathname: string): boolean =>
+  pathname.endsWith(authenticateOptionsPath) || pathname.endsWith(registerOptionsPath);
 
 const registrationWithUserVerification = (
   passkeyOptions: Readonly<Record<string, unknown>>,

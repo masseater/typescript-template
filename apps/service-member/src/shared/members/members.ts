@@ -162,7 +162,7 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
       .limit(1),
   );
   if (!member) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   let following: boolean | undefined;
   if (viewerId !== memberId) {
@@ -232,7 +232,7 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
       .returning(profileColumns),
   );
   if (!profile) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   return ownProfile(profile);
 });

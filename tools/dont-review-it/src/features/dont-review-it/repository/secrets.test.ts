@@ -14,9 +14,7 @@ const violations = (
   staged: Readonly<{ content: string; filename: string }>,
   values: readonly DeploymentValue[] = prefixValues,
   scan: PrefixScan = "separated",
-): string[] => {
-  return secretViolations(staged, values, scan);
-};
+): string[] => secretViolations(staged, values, scan);
 
 describe("staged secret detection", () => {
   it.for([

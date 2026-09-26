@@ -9,16 +9,13 @@ import { destructuredOrigins, origins, type Origin } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const aliasChecker = (
-  inspection: LintContext,
-  matches: (origin: Origin) => boolean,
-): ((node: Node) => void) => {
-  return (node) => {
+const aliasChecker =
+  (inspection: LintContext, matches: (origin: Origin) => boolean): ((node: Node) => void) =>
+  (node) => {
     if (origins(inspection, node).some((origin) => matches(origin))) {
       reportViolation(inspection, node);
     }
   };
-};
 
 const aliasVisitor = (inspection: LintContext, matches: (origin: Origin) => boolean): Visitor => {
   const check = aliasChecker(inspection, matches);
@@ -61,24 +58,22 @@ const originVisitor = (
   inspection: LintContext,
   matches: (origin: Origin) => boolean,
   forbidsCall: (node: NodeOf<"CallExpression">) => boolean = () => false,
-): Visitor => {
-  return {
-    ...aliasVisitor(inspection, matches),
-    CallExpression(node: Node): void {
-      if (node.type !== "CallExpression") {
-        return;
-      }
-      if (
-        node.callee.type !== "MemberExpression" &&
-        origins(inspection, node.callee).some((origin) => matches(origin))
-      ) {
-        reportViolation(inspection, node.callee);
-      }
-      if (forbidsCall(node)) {
-        reportViolation(inspection, node);
-      }
-    },
-  };
-};
+): Visitor => ({
+  ...aliasVisitor(inspection, matches),
+  CallExpression(node: Node): void {
+    if (node.type !== "CallExpression") {
+      return;
+    }
+    if (
+      node.callee.type !== "MemberExpression" &&
+      origins(inspection, node.callee).some((origin) => matches(origin))
+    ) {
+      reportViolation(inspection, node.callee);
+    }
+    if (forbidsCall(node)) {
+      reportViolation(inspection, node);
+    }
+  },
+});
 
 export { aliasChecker, aliasVisitor, originVisitor };

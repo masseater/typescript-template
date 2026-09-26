@@ -26,7 +26,7 @@ const rootTestFiles = Effect.gen(function* rootTestFiles() {
     ChildProcess.make("git", ["ls-files", "-z"], { cwd: repositoryRoot, stdin: "ignore" }),
   );
   if (listed.exitCode !== 0) {
-    return yield* new TrackedFilesUnreadable({ stderr: listed.stderr });
+    return yield* TrackedFilesUnreadable.make({ stderr: listed.stderr });
   }
   return listed.stdout
     .split("\0")

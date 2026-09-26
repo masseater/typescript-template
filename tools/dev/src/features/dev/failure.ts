@@ -23,7 +23,7 @@ class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("Loc
 }) {}
 
 function failure(reason: LocalCommandFailure["reason"]): LocalCommandFailure {
-  return new LocalCommandFailure({ reason });
+  return LocalCommandFailure.make({ reason });
 }
 
 function describeError(error: unknown): string {

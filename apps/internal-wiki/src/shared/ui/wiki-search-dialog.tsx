@@ -53,7 +53,7 @@ function searchClient(onMode: (mode: SearchMode | undefined) => void) {
             Effect.orDie,
           );
           if (response.status < 200 || response.status >= 300) {
-            return yield* new SearchFailed({ message: yield* response.text });
+            return yield* SearchFailed.make({ message: yield* response.text });
           }
           const body = yield* HttpClientResponse.schemaBodyJson(WikiSearchResult)(response).pipe(
             Effect.orDie,

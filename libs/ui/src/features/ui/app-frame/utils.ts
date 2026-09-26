@@ -62,9 +62,8 @@ const accessibleLabel = (destination: Readonly<AppFrameDestination>): string => 
   return `${destination.label}（${destination.marker}）`;
 };
 
-const sectionKey = (section: Readonly<AppFrameSection>): string => {
-  return `${section.label}:${section.destinations.map((destination) => destination.to).join(",")}`;
-};
+const sectionKey = (section: Readonly<AppFrameSection>): string =>
+  `${section.label}:${section.destinations.map((destination) => destination.to).join(",")}`;
 
 const iconButtonClass =
   "min-h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator";

@@ -31,14 +31,14 @@ const outOfGraphModules: ReadonlySet<string> = new Set([
   "worker_threads",
 ]);
 
-const sourceChecker = (inspection: LintContext): SourceCheck => {
-  return (node) => {
+const sourceChecker =
+  (inspection: LintContext): SourceCheck =>
+  (node) => {
     const source = staticText(inspection, node) ?? "";
     if (outOfGraphModules.has(source) || source.includes("?")) {
       reportViolation(inspection, node);
     }
   };
-};
 
 const hasQueryOption = (inspection: LintContext, globOption: Node): boolean => {
   if (globOption.type !== "ObjectExpression") {
@@ -67,26 +67,24 @@ const checkGlob = (
 
 const builtinModuleLoader = /^(?:global\.)?(?:node:)?process\.getBuiltinModule$/u;
 
-const callVisitor = (inspection: LintContext, checkSource: SourceCheck): Visitor => {
-  return {
-    CallExpression(node: Node): void {
-      if (node.type !== "CallExpression") {
-        return;
-      }
-      const callee = origins(inspection, node.callee).map((origin) => origin.join("."));
-      if (callee.includes("import.meta.glob")) {
-        checkGlob(inspection, { checkSource, node });
-      }
-      const [argument] = node.arguments;
-      if (
-        argument !== undefined &&
-        callee.some((called) => called === "require" || builtinModuleLoader.test(called))
-      ) {
-        checkSource(argument);
-      }
-    },
-  };
-};
+const callVisitor = (inspection: LintContext, checkSource: SourceCheck): Visitor => ({
+  CallExpression(node: Node): void {
+    if (node.type !== "CallExpression") {
+      return;
+    }
+    const callee = origins(inspection, node.callee).map((origin) => origin.join("."));
+    if (callee.includes("import.meta.glob")) {
+      checkGlob(inspection, { checkSource, node });
+    }
+    const [argument] = node.arguments;
+    if (
+      argument !== undefined &&
+      callee.some((called) => called === "require" || builtinModuleLoader.test(called))
+    ) {
+      checkSource(argument);
+    }
+  },
+});
 
 const metaPaths: ReadonlySet<string> = new Set(["url", "dirname", "filename", "resolve"]);
 
@@ -146,25 +144,21 @@ const startsGit = (inspection: LintContext, node: NodeOf<"CallExpression">): boo
   return executable !== undefined && gitExecutable.test(executable);
 };
 
-const declaresEnvironment = (inspection: LintContext, node: Node): boolean => {
-  return (
-    node.type === "ObjectExpression" &&
-    node.properties.some(
-      (property) => property.type === "Property" && propertyName(inspection, property) === "env",
-    )
+const declaresEnvironment = (inspection: LintContext, node: Node): boolean =>
+  node.type === "ObjectExpression" &&
+  node.properties.some(
+    (property) => property.type === "Property" && propertyName(inspection, property) === "env",
   );
-};
 
 const calledFrom = (
   inspection: LintContext,
   node: NodeOf<"CallExpression">,
   modules: ReadonlySet<string>,
   names: ReadonlySet<string>,
-): boolean => {
-  return origins(inspection, node.callee).some(
+): boolean =>
+  origins(inspection, node.callee).some(
     (origin) => origin.length >= 2 && modules.has(origin[0] ?? "") && names.has(origin[1] ?? ""),
   );
-};
 
 const underMktemp = (inspection: LintContext, node: Node): boolean => {
   let current: Node | null | undefined =

@@ -18,8 +18,8 @@ const measuredAt = DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-16T00:00:
 
 const withServer = (
   ...routeHandlers: Parameters<Network["use"]>
-): Effect.Effect<Network, never, Scope.Scope> => {
-  return Effect.acquireRelease(
+): Effect.Effect<Network, never, Scope.Scope> =>
+  Effect.acquireRelease(
     Effect.sync(() => {
       const network = setupNetwork();
       network.configure({ onUnhandledFrame: "error" });
@@ -32,7 +32,6 @@ const withServer = (
         network.disable();
       }),
   );
-};
 
 it.effect("fetches the official V1 endpoint using bearer authentication", () =>
   Effect.gen(function* program() {

@@ -65,7 +65,7 @@ const renderSpaced = (chart: string, spread: number): RenderedDiagram => {
   dropFontImports(svg);
   const { canvas, overlaps } = untangleDiagram(readGeometry(tree), viewBoxOf(svg));
   if (overlaps.length > 0) {
-    throw new DiagramCrowded({
+    throw DiagramCrowded.make({
       reason: `the diagram still overlaps after untangling: ${JSON.stringify(overlaps)}`,
     });
   }

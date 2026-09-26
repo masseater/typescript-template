@@ -124,7 +124,7 @@ describe("a group with an invalid fingerprint", () => {
     queryFailure,
   }) => {
     expect(queryFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "telemetry_groups_dropped", keys: ["dropped:1"] }),
+      ErrorMonitorFailure.make({ code: "telemetry_groups_dropped", keys: ["dropped:1"] }),
     );
   });
 });
@@ -147,7 +147,7 @@ describe("a response without calculations", () => {
     queryFailure,
   }) => {
     expect(queryFailure).toStrictEqual(
-      new ErrorMonitorFailure({
+      ErrorMonitorFailure.make({
         code: "telemetry_response_invalid",
         keys: ["result.calculations:MissingKey"],
       }),
@@ -171,7 +171,7 @@ describe("authorization failure", () => {
 
   it("fails closed without carrying the provider body", ({ queryFailure }) => {
     expect(queryFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "telemetry_http_failed", keys: [] }),
+      ErrorMonitorFailure.make({ code: "telemetry_http_failed", keys: [] }),
     );
   });
 });

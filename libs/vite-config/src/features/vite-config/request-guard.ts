@@ -28,7 +28,7 @@ const decodedPathname = (
   }
   const decodedOnce = Result.try(() => decodeURIComponent(encodedPathname));
   if (Result.isFailure(decodedOnce)) {
-    return Effect.fail(new UndecidablePath({ encodedPathname }));
+    return Effect.fail(UndecidablePath.make({ encodedPathname }));
   }
   return decodedOnce.success === encodedPathname
     ? Effect.succeed(encodedPathname)

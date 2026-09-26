@@ -48,8 +48,8 @@ const usageFrom = (asked: {
   readonly accountId: string;
   readonly observedAt: number;
   readonly payload: Readonly<Record<string, unknown>>;
-}): Effect.Effect<UsageSnapshot, BudgetFailure> => {
-  return Effect.acquireUseRelease(
+}): Effect.Effect<UsageSnapshot, BudgetFailure> =>
+  Effect.acquireUseRelease(
     Effect.sync(() => {
       const network = setupNetwork();
       network.configure({ onUnhandledFrame: "error" });
@@ -73,7 +73,6 @@ const usageFrom = (asked: {
         network.disable();
       }),
   );
-};
 
 function failureCodeOf<Value, Requirements>(
   effect: Effect.Effect<Value, BudgetFailure, Requirements>,
@@ -281,8 +280,8 @@ it.effect("does not notify the same threshold again when only the exchange rate 
 const rateFrom = (asked: {
   readonly observedAt: number;
   readonly respond: () => Response;
-}): Effect.Effect<number, BudgetFailure> => {
-  return Effect.acquireUseRelease(
+}): Effect.Effect<number, BudgetFailure> =>
+  Effect.acquireUseRelease(
     Effect.sync(() => {
       const network = setupNetwork();
       network.configure({ onUnhandledFrame: "error" });
@@ -296,7 +295,6 @@ const rateFrom = (asked: {
         network.disable();
       }),
   );
-};
 
 const quote = { amount: 1, base: "USD", date: "2026-09-15", rates: { JPY: JPY_PER_USD } };
 

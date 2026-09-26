@@ -29,7 +29,7 @@ const transcribeWith = Effect.fn("transcribeWith")(function* transcribeWith(
   audio: Audio,
 ) {
   const output = yield* Effect.tryPromise({
-    catch: (cause) => new TranscriptionFailed({ cause, reason: RECORDING_FAILURE.modelRejected }),
+    catch: (cause) => TranscriptionFailed.make({ cause, reason: RECORDING_FAILURE.modelRejected }),
     try: () =>
       ai.run(transcriptionModel, {
         audio: { body: audio.body, contentType: audio.contentType },
@@ -41,15 +41,15 @@ const transcribeWith = Effect.fn("transcribeWith")(function* transcribeWith(
       }),
   });
   const decoded = yield* decodeOutput(output).pipe(
-    Effect.mapError(
-      (cause) => new TranscriptionFailed({ cause, reason: RECORDING_FAILURE.outputUnreadable }),
+    Effect.mapError((cause) =>
+      TranscriptionFailed.make({ cause, reason: RECORDING_FAILURE.outputUnreadable }),
     ),
   );
   return transcriptOf(decoded);
 });
 
 class Transcriber extends Context.Service<Transcriber, TranscriberShape>()(
-  "#shared/transcription/Transcriber",
+  "@repo/internal-dashboard/shared/transcription/transcriber",
 ) {
   public static layer(ai: WorkerModel | undefined): Layer.Layer<Transcriber> {
     return Layer.succeed(
@@ -57,7 +57,7 @@ class Transcriber extends Context.Service<Transcriber, TranscriberShape>()(
       Transcriber.of({
         transcribe: (audio) =>
           ai === undefined
-            ? Effect.fail(new TranscriptionFailed({ reason: RECORDING_FAILURE.aiUnbound }))
+            ? Effect.fail(TranscriptionFailed.make({ reason: RECORDING_FAILURE.aiUnbound }))
             : transcribeWith(ai, audio).pipe(withSpan("recordings.transcribe")),
       }),
     );

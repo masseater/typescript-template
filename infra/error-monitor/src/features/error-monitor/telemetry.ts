@@ -83,7 +83,7 @@ const queryBody = (queryWindow: QueryWindow, offsetBy: number): string =>
 const telemetryFailure =
   (code: ErrorMonitorFailure["code"]): (() => ErrorMonitorFailure) =>
   () =>
-    new ErrorMonitorFailure({ code, keys: [] });
+    ErrorMonitorFailure.make({ code, keys: [] });
 
 const queryTelemetry = ({
   fetchImpl,
@@ -127,12 +127,11 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
     try: () => telemetryResponse.json(),
   });
   const telemetryEnvelope = yield* Schema.decodeUnknownEffect(QueryEnvelope)(telemetryPayload).pipe(
-    Effect.mapError(
-      (decodeError) =>
-        new ErrorMonitorFailure({
-          code: "telemetry_response_invalid",
-          keys: schemaMismatches(decodeError.issue),
-        }),
+    Effect.mapError((decodeError) =>
+      ErrorMonitorFailure.make({
+        code: "telemetry_response_invalid",
+        keys: schemaMismatches(decodeError.issue),
+      }),
     ),
   );
   return telemetryEnvelope.result.calculations.flatMap(
@@ -177,7 +176,7 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
     0,
   );
   if (droppedCount > 0) {
-    return yield* new ErrorMonitorFailure({
+    return yield* ErrorMonitorFailure.make({
       code: "telemetry_groups_dropped",
       keys: [`dropped:${String(droppedCount)}`],
     });

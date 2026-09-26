@@ -12,9 +12,11 @@ import {
 
 const uncheckedRecord = (
   detail: Readonly<Record<string, unknown>>,
-): Readonly<Record<string, unknown>> => {
-  return { event: "quality.shared_task_cache_clean_failed", ok: false, ...detail };
-};
+): Readonly<Record<string, unknown>> => ({
+  event: "quality.shared_task_cache_clean_failed",
+  ok: false,
+  ...detail,
+});
 
 runCli(
   Effect.gen(function* cleanSharedTaskCacheCommand() {

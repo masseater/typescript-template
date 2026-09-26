@@ -14,7 +14,7 @@ class Telemetry extends Context.Service<
     readonly routes: Readonly<Record<string, string>>;
     readonly labels: Readonly<ReadonlySet<string>>;
   }
->()("@repo/observability/Telemetry") {
+>()("@repo/observability/features/observability/telemetry") {
   public static layer(
     settings: StructuredLogOptions & {
       readonly otlp?: OtlpDestination | undefined;
@@ -26,7 +26,7 @@ class Telemetry extends Context.Service<
     const service = serviceLabel(serviceName);
     const telemetry = isRoutes(routes)
       ? Effect.succeed(Telemetry.of({ labels: attributeLabels, release, routes, serviceName }))
-      : Effect.fail(new TelemetryInvalid({ reason: "routes" }));
+      : Effect.fail(TelemetryInvalid.make({ reason: "routes" }));
     return Layer.effect(Telemetry, telemetry).pipe(
       Layer.provideMerge(otlpExport({ otlp: settings.otlp, release, service })),
       Layer.provideMerge(structuredLogs(settings)),

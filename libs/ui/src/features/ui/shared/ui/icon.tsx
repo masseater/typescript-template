@@ -19,8 +19,8 @@ const Icon = ({
   icon: LucideIcon;
   size?: "large" | "medium" | "small";
   tone?: "current" | "primary";
-}>): ReactElement => {
-  return <Glyph data-slot="icon" aria-hidden="true" className={iconVariants({ size, tone })} />;
-};
+}>): ReactElement => (
+  <Glyph data-slot="icon" aria-hidden="true" className={iconVariants({ size, tone })} />
+);
 
 export { Icon };

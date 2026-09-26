@@ -67,10 +67,10 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
     database.all(bootstrapStatement({ bootstrapKind, email, updatedAt })),
   );
   if (promotedRow === undefined) {
-    return yield* new BootstrapUnavailable();
+    return yield* BootstrapUnavailable.make();
   }
   return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(promotedRow).pipe(
-    Effect.mapError((cause) => new DatabaseFailure({ cause })),
+    Effect.mapError((cause) => DatabaseFailure.make({ cause })),
   );
 });
 
@@ -83,10 +83,10 @@ const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
     database.all(ensureRoleStatement({ bootstrapKind, email, updatedAt })),
   );
   if (adminRow === undefined) {
-    return yield* new BootstrapUnavailable();
+    return yield* BootstrapUnavailable.make();
   }
   return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(adminRow).pipe(
-    Effect.mapError((cause) => new DatabaseFailure({ cause })),
+    Effect.mapError((cause) => DatabaseFailure.make({ cause })),
   );
 });
 

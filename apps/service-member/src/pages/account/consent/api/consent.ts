@@ -12,7 +12,7 @@ class ConsentClientUnavailable extends Schema.TaggedError<ConsentClientUnavailab
 
 function clientNameFrom(response: Response, clientId: string): Promise<string> {
   if (!response.ok) {
-    return Promise.reject(new ConsentClientUnavailable());
+    return Promise.reject(ConsentClientUnavailable.make());
   }
   return response
     .json()
@@ -40,7 +40,7 @@ const loadClientName = createIsomorphicFn()
         { headers: { cookie: request.headers.get("cookie") ?? "" } },
       ).then((response) => {
         if (response.status === httpStatus.unauthorized) {
-          throw new ConsentClientUnavailable();
+          throw ConsentClientUnavailable.make();
         }
         return clientNameFrom(response, clientId);
       });
@@ -54,7 +54,7 @@ const loadClientName = createIsomorphicFn()
     ).then((response) => {
       if (response.status === httpStatus.unauthorized) {
         globalThis.location.assign(`/login${globalThis.location.search}`);
-        throw new ConsentClientUnavailable();
+        throw ConsentClientUnavailable.make();
       }
       return clientNameFrom(response, clientId);
     }),

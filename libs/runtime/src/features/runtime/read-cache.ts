@@ -82,7 +82,9 @@ const unavailableCache: ReadCacheShape = {
   put: () => storageUnavailable,
   remove: () => storageUnavailable,
 };
-class ReadCache extends Context.Service<ReadCache, ReadCacheShape>()("@repo/runtime/ReadCache") {
+class ReadCache extends Context.Service<ReadCache, ReadCacheShape>()(
+  "@repo/runtime/features/runtime/read-cache/ReadCache",
+) {
   public static layer(namespace: Namespace | undefined): Layer.Layer<ReadCache> {
     return Layer.succeed(
       ReadCache,

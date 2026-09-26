@@ -38,7 +38,7 @@ function forward(
         target.write(`${redact(line, confidential)}\n`);
       }),
     ),
-    Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })),
+    Effect.mapError(() => AlchemyFailure.make({ code: "alchemy_command_failed" })),
   );
 }
 
@@ -51,7 +51,7 @@ function spawnAlchemy(
       env: { ...process.env, ALCHEMY_TELEMETRY_DISABLED: "1" },
       extendEnv: false,
       stdin: "ignore",
-    }).pipe(Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })));
+    }).pipe(Effect.mapError(() => AlchemyFailure.make({ code: "alchemy_command_failed" })));
     yield* Effect.all(
       [
         forward(handle.stdout, cliStdout, confidential),
@@ -61,7 +61,7 @@ function spawnAlchemy(
     );
     return yield* handle.exitCode.pipe(
       Effect.map((code) => Number(code)),
-      Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })),
+      Effect.mapError(() => AlchemyFailure.make({ code: "alchemy_command_failed" })),
     );
   }).pipe(Effect.scoped, Effect.provide(layer));
 }
@@ -72,7 +72,7 @@ function runAlchemy(
 ): Effect.Effect<number, AlchemyFailure> {
   return isAlchemyCommand(command)
     ? spawnAlchemy(command, confidential)
-    : new AlchemyFailure({ code: "alchemy_command_rejected" });
+    : AlchemyFailure.make({ code: "alchemy_command_rejected" });
 }
 
 export { AlchemyFailure, runAlchemy };

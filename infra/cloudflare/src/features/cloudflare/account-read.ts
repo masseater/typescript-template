@@ -55,7 +55,7 @@ function unreadable(
   reason: string,
   detail: readonly string[] = [],
 ): CloudflareFailure {
-  return new CloudflareFailure({
+  return CloudflareFailure.make({
     code: "account_read_unavailable",
     keys: [source.shape, reason, ...detail],
   });

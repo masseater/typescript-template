@@ -9,7 +9,7 @@ import type { RpcClientError } from "effect/unstable/rpc/RpcClientError";
 class CoreRecords extends Context.Service<
   CoreRecords,
   RpcClient.RpcClient<RpcGroup.Rpcs<typeof InternalRpcs>, RpcClientError>
->()("#shared/transcription/CoreRecords") {
+>()("@repo/internal-dashboard/shared/transcription/core-records/CoreRecords") {
   public static layer(core: ServiceFetcher): Layer.Layer<CoreRecords> {
     return Layer.effect(CoreRecords, makeRpcClient(InternalRpcs, core));
   }

@@ -63,7 +63,7 @@ describe("the remote database connection", () => {
     });
 
     it("fails without carrying the provider body or the token", ({ queryFailure }) => {
-      expect(queryFailure).toStrictEqual(new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }));
+      expect(queryFailure).toStrictEqual(RemoteFailure.make({ code: "REMOTE_QUERY_FAILED" }));
     });
   });
 });
@@ -193,7 +193,7 @@ describe("a database reached over the D1 API", () => {
       "refuses until the deployment has recorded every migration",
       { timeout: 60_000 },
       ({ refusal }) => {
-        expect(refusal).toStrictEqual(new RemoteFailure({ code: "REMOTE_MIGRATIONS_REQUIRED" }));
+        expect(refusal).toStrictEqual(RemoteFailure.make({ code: "REMOTE_MIGRATIONS_REQUIRED" }));
       },
     );
   });

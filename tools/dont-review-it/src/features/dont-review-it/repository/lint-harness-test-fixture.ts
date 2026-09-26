@@ -43,13 +43,10 @@ const reportCount = (ruleName: RuleName, probe: Probe): number => {
   }
 };
 
-const reported = (ruleName: RuleName, probe: Probe): boolean => {
-  return reportCount(ruleName, probe) > 0;
-};
+const reported = (ruleName: RuleName, probe: Probe): boolean => reportCount(ruleName, probe) > 0;
 
-const reportedRules = (probe: { readonly code: string; readonly filename: string }): RuleName[] => {
-  return ruleNames.filter((ruleName) => reported(ruleName, probe));
-};
+const reportedRules = (probe: { readonly code: string; readonly filename: string }): RuleName[] =>
+  ruleNames.filter((ruleName) => reported(ruleName, probe));
 
 export { reportCount, reported, reportedRules, ruleNames };
 export type { Probe, RuleName };

@@ -68,7 +68,7 @@ function complete(
   utterance: string,
 ): Effect.Effect<UnderstandingData, UnderstandingFailed> {
   return Effect.tryPromise({
-    catch: (cause) => new UnderstandingFailed({ cause, reason: "model_failed" }),
+    catch: (cause) => UnderstandingFailed.make({ cause, reason: "model_failed" }),
     try: () =>
       chat({
         adapter: createWorkersAiChat(model, access),
@@ -80,14 +80,14 @@ function complete(
   }).pipe(
     Effect.timeoutOrElse({
       duration: patience,
-      orElse: () => Effect.fail(new UnderstandingFailed({ reason: "timed_out" })),
+      orElse: () => Effect.fail(UnderstandingFailed.make({ reason: "timed_out" })),
     }),
     withSpan("interview.complete"),
   );
 }
 
 class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
-  "#shared/interview/Interviewer",
+  "@repo/service-member/shared/interview/interviewer",
 ) {
   public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {
     return Layer.succeed(

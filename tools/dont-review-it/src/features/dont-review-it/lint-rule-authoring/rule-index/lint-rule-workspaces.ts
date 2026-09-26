@@ -40,7 +40,7 @@ const declaredWorkspaceDirs = (
 
     const [unparsableDefinition, definition] = attempt((): unknown => parse(definitionText));
     if (unparsableDefinition !== null) {
-      return yield* new WorkspaceDefinitionUnparsable({
+      return yield* WorkspaceDefinitionUnparsable.make({
         file: WORKSPACE_DEFINITION_FILE,
         cause: unparsableDefinition,
       });

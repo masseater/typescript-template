@@ -46,7 +46,7 @@ const git = Effect.fn("git")(function* git(
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
+    : yield* GitFixtureRefused.make({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const refusalOf = (inventoryOutput: string, diff: string): unknown => {
@@ -110,37 +110,37 @@ describe("parseRepositoryChanges", () => {
 
   test("refuses a non-empty diff that produces no files", () => {
     expect(refusalOf("", "not a git diff\n")).toStrictEqual(
-      new DiffUnreadable({ message: "Unable to parse non-empty Git diff" }),
+      DiffUnreadable.make({ message: "Unable to parse non-empty Git diff" }),
     );
   });
 
   test("refuses inventory text that carries no NUL delimiters", () => {
     expect(refusalOf("invalid metadata", "")).toStrictEqual(
-      new DiffUnreadable({ message: "Invalid NUL-delimited Git diff metadata" }),
+      DiffUnreadable.make({ message: "Invalid NUL-delimited Git diff metadata" }),
     );
   });
 
   test("refuses an inventory record whose path is empty", () => {
     expect(refusalOf(`A${nulCharacter}${nulCharacter}`, "")).toStrictEqual(
-      new DiffUnreadable({ message: "Invalid NUL-delimited Git diff metadata" }),
+      DiffUnreadable.make({ message: "Invalid NUL-delimited Git diff metadata" }),
     );
   });
 
   test("refuses a rename record whose source path is empty", () => {
     expect(
       refusalOf(`R100${nulCharacter}${nulCharacter}src/current.ts${nulCharacter}`, ""),
-    ).toStrictEqual(new DiffUnreadable({ message: "Invalid NUL-delimited Git diff metadata" }));
+    ).toStrictEqual(DiffUnreadable.make({ message: "Invalid NUL-delimited Git diff metadata" }));
   });
 
   test("refuses an inventory status the parser does not know", () => {
     expect(refusalOf(`X${nulCharacter}src/current.ts${nulCharacter}`, "")).toStrictEqual(
-      new DiffUnreadable({ message: "Unsupported Git diff status" }),
+      DiffUnreadable.make({ message: "Unsupported Git diff status" }),
     );
   });
 
   test("refuses an inventory file the patch omits", () => {
     expect(refusalOf(`A${nulCharacter}src/added.ts${nulCharacter}`, "")).toStrictEqual(
-      new DiffUnreadable({ message: "Git diff metadata and patch file counts disagree: 1 != 0" }),
+      DiffUnreadable.make({ message: "Git diff metadata and patch file counts disagree: 1 != 0" }),
     );
   });
 
@@ -158,7 +158,7 @@ index 0000000..6cd59c7
 `,
       ),
     ).toStrictEqual(
-      new DiffUnreadable({
+      DiffUnreadable.make({
         message: "Git diff metadata and patch disagree: DeletedFile != AddedFile",
       }),
     );
@@ -184,7 +184,7 @@ layer(NodeServices.layer)("parseRepositoryChanges over real Git output", (it) =>
       const { inventoryOutput, diff } = yield* realGitTypeChange;
       const patchFiles = diff.split(/(?=diff --git )/u);
       expect(refusalOf(inventoryOutput, patchFiles.toReversed().join(""))).toStrictEqual(
-        new DiffUnreadable({
+        DiffUnreadable.make({
           message: "Git diff metadata and patch disagree: DeletedFile != AddedFile",
         }),
       );

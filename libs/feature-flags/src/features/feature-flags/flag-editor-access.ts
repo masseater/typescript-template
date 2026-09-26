@@ -9,7 +9,7 @@ class FlagEditorAccess extends Context.Service<
       user: Readonly<{ id: string; permission: string | null }>,
     ) => Effect.Effect<void, FlagEditorRequired>;
   }
->()("@repo/feature-flags/FlagEditorAccess") {}
+>()("@repo/feature-flags/features/feature-flags/flag-editor-access/FlagEditorAccess") {}
 
 const allowAllEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: () => Effect.void,
@@ -18,7 +18,7 @@ const allowAllEditors = Layer.succeed(FlagEditorAccess, {
 const editorsOnly = (viewers: ReadonlySet<string>): Layer.Layer<FlagEditorAccess> =>
   Layer.succeed(FlagEditorAccess, {
     assertEditor: (user) =>
-      viewers.has(user.id) ? Effect.fail(new FlagEditorRequired()) : Effect.void,
+      viewers.has(user.id) ? Effect.fail(FlagEditorRequired.make()) : Effect.void,
   });
 
 export { FlagEditorAccess, allowAllEditors, editorsOnly };

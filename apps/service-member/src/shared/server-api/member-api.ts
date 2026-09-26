@@ -73,7 +73,7 @@ function memberApi(
             const { user } = yield* verifySessionOrApiKey(request.headers);
             const profile = yield* getProfile(user.id);
             if (profile === undefined) {
-              return yield* new UserNotFound();
+              return yield* UserNotFound.make();
             }
             return profile;
           }),

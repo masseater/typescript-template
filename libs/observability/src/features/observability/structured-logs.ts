@@ -13,15 +13,12 @@ type StructuredLogOptions = {
   readonly release: string;
   readonly log?: LogSink;
 };
-const messageParts = (logMessage: unknown): readonly unknown[] => {
-  return Array.isArray(logMessage) ? logMessage : [logMessage];
-};
-const redactedMessage = (logMessage: unknown): unknown => {
-  return JSON.parse(JSON.stringify(messageParts(logMessage), redactedField));
-};
-const causeField = (cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> => {
-  return cause.reasons.length === 0 ? {} : { "error.cause": redactSecrets(Cause.pretty(cause)) };
-};
+const messageParts = (logMessage: unknown): readonly unknown[] =>
+  Array.isArray(logMessage) ? logMessage : [logMessage];
+const redactedMessage = (logMessage: unknown): unknown =>
+  JSON.parse(JSON.stringify(messageParts(logMessage), redactedField));
+const causeField = (cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> =>
+  cause.reasons.length === 0 ? {} : { "error.cause": redactSecrets(Cause.pretty(cause)) };
 const withCause = (logMessage: unknown, cause: Readonly<Cause.Cause<unknown>>): unknown => {
   const reported = causeField(cause);
   if (Object.keys(reported).length === 0) {
@@ -30,15 +27,14 @@ const withCause = (logMessage: unknown, cause: Readonly<Cause.Cause<unknown>>): 
   const [logEvent, attributes] = messageParts(logMessage);
   return [logEvent, { ...(Predicate.isObject(attributes) ? attributes : {}), ...reported }];
 };
-const redactedLogger = (logger: Logger.Logger<unknown, void>): Logger.Logger<unknown, void> => {
-  return Logger.make((settings) => {
+const redactedLogger = (logger: Logger.Logger<unknown, void>): Logger.Logger<unknown, void> =>
+  Logger.make((settings) => {
     logger.log({
       ...settings,
       cause: Cause.empty,
       message: redactedMessage(withCause(settings.message, settings.cause)),
     });
   });
-};
 const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
   All: "info",
   Debug: "info",
@@ -49,9 +45,7 @@ const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
   Trace: "info",
   Warn: "warn",
 };
-const serviceLabel = (spelled: ServiceName): string => {
-  return `${spelled}-server`;
-};
+const serviceLabel = (spelled: ServiceName): string => `${spelled}-server`;
 const structuredLogs = (settings: StructuredLogOptions): Layer.Layer<never> => {
   const logger = Logger.make(({ cause, fiber, logLevel, message }) => {
     const sink = settings.log ?? fiber.getRef(Console.Console);

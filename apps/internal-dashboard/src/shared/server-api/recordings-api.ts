@@ -59,14 +59,14 @@ const audioTypes = ["audio/", "video/"];
 
 function uploadRejection(request: Request, origin: string) {
   if (request.headers.get("origin") !== origin) {
-    return new RequestRejected({ reason: "origin_denied" });
+    return RequestRejected.make({ reason: "origin_denied" });
   }
   const length = Number(request.headers.get("content-length"));
   if (request.body === null || !Number.isInteger(length) || length <= 0) {
-    return new RequestRejected({ reason: "body_required" });
+    return RequestRejected.make({ reason: "body_required" });
   }
   return length > maximumRecordingBytes
-    ? new RequestRejected({ reason: "body_too_large" })
+    ? RequestRejected.make({ reason: "body_too_large" })
     : undefined;
 }
 
@@ -79,7 +79,7 @@ const enqueue = Effect.fn("enqueueRecording")(function* enqueue(
 ) {
   const jobs = yield* readJobs(env);
   yield* Effect.tryPromise({
-    catch: (cause) => new RecordingQueueFailed({ cause }),
+    catch: (cause) => RecordingQueueFailed.make({ cause }),
     try: () => jobs[jobsQueueBinding].send(packet),
   }).pipe(
     Effect.tapError(() =>
@@ -99,7 +99,7 @@ const uploadRecording = Effect.fn("uploadRecording")(function* uploadRecording(r
   const { title } = yield* readSearchParams(RecordingUpload, request);
   const contentType = request.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
   if (!audioTypes.some((prefix) => contentType.startsWith(prefix)) || request.body === null) {
-    return yield* new RecordingAudioUnsupported();
+    return yield* RecordingAudioUnsupported.make();
   }
   const id = crypto.randomUUID();
   const jobId = crypto.randomUUID();

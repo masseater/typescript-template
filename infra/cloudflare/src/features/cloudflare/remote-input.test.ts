@@ -55,7 +55,7 @@ describe("parseRemoteInput", () => {
       Effect.runPromise(Effect.flip(parseRemoteInput(commandArguments, input))));
 
     it("is refused with the code that names what is wrong", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new RemoteFailure({ code: expectedCode }));
+      expect(refusal).toStrictEqual(RemoteFailure.make({ code: expectedCode }));
     });
   });
 

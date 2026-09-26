@@ -24,8 +24,8 @@ const parseErrorMonitorConfig = (
   input: unknown,
 ): Effect.Effect<typeof ErrorMonitorEnvironment.Type, ErrorMonitorFailure> =>
   Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
-    Effect.mapError(
-      () => new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
+    Effect.mapError(() =>
+      ErrorMonitorFailure.make({ code: "error_monitor_config_invalid", keys: [] }),
     ),
   );
 

@@ -52,7 +52,7 @@ const readVisibility = Effect.fn("readVisibility")(function* readVisibility(user
     database.select(visibilityColumns).from(user).where(eq(user.id, userId)).limit(1),
   );
   if (!storedVisibility) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   return storedVisibility satisfies VisibilitySettings;
 });
@@ -70,7 +70,7 @@ const updateVisibility = Effect.fn("updateVisibility")(function* updateVisibilit
       .returning(visibilityColumns),
   );
   if (!savedVisibility) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   return savedVisibility satisfies VisibilitySettings;
 });
@@ -87,7 +87,7 @@ const photoKeysOf = Effect.fn("photoKeysOf")(function* photoKeysOf(memberId: str
     database.select(photoKeyColumns).from(user).where(eq(user.id, memberId)).limit(1),
   );
   if (!storedPhotoKeys) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   return storedPhotoKeys satisfies PhotoKeys;
 });

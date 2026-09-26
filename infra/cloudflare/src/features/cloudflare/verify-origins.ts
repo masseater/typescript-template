@@ -23,17 +23,19 @@ const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   }).pipe(
     Effect.timeout(Duration.seconds(15)),
     Effect.provide(FetchHttpClient.layer),
-    Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unreachable", keys: [service] })),
+    Effect.mapError(() =>
+      OriginVerifyFailure.make({ code: "origin_unreachable", keys: [service] }),
+    ),
   );
   if (response.status < 200 || response.status > 299) {
-    return yield* new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] });
+    return yield* OriginVerifyFailure.make({ code: "origin_unhealthy", keys: [service] });
   }
   const health = yield* response.json.pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(HealthView)),
-    Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] })),
+    Effect.mapError(() => OriginVerifyFailure.make({ code: "origin_unhealthy", keys: [service] })),
   );
   if (health.service !== service) {
-    return yield* new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] });
+    return yield* OriginVerifyFailure.make({ code: "origin_unhealthy", keys: [service] });
   }
   yield* Console.info(
     yield* encodeJson({

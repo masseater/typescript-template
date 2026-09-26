@@ -28,14 +28,14 @@ const composeArguments = (
       ? undefined
       : actions[actionName];
   return composeArgs === undefined
-    ? Effect.fail(new LocalServicesFailure({ code: "local_action_unknown" }))
+    ? Effect.fail(LocalServicesFailure.make({ code: "local_action_unknown" }))
     : Effect.succeed(composeArgs);
 };
 
 const runCompose = Effect.fn("runCompose")(function* runCompose(composeArgs: readonly string[]) {
   const filesystem = yield* FileSystem.FileSystem;
   const bundled = yield* filesystem.exists(bundledCompose).pipe(Effect.orElseSucceed(() => false));
-  const failed = new LocalServicesFailure({ code: "compose_command_failed" });
+  const failed = LocalServicesFailure.make({ code: "compose_command_failed" });
   const command = bundled ? bundledCompose : "docker";
   const commandArgs = [...(bundled ? [] : ["compose"]), "-f", composeFile, ...composeArgs];
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;

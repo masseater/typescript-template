@@ -45,7 +45,7 @@ const git = Effect.fn("git")(function* git(
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
+    : yield* GitFixtureRefused.make({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(

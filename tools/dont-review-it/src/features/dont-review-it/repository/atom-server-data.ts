@@ -38,8 +38,8 @@ const isServerCacheApi = (origin: Origin): boolean => {
   );
 };
 
-const isAtomConstructor = (inspection: LintContext, callee: Node): boolean => {
-  return origins(inspection, callee).some((origin) => {
+const isAtomConstructor = (inspection: LintContext, callee: Node): boolean =>
+  origins(inspection, callee).some((origin) => {
     const [source = "", namespace = "", member = ""] = normalized(origin);
     return (
       (source === reactivity && namespace === "Atom" && atomConstructors.has(member)) ||
@@ -47,23 +47,18 @@ const isAtomConstructor = (inspection: LintContext, callee: Node): boolean => {
         namespace === "requestAtom")
     );
   });
-};
 
-const isNode = (value: unknown): value is Node => {
-  return (
-    typeof value === "object" && value !== null && "type" in value && typeof value.type === "string"
-  );
-};
+const isNode = (value: unknown): value is Node =>
+  typeof value === "object" && value !== null && "type" in value && typeof value.type === "string";
 
-const children = (node: Node): Node[] => {
-  return Object.entries(node).flatMap(([key, value]: readonly [string, unknown]) => {
+const children = (node: Node): Node[] =>
+  Object.entries(node).flatMap(([key, value]: readonly [string, unknown]) => {
     if (key === "parent") {
       return [];
     }
     const values: readonly unknown[] = Array.isArray(value) ? value : [value];
     return values.filter((child) => isNode(child));
   });
-};
 
 const isIoOrigin = (origin: Origin): boolean => {
   const [source = "", member = ""] = origin;
@@ -101,11 +96,8 @@ const performsIo = (inspection: LintContext, node: Node, seen: Set<Node>): boole
   );
 };
 
-const holdsServerData = (inspection: LintContext, node: NodeOf<"CallExpression">): boolean => {
-  return (
-    isAtomConstructor(inspection, node.callee) &&
-    node.arguments.some((argument) => performsIo(inspection, argument, new Set()))
-  );
-};
+const holdsServerData = (inspection: LintContext, node: NodeOf<"CallExpression">): boolean =>
+  isAtomConstructor(inspection, node.callee) &&
+  node.arguments.some((argument) => performsIo(inspection, argument, new Set()));
 
 export { holdsServerData, isServerCacheApi };

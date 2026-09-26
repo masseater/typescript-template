@@ -77,7 +77,7 @@ describe("effect typecheck gate", () => {
       Effect.runPromise(
         compileWorkspace({
           cwd: paths.join(repositoryRoot, "libs/vite-config"),
-          locate: Effect.fail(new CompilerMissing()),
+          locate: Effect.fail(CompilerMissing.make()),
         }),
       ),
     )

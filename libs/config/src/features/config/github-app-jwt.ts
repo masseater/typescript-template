@@ -49,7 +49,7 @@ const pkcs8Key = (pem: string): Effect.Effect<Uint8Array, GitHubAppKeyInvalid> =
   const pemBody = pem.replaceAll(/-----(?:BEGIN|END) (?:RSA )?PRIVATE KEY-----|\s/gu, "");
   const decoded = Encoding.decodeBase64(pemBody);
   if (Result.isFailure(decoded)) {
-    return Effect.fail(new GitHubAppKeyInvalid({ cause: decoded.failure }));
+    return Effect.fail(GitHubAppKeyInvalid.make({ cause: decoded.failure }));
   }
   return Effect.succeed(
     pem.includes("BEGIN RSA PRIVATE KEY")
@@ -71,7 +71,7 @@ const signGitHubAppJwt = Effect.fn("signGitHubAppJwt")(function* signGitHubAppJw
 ) {
   const der = yield* pkcs8Key(Redacted.value(appKey.privateKey));
   const signingKey = yield* Effect.tryPromise({
-    catch: (cause) => new GitHubAppKeyInvalid({ cause }),
+    catch: (cause) => GitHubAppKeyInvalid.make({ cause }),
     try: () =>
       crypto.subtle.importKey(
         "pkcs8",

@@ -7,7 +7,7 @@ class UnreadableSearch extends Schema.TaggedError<UnreadableSearch>()("Unreadabl
 
 const readPage = searchValidator(
   Schema.decodeUnknownOption(Schema.Struct({ page: Schema.optionalKey(Schema.Finite) })),
-  () => new UnreadableSearch(),
+  () => UnreadableSearch.make(),
 );
 
 describe("a search read through a validator", () => {
@@ -26,6 +26,6 @@ describe("a search read through a validator", () => {
   });
 
   it("throws the invalid search failure for a search it cannot decode", ({ theRejection }) => {
-    expect(theRejection).toStrictEqual(new UnreadableSearch());
+    expect(theRejection).toStrictEqual(UnreadableSearch.make());
   });
 });

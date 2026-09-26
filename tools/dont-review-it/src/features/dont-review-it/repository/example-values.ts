@@ -55,9 +55,8 @@ const documentationIpv4 = /^(?:192\.0\.2|198\.51\.100|203\.0\.113)\.(?:25[0-5]|2
 
 const documentationIpv6 = /^\[?2001:db8:[0-9a-f:]*\]?$/iu;
 
-const isDocumentationAddress = (hostname: string): boolean => {
-  return documentationIpv4.test(hostname) || documentationIpv6.test(hostname);
-};
+const isDocumentationAddress = (hostname: string): boolean =>
+  documentationIpv4.test(hostname) || documentationIpv6.test(hostname);
 
 const isExampleHost = (hostname: string): boolean => {
   const normalized = hostname.replace(/\.$/u, "").toLowerCase();
@@ -117,23 +116,24 @@ const isExampleValue = (written: string): boolean => {
   return !looksLikeHostname(written) || isExampleHost(written);
 };
 
-const valueChecker = (inspection: LintContext): ((node: Node) => void) => {
-  return (node) => {
+const valueChecker =
+  (inspection: LintContext): ((node: Node) => void) =>
+  (node) => {
     const written = staticText(inspection, node);
     if (written !== undefined && !isExampleValue(written)) {
       reportViolation(inspection, node);
     }
   };
-};
 
 const secretName =
   /secret|token|password|credential|authorization|apikey|bearer|passphrase|signature/iu;
 const exampleSecret = /^(?:Bearer\s+)?[^A-Z]*$/u;
 
-const secretChecker = (
-  inspection: LintContext,
-): ((declared: string | undefined, node: Node | null | undefined) => void) => {
-  return (declared, node) => {
+const secretChecker =
+  (
+    inspection: LintContext,
+  ): ((declared: string | undefined, node: Node | null | undefined) => void) =>
+  (declared, node) => {
     if (node === null || node === undefined) {
       return;
     }
@@ -145,7 +145,6 @@ const secretChecker = (
       reportViolation(inspection, node);
     }
   };
-};
 
 const memberPropertyName = (inspection: LintContext, node: Node): string | undefined => {
   if (node.type !== "MemberExpression") {

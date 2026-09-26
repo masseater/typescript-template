@@ -3,8 +3,8 @@ import { replacementForImport } from "./retired-packages.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const retiredImportsVisitor = (inspection: LintContext): Visitor => {
-  return importVisitor((node: Node) => {
+const retiredImportsVisitor = (inspection: LintContext): Visitor =>
+  importVisitor((node: Node) => {
     if (
       node.type === "Literal" &&
       typeof node.value === "string" &&
@@ -13,6 +13,5 @@ const retiredImportsVisitor = (inspection: LintContext): Visitor => {
       reportViolation(inspection, node);
     }
   });
-};
 
 export { retiredImportsVisitor };

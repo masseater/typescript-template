@@ -2,20 +2,20 @@ import { ruleDuration, startLintTelemetry } from "./lint-telemetry.ts";
 
 import type { Visitor } from "@oxlint/plugins";
 
-const measured = ({
-  ruleName,
-  handler,
-}: {
-  readonly ruleName: string;
-  readonly handler: (...args: readonly never[]) => unknown;
-}): ((...args: readonly never[]) => unknown) => {
-  return (...handed) => {
+const measured =
+  ({
+    ruleName,
+    handler,
+  }: {
+    readonly ruleName: string;
+    readonly handler: (...args: readonly never[]) => unknown;
+  }): ((...args: readonly never[]) => unknown) =>
+  (...handed) => {
     const startedAt = performance.now();
     const handled = handler(...handed);
     ruleDuration().record(performance.now() - startedAt, { rule: ruleName });
     return handled;
   };
-};
 
 export const measureVisitor = ({
   ruleName,

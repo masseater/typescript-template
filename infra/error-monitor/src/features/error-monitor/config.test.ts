@@ -36,7 +36,7 @@ describe.for([
 
   it("refuses without echoing the invalid value", ({ configFailure }) => {
     expect(configFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
+      ErrorMonitorFailure.make({ code: "error_monitor_config_invalid", keys: [] }),
     );
   });
 });

@@ -268,10 +268,10 @@ const recoverableEmail = Effect.fn("recoverableEmail")(function* recoverableEmai
       .limit(1),
   );
   if (member === undefined) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   if (!member.emailVerified || member.role !== ROLE.member) {
-    return yield* new RecoveryUnavailable();
+    return yield* RecoveryUnavailable.make();
   }
   return member.email;
 });
@@ -286,7 +286,7 @@ const decodeSnapshot = (
         eventName: "member_leave.snapshot_invalid",
       }),
     ),
-    Effect.mapError(() => new RecoveryUnavailable()),
+    Effect.mapError(() => RecoveryUnavailable.make()),
   );
 
 const restoreWithdrawn = Effect.fn("restoreWithdrawnMember")(function* restoreWithdrawn(
@@ -337,7 +337,7 @@ const pendingWithdrawal = Effect.fn("pendingWithdrawal")(function* pendingWithdr
       .limit(1),
   );
   if (pending === undefined) {
-    return yield* new RecoveryExpired();
+    return yield* RecoveryExpired.make();
   }
   return pending;
 });
@@ -369,10 +369,10 @@ const withdrawableMember = Effect.fn("withdrawableMember")(function* withdrawabl
     database.select().from(user).where(eq(user.id, memberId)).limit(1),
   );
   if (member === undefined) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   if (member.role !== ROLE.member) {
-    return yield* new MemberLeaveUnavailable();
+    return yield* MemberLeaveUnavailable.make();
   }
   return member;
 });

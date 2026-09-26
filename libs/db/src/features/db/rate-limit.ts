@@ -29,7 +29,7 @@ const consumeRateLimit = Effect.fn("consumeRateLimit")(function* consumeRateLimi
     return;
   }
   if (existing.count >= max) {
-    return yield* new RateLimitExceeded();
+    return yield* RateLimitExceeded.make();
   }
   yield* query((database) =>
     database

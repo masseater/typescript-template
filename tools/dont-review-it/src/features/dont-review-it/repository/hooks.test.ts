@@ -532,7 +532,7 @@ const parsedSource = <S extends Schema.ConstraintDecoder<unknown>>(
 ): Effect.Effect<S["Type"], SourceMissing | Schema.SchemaError> => {
   const source = sources[file];
   if (source === undefined) {
-    return Effect.fail(new SourceMissing({ file }));
+    return Effect.fail(SourceMissing.make({ file }));
   }
   return Schema.decodeUnknownEffect(schema)(parse(source));
 };

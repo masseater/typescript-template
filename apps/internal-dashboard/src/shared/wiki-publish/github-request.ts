@@ -48,16 +48,16 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
       Effect.timeout(gitHubRequestTimeout),
       Effect.provide(FetchHttpClient.layer),
       Effect.provideService(FetchHttpClient.Fetch, globalThis.fetch),
-      Effect.mapError((cause) => new WikiPublishUnreachable({ cause, step: call.step })),
+      Effect.mapError((cause) => WikiPublishUnreachable.make({ cause, step: call.step })),
     );
     if (response.status >= httpStatus.internalServerError) {
-      return yield* new WikiPublishUnreachable({
+      return yield* WikiPublishUnreachable.make({
         cause: new Error(`GitHub answered ${String(response.status)}`),
         step: call.step,
       });
     }
     const refused = (message: string): WikiPublishFailed =>
-      new WikiPublishFailed({ message, status: response.status, step: call.step });
+      WikiPublishFailed.make({ message, status: response.status, step: call.step });
     if (response.status < gitHubSuccessStatus.first || response.status > gitHubSuccessStatus.last) {
       const answer = yield* HttpClientResponse.schemaBodyJson(GitHubError)(response).pipe(
         Effect.orElseSucceed((): typeof GitHubError.Type => ({

@@ -110,12 +110,11 @@ const recordBrowserEvent = (recorded: {
 const emptyResponse = (emptyAnswer: {
   readonly status: number;
   readonly headers?: Readonly<Record<string, string>>;
-}): Response => {
-  return new Response(undefined, {
+}): Response =>
+  new Response(undefined, {
     headers: emptyAnswer.headers ?? noStore,
     status: emptyAnswer.status,
   });
-};
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
 const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: IngressRequest) {
   const telemetry = yield* Telemetry;

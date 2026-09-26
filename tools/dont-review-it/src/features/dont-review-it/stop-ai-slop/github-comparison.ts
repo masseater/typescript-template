@@ -26,7 +26,7 @@ const completeFilesOf = (
 ): Effect.Effect<readonly ComparedFile[], GitHubComparisonIncomplete> => {
   if (files === undefined) {
     return Effect.fail(
-      new GitHubComparisonIncomplete({
+      GitHubComparisonIncomplete.make({
         message:
           "Do not pass a change the GitHub compare answered without its changed files: fetch the merge with its parents so the checkout compares it locally.",
       }),
@@ -34,7 +34,7 @@ const completeFilesOf = (
   }
   if (files.length >= COMPARE_FILE_LIMIT) {
     return Effect.fail(
-      new GitHubComparisonIncomplete({
+      GitHubComparisonIncomplete.make({
         message: `Do not pass a change the GitHub compare may have cut short: it lists at most ${COMPARE_FILE_LIMIT} files and answered ${files.length}. Fetch the merge with its parents so the checkout compares it locally.`,
       }),
     );
@@ -42,7 +42,7 @@ const completeFilesOf = (
   const unpatched = files.filter((file) => file.patch === undefined && file.changes > 0);
   if (unpatched.length > 0) {
     return Effect.fail(
-      new GitHubComparisonIncomplete({
+      GitHubComparisonIncomplete.make({
         message: `Do not pass a change whose diff the GitHub compare left out: ${unpatched.map((file) => file.filename).join(", ")}. Fetch the merge with its parents so the checkout compares it locally.`,
       }),
     );

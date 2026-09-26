@@ -91,8 +91,8 @@ const linkedEntry = ({
     const filesystem = yield* FileSystem.FileSystem;
     const { type } = yield* filesystem.stat(entryPath).pipe(
       Effect.mapError((failure): TreeFailure => {
-        if (isMissingPath(failure)) return new DanglingSymlink({ path: entryPath });
-        if (isLinkLoop(failure)) return new SymlinkCycle({ path: entryPath, target: linkText });
+        if (isMissingPath(failure)) return DanglingSymlink.make({ path: entryPath });
+        if (isLinkLoop(failure)) return SymlinkCycle.make({ path: entryPath, target: linkText });
         return failure;
       }),
     );
@@ -100,7 +100,7 @@ const linkedEntry = ({
     if (!uses(entry)) return null;
     const realPath = yield* filesystem.realPath(entryPath);
     if (!isWithin(descent.realRoot, realPath)) {
-      return yield* new EscapingSymlink({ path: entryPath, target: realPath, root: descent.root });
+      return yield* EscapingSymlink.make({ path: entryPath, target: realPath, root: descent.root });
     }
     return { ...entry, realPath };
   });
@@ -130,7 +130,7 @@ const resolvedEntry = ({
           })
         : yield* linkedEntry({ entryPath, linkText, descent, uses });
     if (resolved?.kind === "directory" && descent.enclosing.includes(resolved.realPath)) {
-      return yield* new SymlinkCycle({ path: entryPath, target: resolved.realPath });
+      return yield* SymlinkCycle.make({ path: entryPath, target: resolved.realPath });
     }
     return resolved;
   });

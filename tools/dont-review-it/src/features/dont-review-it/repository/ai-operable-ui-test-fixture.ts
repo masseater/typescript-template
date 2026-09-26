@@ -37,19 +37,17 @@ type AccessibleNameCount = {
   readonly role: "button" | "link";
 };
 
-const captchaImportViolations = (source: string): string[] => {
-  return captchaImportPattern.test(source)
+const captchaImportViolations = (source: string): string[] =>
+  captchaImportPattern.test(source)
     ? ["captcha-import: 画像認証は使えません。回数の上限と User-Agent で乱用を見てください。"]
     : [];
-};
 
-const browserConfirmViolations = (source: string): string[] => {
-  return browserConfirmPattern.test(source)
+const browserConfirmViolations = (source: string): string[] =>
+  browserConfirmPattern.test(source)
     ? [
         "browser-confirm: window.confirm / alert は使えません。見出しと動作の名前を持つ ConfirmDialog を使ってください。",
       ]
     : [];
-};
 
 const hoverOnlyActionViolations = (source: string): string[] => {
   const classBlocks = [
@@ -96,12 +94,11 @@ const urlHoldsScreenState = (href: string, paramNames: readonly string[]): boole
   );
 };
 
-const stripTags = (markup: string): string => {
-  return markup
+const stripTags = (markup: string): string =>
+  markup
     .replaceAll(/<[^>]+>/gu, "")
     .replaceAll(/\s+/gu, " ")
     .trim();
-};
 
 const accessibleNameFromMarkup = (attributes: string, body: string): string => {
   const aria = ariaLabelAttr.exec(attributes);
@@ -138,22 +135,19 @@ const duplicateNamesInMarkup = (
     .toSorted((left, right) => left.name.localeCompare(right.name));
 };
 
-const duplicateAccessibleNamesInMarkup = (markup: string): AccessibleNameCount[] => {
-  return [
-    ...duplicateNamesInMarkup(markup, buttonMarkup, "button"),
-    ...duplicateNamesInMarkup(markup, linkMarkup, "link"),
-  ];
-};
+const duplicateAccessibleNamesInMarkup = (markup: string): AccessibleNameCount[] => [
+  ...duplicateNamesInMarkup(markup, buttonMarkup, "button"),
+  ...duplicateNamesInMarkup(markup, linkMarkup, "link"),
+];
 
-const unnamedButtonsInMarkup = (markup: string): string[] => {
-  return [...markup.matchAll(buttonMarkup)].flatMap((match, buttonIndex) => {
+const unnamedButtonsInMarkup = (markup: string): string[] =>
+  [...markup.matchAll(buttonMarkup)].flatMap((match, buttonIndex) => {
     const attributes = match[1] ?? match[3] ?? "";
     const body = match[2] ?? "";
     return accessibleNameFromMarkup(attributes, body) === ""
       ? [`button#${String(buttonIndex)}`]
       : [];
   });
-};
 
 const resultAnnouncedInMarkup = (markup: string, announced: string): boolean => {
   const liveLabels = [...markup.matchAll(liveRegionMarkup)].map((match) =>
@@ -165,17 +159,16 @@ const resultAnnouncedInMarkup = (markup: string, announced: string): boolean => 
   return stripTags(markup).includes(announced);
 };
 
-const shippedUiRuleViolations = (source: string): string[] => {
-  return [
-    ...captchaImportViolations(source),
-    ...browserConfirmViolations(source),
-    ...hoverOnlyActionViolations(source),
-  ];
-};
+const shippedUiRuleViolations = (source: string): string[] => [
+  ...captchaImportViolations(source),
+  ...browserConfirmViolations(source),
+  ...hoverOnlyActionViolations(source),
+];
 
-const aiOperableUiViolations = (source: string): string[] => {
-  return [...shippedUiRuleViolations(source), ...unnamedControlViolations(source)];
-};
+const aiOperableUiViolations = (source: string): string[] => [
+  ...shippedUiRuleViolations(source),
+  ...unnamedControlViolations(source),
+];
 
 export {
   aiOperableUiViolations,

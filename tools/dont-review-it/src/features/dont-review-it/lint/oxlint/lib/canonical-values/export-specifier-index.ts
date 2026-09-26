@@ -260,9 +260,8 @@ export const publicPackageEntries = (
   );
 };
 
-export const publicPackageName = (packageDirectory: string): string | null => {
-  return packageManifest(packageDirectory)?.name ?? null;
-};
+export const publicPackageName = (packageDirectory: string): string | null =>
+  packageManifest(packageDirectory)?.name ?? null;
 
 const declarationIdentity = (declaration: ts.Declaration): string =>
   `${declaration.getSourceFile().fileName}:${declaration.pos}:${declaration.end}`;
@@ -307,11 +306,10 @@ const ownerExportNames = ({
 const sharedExportNames = ([firstExportNames, ...remaining]: readonly [
   readonly string[],
   ...(readonly string[])[],
-]): readonly string[] => {
-  return firstExportNames.filter((exportName) =>
+]): readonly string[] =>
+  firstExportNames.filter((exportName) =>
     remaining.every((exportNames) => exportNames.includes(exportName)),
   );
-};
 
 export const publicImportRoutes = ({
   checker,

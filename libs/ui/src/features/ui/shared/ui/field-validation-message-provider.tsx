@@ -9,12 +9,10 @@ import type { Children } from "./types";
 const FieldValidationMessageProvider = ({
   children,
   messages: validationMessages,
-}: Children & Readonly<{ messages: FieldValidationMessages }>): ReactElement => {
-  return (
-    <FieldValidationMessageContext value={validationMessages}>
-      {children}
-    </FieldValidationMessageContext>
-  );
-};
+}: Children & Readonly<{ messages: FieldValidationMessages }>): ReactElement => (
+  <FieldValidationMessageContext value={validationMessages}>
+    {children}
+  </FieldValidationMessageContext>
+);
 
 export { FieldValidationMessageProvider };

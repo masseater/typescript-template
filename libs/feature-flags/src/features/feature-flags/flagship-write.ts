@@ -49,7 +49,7 @@ class FlagshipWriteFailed extends Schema.TaggedError<FlagshipWriteFailed>()("Fla
 }) {}
 
 const asFlagshipFailure = (cause: unknown): FlagshipWriteFailed =>
-  new FlagshipWriteFailed({ detail: String(cause) });
+  FlagshipWriteFailed.make({ detail: String(cause) });
 
 const acceptedResponse = (
   operation: "read" | "write",
@@ -64,7 +64,7 @@ const acceptedResponse = (
     Effect.mapError(asFlagshipFailure),
     Effect.filterOrFail(
       (httpResponse) => httpResponse.status >= 200 && httpResponse.status < 300,
-      (httpResponse) => new FlagshipWriteFailed({ detail: `${operation} ${httpResponse.status}` }),
+      (httpResponse) => FlagshipWriteFailed.make({ detail: `${operation} ${httpResponse.status}` }),
     ),
   );
 
@@ -81,7 +81,7 @@ const readFlag = Effect.fn("readFlag")(function* readFlag(
   );
   const remoteFlag = parsedPayload.result;
   if (remoteFlag === undefined) {
-    return yield* new FlagshipWriteFailed({ detail: "missing flag" });
+    return yield* FlagshipWriteFailed.make({ detail: "missing flag" });
   }
   return remoteFlag;
 });

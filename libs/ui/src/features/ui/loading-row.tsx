@@ -5,14 +5,12 @@ import { TableRow } from "./shared/ui/table-row";
 
 import type { ReactElement } from "react";
 
-const LoadingRow = ({ columnCount }: Readonly<{ columnCount: number }>): ReactElement => {
-  return (
-    <TableRow>
-      <TableCell colSpan={columnCount}>
-        <StatusMessage variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</StatusMessage>
-      </TableCell>
-    </TableRow>
-  );
-};
+const LoadingRow = ({ columnCount }: Readonly<{ columnCount: number }>): ReactElement => (
+  <TableRow>
+    <TableCell colSpan={columnCount}>
+      <StatusMessage variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</StatusMessage>
+    </TableCell>
+  </TableRow>
+);
 
 export { LoadingRow };

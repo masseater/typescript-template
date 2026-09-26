@@ -15,60 +15,52 @@ type LintContext = Readonly<
   }
 >;
 
-const filename = (inspection: LintContext): string => {
-  return inspection.filename.replaceAll("\\", "/");
-};
+const filename = (inspection: LintContext): string => inspection.filename.replaceAll("\\", "/");
 
 const fixtureOrTestFile = /(?:\.(?:test|spec)|-test-fixture)\.[cm]?[jt]sx?$/u;
 
-const scopeOf = (inspection: LintContext, node: Node): Scope => {
-  return inspection.sourceCode.getScope(node as ESTree.Node);
-};
+const scopeOf = (inspection: LintContext, node: Node): Scope =>
+  inspection.sourceCode.getScope(node as ESTree.Node);
 
-const declaredVariablesOf = (inspection: LintContext, node: Node): readonly Variable[] => {
-  return inspection.sourceCode.getDeclaredVariables(node as ESTree.Node);
-};
+const declaredVariablesOf = (inspection: LintContext, node: Node): readonly Variable[] =>
+  inspection.sourceCode.getDeclaredVariables(node as ESTree.Node);
 
-const runtimeImportVisitor = (checkSource: (node: Node) => void): Visitor => {
-  return {
-    ExportAllDeclaration(node: Node): void {
-      if (node.type === "ExportAllDeclaration") {
-        checkSource(node.source);
-      }
-    },
-    ExportNamedDeclaration(node: Node): void {
-      if (node.type === "ExportNamedDeclaration" && node.source) {
-        checkSource(node.source);
-      }
-    },
-    ImportDeclaration(node: Node): void {
-      if (node.type === "ImportDeclaration") {
-        checkSource(node.source);
-      }
-    },
-    ImportExpression(node: Node): void {
-      if (node.type === "ImportExpression") {
-        checkSource(node.source);
-      }
-    },
-  };
-};
+const runtimeImportVisitor = (checkSource: (node: Node) => void): Visitor => ({
+  ExportAllDeclaration(node: Node): void {
+    if (node.type === "ExportAllDeclaration") {
+      checkSource(node.source);
+    }
+  },
+  ExportNamedDeclaration(node: Node): void {
+    if (node.type === "ExportNamedDeclaration" && node.source) {
+      checkSource(node.source);
+    }
+  },
+  ImportDeclaration(node: Node): void {
+    if (node.type === "ImportDeclaration") {
+      checkSource(node.source);
+    }
+  },
+  ImportExpression(node: Node): void {
+    if (node.type === "ImportExpression") {
+      checkSource(node.source);
+    }
+  },
+});
 
-const importVisitor = (checkSource: (node: Node) => void): Visitor => {
-  return {
-    ...runtimeImportVisitor(checkSource),
-    TSExternalModuleReference(node: Node): void {
-      if (node.type === "TSExternalModuleReference") {
-        checkSource(node.expression);
-      }
-    },
-    TSImportType(node: Node): void {
-      if (node.type === "TSImportType") {
-        checkSource(node.source);
-      }
-    },
-  };
-};
+const importVisitor = (checkSource: (node: Node) => void): Visitor => ({
+  ...runtimeImportVisitor(checkSource),
+  TSExternalModuleReference(node: Node): void {
+    if (node.type === "TSExternalModuleReference") {
+      checkSource(node.expression);
+    }
+  },
+  TSImportType(node: Node): void {
+    if (node.type === "TSImportType") {
+      checkSource(node.source);
+    }
+  },
+});
 
 const testCallVisitor = (
   inspection: LintContext,

@@ -19,7 +19,7 @@ function loadMembers(search: UsersSearch, page: number): Promise<Members> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.members.get({ query }).then((reply) => {
       if (reply.error?.status === httpStatus.paymentRequired) {
-        throw new PaidPlanRequired();
+        throw PaidPlanRequired.make();
       }
       return apiData(MemberList, reply);
     }),

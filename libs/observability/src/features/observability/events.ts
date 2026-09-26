@@ -61,8 +61,8 @@ export const parseBrowserEvents = (received: {
   readonly body: unknown;
   readonly routeLabels: Readonly<ReadonlySet<string>>;
   readonly receivedAt: number;
-}): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> => {
-  return decodeEvents(received.body).pipe(
+}): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> =>
+  decodeEvents(received.body).pipe(
     Effect.mapError(() => new BrowserEventsInvalid()),
     Effect.filterOrFail(
       (browserEvents) =>
@@ -75,5 +75,4 @@ export const parseBrowserEvents = (received: {
       () => new BrowserEventsInvalid(),
     ),
   );
-};
 export type { BrowserEventsInvalid };

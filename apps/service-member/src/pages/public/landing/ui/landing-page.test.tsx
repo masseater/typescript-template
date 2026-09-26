@@ -32,8 +32,8 @@ const landingKeys = [
 
 type LandingCopy = Record<(typeof landingKeys)[number], string>;
 
-const landingCopy = (catalog: Record<string, unknown>): LandingCopy => {
-  return Object.fromEntries(
+const landingCopy = (catalog: Record<string, unknown>): LandingCopy =>
+  Object.fromEntries(
     landingKeys.map((key) => {
       const value = catalog[key];
       if (typeof value !== "string") {
@@ -42,7 +42,6 @@ const landingCopy = (catalog: Record<string, unknown>): LandingCopy => {
       return [key, value];
     }),
   ) as LandingCopy;
-};
 
 const rendered = (locale: Locale, view: ReactElement): string => {
   overwriteGetLocale(() => locale);

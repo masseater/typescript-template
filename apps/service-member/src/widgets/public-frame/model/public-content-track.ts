@@ -6,8 +6,7 @@ const columnPaths = new Set([
   "/verify-email-change",
 ]);
 
-const publicContentTrack = (pathname: string): "max-w-column" | "max-w-page" => {
-  return columnPaths.has(pathname) ? "max-w-column" : "max-w-page";
-};
+const publicContentTrack = (pathname: string): "max-w-column" | "max-w-page" =>
+  columnPaths.has(pathname) ? "max-w-column" : "max-w-page";
 
 export { publicContentTrack };

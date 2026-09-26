@@ -15,7 +15,7 @@ class SessionUserMissing extends Schema.TaggedError<SessionUserMissing>()(
 const useSessionUser = (): SessionUser => {
   const sessionUser = useContext(SessionUserContext);
   if (sessionUser === undefined) {
-    throw new SessionUserMissing();
+    throw SessionUserMissing.make();
   }
   return sessionUser;
 };

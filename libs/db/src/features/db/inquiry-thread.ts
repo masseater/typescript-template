@@ -54,7 +54,7 @@ const inquiryThread = <Row extends object>(
   Effect.gen(function* inquiryThreadProgram() {
     const [foundInquiry] = yield* found;
     if (!foundInquiry) {
-      return yield* new InquiryNotFound();
+      return yield* InquiryNotFound.make();
     }
     const threadMessages = yield* inquiryMessages(inquiryId);
     return { ...foundInquiry, messages: threadMessages };

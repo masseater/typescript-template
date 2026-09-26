@@ -26,8 +26,8 @@ const builtInPlugins: ReadonlySet<string> = new Set([
   "vue",
 ]);
 
-const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
-  return overrides.flatMap((override, index) => {
+const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] =>
+  overrides.flatMap((override, index) => {
     const plugins = override.plugins;
     if (plugins === undefined) {
       return [];
@@ -41,6 +41,5 @@ const overridePluginMismatches = (overrides: typeof lintOptions.overrides): read
       return [`overrides[${String(index)}] ${rule} needs plugins to include ${plugin}`];
     });
   });
-};
 
 export { configuredLintRules, overridePluginMismatches };

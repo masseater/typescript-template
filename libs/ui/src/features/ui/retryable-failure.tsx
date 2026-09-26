@@ -8,15 +8,13 @@ import type { Children } from "./shared/ui/types";
 const RetryableFailure = ({
   children,
   onRetry,
-}: Children & Readonly<{ onRetry: () => void }>): ReactElement => {
-  return (
-    <div className="flex flex-col items-start gap-2">
-      <StatusMessage variant={STATUS_VARIANT.failure}>{children}</StatusMessage>
-      <Button type="button" onClick={onRetry}>
-        {"再試行"}
-      </Button>
-    </div>
-  );
-};
+}: Children & Readonly<{ onRetry: () => void }>): ReactElement => (
+  <div className="flex flex-col items-start gap-2">
+    <StatusMessage variant={STATUS_VARIANT.failure}>{children}</StatusMessage>
+    <Button type="button" onClick={onRetry}>
+      {"再試行"}
+    </Button>
+  </div>
+);
 
 export { RetryableFailure };

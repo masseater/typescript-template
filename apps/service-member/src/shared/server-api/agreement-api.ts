@@ -87,7 +87,7 @@ const published = Effect.fn("agreements.published")(function* published(request:
   const { kind } = yield* readSearchParams(PublishedAgreementQuery, request);
   const found = yield* publishedAgreement(kind);
   if (found === null) {
-    return yield* new AgreementVersionUnavailable();
+    return yield* AgreementVersionUnavailable.make();
   }
   return { ...found, publishedAt: found.publishedAt.getTime() };
 });
@@ -96,7 +96,7 @@ const withdraw = Effect.fn("agreements.withdraw")(function* withdraw(request: Re
   const { user } = yield* verifySession(request.headers);
   const { kind } = yield* readJsonBody(AgreementWithdrawal, request);
   if (!agreementPolicies[kind].withdrawable) {
-    return yield* new AgreementWithdrawalUnavailable();
+    return yield* AgreementWithdrawalUnavailable.make();
   }
   yield* withdrawAgreementKind({ kind, userId: user.id });
   if (kind === AGREEMENT_KIND.interview_history) {

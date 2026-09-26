@@ -55,7 +55,7 @@ describe("readWikiPublishConfig", () => {
       ));
 
     it("is refused as invalid configuration", ({ refusalTag }) => {
-      expect(refusalTag).toBe(new ConfigurationInvalid({ reason: "" })._tag);
+      expect(refusalTag).toBe(ConfigurationInvalid.make({ reason: "" })._tag);
     });
   });
 });

@@ -28,13 +28,12 @@ const schemaReactRules = Effect.gen(function* schemaReactRules() {
     .toSorted();
 });
 
-const configuredReactRules = (): ReadonlyMap<string, unknown> => {
-  return new Map(
+const configuredReactRules = (): ReadonlyMap<string, unknown> =>
+  new Map(
     Object.entries(UPSTREAM_RULES)
       .filter(([rule]) => rule.startsWith("react/"))
       .map(([rule, setting]) => [rule.slice("react/".length), setting]),
   );
-};
 
 const severityOf = (setting: unknown): unknown => (Array.isArray(setting) ? setting[0] : setting);
 

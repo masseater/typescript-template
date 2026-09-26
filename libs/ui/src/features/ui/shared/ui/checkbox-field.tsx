@@ -16,19 +16,17 @@ const CheckboxField = ({
   label: string;
   name?: string | undefined;
   onCheckedChange: (checked: boolean) => void;
-}>): ReactElement => {
-  return (
-    <label data-slot="field" className="flex w-fit cursor-pointer items-center gap-2">
-      <Checkbox
-        aria-label={ariaLabel ?? label}
-        checked={checked}
-        disabled={disabled}
-        name={name}
-        onCheckedChange={onCheckedChange}
-      />
-      <span className="text-base leading-none font-bold text-foreground">{label}</span>
-    </label>
-  );
-};
+}>): ReactElement => (
+  <label data-slot="field" className="flex w-fit cursor-pointer items-center gap-2">
+    <Checkbox
+      aria-label={ariaLabel ?? label}
+      checked={checked}
+      disabled={disabled}
+      name={name}
+      onCheckedChange={onCheckedChange}
+    />
+    <span className="text-base leading-none font-bold text-foreground">{label}</span>
+  </label>
+);
 
 export { CheckboxField };

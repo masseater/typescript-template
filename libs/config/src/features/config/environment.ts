@@ -130,7 +130,7 @@ const isLocalDevelopmentOrigin = (candidate: string): boolean => {
   );
 };
 
-const invalid = (reason: string): ConfigurationInvalid => new ConfigurationInvalid({ reason });
+const invalid = (reason: string): ConfigurationInvalid => ConfigurationInvalid.make({ reason });
 
 const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never }>(
   schema: Decoded,
@@ -140,7 +140,7 @@ const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never 
     Effect.mapError((issue) => invalid(issue.message)),
   );
 
-type EnvironmentScalars = Schema.Schema.Type<typeof Scalars>;
+type EnvironmentScalars = typeof Scalars.Type;
 
 const refuseMissingRelease = (
   scalars: EnvironmentScalars,

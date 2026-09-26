@@ -47,7 +47,7 @@ const output = (root: string, args: readonly string[]) =>
       }),
     );
     if (exitCode !== 0) {
-      return yield* new FixtureGitFailed({ command: args.join(" "), exitCode });
+      return yield* FixtureGitFailed.make({ command: args.join(" "), exitCode });
     }
     return stdout;
   });
@@ -84,7 +84,7 @@ const conflict = (root: string) =>
     yield* commit(root, "main\n");
     yield* Effect.ignore(git(root, "merge", "side"));
     if ((yield* output(root, ["ls-files", "--unmerged"])) === "") {
-      return yield* new MergeResolvedConflict({ file: CONFLICTED_FILE });
+      return yield* MergeResolvedConflict.make({ file: CONFLICTED_FILE });
     }
   });
 

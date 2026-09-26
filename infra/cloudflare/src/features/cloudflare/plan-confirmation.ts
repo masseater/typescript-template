@@ -225,7 +225,7 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   approval: { readonly confirmation: string; readonly subject: string },
 ) {
   if (planConfirmation(planned, approval.subject) !== approval.confirmation) {
-    return yield* new CloudflareFailure({
+    return yield* CloudflareFailure.make({
       code: "plan_confirmation_mismatch",
       keys: [planned.stack.name],
     });

@@ -39,14 +39,14 @@ function readBounded(
 ): Effect.Effect<Bytes, PhotoMissing | PhotoTooLarge> {
   return Stream.fromReadableStream({
     evaluate: () => body,
-    onError: () => new PhotoMissing(),
+    onError: () => PhotoMissing.make(),
   }).pipe(
     Stream.runFoldEffect(
       (): Collected => ({ byteLength: 0, chunks: [] }),
       (collected, chunk) => {
         const byteLength = collected.byteLength + chunk.byteLength;
         return byteLength > limit
-          ? Effect.fail(new PhotoTooLarge())
+          ? Effect.fail(PhotoTooLarge.make())
           : Effect.succeed({ byteLength, chunks: [...collected.chunks, chunk] });
       },
     ),
@@ -64,7 +64,7 @@ function readBounded(
 
 function fileOf(bytes: Bytes, contentType: string): Effect.Effect<Bytes, PhotoMissing> {
   return Effect.tryPromise({
-    catch: () => new PhotoMissing(),
+    catch: () => PhotoMissing.make(),
     try: (): Promise<Bytes | undefined> =>
       new Response(bytes, {
         headers: { "content-type": contentType },
@@ -79,36 +79,36 @@ function fileOf(bytes: Bytes, contentType: string): Effect.Effect<Bytes, PhotoMi
   }).pipe(
     Effect.filterOrFail(
       (file): file is Bytes => file !== undefined,
-      () => new PhotoMissing(),
+      () => PhotoMissing.make(),
     ),
   );
 }
 
 const readPhotoUpload = Effect.fn("readPhotoUpload")(function* readPhotoUpload(request: Request) {
   if (crossOrigin(request, yield* AppOrigin)) {
-    return yield* new RequestRejected({ reason: "origin_denied" });
+    return yield* RequestRejected.make({ reason: "origin_denied" });
   }
   const type = mediaType(request);
   const multipart = type === multipartType;
   if (!multipart && !isPhotoContentType(type)) {
-    return yield* new PhotoUnsupported();
+    return yield* PhotoUnsupported.make();
   }
   const limit = multipart ? maximumPhotoBytes + multipartOverheadBytes : maximumPhotoBytes;
   if (tooLarge(request, limit)) {
-    return yield* new PhotoTooLarge();
+    return yield* PhotoTooLarge.make();
   }
   if (request.body === null) {
-    return yield* new PhotoMissing();
+    return yield* PhotoMissing.make();
   }
   const body = yield* readBounded(request.body, limit);
   const file = multipart
     ? yield* fileOf(body, request.headers.get("content-type") ?? multipartType)
     : body;
   if (file.byteLength > maximumPhotoBytes) {
-    return yield* new PhotoTooLarge();
+    return yield* PhotoTooLarge.make();
   }
   if (file.byteLength === 0) {
-    return yield* new PhotoMissing();
+    return yield* PhotoMissing.make();
   }
   return file;
 });

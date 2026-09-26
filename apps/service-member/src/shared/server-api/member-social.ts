@@ -97,7 +97,7 @@ const followMember = Effect.fn("followMember")(function* followMember(
   followeeId: string,
 ) {
   if (followerId === followeeId) {
-    return yield* new FollowSelfForbidden();
+    return yield* FollowSelfForbidden.make();
   }
   const [followee] = yield* query((database) =>
     database
@@ -107,16 +107,16 @@ const followMember = Effect.fn("followMember")(function* followMember(
       .limit(1),
   );
   if (followee === undefined) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   const [follower] = yield* query((database) =>
     database.select({ name: user.name }).from(user).where(eq(user.id, followerId)).limit(1),
   );
   if (follower === undefined) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   if (yield* pairBlocked(followerId, followeeId)) {
-    return yield* new UserNotFound();
+    return yield* UserNotFound.make();
   }
   const now = DateTime.toDate(yield* DateTime.now);
   const inserted = yield* query((database) =>

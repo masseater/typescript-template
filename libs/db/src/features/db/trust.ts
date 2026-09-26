@@ -68,7 +68,7 @@ const requireActiveMember = Effect.fn("requireActiveMember")(function* requireAc
       .limit(1),
   );
   if (member === undefined) {
-    return yield* new TrustTargetUnavailable();
+    return yield* TrustTargetUnavailable.make();
   }
 });
 
@@ -77,7 +77,7 @@ const blockMember = Effect.fn("blockMember")(function* blockMember(
   blockedId: string,
 ) {
   if (blockerId === blockedId) {
-    return yield* new TrustTargetUnavailable();
+    return yield* TrustTargetUnavailable.make();
   }
   yield* requireActiveMember(blockerId);
   const [blockedMember] = yield* query((database) =>
@@ -88,7 +88,7 @@ const blockMember = Effect.fn("blockMember")(function* blockMember(
       .limit(1),
   );
   if (blockedMember === undefined) {
-    return yield* new TrustTargetUnavailable();
+    return yield* TrustTargetUnavailable.make();
   }
   const blockedAt = yield* clockDate;
   yield* query((database) =>
@@ -156,13 +156,13 @@ const messageSnapshot = Effect.fn("messageSnapshot")(function* messageSnapshot(r
       .limit(1),
   );
   if (reportedMessage === undefined || reportedMessage.senderId === reporterId) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   if (
     reportedMessage.senderId !== null &&
     (yield* pairBlocked(reporterId, reportedMessage.senderId))
   ) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   return {
     body: reportedMessage.body,
@@ -183,10 +183,10 @@ const boardSnapshot = Effect.fn("boardSnapshot")(function* boardSnapshot(
       .limit(1),
   );
   if (reportedPost === undefined || reportedPost.authorId === reporterId) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   if (reportedPost.authorId !== null && (yield* pairBlocked(reporterId, reportedPost.authorId))) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   return {
     body: reportedPost.body,
@@ -244,7 +244,7 @@ const fileReport = Effect.fn("fileReport")(function* fileReport({
       .limit(1),
   );
   if (existing === undefined) {
-    return yield* new TrustSubjectNotFound();
+    return yield* TrustSubjectNotFound.make();
   }
   return existing;
 });

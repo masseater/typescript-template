@@ -9,16 +9,14 @@ const version = "2.2.0";
 const release = (
   platform: string,
   built: Readonly<{ archive: string; digest: string; member: string }>,
-): readonly [string, Release] => {
-  return [
-    platform,
-    {
-      archive: `k6-v${version}-${built.archive}`,
-      digest: built.digest,
-      member: `k6-v${version}-${built.member}/k6`,
-    },
-  ];
-};
+): readonly [string, Release] => [
+  platform,
+  {
+    archive: `k6-v${version}-${built.archive}`,
+    digest: built.digest,
+    member: `k6-v${version}-${built.member}/k6`,
+  },
+];
 
 const releases: ReadonlyMap<string, Release> = new Map([
   release("darwin-arm64", {
@@ -45,9 +43,7 @@ const releases: ReadonlyMap<string, Release> = new Map([
 
 const downloadOrigin = "https://github.com/grafana/k6/releases/download";
 
-const downloadUrl = (archive: string): string => {
-  return `${downloadOrigin}/v${version}/${archive}`;
-};
+const downloadUrl = (archive: string): string => `${downloadOrigin}/v${version}/${archive}`;
 
 export { downloadUrl, releases, version };
 export type { Release };

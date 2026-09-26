@@ -20,18 +20,16 @@ const PaginationAnchor = ({
   children,
   current,
   ...anchor
-}: Readonly<ComponentProps<"a"> & { current?: boolean }>): ReactElement => {
-  return (
-    <a
-      {...anchor}
-      data-slot="pagination-link"
-      aria-current={current === true ? "page" : undefined}
-      className={paginationLinkVariants({ current })}
-    >
-      {children}
-    </a>
-  );
-};
+}: Readonly<ComponentProps<"a"> & { current?: boolean }>): ReactElement => (
+  <a
+    {...anchor}
+    data-slot="pagination-link"
+    aria-current={current === true ? "page" : undefined}
+    className={paginationLinkVariants({ current })}
+  >
+    {children}
+  </a>
+);
 
 const PaginationLink = createLink(PaginationAnchor);
 

@@ -70,7 +70,7 @@ describe("ReadCache", () => {
 
     it("refuses to start", ({ startupFailure }) => {
       expect(startupFailure).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["CACHE"]' }),
+        ConfigurationInvalid.make({ reason: 'Missing key\n  at ["CACHE"]' }),
       );
     });
   });

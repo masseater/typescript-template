@@ -13,7 +13,7 @@ const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";
 
 function inputInvalid(): CloudflareFailure {
-  return new CloudflareFailure({ code: "database_input_invalid", keys: [] });
+  return CloudflareFailure.make({ code: "database_input_invalid", keys: [] });
 }
 
 const readBootstrapEmail = Effect.callback<string, CloudflareFailure>((resume) => {

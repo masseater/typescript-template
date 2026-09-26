@@ -20,9 +20,8 @@ const useCollapsed = (
   return useAtom(collapsedAtom(slot));
 };
 
-const useTrackedPath = (): readonly [string, (path: string) => void] => {
-  return useAtom(trackedPathAtom(useId()));
-};
+const useTrackedPath = (): readonly [string, (path: string) => void] =>
+  useAtom(trackedPathAtom(useId()));
 
 const usePathAwareNavigation = (
   pathname: string,

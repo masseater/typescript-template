@@ -114,8 +114,8 @@ const relativeWorkspaceExtends = (): string[] => {
   });
 };
 
-const viteConfigsOutsideInclude = (): string[] => {
-  return Object.keys(viteConfigs).flatMap((key) => {
+const viteConfigsOutsideInclude = (): string[] =>
+  Object.keys(viteConfigs).flatMap((key) => {
     const vite = workspacePath(key);
     const directory = vite.replace(/\/vite\.config\.ts$/u, "");
     const configKey = Object.keys(tsconfigs).find(
@@ -130,7 +130,6 @@ const viteConfigsOutsideInclude = (): string[] => {
     }
     return [vite];
   });
-};
 
 const qualityIncludesDoctor = (): boolean => {
   const [module] = Object.values(qualityTsconfig);

@@ -17,13 +17,11 @@ import type { ReactElement } from "react";
 
 const router = createRouter({ routeTree: createRootRoute() });
 
-const withRouter = (Story: () => ReactElement): ReactElement => {
-  return (
-    <RouterContextProvider router={router}>
-      <Story />
-    </RouterContextProvider>
-  );
-};
+const withRouter = (Story: () => ReactElement): ReactElement => (
+  <RouterContextProvider router={router}>
+    <Story />
+  </RouterContextProvider>
+);
 
 const withQueries = (
   Story: () => ReactElement,
@@ -43,19 +41,17 @@ const storyQueries = (): { readonly queryClient: QueryClient } => ({
   queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
 });
 
-const withProviders = (Story: () => ReactElement): ReactElement => {
-  return (
-    <BaseWebProvider>
-      <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
-        <RegistryProvider>
-          <MotionProvider>
-            <Story />
-          </MotionProvider>
-        </RegistryProvider>
-      </FieldValidationMessageProvider>
-    </BaseWebProvider>
-  );
-};
+const withProviders = (Story: () => ReactElement): ReactElement => (
+  <BaseWebProvider>
+    <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
+      <RegistryProvider>
+        <MotionProvider>
+          <Story />
+        </MotionProvider>
+      </RegistryProvider>
+    </FieldValidationMessageProvider>
+  </BaseWebProvider>
+);
 
 const preview = definePreview({
   addons: [a11y(), vitest(), msw()],

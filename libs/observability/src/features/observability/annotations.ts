@@ -11,13 +11,14 @@ const redacted = (attributes: Attributes): Record<string, unknown> =>
       ],
     ),
   );
-const annotateLogs = (
-  attributes: Attributes,
-): (<Value, Failure, Requirements>(
-  effect: Effect.Effect<Value, Failure, Requirements>,
-) => Effect.Effect<Value, Failure, Requirements>) => {
-  return (effect) => Effect.annotateLogs(effect, redacted(attributes));
-};
+const annotateLogs =
+  (
+    attributes: Attributes,
+  ): (<Value, Failure, Requirements>(
+    effect: Effect.Effect<Value, Failure, Requirements>,
+  ) => Effect.Effect<Value, Failure, Requirements>) =>
+  (effect) =>
+    Effect.annotateLogs(effect, redacted(attributes));
 const annotateSpan = (attributes: Attributes): Effect.Effect<void> =>
   Effect.annotateCurrentSpan(redacted(attributes));
 const withSpan = (

@@ -63,14 +63,14 @@ const readBody = (bounded: {
       (collected, bodyChunk) => {
         const byteLength = collected.byteLength + bodyChunk.byteLength;
         return byteLength > bounded.limit
-          ? Effect.fail(new RequestRejected({ reason: "body_too_large" }))
+          ? Effect.fail(RequestRejected.make({ reason: "body_too_large" }))
           : Effect.succeed({ byteLength, chunks: Chunk.append(collected.chunks, bodyChunk) });
       },
     ),
     Effect.map(({ chunks }) => decodeChunks(chunks)),
     Effect.flatMap((bodyText) =>
       parseJson(bodyText).pipe(
-        Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
+        Effect.mapError(() => RequestRejected.make({ reason: "invalid_json" })),
       ),
     ),
     Effect.matchEffect({
@@ -87,9 +87,9 @@ export const readJson = (received: {
   const limit = received.limit ?? defaultBodyLimit;
   const rejection = headerRejection({ ...received, limit });
   if (Option.isSome(rejection)) {
-    return Effect.fail(new RequestRejected({ reason: rejection.value }));
+    return Effect.fail(RequestRejected.make({ reason: rejection.value }));
   }
   return received.incoming.body === null
-    ? Effect.fail(new RequestRejected({ reason: "body_required" }))
+    ? Effect.fail(RequestRejected.make({ reason: "body_required" }))
     : readBody({ body: received.incoming.body, limit });
 };

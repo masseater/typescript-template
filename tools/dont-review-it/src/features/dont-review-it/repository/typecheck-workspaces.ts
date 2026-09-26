@@ -50,7 +50,7 @@ const typecheckWorkspaces = Effect.gen(function* typecheckWorkspaces() {
           stdout: "inherit",
         }),
       )
-      .pipe(Effect.mapError((cause) => new TypecheckUnstarted({ cause, project }))),
+      .pipe(Effect.mapError((cause) => TypecheckUnstarted.make({ cause, project }))),
   );
   if (exitCodes.some((exitCode) => exitCode !== 0)) {
     yield* markFailed;

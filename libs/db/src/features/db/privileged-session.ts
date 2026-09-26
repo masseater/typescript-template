@@ -59,11 +59,11 @@ const requireActor = Effect.fn("requireActor")(function* requireActor(
     !actor.user.emailVerified ||
     !strongAuthenticationMethods.some((method) => method === actor.session.authenticationMethod)
   ) {
-    return yield* new AdminStrongSessionRequired();
+    return yield* AdminStrongSessionRequired.make();
   }
   const { permission } = actor.user;
   if (permission === null || !atLeast(privilege.levels, required).includes(permission)) {
-    return yield* new PermissionRequired({ required });
+    return yield* PermissionRequired.make({ required });
   }
   return { ...actor, permission };
 });

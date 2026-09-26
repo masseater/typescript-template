@@ -125,7 +125,7 @@ import { expect } from "vite-plus/test";
 
     it("throws a refusal qualified by the file it came from", ({ unparsableSourceFailure }) => {
       expect(unparsableSourceFailure).toStrictEqual(
-        new SourceUnparsable({ message: "src/broken.test.ts: Expected `}` but found `EOF`" }),
+        SourceUnparsable.make({ message: "src/broken.test.ts: Expected `}` but found `EOF`" }),
       );
     });
   });

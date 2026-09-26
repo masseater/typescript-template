@@ -92,7 +92,7 @@ const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
       database.select({ id: user.id }).from(user).where(eq(user.id, memberId)).limit(1),
     );
     if (!member) {
-      return yield* new InquiryNotFound();
+      return yield* InquiryNotFound.make();
     }
     return yield* query((database) =>
       database

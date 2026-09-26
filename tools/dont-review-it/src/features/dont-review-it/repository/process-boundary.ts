@@ -34,14 +34,11 @@ const isRuntimeEntry = (origin: Origin): boolean => {
 const isBuiltinModuleLoader = (origin: Origin): boolean =>
   processMember(origin) === "getBuiltinModule";
 
-const isProcessBoundary = (origin: Origin): boolean => {
-  return (
-    isProcessOutput(origin) ||
-    processMember(origin) === "exitCode" ||
-    isRuntimeEntry(origin) ||
-    isBuiltinModuleLoader(origin)
-  );
-};
+const isProcessBoundary = (origin: Origin): boolean =>
+  isProcessOutput(origin) ||
+  processMember(origin) === "exitCode" ||
+  isRuntimeEntry(origin) ||
+  isBuiltinModuleLoader(origin);
 
 const isProcessBoundaryBesideExitCode = (origin: Origin): boolean =>
   isProcessOutput(origin) || isRuntimeEntry(origin) || isBuiltinModuleLoader(origin);

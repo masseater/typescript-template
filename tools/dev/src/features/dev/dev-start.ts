@@ -51,23 +51,21 @@ function migrateDatabase(
         }),
       )
       .pipe(
-        Effect.mapError(
-          (error) =>
-            new DevStartFailure({
-              reason: `failed to prepare database: ${describeError(error)}`,
-            }),
+        Effect.mapError((error) =>
+          DevStartFailure.make({
+            reason: `failed to prepare database: ${describeError(error)}`,
+          }),
         ),
       );
     const exitCode = yield* handle.exitCode.pipe(
-      Effect.mapError(
-        (error) =>
-          new DevStartFailure({
-            reason: `failed to prepare database: ${describeError(error)}`,
-          }),
+      Effect.mapError((error) =>
+        DevStartFailure.make({
+          reason: `failed to prepare database: ${describeError(error)}`,
+        }),
       ),
     );
     if (exitCode !== 0) {
-      return yield* new DevStartFailure({
+      return yield* DevStartFailure.make({
         reason: "failed to prepare database: migration failed",
       });
     }
@@ -79,11 +77,10 @@ const isolatedDatabase = Effect.acquireRelease(
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const directory = yield* fs.makeTempDirectory({ prefix: databasePrefix }).pipe(
-      Effect.mapError(
-        (error) =>
-          new DevStartFailure({
-            reason: `failed to prepare database: ${describeError(error)}`,
-          }),
+      Effect.mapError((error) =>
+        DevStartFailure.make({
+          reason: `failed to prepare database: ${describeError(error)}`,
+        }),
       ),
     );
     processEnvironment[localDatabaseVariable] = directory;
@@ -100,7 +97,7 @@ const isolatedDatabase = Effect.acquireRelease(
 
 const devServer = Effect.acquireRelease(
   Effect.tryPromise({
-    catch: (error) => new DevStartFailure({ reason: `failed to start: ${describeError(error)}` }),
+    catch: (error) => DevStartFailure.make({ reason: `failed to start: ${describeError(error)}` }),
     try: () =>
       createServer({
         logLevel: "silent",
@@ -129,14 +126,14 @@ const listeningOrigin = isolatedDatabase.pipe(
   Effect.flatMap((server) =>
     Effect.tryPromise({
       catch: (error) =>
-        new DevStartFailure({ reason: `failed to listen: ${describeError(error)}` }),
+        DevStartFailure.make({ reason: `failed to listen: ${describeError(error)}` }),
       try: () => server.listen(),
     }),
   ),
   Effect.flatMap((server) => {
     const [origin] = server.resolvedUrls?.local ?? [];
     return origin === undefined
-      ? Effect.fail(new DevStartFailure({ reason: "did not listen" }))
+      ? Effect.fail(DevStartFailure.make({ reason: "did not listen" }))
       : Effect.succeed(origin);
   }),
 );
@@ -145,9 +142,9 @@ function probe(origin: string, pathname: string): Effect.Effect<number, DevStart
   return waitUntilResponds({
     accept: (status) => status === successStatus,
     method: "GET",
-    onStatus: (status) => new DevStartFailure({ reason: `${pathname} responded ${status}` }),
+    onStatus: (status) => DevStartFailure.make({ reason: `${pathname} responded ${status}` }),
     onUnreachable: (error) =>
-      new DevStartFailure({ reason: `${pathname} did not answer: ${describeError(error)}` }),
+      DevStartFailure.make({ reason: `${pathname} did not answer: ${describeError(error)}` }),
     timeoutMilliseconds: requestTimeoutMilliseconds,
     url: new URL(pathname, origin).href,
   });
@@ -168,9 +165,8 @@ const stopDescendants: Effect.Effect<
       }),
     )
     .pipe(
-      Effect.mapError(
-        (error) =>
-          new DevStartFailure({ reason: `failed to list processes: ${describeError(error)}` }),
+      Effect.mapError((error) =>
+        DevStartFailure.make({ reason: `failed to list processes: ${describeError(error)}` }),
       ),
     );
   for (const pid of descendantPids(process.pid, processRows(table))) {
@@ -203,7 +199,7 @@ function report(app: string, reasons: readonly string[]): Effect.Effect<void> {
 
 const program = Effect.gen(function* program() {
   const app = yield* Schema.decodeUnknownEffect(Application)(workspaceName()).pipe(
-    Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
+    Effect.mapError(() => DevStartFailure.make({ reason: "not an application workspace" })),
   );
   const origin = yield* listeningOrigin;
   const paths = [...new Set(["/api/health", applicationReadyPaths[app]])];
@@ -220,7 +216,7 @@ const program = Effect.gen(function* program() {
   Effect.timeoutOrElse({
     duration: startTimeout,
     orElse: () =>
-      Effect.fail(new DevStartFailure({ reason: `did not finish within ${startTimeout}` })),
+      Effect.fail(DevStartFailure.make({ reason: `did not finish within ${startTimeout}` })),
   }),
 );
 

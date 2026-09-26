@@ -70,7 +70,7 @@ const publishedSource = Effect.fn("publishedSource")(function* publishedSource(p
   const { gitBlobRevision, readWikiSource } = yield* wikiSources();
   const markdown = yield* readWikiSource(path);
   if (markdown === undefined) {
-    return yield* new WikiPageMissing();
+    return yield* WikiPageMissing.make();
   }
   return { markdown, revision: yield* gitBlobRevision(markdown) };
 });
@@ -145,7 +145,7 @@ const postImage = Effect.fn("uploadWikiImage")(function* postImage(request: Requ
   yield* verifySession(request.headers);
   const { bytes, contentType } = yield* readJsonBody(WikiImageUpload, request, maximumImageBody);
   if (bytes.byteLength > maximumImageBytes) {
-    return yield* new WikiImageTooLarge();
+    return yield* WikiImageTooLarge.make();
   }
   const digest = yield* Effect.promise(() =>
     crypto.subtle.digest("SHA-256", new Uint8Array(bytes)),
@@ -160,7 +160,7 @@ const readImage = Effect.fn("readWikiImage")(function* readImage(name: string) {
   const files = yield* FileStore;
   const image = yield* files.get(`wiki/images/${name}`);
   if (image === undefined) {
-    return yield* new WikiPageMissing();
+    return yield* WikiPageMissing.make();
   }
   return { bytes: new Uint8Array(image.bytes), name };
 });
@@ -171,7 +171,7 @@ const getImage = Effect.fn("serveWikiImage")(function* getImage(request: Request
   const extension = imageNamePattern.exec(name)?.groups?.["extension"];
   const contentType = extension === undefined ? undefined : imageTypes.get(extension);
   if (contentType === undefined) {
-    return yield* new WikiPageMissing();
+    return yield* WikiPageMissing.make();
   }
   const image = yield* readImage(name);
   return new Response(image.bytes, {
@@ -186,18 +186,18 @@ const getImage = Effect.fn("serveWikiImage")(function* getImage(request: Request
 const postPublish = Effect.fn("publishWikiDraft")(function* postPublish(request: Request) {
   const { user } = yield* verifySession(request.headers);
   if (!canPublish(user)) {
-    return yield* new WikiPublishForbidden();
+    return yield* WikiPublishForbidden.make();
   }
   const { path, version } = yield* readJsonBody(WikiDraftPublish, request);
   const draft = yield* findWikiDraft(path);
   if (draft?.version !== version) {
-    return yield* new WikiDraftConflict();
+    return yield* WikiDraftConflict.make();
   }
   const { title } = yield* readWikiFrontmatter(draft.markdown);
   const { images, markdown } = toRepositoryImages(draft.markdown, path);
   const revision = yield* (yield* wikiSources()).gitBlobRevision(markdown);
   if (revision === draft.baseRevision) {
-    return yield* new WikiPublishUnchanged();
+    return yield* WikiPublishUnchanged.make();
   }
   if (draft.publishedRevision === revision && draft.publishedUrl !== null) {
     return { url: draft.publishedUrl };

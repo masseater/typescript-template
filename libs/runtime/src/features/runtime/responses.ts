@@ -22,11 +22,10 @@ const privateHeaders = {
   "content-security-policy": dataPolicy,
   "x-content-type-options": "nosniff",
 } as const;
-const jsonResponse = (decoded: unknown, httpStatusCode: number = httpStatus.ok): Response => {
-  return Response.json(decoded, { headers: privateHeaders, status: httpStatusCode });
-};
-const documentPolicy = (nonce: string, googleAnalytics = false): string => {
-  return [
+const jsonResponse = (decoded: unknown, httpStatusCode: number = httpStatus.ok): Response =>
+  Response.json(decoded, { headers: privateHeaders, status: httpStatusCode });
+const documentPolicy = (nonce: string, googleAnalytics = false): string =>
+  [
     "default-src 'none'",
     googleAnalytics
       ? `script-src 'nonce-${nonce}' 'strict-dynamic' ${googleAnalyticsScriptSrc.join(" ")}`
@@ -43,7 +42,6 @@ const documentPolicy = (nonce: string, googleAnalytics = false): string => {
     "form-action 'self'",
     ...isolationDirectives,
   ].join("; ");
-};
 const contentSecurityPolicy = (
   asked: Readonly<{
     httpResponse: Response;

@@ -42,8 +42,8 @@ const installationUrl = (slug: string, repository: typeof OwnedRepository.Type):
 
 const appJwt = (appKey: AppKey): Effect.Effect<Redacted.Redacted, GitHubAppFailure> =>
   signGitHubAppJwt({ appId: String(appKey.appId), privateKey: appKey.privateKey }).pipe(
-    Effect.mapError(
-      (cause) => new GitHubAppFailure({ cause, code: "private_key_invalid", step: "jwt" }),
+    Effect.mapError((cause) =>
+      GitHubAppFailure.make({ cause, code: "private_key_invalid", step: "jwt" }),
     ),
   );
 
@@ -64,7 +64,7 @@ const findInstallation = (
   );
 
 const installationTimeout = (): GitHubAppFailure =>
-  new GitHubAppFailure({ code: "installation_timeout", step: "installation" });
+  GitHubAppFailure.make({ code: "installation_timeout", step: "installation" });
 
 const awaitInstallation = (
   appInstallation: InstallationTarget,

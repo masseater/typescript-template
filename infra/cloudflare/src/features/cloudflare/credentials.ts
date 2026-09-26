@@ -18,15 +18,15 @@ class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("Secre
 }) {}
 
 function missing(): SecretsFileFailure {
-  return new SecretsFileFailure({ code: "secrets_file_missing", keys: [] });
+  return SecretsFileFailure.make({ code: "secrets_file_missing", keys: [] });
 }
 
 function unreadable(): SecretsFileFailure {
-  return new SecretsFileFailure({ code: "secrets_file_unreadable", keys: [] });
+  return SecretsFileFailure.make({ code: "secrets_file_unreadable", keys: [] });
 }
 
 function symlinkForbidden(): SecretsFileFailure {
-  return new SecretsFileFailure({ code: "secrets_file_symlink_forbidden", keys: [] });
+  return SecretsFileFailure.make({ code: "secrets_file_symlink_forbidden", keys: [] });
 }
 
 const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecretsFile(
@@ -59,7 +59,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
     Option.getOrElse(metadata.nlink, () => 0) !== 1 ||
     modeAllowsGroupOrOther(metadata.mode)
   ) {
-    return yield* new SecretsFileFailure({ code: "secrets_file_readable_by_others", keys: [] });
+    return yield* SecretsFileFailure.make({ code: "secrets_file_readable_by_others", keys: [] });
   }
   const contents = yield* filesystem.readFileString(filename).pipe(Effect.mapError(unreadable));
   const provider = ConfigProvider.fromDotEnvContents(contents, { preserveEmptyStrings: true });
@@ -70,7 +70,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
     Effect.mapError(unreadable),
   );
   if (absent.length > 0) {
-    return yield* new SecretsFileFailure({ code: "secrets_file_incomplete", keys: absent });
+    return yield* SecretsFileFailure.make({ code: "secrets_file_incomplete", keys: absent });
   }
   return { contents, filename };
 });

@@ -6,7 +6,7 @@ export class DiffUnreadable extends Schema.TaggedError<DiffUnreadable>()("DiffUn
   message: Schema.String,
 }) {}
 
-const unreadable = (message: string): DiffUnreadable => new DiffUnreadable({ message });
+const unreadable = (message: string): DiffUnreadable => DiffUnreadable.make({ message });
 
 type InventoryFile =
   | Readonly<{ kind: "added"; beforePath: null; afterPath: string }>

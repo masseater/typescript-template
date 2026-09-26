@@ -19,12 +19,10 @@ const Heading = ({
   children,
   size,
 }: Children &
-  Readonly<{ as?: "h1" | "h2" | "h3"; size?: "block" | "page" | "section" }>): ReactElement => {
-  return (
-    <Tag data-slot="heading" className={headingVariants({ size })}>
-      {children}
-    </Tag>
-  );
-};
+  Readonly<{ as?: "h1" | "h2" | "h3"; size?: "block" | "page" | "section" }>): ReactElement => (
+  <Tag data-slot="heading" className={headingVariants({ size })}>
+    {children}
+  </Tag>
+);
 
 export { Heading };

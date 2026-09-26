@@ -21,9 +21,12 @@ const scanIndex = Effect.fn("scanIndex")(function* scanIndex() {
 
 const uncheckedRecord = (
   detail: Readonly<Record<string, unknown>>,
-): Readonly<Record<string, unknown>> => {
-  return { event: "quality.staged_secrets_failed", ok: false, status: "failed", ...detail };
-};
+): Readonly<Record<string, unknown>> => ({
+  event: "quality.staged_secrets_failed",
+  ok: false,
+  status: "failed",
+  ...detail,
+});
 
 runCli(
   scanIndex().pipe(

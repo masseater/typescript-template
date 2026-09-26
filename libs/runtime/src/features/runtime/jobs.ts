@@ -89,8 +89,8 @@ const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
   const runtimeInstance = yield* Effect.tryPromise({
     catch: (cause) =>
       cause instanceof Error && cause.message === missingInstance
-        ? new JobNotFound()
-        : new JobLookupFailed({ cause }),
+        ? JobNotFound.make()
+        : JobLookupFailed.make({ cause }),
     try: () => env[jobsWorkflowBinding].get(instanceId(packet)),
   });
   return yield* Effect.promise(() => runtimeInstance.status());

@@ -22,7 +22,7 @@ describe("failOnBrokenSourceMaps", () => {
       Effect.runPromise(
         Effect.tryPromise({
           catch: (buildFailure: unknown) =>
-            new BrokenSourceMapCheck({
+            BrokenSourceMapCheck.make({
               message: buildFailure instanceof Error ? buildFailure.message : "unknown failure",
             }),
           try: () =>

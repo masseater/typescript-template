@@ -123,7 +123,7 @@ it.effect("what the model understood is applied to the sheet", () => {
 it.effect(
   "a failing model is returned to the member instead of continuing as rules success",
   () => {
-    const failure = new UnderstandingFailed({ reason: "model_failed" });
+    const failure = UnderstandingFailed.make({ reason: "model_failed" });
     function understand(): ReturnType<Understand> {
       return Effect.fail(failure);
     }

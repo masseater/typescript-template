@@ -24,12 +24,12 @@ const workspaceFromCwd = Effect.gen(function* workspaceFromCwd() {
   const cwd = process.cwd();
   const relative = paths.relative(repositoryRoot, cwd);
   if (relative === "" || relative.startsWith("..") || paths.isAbsolute(relative)) {
-    return yield* new OutsideRepository({ cwd });
+    return yield* OutsideRepository.make({ cwd });
   }
   return relative;
 });
 
-const cruiseFailed = (cause: unknown): CruiseFailed => new CruiseFailed({ cause });
+const cruiseFailed = (cause: unknown): CruiseFailed => CruiseFailed.make({ cause });
 
 const depcruise = (workspace: string): Effect.Effect<number, CruiseFailed> =>
   Effect.gen(function* run() {

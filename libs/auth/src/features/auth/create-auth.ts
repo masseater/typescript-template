@@ -26,39 +26,37 @@ import type { Run } from "./runner.ts";
 const createDatabaseHooks = (
   run: Run,
   audience: Application,
-): NonNullable<BetterAuthOptions["databaseHooks"]> => {
-  return {
-    session: {
-      create: {
-        before: (
-          candidate: Readonly<Record<string, unknown> & { userId: string }>,
-          hookContext: Readonly<{ path: string }> | null,
-        ) =>
-          Effect.runPromise(
-            Effect.gen(function* beforeSessionCreate() {
-              const user = yield* Effect.promise(() => run(findUser(candidate.userId)));
-              assertEligibleUser(user, audience);
-              return {
-                data: {
-                  ...candidate,
-                  audience,
-                  authenticatedAt: DateTime.toDate(yield* DateTime.now),
-                  authenticationMethod: authenticationMethodFor(hookContext?.path),
-                  securityVersion: user.securityVersion,
-                },
-              };
-            }),
-          ),
-      },
+): NonNullable<BetterAuthOptions["databaseHooks"]> => ({
+  session: {
+    create: {
+      before: (
+        candidate: Readonly<Record<string, unknown> & { userId: string }>,
+        hookContext: Readonly<{ path: string }> | null,
+      ) =>
+        Effect.runPromise(
+          Effect.gen(function* beforeSessionCreate() {
+            const user = yield* Effect.promise(() => run(findUser(candidate.userId)));
+            assertEligibleUser(user, audience);
+            return {
+              data: {
+                ...candidate,
+                audience,
+                authenticatedAt: DateTime.toDate(yield* DateTime.now),
+                authenticationMethod: authenticationMethodFor(hookContext?.path),
+                securityVersion: user.securityVersion,
+              },
+            };
+          }),
+        ),
     },
-    user: {
-      create: {
-        before: (createdUser: Readonly<Record<string, unknown>>) =>
-          Promise.resolve({ data: { ...createdUser, role: ROLE.member, securityVersion: 0 } }),
-      },
+  },
+  user: {
+    create: {
+      before: (createdUser: Readonly<Record<string, unknown>>) =>
+        Promise.resolve({ data: { ...createdUser, role: ROLE.member, securityVersion: 0 } }),
     },
-  };
-};
+  },
+});
 
 const ADMIN_SESSION_HOURS = 8;
 const ADMIN_SESSION_SECONDS = Duration.toSeconds(Duration.hours(ADMIN_SESSION_HOURS));
@@ -71,13 +69,11 @@ const EXISTING_ACCOUNT_NOTICE_MILLISECONDS = Duration.toMillis(
   Duration.minutes(EXISTING_ACCOUNT_NOTICE_MINUTES),
 );
 
-const verificationLink = (origin: string, token: string): string => {
-  return new URL(`/verify-email#${new URLSearchParams({ token }).toString()}`, origin).href;
-};
+const verificationLink = (origin: string, token: string): string =>
+  new URL(`/verify-email#${new URLSearchParams({ token }).toString()}`, origin).href;
 
-const emailChangeLink = (origin: string, token: string): string => {
-  return new URL(`/verify-email-change#${new URLSearchParams({ token }).toString()}`, origin).href;
-};
+const emailChangeLink = (origin: string, token: string): string =>
+  new URL(`/verify-email-change#${new URLSearchParams({ token }).toString()}`, origin).href;
 
 export type AuthOptions = {
   readonly baseURL: string;
@@ -122,78 +118,74 @@ const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExist
 const createEmailVerification = (
   authOptions: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
-): NonNullable<BetterAuthOptions["emailVerification"]> => {
-  return {
-    autoSignInAfterVerification: false,
-    sendOnSignIn: authOptions.audience !== APPLICATION.wiki,
-    sendOnSignUp: true,
-    sendVerificationEmail: ({
-      user,
-      token,
-    }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
-      const emailChangeDestination = emailChangeTarget(token);
-      if (Result.isFailure(emailChangeDestination)) {
-        return run(Effect.fail(emailChangeDestination.failure));
-      }
-      return run(
-        emailChangeDestination.success === undefined
-          ? sendVerificationEmail(authOptions.mail, {
-              email: user.email,
-              url: verificationLink(origin, token),
-            })
-          : sendEmailChangeVerification(authOptions.mail, {
-              email: user.email,
-              url: emailChangeLink(origin, token),
-            }),
-      );
-    },
-  };
-};
+): NonNullable<BetterAuthOptions["emailVerification"]> => ({
+  autoSignInAfterVerification: false,
+  sendOnSignIn: authOptions.audience !== APPLICATION.wiki,
+  sendOnSignUp: true,
+  sendVerificationEmail: ({
+    user,
+    token,
+  }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
+    const emailChangeDestination = emailChangeTarget(token);
+    if (Result.isFailure(emailChangeDestination)) {
+      return run(Effect.fail(emailChangeDestination.failure));
+    }
+    return run(
+      emailChangeDestination.success === undefined
+        ? sendVerificationEmail(authOptions.mail, {
+            email: user.email,
+            url: verificationLink(origin, token),
+          })
+        : sendEmailChangeVerification(authOptions.mail, {
+            email: user.email,
+            url: emailChangeLink(origin, token),
+          }),
+    );
+  },
+});
 
-const createEmailChangeNotifier = (
-  authOptions: AuthOptions,
-  { origin, run }: Readonly<{ origin: string; run: Run }>,
-): ((email: string) => Promise<void>) => {
-  return (email) =>
+const createEmailChangeNotifier =
+  (
+    authOptions: AuthOptions,
+    { origin, run }: Readonly<{ origin: string; run: Run }>,
+  ): ((email: string) => Promise<void>) =>
+  (email) =>
     run(
       sendEmailChangeNotice(authOptions.mail, {
         email,
         url: new URL("/settings/security", origin).href,
       }),
     );
-};
 
-const createEmailChangeCompletedNotifier = (
-  authOptions: AuthOptions,
-  { origin, run }: Readonly<{ origin: string; run: Run }>,
-): ((email: string) => Promise<void>) => {
-  return (email) =>
+const createEmailChangeCompletedNotifier =
+  (
+    authOptions: AuthOptions,
+    { origin, run }: Readonly<{ origin: string; run: Run }>,
+  ): ((email: string) => Promise<void>) =>
+  (email) =>
     run(
       sendEmailChangeCompleted(authOptions.mail, {
         email,
         url: new URL("/settings/security", origin).href,
       }),
     );
-};
 
-const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {
-  return {
-    level: "warn",
-    log: (level, _description, ...details: readonly unknown[]) => {
-      const cause = details.find((detail) => detail instanceof Error);
-      void run(
-        level === "error"
-          ? cause === undefined
-            ? logAt("Error", { eventName: "authentication.failed" })
-            : logCause({ cause: Cause.fail(cause), eventName: "authentication.failed" })
-          : logAt(level === "warn" ? "Warn" : "Info", {
-              attributes: { level },
-              eventName: "authentication.diagnostic",
-            }),
-      );
-    },
-  };
-};
+const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => ({
+  level: "warn",
+  log: (level, _description, ...details: readonly unknown[]) => {
+    const cause = details.find((detail) => detail instanceof Error);
+    void run(
+      level === "error"
+        ? cause === undefined
+          ? logAt("Error", { eventName: "authentication.failed" })
+          : logCause({ cause: Cause.fail(cause), eventName: "authentication.failed" })
+        : logAt(level === "warn" ? "Warn" : "Info", {
+            attributes: { level },
+            eventName: "authentication.diagnostic",
+          }),
+    );
+  },
+});
 
 const createAdvancedOptions = ({
   audience,
@@ -203,57 +195,53 @@ const createAdvancedOptions = ({
   readonly audience: Application;
   readonly generateId: GenerateId;
   readonly origin: string;
-}): NonNullable<BetterAuthOptions["advanced"]> => {
-  return {
-    cookiePrefix: `template-${audience}`,
-    crossSubDomainCookies: { enabled: false },
-    database: { generateId },
-    ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
-    useSecureCookies: origin.startsWith("https:"),
-  };
-};
+}): NonNullable<BetterAuthOptions["advanced"]> => ({
+  cookiePrefix: `template-${audience}`,
+  crossSubDomainCookies: { enabled: false },
+  database: { generateId },
+  ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
+  useSecureCookies: origin.startsWith("https:"),
+});
 
-const createSessionOptions = (audience: Application): NonNullable<BetterAuthOptions["session"]> => {
-  return {
-    additionalFields: {
-      audience: {
-        defaultValue: audience,
-        input: false,
-        required: true,
-        type: [...applications],
-      },
-      authenticatedAt: { input: false, required: false, type: "date" },
-      authenticationMethod: {
-        defaultValue: AUTHENTICATION_METHOD.password,
-        input: false,
-        required: true,
-        type: [...authenticationMethods],
-      },
-      securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
+const createSessionOptions = (
+  audience: Application,
+): NonNullable<BetterAuthOptions["session"]> => ({
+  additionalFields: {
+    audience: {
+      defaultValue: audience,
+      input: false,
+      required: true,
+      type: [...applications],
     },
-    cookieCache: { enabled: false },
-    expiresIn: audience === APPLICATION.user ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
-    freshAge: FRESH_SESSION_SECONDS,
-  };
-};
+    authenticatedAt: { input: false, required: false, type: "date" },
+    authenticationMethod: {
+      defaultValue: AUTHENTICATION_METHOD.password,
+      input: false,
+      required: true,
+      type: [...authenticationMethods],
+    },
+    securityVersion: { defaultValue: -1, input: false, required: true, type: "number" },
+  },
+  cookieCache: { enabled: false },
+  expiresIn: audience === APPLICATION.user ? USER_SESSION_SECONDS : ADMIN_SESSION_SECONDS,
+  freshAge: FRESH_SESSION_SECONDS,
+});
 
 const MIN_PASSWORD_LENGTH = 12;
 
 const createEmailAndPassword = (
   authOptions: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
-): NonNullable<BetterAuthOptions["emailAndPassword"]> => {
-  return {
-    disableSignUp: authOptions.audience !== APPLICATION.user,
-    enabled: true,
-    minPasswordLength: MIN_PASSWORD_LENGTH,
-    onExistingUserSignUp: ({
-      user,
-    }: Readonly<{ user: Readonly<{ email: string; emailVerified: boolean }> }>) =>
-      run(mailExistingAccount({ authOptions, origin, user })),
-    requireEmailVerification: true,
-  };
-};
+): NonNullable<BetterAuthOptions["emailAndPassword"]> => ({
+  disableSignUp: authOptions.audience !== APPLICATION.user,
+  enabled: true,
+  minPasswordLength: MIN_PASSWORD_LENGTH,
+  onExistingUserSignUp: ({
+    user,
+  }: Readonly<{ user: Readonly<{ email: string; emailVerified: boolean }> }>) =>
+    run(mailExistingAccount({ authOptions, origin, user })),
+  requireEmailVerification: true,
+});
 
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_SECONDS = 60;

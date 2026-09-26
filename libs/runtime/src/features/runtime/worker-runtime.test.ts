@@ -3,7 +3,9 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { workerRuntime } from "./worker-runtime.ts";
 
-class Attempt extends Context.Service<Attempt, { readonly value: string }>()("Attempt") {}
+class Attempt extends Context.Service<Attempt, { readonly value: string }>()(
+  "@repo/runtime/features/runtime/worker-runtime.test/Attempt",
+) {}
 
 describe("a worker runtime whose layer failed to build", () => {
   const it = test.extend("attemptOutcomes", () => {

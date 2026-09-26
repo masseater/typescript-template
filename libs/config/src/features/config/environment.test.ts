@@ -100,7 +100,7 @@ describe("readEnvironment", () => {
 
     it("is refused because release is required outside local development", ({ refusal }) => {
       expect(refusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: "APP_RELEASE is required outside local development" }),
+        ConfigurationInvalid.make({ reason: "APP_RELEASE is required outside local development" }),
       );
     });
   });
@@ -165,7 +165,7 @@ describe("readEnvironment", () => {
       Effect.runPromise(Effect.flip(readEnvironment({ ...localBindings, ...overridden }))));
 
     it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: expectedReason }));
+      expect(refusal).toStrictEqual(ConfigurationInvalid.make({ reason: expectedReason }));
     });
   });
 });
@@ -280,7 +280,7 @@ describe("readStripeConfig", () => {
       Effect.runPromise(Effect.flip(readStripeConfig({ ...stripeBindings, ...overridden }))));
 
     it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: expectedReason }));
+      expect(refusal).toStrictEqual(ConfigurationInvalid.make({ reason: expectedReason }));
     });
   });
 
@@ -290,7 +290,7 @@ describe("readStripeConfig", () => {
 
     it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
       expect(refusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_METERED_PRICE_ID"]' }),
+        ConfigurationInvalid.make({ reason: 'Missing key\n  at ["STRIPE_METERED_PRICE_ID"]' }),
       );
     });
   });
