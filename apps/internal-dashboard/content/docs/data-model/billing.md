@@ -20,6 +20,7 @@ erDiagram
     string stripeCustomerId UK
     string stripeSubscriptionId UK
     enum status
+    datetime currentPeriodStart
     datetime currentPeriodEnd
     boolean cancelAtPeriodEnd
     datetime updatedAt

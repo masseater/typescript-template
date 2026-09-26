@@ -17,7 +17,9 @@ export const noCrossSpecAssetsImport = createDontReviewItRule({
     docs: {
       description:
         "Disallow reading a test data file from anywhere but the spec of its own stem in its own directory, so the one spec that owns the data can rewrite it without silently changing what another file expects",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       crossSpecAssetsImport:

@@ -25,6 +25,7 @@ const auditWhen = (
   change: Readonly<{
     action: AuditAction;
     actorId: string;
+    id: string;
     targetId: string;
   }>,
   targeted: SQLWrapper,
@@ -34,7 +35,7 @@ const auditWhen = (
       [auditEvent.action, change.action],
       [auditEvent.actorId, change.actorId],
       [auditEvent.createdAt, DateTime.toEpochMillis(DateTime.nowUnsafe())],
-      [auditEvent.id, crypto.randomUUID()],
+      [auditEvent.id, change.id],
       [auditEvent.targetId, change.targetId],
     ],
     sql`EXISTS (${targeted})`,
@@ -48,19 +49,25 @@ type AuditEntry = Readonly<{
   targetId: string;
 }>;
 
-const auditRow = (auditEntry: AuditEntry): typeof auditEvent.$inferInsert => ({
+const auditRow = (
+  auditEntry: AuditEntry & Readonly<{ id: string }>,
+): typeof auditEvent.$inferInsert => ({
   action: auditEntry.action,
   actorId: auditEntry.actorId,
   actorKind: auditEntry.actorKind,
   channel: auditEntry.channel ?? AUDIT_CHANNEL.ui,
   createdAt: DateTime.toDate(DateTime.nowUnsafe()),
-  id: crypto.randomUUID(),
+  id: auditEntry.id,
   targetId: auditEntry.targetId,
 });
 
 const auditWhenTargeted = (
   database: DrizzleDatabase,
-  { actorIsLive, entry: auditEntry }: Readonly<{ actorIsLive: SQLWrapper; entry: AuditEntry }>,
+  {
+    actorIsLive,
+    entry: auditEntry,
+    id,
+  }: Readonly<{ actorIsLive: SQLWrapper; entry: AuditEntry; id: string }>,
 ): SQL => {
   const targeted = database
     .select({ id: user.id })
@@ -73,7 +80,7 @@ const auditWhenTargeted = (
       [auditEvent.actorKind, auditEntry.actorKind],
       [auditEvent.channel, auditEntry.channel ?? AUDIT_CHANNEL.ui],
       [auditEvent.createdAt, DateTime.toEpochMillis(DateTime.nowUnsafe())],
-      [auditEvent.id, crypto.randomUUID()],
+      [auditEvent.id, id],
       [auditEvent.targetId, auditEntry.targetId],
     ],
     exists(targeted),

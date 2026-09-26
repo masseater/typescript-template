@@ -330,7 +330,9 @@ export const noVacuousHostObjectEquality = createDontReviewItRule({
     docs: {
       description:
         "Disallow comparing or recording a host object that keeps its state in internal slots, so an assertion about an HTTP request or response fails once the code stops producing the contract it was written for",
-      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/assert-observable-behavior-with-real-dependencies.md",
+      ],
     },
     messages: {
       vacuousStructuralEquality:

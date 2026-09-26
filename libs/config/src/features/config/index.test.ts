@@ -140,7 +140,7 @@ describe.for(brokenBindings)("%s", ([, broken, reasonText]) => {
 
 describe("HttpsOrigin", () => {
   const it = test.extend("decodedOrigin", () =>
-    Effect.runPromise(Schema.decodeUnknownEffect(HttpsOrigin)("https://app.example.test")));
+    Effect.runPromise(Schema.decodeEffect(HttpsOrigin)("https://app.example.test")));
 
   it("accepts an https origin", ({ decodedOrigin }) => {
     expect(decodedOrigin).toBe("https://app.example.test");
@@ -150,7 +150,7 @@ describe("HttpsOrigin", () => {
 describe("an origin that is not https", () => {
   const it = test.extend("schemaMessage", () =>
     Effect.runPromise(
-      Schema.decodeUnknownEffect(HttpsOrigin)("http://localhost").pipe(
+      Schema.decodeEffect(HttpsOrigin)("http://localhost").pipe(
         Effect.flip,
         Effect.map((schemaError) => schemaError.message),
       ),

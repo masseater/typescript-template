@@ -25,7 +25,9 @@ export const requireQueryOptionsInApiSegment = createDontReviewItRule({
     docs: {
       description:
         "Require queryOptions, infiniteQueryOptions, and mutationOptions factories to live in an FSD api segment",
-      relatedGuidelines: [".claude/skills/reviews/references/frontend-components-and-state.md"],
+      relatedGuidelines: [
+        ".claude/skills/reviews/references/build-ui-on-libs-ui-and-keep-server-state-in-query.md",
+      ],
     },
     messages: {
       queryOptionsOutsideApi:
