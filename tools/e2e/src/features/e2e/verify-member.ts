@@ -4,6 +4,7 @@ import { type Account, newAccount } from "./accounts.ts";
 import { agentUserAgent } from "./agent-user-agent.ts";
 import {
   answerTotpChallenge,
+  confirmVerificationLink,
   enrollTotp,
   homePattern,
   registerPasskey,
@@ -92,8 +93,7 @@ const verifyEmailAndSignIn = (signup: {
     yield* seeHeading(signup.page, "確認メールを送りました");
     const verificationPrefix = `${signup.origin}/verify-email`;
     const link = yield* signup.mail.waitForLink(signup.account.email, verificationPrefix);
-    yield* pageStep(() => signup.page.goto(link));
-    yield* pageStep(() => signup.page.waitForURL(`${signup.origin}/login`));
+    yield* confirmVerificationLink({ link, origin: signup.origin, page: signup.page });
     yield* signIn({ account: signup.account, origin: signup.origin, page: signup.page });
   });
 

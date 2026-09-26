@@ -1,17 +1,16 @@
 import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { formatWarekiDate } from "@repo/ui";
 
 import { adminClient } from "#shared/api/index.ts";
 import { UserList } from "#shared/contracts/index.ts";
 
 interface ListedUser {
   readonly accountState: (typeof UserList.Type)["users"][number]["accountState"];
+  readonly createdAt: Date;
   readonly email: string;
   readonly emailVerified: boolean;
   readonly id: string;
   readonly name: string;
-  readonly registeredOn: string;
   readonly twoFactorEnabled: boolean;
 }
 
@@ -30,11 +29,11 @@ function listUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers
         users: users.map(
           ({ accountState, createdAt, email, emailVerified, id, name, twoFactorEnabled }) => ({
             accountState,
+            createdAt,
             email,
             emailVerified,
             id,
             name,
-            registeredOn: formatWarekiDate(createdAt),
             twoFactorEnabled,
           }),
         ),

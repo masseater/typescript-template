@@ -10,7 +10,7 @@ const ioGlobals: ReadonlySet<string> = new Set([
   "fetch",
 ]);
 const reactivity = "effect/unstable/reactivity";
-const atomConstructors: ReadonlySet<string> = new Set(["make", "readable", "writable"]);
+const atomConstructors: ReadonlySet<string> = new Set(["fn", "make", "readable", "writable"]);
 const serverCacheApis: Readonly<Record<string, ReadonlySet<string>>> = {
   "@effect/atom-react": new Set(["useAtomRefresh"]),
   [reactivity]: new Set(["AtomHttpApi", "AtomRpc", "Hydration", "Reactivity"]),

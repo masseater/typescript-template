@@ -7,6 +7,7 @@ import {
   Page,
   STATUS_VARIANT,
   StatusMessage,
+  formatWarekiDate,
 } from "@repo/ui";
 
 import type { PlanSummary } from "#pages/settings/model/plan-summary.ts";
@@ -30,7 +31,13 @@ function PlanView({
       <p>
         いまのプラン: <strong>{summary.headline}</strong>
       </p>
-      {summary.periodEnd !== undefined && <p>{summary.periodEnd}</p>}
+      {summary.periodEnd !== undefined && (
+        <p>
+          {summary.periodEnd.canceling
+            ? `${formatWarekiDate(summary.periodEnd.endsAt)} に解約され、その後は無料プランになります。`
+            : `現在の期間は ${formatWarekiDate(summary.periodEnd.endsAt)} までです。`}
+        </p>
+      )}
       {summary.attention !== undefined && (
         <StatusMessage variant={STATUS_VARIANT.failure}>{summary.attention}</StatusMessage>
       )}

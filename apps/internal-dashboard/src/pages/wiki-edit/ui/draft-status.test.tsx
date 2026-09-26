@@ -5,14 +5,14 @@ import { DraftStatus } from "./draft-status.tsx";
 
 function rendered(
   shown: Readonly<{
-    failures?: readonly (string | undefined)[];
+    failure?: string;
     publishedUrl?: string;
     version?: number;
   }>,
 ): string {
   return renderedAt(
     <DraftStatus
-      failures={shown.failures ?? []}
+      failure={shown.failure}
       publishedUrl={shown.publishedUrl ?? null}
       version={shown.version ?? 0}
     />,
@@ -35,11 +35,9 @@ describe("wiki draft status", () => {
     expect(shown).not.toContain("下書きとして保存されています。");
   });
 
-  it("shows every failure and skips the absent ones", () => {
-    const shown = rendered({
-      failures: ["保存できませんでした。", undefined, "捨てられませんでした。"],
-    });
-    expect(shown).toContain("保存できませんでした。");
-    expect(shown).toContain("捨てられませんでした。");
+  it("shows the failure of the last draft operation as an alert", () => {
+    expect(rendered({ failure: "捨てられませんでした。" })).toMatch(
+      /role="alert"[^>]*>.*捨てられませんでした。/su,
+    );
   });
 });

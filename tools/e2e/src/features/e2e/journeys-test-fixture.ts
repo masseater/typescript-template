@@ -24,7 +24,7 @@ import {
 } from "./screens.ts";
 import { runVerifyMember } from "./verify-member.ts";
 
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 import type { JourneyEnvironment } from "./environment-test-fixture.ts";
 
 const saveAndOpenHome = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
@@ -271,6 +271,41 @@ const revisitProfile = (
     );
   });
 
+const privateShareNotice = "公開範囲が「自分だけ」のときは、共有しても相手には見えません。";
+
+const warnsSharingAPrivateProfile = (
+  page: Page,
+  visit: { readonly origin: string; readonly profileUrl: string },
+): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* hideProfileAndShare() {
+    yield* pageStep(() => page.goto(`${visit.origin}/settings/visibility`));
+    yield* seeHeading(page, "公開範囲");
+    yield* pageStep(() =>
+      page.getByRole("combobox", { name: "プロフィールを見られる人" }).first().click(),
+    );
+    yield* pageStep(() => page.getByRole("option", { name: "自分だけ" }).first().click());
+    yield* press(page, "保存");
+    yield* seeText(page, "公開範囲を保存しました。");
+    yield* pageStep(() => page.goto(visit.profileUrl));
+    yield* seeText(page, privateShareNotice);
+    return yield* pageStep(() =>
+      page.getByText(privateShareNotice, { exact: false }).first().isVisible(),
+    );
+  });
+
+const revisitOwnProfile = (
+  page: Page,
+  written: { readonly biography: string; readonly origin: string; readonly profileUrl: string },
+): Effect.Effect<
+  { readonly showsTheBiography: boolean; readonly warnsSharingWhilePrivate: boolean },
+  JourneyFailure
+> =>
+  Effect.gen(function* revisitThenHide() {
+    const showsTheBiography = yield* revisitProfile(page, written);
+    const warnsSharingWhilePrivate = yield* warnsSharingAPrivateProfile(page, written);
+    return { showsTheBiography, warnsSharingWhilePrivate };
+  });
+
 const runMemberJourney = (
   stage: JourneyStage,
 ): Effect.Effect<
@@ -283,6 +318,7 @@ const runMemberJourney = (
     readonly reachesPlanInOneClick: boolean;
     readonly showsTheBiographyWrittenEarlier: boolean;
     readonly showsTheReplyOnTheThread: boolean;
+    readonly warnsSharingWhilePrivate: boolean;
   },
   JourneyFailure,
   Crypto.Crypto
@@ -296,8 +332,9 @@ const runMemberJourney = (
     const enrollment = yield* enrollTotp({ account, origin, page: stage.page });
     yield* signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
     const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
-    const showsTheBiographyWrittenEarlier = yield* revisitProfile(stage.page, {
+    const profile = yield* revisitOwnProfile(stage.page, {
       biography,
+      origin,
       profileUrl: `${origin}${profilePath}`,
     });
     return {
@@ -307,8 +344,9 @@ const runMemberJourney = (
       opensEveryListedSettingsItem: settings.opensEveryListedItem,
       reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
       reachesPlanInOneClick: settings.reachesPlanInOneClick,
-      showsTheBiographyWrittenEarlier,
+      showsTheBiographyWrittenEarlier: profile.showsTheBiography,
       showsTheReplyOnTheThread: board.showsTheReply,
+      warnsSharingWhilePrivate: profile.warnsSharingWhilePrivate,
     };
   });
 
@@ -356,12 +394,71 @@ const readDocument = (stage: JourneyStage, url: string): Effect.Effect<void, Jou
     yield* seeAnyHeading(stage.page);
   });
 
+const narrowViewport = { height: 844, width: 390 } as const;
+
+const visibleButton = (page: Page, buttonName: string): Locator =>
+  page.getByRole("button", { name: buttonName }).filter({ visible: true }).first();
+
+const opensTheDocumentTree = (page: Page): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openDocumentTree() {
+    yield* pageStep(() => visibleButton(page, "サイドバーを開く").click());
+    const closeTree = visibleButton(page, "サイドバーを閉じる");
+    yield* pageStep(() => closeTree.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    const opened = yield* pageStep(() => closeTree.isVisible());
+    yield* pageStep(() => closeTree.click());
+    return opened;
+  });
+
+const opensTheSearch = (page: Page): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openSearch() {
+    yield* pageStep(() => visibleButton(page, "検索を開く").click());
+    const searchDialog = page.getByRole("dialog");
+    yield* pageStep(() => searchDialog.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    const opened = yield* pageStep(() => searchDialog.isVisible());
+    yield* pageStep(() => page.keyboard.press("Escape"));
+    return opened;
+  });
+
+const openNarrowDocumentMenus = (
+  page: Page,
+  url: string,
+): Effect.Effect<
+  { readonly opensTheDocumentTree: boolean; readonly opensTheSearch: boolean },
+  JourneyFailure
+> =>
+  Effect.gen(function* openFromTheHeaderBand() {
+    const wideViewport = page.viewportSize();
+    yield* pageStep(() => page.setViewportSize(narrowViewport));
+    yield* pageStep(() => page.goto(url));
+    const tree = yield* opensTheDocumentTree(page);
+    const search = yield* opensTheSearch(page);
+    if (wideViewport !== null) {
+      yield* pageStep(() => page.setViewportSize(wideViewport));
+    }
+    return { opensTheDocumentTree: tree, opensTheSearch: search };
+  });
+
+const showsTheLoginAddressField = (
+  page: Page,
+  origin: string,
+): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openLogin() {
+    yield* pageStep(() => page.goto(`${origin}/login`));
+    const address = page.getByLabel("メールアドレス", { exact: true }).first();
+    yield* pageStep(() => address.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    return yield* pageStep(() => address.isVisible());
+  });
+
 const runDocumentJourney = (
   stage: JourneyStage,
 ): Effect.Effect<
   {
     readonly documentsRead: number;
     readonly loginPath: string;
+    readonly narrowScreen: {
+      readonly opensTheDocumentTree: boolean;
+      readonly opensTheSearch: boolean;
+    };
     readonly showsTheAddressField: boolean;
   },
   JourneyFailure
@@ -372,14 +469,13 @@ const runDocumentJourney = (
     const [firstDocument = "", secondDocument = ""] = environment.documents;
     yield* readDocument(stage, `${origin}${firstDocument}`);
     yield* readDocument(stage, `${origin}${secondDocument}`);
-    yield* pageStep(() => page.goto(`${origin}/login`));
-    const address = page.getByLabel("メールアドレス", { exact: true }).first();
-    yield* pageStep(() => address.waitFor({ state: "visible", timeout: appearanceTimeout }));
-    const showsTheAddressField = yield* pageStep(() => address.isVisible());
+    const narrowScreen = yield* openNarrowDocumentMenus(page, `${origin}${firstDocument}`);
+    const showsTheAddressField = yield* showsTheLoginAddressField(page, origin);
     return {
       documentsRead: [firstDocument, secondDocument].filter((documentPath) => documentPath !== "")
         .length,
       loginPath: new URL(page.url()).pathname,
+      narrowScreen,
       showsTheAddressField,
     };
   });

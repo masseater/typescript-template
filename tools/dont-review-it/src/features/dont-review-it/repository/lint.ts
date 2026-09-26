@@ -210,9 +210,7 @@ const apiBoundaryFiles = [
 ];
 
 const authUiServerReadsAwaitingQuery = [
-  "libs/auth-ui/src/features/auth-ui/email-change-confirmation.tsx",
   "libs/auth-ui/src/features/auth-ui/email-change-verification.tsx",
-  "libs/auth-ui/src/features/auth-ui/email-verification.tsx",
   "libs/auth-ui/src/features/auth-ui/use-passkeys.ts",
   "libs/auth-ui/src/features/auth-ui/use-session.ts",
 ];
@@ -281,6 +279,7 @@ const lintOptions = {
         "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
         "project/cross-request-state": LINT_SEVERITY.ERROR,
+        "project/effect-atom-setter": LINT_SEVERITY.ERROR,
         "project/effect-event-deps": LINT_SEVERITY.ERROR,
         "project/effect-failures": LINT_SEVERITY.ERROR,
         "project/effect-stack": LINT_SEVERITY.ERROR,
@@ -302,6 +301,7 @@ const lintOptions = {
         "project/temp-directory": LINT_SEVERITY.ERROR,
         "project/test-import-graph": LINT_SEVERITY.ERROR,
         "project/wareki-format": LINT_SEVERITY.ERROR,
+        "project/wareki-in-data-segment": LINT_SEVERITY.ERROR,
         "project/worker-fetch": LINT_SEVERITY.ERROR,
         "shadcn/no-arbitrary-values": LINT_SEVERITY.ERROR,
         "shadcn/no-raw-colors": LINT_SEVERITY.ERROR,

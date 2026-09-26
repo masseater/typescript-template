@@ -34,7 +34,7 @@ describe("summarizePlan", () => {
       manageable: true,
       upgradable: false,
     });
-    expect(summary.periodEnd).toMatch(/^現在の期間は .+ までです。$/u);
+    expect(summary.periodEnd).toStrictEqual({ canceling: false, endsAt: periodEnd });
   });
 
   it("tells a member who canceled that the plan ends with the period", () => {
@@ -45,7 +45,7 @@ describe("summarizePlan", () => {
       plan: PLAN.paid,
       status: SUBSCRIPTION_STATUS.active,
     });
-    expect(summary.periodEnd).toMatch(/に解約され、その後は無料プランになります。$/u);
+    expect(summary.periodEnd).toStrictEqual({ canceling: true, endsAt: periodEnd });
   });
 
   it("keeps the portal reachable after the contract lapsed so payment can be fixed", () => {

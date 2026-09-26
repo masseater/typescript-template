@@ -50,7 +50,7 @@ describe("アプリ全体の導線", () => {
       ),
     );
 
-  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素まで辿れる", ({
+  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素・公開範囲まで辿れる", ({
     memberJourney,
   }) => {
     expect(memberJourney).toStrictEqual({
@@ -62,6 +62,7 @@ describe("アプリ全体の導線", () => {
       reachesPlanInOneClick: true,
       showsTheBiographyWrittenEarlier: true,
       showsTheReplyOnTheThread: true,
+      warnsSharingWhilePrivate: true,
     });
   });
 
@@ -72,10 +73,13 @@ describe("アプリ全体の導線", () => {
     });
   });
 
-  it("誰でも読める資料は複数ページと認証画面を配る", ({ documentJourney }) => {
+  it("誰でも読める資料は複数ページと認証画面を配り、狭い画面でも見出しの帯から文書の木と検索を開ける", ({
+    documentJourney,
+  }) => {
     expect(documentJourney).toStrictEqual({
       documentsRead: documentsReadByAnyone,
       loginPath: "/login",
+      narrowScreen: { opensTheDocumentTree: true, opensTheSearch: true },
       showsTheAddressField: true,
     });
   });

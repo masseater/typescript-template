@@ -3,13 +3,7 @@ import { apiData } from "@repo/runtime/client";
 import { userClient } from "#shared/api/index.ts";
 import { VisibilityView } from "#shared/contracts/index.ts";
 
-type Visibility = typeof VisibilityView.Type;
-
-function loadVisibility(): Promise<Visibility> {
-  return Promise.resolve(userClient()).then(({ api }) =>
-    api.profile.visibility.get().then((response) => apiData(VisibilityView, response)),
-  );
-}
+import type { Visibility } from "#entities/profile/index.ts";
 
 function saveVisibility(values: Visibility): Promise<Visibility> {
   return Promise.resolve(userClient()).then(({ api }) =>
@@ -17,5 +11,4 @@ function saveVisibility(values: Visibility): Promise<Visibility> {
   );
 }
 
-export { loadVisibility, saveVisibility };
-export type { Visibility };
+export { saveVisibility };

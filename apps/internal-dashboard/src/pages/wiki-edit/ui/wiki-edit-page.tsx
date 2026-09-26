@@ -24,9 +24,7 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
     value: [...document.value],
   });
   const router = useRouter();
-  const saving = useAction();
-  const discarding = useAction();
-  const publishing = useAction();
+  const drafting = useAction();
   const [titleInput, setTitle] = useOptionalString();
   const [descriptionInput, setDescription] = useOptionalString();
   const [confirmingDiscard, setConfirmingDiscard] = useConfirmingDiscard();
@@ -77,34 +75,28 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
           />
         </Plate>
         <DraftActions
+          action={drafting}
           backHref={wikiPageHref(source.path)}
-          discarding={discarding}
           onDiscard={() => {
             setConfirmingDiscard(true);
           }}
           onPublish={() => {
-            publishing.run(publish);
+            drafting.run(publish);
           }}
           onSave={() => {
-            saving.run(save);
+            drafting.run(save);
           }}
           publishable={publishable}
-          publishing={publishing}
-          saving={saving}
           version={version}
         />
-        <DraftStatus
-          failures={[saving.error, publishing.error, discarding.error]}
-          publishedUrl={publishedUrl}
-          version={version}
-        />
+        <DraftStatus failure={drafting.error} publishedUrl={publishedUrl} version={version} />
       </div>
       <ConfirmDialog
         confirmLabel="捨てる"
         description="保存した下書きを消して、公開されている内容に戻します。"
         onConfirm={() => {
           setConfirmingDiscard(false);
-          discarding.run(discard);
+          drafting.run(discard);
         }}
         onOpenChange={setConfirmingDiscard}
         open={confirmingDiscard}

@@ -1,6 +1,6 @@
 import { useSessionUser } from "@repo/auth-ui";
 import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
-import { LoadingRow, NavigationLink, Table, TableBody } from "@repo/ui";
+import { LoadingRow, NavigationLink, Table, TableBody, formatWarekiDate } from "@repo/ui";
 import { createColumnHelper, metaHelper, tableFeatures, useTable } from "@tanstack/react-table";
 
 import { accountStateLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
@@ -50,7 +50,10 @@ const usersTableColumns = columnHelper.columns([
     cell: (cellContext) => (cellContext.getValue() ? "設定済み" : "未設定"),
     header: "2段階認証",
   }),
-  columnHelper.accessor("registeredOn", { header: "登録日" }),
+  columnHelper.accessor("createdAt", {
+    cell: (cellContext) => formatWarekiDate(cellContext.getValue()),
+    header: "登録日",
+  }),
   columnHelper.display({
     cell: (cellContext) => {
       const tableMeta = cellContext.table.options.meta;
