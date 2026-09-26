@@ -1,4 +1,4 @@
-import { applicationOrigins } from "@repo/config";
+import { applicationOrigins, stripeEnvKey } from "@repo/config";
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -86,10 +86,10 @@ describe("the variables every runner shares", () => {
         expect.hasAssertions();
         const credentials = yield* sharedRunnerCredentials();
         expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
-          STRIPE_METERED_PRICE_ID: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
-          STRIPE_PRICE_ID: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
-          STRIPE_SECRET_KEY: expect.stringMatching(/^sk_test_[A-Za-z0-9]+$/u),
-          STRIPE_WEBHOOK_SECRET: expect.stringMatching(/^whsec_[A-Za-z0-9]+$/u),
+          [stripeEnvKey.meteredPriceId]: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
+          [stripeEnvKey.priceId]: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
+          [stripeEnvKey.secretKey]: expect.stringMatching(/^sk_test_[A-Za-z0-9]+$/u),
+          [stripeEnvKey.webhookSecret]: expect.stringMatching(/^whsec_[A-Za-z0-9]+$/u),
         });
         const stripe = {
           meteredPriceId: "price_storedMeteredNotReal",
@@ -100,13 +100,13 @@ describe("the variables every runner shares", () => {
         expect(
           appVariables("service-member", { ...credentials, stripe }, "loopback"),
         ).toMatchObject({
-          STRIPE_METERED_PRICE_ID: stripe.meteredPriceId,
-          STRIPE_PRICE_ID: stripe.priceId,
-          STRIPE_SECRET_KEY: stripe.secretKey,
-          STRIPE_WEBHOOK_SECRET: stripe.webhookSecret,
+          [stripeEnvKey.meteredPriceId]: stripe.meteredPriceId,
+          [stripeEnvKey.priceId]: stripe.priceId,
+          [stripeEnvKey.secretKey]: stripe.secretKey,
+          [stripeEnvKey.webhookSecret]: stripe.webhookSecret,
         });
         expect(Object.keys(appVariables("service-admin", credentials, "loopback"))).not.toContain(
-          "STRIPE_SECRET_KEY",
+          stripeEnvKey.secretKey,
         );
       }).pipe(Effect.provide(layer)),
     ));

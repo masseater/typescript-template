@@ -1,4 +1,11 @@
-import { appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
+import {
+  appEnvKey,
+  applicationOrigins,
+  grants,
+  mailpitOrigin,
+  stripeEnvKey,
+  type StripeEnvKey,
+} from "@repo/config";
 import { optionalSetting } from "@repo/config/process-environment";
 import { receiverOrigin } from "@repo/local";
 import { Crypto, Effect } from "effect";
@@ -34,16 +41,19 @@ function appOrigin(app: App, mode: typeof OriginMode.Type): string {
   return mode === "lan" ? lanOrigin(app) : applicationOrigins[app];
 }
 
-function billingVariables(app: App, credentials: Credentials): Readonly<Record<string, string>> {
+function billingVariables(
+  app: App,
+  credentials: Credentials,
+): Readonly<Partial<Record<StripeEnvKey, string>>> {
   if (!grants(app, "billing")) {
     return {};
   }
   const stripe = credentials.stripe ?? stripePlaceholders;
   return {
-    STRIPE_METERED_PRICE_ID: stripe.meteredPriceId,
-    STRIPE_PRICE_ID: stripe.priceId,
-    STRIPE_SECRET_KEY: stripe.secretKey,
-    STRIPE_WEBHOOK_SECRET: stripe.webhookSecret,
+    [stripeEnvKey.meteredPriceId]: stripe.meteredPriceId,
+    [stripeEnvKey.priceId]: stripe.priceId,
+    [stripeEnvKey.secretKey]: stripe.secretKey,
+    [stripeEnvKey.webhookSecret]: stripe.webhookSecret,
   };
 }
 

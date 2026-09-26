@@ -1,4 +1,4 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, stripeEnvKey } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Layer } from "effect";
 import { TestClock } from "effect/testing";
@@ -21,10 +21,10 @@ const appEnvironment = (
     AUTH_SECRET: fixtureAuthSecret,
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
-    STRIPE_METERED_PRICE_ID: "price_TestMetered",
-    STRIPE_PRICE_ID: "price_TestMonthly",
-    STRIPE_SECRET_KEY: "sk_test_placeholder",
-    STRIPE_WEBHOOK_SECRET: "whsec_testsecret",
+    [stripeEnvKey.meteredPriceId]: "price_TestMetered",
+    [stripeEnvKey.priceId]: "price_TestMonthly",
+    [stripeEnvKey.secretKey]: "sk_test_placeholder",
+    [stripeEnvKey.webhookSecret]: "whsec_testsecret",
     ...overrides,
   };
 };

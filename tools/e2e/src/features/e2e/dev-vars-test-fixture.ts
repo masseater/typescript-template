@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { appEnvKey, type Application, grants } from "@repo/config";
+import { appEnvKey, type Application, grants, stripeEnvKey, type StripeEnvKey } from "@repo/config";
 import { Crypto, Effect, FileSystem, Path } from "effect";
 
 import { failed, type JourneyFailure } from "./journey-failure.ts";
@@ -37,11 +37,11 @@ type DevVars = {
   readonly mailOrigin: string;
 };
 
-const stripeTestPlaceholders: readonly (readonly [string, string])[] = [
-  ["STRIPE_METERED_PRICE_ID", "price_e2eMeteredPlaceholderNotReal"],
-  ["STRIPE_PRICE_ID", "price_e2ePlaceholderNotReal"],
-  ["STRIPE_SECRET_KEY", "sk_test_e2ePlaceholderNotAReal"],
-  ["STRIPE_WEBHOOK_SECRET", "whsec_e2ePlaceholderNotReal"],
+const stripeTestPlaceholders: readonly (readonly [StripeEnvKey, string])[] = [
+  [stripeEnvKey.meteredPriceId, "price_e2eMeteredPlaceholderNotReal"],
+  [stripeEnvKey.priceId, "price_e2ePlaceholderNotReal"],
+  [stripeEnvKey.secretKey, "sk_test_e2ePlaceholderNotAReal"],
+  [stripeEnvKey.webhookSecret, "whsec_e2ePlaceholderNotReal"],
 ];
 
 const serialize = (application: Application, devVars: DevVars): string => {

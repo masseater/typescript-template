@@ -14,6 +14,7 @@ import {
   WEBHOOK_DISPOSITION,
   httpStatus,
   stripeApiVersion,
+  stripeEnvKey,
 } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
@@ -60,10 +61,10 @@ function billingApp() {
   const environment = appEnvironment({
     APP_ORIGIN: origin,
     AUTH_SECRET: authTestSecret,
-    STRIPE_METERED_PRICE_ID: meteredPriceId,
-    STRIPE_PRICE_ID: priceId,
-    STRIPE_SECRET_KEY: "sk_test_placeholder",
-    STRIPE_WEBHOOK_SECRET: webhookSecret,
+    [stripeEnvKey.meteredPriceId]: meteredPriceId,
+    [stripeEnvKey.priceId]: priceId,
+    [stripeEnvKey.secretKey]: "sk_test_placeholder",
+    [stripeEnvKey.webhookSecret]: webhookSecret,
   });
   const runtime = workerRuntime(() => {
     const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));

@@ -2,6 +2,7 @@ import {
   aiMeterEventName,
   aiUsageUnitAmount,
   stripeApiVersion,
+  stripeEnvKey,
   stripeWebhookEvents,
 } from "@repo/config";
 import { apiRoot } from "@repo/runtime/http";
@@ -42,10 +43,10 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
     url: `${origin}${apiRoot}/billing/webhook`,
   });
   return {
-    STRIPE_METERED_PRICE_ID: meteredPrice.id,
-    STRIPE_PRICE_ID: price.id,
-    STRIPE_SECRET_KEY: secretKey,
-    STRIPE_WEBHOOK_SECRET: webhook.secret.pipe(
+    [stripeEnvKey.meteredPriceId]: meteredPrice.id,
+    [stripeEnvKey.priceId]: price.id,
+    [stripeEnvKey.secretKey]: secretKey,
+    [stripeEnvKey.webhookSecret]: webhook.secret.pipe(
       Output.mapEffect((secret: Redacted.Redacted | undefined) =>
         secret === undefined
           ? Effect.die(new Error("Stripe webhook endpoint has no stored signing secret"))

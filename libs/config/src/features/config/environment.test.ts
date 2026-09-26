@@ -2,7 +2,12 @@ import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
-import { isLocalDevelopmentOrigin, readEnvironment, readStripeConfig } from "./index.ts";
+import {
+  isLocalDevelopmentOrigin,
+  readEnvironment,
+  readStripeConfig,
+  stripeEnvKey,
+} from "./index.ts";
 
 const localBindings = {
   APP_ORIGIN: "http://localhost:3001",
@@ -197,10 +202,10 @@ describe("an OTLP endpoint", () => {
 
 const stripeBindings = {
   APP_ORIGIN: "http://localhost:3001",
-  STRIPE_METERED_PRICE_ID: "price_metered",
-  STRIPE_PRICE_ID: "price_placeholder",
-  STRIPE_SECRET_KEY: "sk_test_placeholder",
-  STRIPE_WEBHOOK_SECRET: "whsec_placeholder",
+  [stripeEnvKey.meteredPriceId]: "price_metered",
+  [stripeEnvKey.priceId]: "price_placeholder",
+  [stripeEnvKey.secretKey]: "sk_test_placeholder",
+  [stripeEnvKey.webhookSecret]: "whsec_placeholder",
 };
 
 describe("readStripeConfig", () => {
@@ -233,7 +238,7 @@ describe("readStripeConfig", () => {
         readStripeConfig({
           ...stripeBindings,
           APP_ORIGIN: "https://member.example.test",
-          STRIPE_SECRET_KEY: "rk_live_placeholder",
+          [stripeEnvKey.secretKey]: "rk_live_placeholder",
         }).pipe(
           Effect.map((stripeConfig) => ({
             ...stripeConfig,
@@ -257,23 +262,23 @@ describe("readStripeConfig", () => {
   describe.for([
     [
       "a live key on a local origin",
-      { STRIPE_SECRET_KEY: "sk_live_placeholder" },
+      { [stripeEnvKey.secretKey]: "sk_live_placeholder" },
       "Stripe live keys are restricted to deployed origins",
     ],
     [
       "a secret key without a mode",
-      { STRIPE_SECRET_KEY: "sk_placeholder" },
-      'Expected a string matching the RegExp ^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$\n  at ["STRIPE_SECRET_KEY"]',
+      { [stripeEnvKey.secretKey]: "sk_placeholder" },
+      `Expected a string matching the RegExp ^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$\n  at ["${stripeEnvKey.secretKey}"]`,
     ],
     [
       "a webhook secret without the whsec prefix",
-      { STRIPE_WEBHOOK_SECRET: "placeholder" },
-      'Expected a string matching the RegExp ^whsec_[A-Za-z0-9]+$\n  at ["STRIPE_WEBHOOK_SECRET"]',
+      { [stripeEnvKey.webhookSecret]: "placeholder" },
+      `Expected a string matching the RegExp ^whsec_[A-Za-z0-9]+$\n  at ["${stripeEnvKey.webhookSecret}"]`,
     ],
     [
       "a price id without the price prefix",
-      { STRIPE_PRICE_ID: "prod_placeholder" },
-      'Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["STRIPE_PRICE_ID"]',
+      { [stripeEnvKey.priceId]: "prod_placeholder" },
+      `Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["${stripeEnvKey.priceId}"]`,
     ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
     const it = test.extend("refusal", () =>
@@ -290,7 +295,7 @@ describe("readStripeConfig", () => {
 
     it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
       expect(refusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_METERED_PRICE_ID"]' }),
+        new ConfigurationInvalid({ reason: `Missing key\n  at ["${stripeEnvKey.meteredPriceId}"]` }),
       );
     });
   });
