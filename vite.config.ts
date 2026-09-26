@@ -73,6 +73,13 @@ export default defineConfig({
   run: {
     tasks: {
       "compile:paraglide": workspaceParaglideCompile,
+      "prepare:hooks": { cache: false, command: "vp config --no-agent" },
+      "prepare:browser": { cache: false, command: "repo-dev-prepare-browser" },
+      "prepare:effect-tsgo": { cache: false, command: "effect-tsgo patch --typescript --oxlint" },
+      "prepare:repository": {
+        command: [],
+        dependsOn: ["prepare:hooks", "prepare:browser", "prepare:effect-tsgo"],
+      },
       "check:code": {
         command: `vp check ${rootOwnedPaths.join(" ")}`,
         env: [...telemetryEnv],

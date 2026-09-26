@@ -1,9 +1,11 @@
 import { workerCompatibility } from "@repo/config/worker";
-import { Database, DatabaseFailure } from "@repo/db";
-import { localDatabase } from "@repo/db/local";
-import { migrateD1, type RemoteFailure } from "@repo/db/migrations";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
+
+import { DatabaseFailure } from "./database-failure.ts";
+import { Database } from "./database.ts";
+import { localDatabase } from "./local.ts";
+import { migrateD1, type RemoteFailure } from "./remote-operations.ts";
 
 import type { D1Database, D1PreparedStatement, D1Result } from "@cloudflare/workers-types";
 

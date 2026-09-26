@@ -22,7 +22,7 @@ type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
 const operator = Effect.fn(ADMIN_PERMISSION.operator)(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
-    yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
+    yield* run("vp", ["run", "--filter", "@repo/dev", "db:migrate:local"], { cwd: root });
   }
   yield* ensureOperators();
   return { event: "local.operator_ready", ok: true as const, secretsPrinted: false as const };
@@ -71,7 +71,7 @@ runCli(
       cause,
       fields: {
         remediation:
-          "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+          "Check vp run --filter @repo/dev setup, vp run --filter @repo/dev db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
       },
     }),
 );

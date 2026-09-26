@@ -1,14 +1,6 @@
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
-import {
-  effectDiagnostics,
-  lifecycle,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-  taskInput,
-  telemetryEnv,
-} from "@repo/vite-config";
+import { effectRun, taskInput, telemetryEnv } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -25,21 +17,13 @@ export default defineConfig({
   },
   run: {
     tasks: {
-      ...effectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...effectRun(import.meta.dirname, { prepr: ["build"] }).tasks,
       build: {
         command: "vp pack",
         dependsOn: ["check:effect"],
         input: [...taskInput],
         env: [...telemetryEnv],
       },
-      ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check:modular"],
-        prepr: ["build"],
-      }),
     },
   },
   test: {

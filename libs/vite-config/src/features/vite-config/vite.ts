@@ -44,7 +44,7 @@ import {
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { withoutEnvFileLoader } from "./env-file-loader.ts";
 import { paths } from "./host.ts";
-import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
+import { lifecycle, lifecycleInherits, lifecycles, type Lifecycle } from "./lifecycle.ts";
 import { localizedApps } from "./paraglide-options.ts";
 import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
@@ -59,6 +59,7 @@ import {
   wikiDevWorkerName,
   wikiHmrPath,
 } from "./wiki-companion.ts";
+import { checkCode, modularBoundaries, workspaceCheckImports } from "./workspace-checks.ts";
 
 const clientReachableModules = [
   "libs/runtime/src/features/runtime/client.ts",
@@ -142,39 +143,41 @@ const intentValidation = measured({
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks);
 
-const checkCode = measured({
-  "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
-} satisfies Tasks);
+type Stages = Readonly<Partial<Record<Lifecycle, readonly string[]>>>;
 
-const workspaceCheckImports = measured({
-  "check:imports": { command: "dont-review-it-imports", input: [...taskInput] },
-} satisfies Tasks);
-
-const modularBoundaries = measured({
-  "check:modular": { command: "dont-review-it-modular", input: [...taskInput] },
-} satisfies Tasks);
+const effectRunStages: Stages = {
+  precommit: ["check:code"],
+  prepush: ["check:effect", "check:imports", "check:modular"],
+};
 
 const effectRunTasks = measured({
   ...checkCode,
   ...workspaceCheckImports,
   ...modularBoundaries,
-  ...lifecycle({
-    precommit: ["check:code"],
-    prepush: ["check:effect", "check:imports", "check:modular"],
-  }),
+  ...lifecycle(effectRunStages),
 } satisfies Tasks);
 
-const effectRun = (
-  packageRoot: string,
-): { tasks: typeof effectRunTasks & EffectDiagnosticsTask } => ({
-  tasks: { ...effectDiagnostics(packageRoot), ...effectRunTasks },
-});
+const extendedStages = (stages: Stages): Stages =>
+  Object.fromEntries(
+    lifecycles.map((stage) => [
+      stage,
+      [...(effectRunStages[stage] ?? []), ...(stages[stage] ?? [])],
+    ]),
+  );
 
-const awaitingEffectRun = (
-  packageRoot: string,
-): { tasks: typeof effectRunTasks & EffectDiagnosticsTask } => ({
-  tasks: { ...awaitingEffectDiagnostics(packageRoot), ...effectRunTasks },
-});
+const stagedEffectRun =
+  (diagnostics: (packageRoot: string) => EffectDiagnosticsTask) =>
+  (packageRoot: string, stages: Stages = {}): RunConfig => ({
+    tasks: {
+      ...diagnostics(packageRoot),
+      ...effectRunTasks,
+      ...lifecycle(extendedStages(stages)),
+    },
+  });
+
+const effectRun = stagedEffectRun(effectDiagnostics);
+
+const awaitingEffectRun = stagedEffectRun(awaitingEffectDiagnostics);
 
 const appChecks = measured({
   "check:client": {
@@ -225,7 +228,7 @@ const appTasks = measured({
   },
   "check:dev": {
     cache: false,
-    command: "../../tools/dev/src/features/dev/dev-start.ts",
+    command: "dev-start",
     dependsOn: ["@repo/dev#setup"],
   },
   dev: { cache: false, command: "vp dev" },
@@ -453,7 +456,6 @@ export {
   appServer,
   awaitingEffectDiagnostics,
   awaitingEffectRun,
-  checkCode,
   clientReachableModules,
   defineConfig,
   effectDiagnostics,
@@ -463,7 +465,6 @@ export {
   lifecycle,
   lifecycleInherits,
   lifecycles,
-  modularBoundaries,
   paraglideAppRun,
   previewDevVars,
   workspaceParaglideCompile,
@@ -481,7 +482,6 @@ export {
   wikiCompanion,
   wikiDevServices,
   withoutEnvFileLoader,
-  workspaceCheckImports,
 };
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";

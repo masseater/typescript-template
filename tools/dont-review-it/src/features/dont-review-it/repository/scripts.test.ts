@@ -96,9 +96,9 @@ const vitePlusCommands = [
 describe("workspace script conventions", () => {
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
     expect.assertions(1);
-    expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([
+    expect(scriptViolations({ scripts: { probe: command } })).toContain(
       `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
-    ]);
+    );
   });
 
   it.for(alchemyCommands)("rejects the raw alchemy CLI: %s", (command) => {
@@ -144,6 +144,72 @@ describe("workspace script conventions", () => {
   });
 });
 
+const composedCommands = [
+  "vp config --no-agent && effect-tsgo patch --typescript --oxlint",
+  "export NODE_OPTIONS=--throw-deprecation; vp config --no-agent",
+  "vp run build || vp run fallback",
+  "vp run build | tee build.log",
+  "vp run build\nvp run test",
+];
+
+const shellWrappedCommands = [
+  "bash -c 'export NODE_OPTIONS=--throw-deprecation; vp config --no-agent && vp run --filter @repo/dev prepare-browser && effect-tsgo patch --typescript --oxlint'",
+  "sh -c 'vp run build'",
+  "bash -lc 'vp run build'",
+  "/bin/bash -c 'vp run build'",
+  "env CI=true sh -c 'vp run build'",
+];
+
+const outsideWorkspaceCommands = [
+  "../../tools/dev/src/features/dev/dev-start.ts",
+  "../dev/cli.ts setup",
+  "CI=true ../../tools/dev/src/features/dev/dev-start.ts",
+];
+
+const singleCommands = [
+  "NODE_OPTIONS=--throw-deprecation vp run prepare:repository",
+  "dev-start",
+  "./src/features/dev/cli.ts setup",
+  "echo 'a && b; c'",
+];
+
+describe("commands that compose several calls", () => {
+  it.for(composedCommands)("rejects a chained script: %s", (command) => {
+    expect.assertions(1);
+    expect(scriptViolations({ scripts: { probe: command } })).toContain(
+      `probe: &&・;・| や改行で複数のコマンドをつながず、1 つのコマンド呼び出しにしてください。工程が複数あるなら vite.config.ts のタスクに分けて dependsOn でつないでください: ${command}`,
+    );
+  });
+
+  it.for(composedCommands)("rejects a chained task: %s", (command) => {
+    expect.assertions(1);
+    expect(taskViolations({ probe: { command } })).toHaveLength(1);
+  });
+
+  it.for(shellWrappedCommands)("rejects a command wrapped in a shell: %s", (command) => {
+    expect.assertions(2);
+    const violation = `probe: bash -c や sh -c でコマンドを包まず、1 つのコマンド呼び出しにしてください。中身の検査が効かなくなります: ${command}`;
+    expect(scriptViolations({ scripts: { probe: command } })).toContain(violation);
+    expect(taskViolations({ probe: { command } })).toContain(violation);
+  });
+
+  it.for(outsideWorkspaceCommands)(
+    "rejects launching a file outside the workspace: %s",
+    (command) => {
+      expect.assertions(2);
+      const violation = `probe: workspace の外のファイルを相対パスで起動せず、そのファイルを持つパッケージの bin を呼んでください: ${command}`;
+      expect(taskViolations({ probe: { command } })).toContain(violation);
+      expect(scriptViolations({ scripts: { probe: command } })).toContain(violation);
+    },
+  );
+
+  it.for(singleCommands)("allows a single call: %s", (command) => {
+    expect.assertions(2);
+    expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([]);
+    expect(taskViolations({ probe: { command } })).toStrictEqual([]);
+  });
+});
+
 describe("workspace scripts that run a file with node", () => {
   it.for(nodeFileCommands)("rejects running a file with node: %s", (command) => {
     expect.assertions(1);
@@ -163,12 +229,16 @@ describe("vite task conventions", () => {
 
   it.for(packageManagerCommands)("rejects direct package manager calls: %s", (command) => {
     expect.assertions(1);
-    expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
+    expect(taskViolations({ probe: { command: ["vp check", command] } })).toContain(
+      `probe: パッケージマネージャーを直接呼ばず、script は vp run、node_modules のバイナリは vp exec、未導入のツールは vp dlx で実行してください: ${command}`,
+    );
   });
 
   it.for(alchemyCommands)("rejects the raw alchemy CLI: %s", (command) => {
     expect.assertions(1);
-    expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
+    expect(taskViolations({ probe: { command: ["vp check", command] } })).toContain(
+      `probe: alchemy の CLI は unsafe nuke と destroy でアカウント全体を消せるため直接呼べません。infra/cloudflare の src/cli.ts と src/bootstrap-state.ts から実行してください: ${command}`,
+    );
   });
 
   it("all repository tasks run through Vite+", () => {

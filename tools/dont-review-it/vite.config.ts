@@ -1,14 +1,6 @@
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
-import {
-  effectDiagnostics,
-  intentValidation,
-  lifecycle,
-  testRun,
-  checkCode,
-  modularBoundaries,
-  workspaceCheckImports,
-} from "@repo/vite-config";
+import { effectRun, intentValidation, testRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import {
@@ -19,10 +11,11 @@ import {
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics(import.meta.dirname),
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...modularBoundaries,
+      ...effectRun(import.meta.dirname, {
+        precommit: ["check:staged"],
+        prepush: ["check"],
+        prepr: ["test"],
+      }).tasks,
       ...intentValidation,
       "test:shared": {
         ...testRun.test,
@@ -57,11 +50,6 @@ export default defineConfig({
         cache: false,
         command: "dont-review-it-clean-shared-task-cache",
       },
-      ...lifecycle({
-        precommit: ["check:staged", "check:code"],
-        prepush: ["check:effect", "check:imports", "check", "check:modular"],
-        prepr: ["test"],
-      }),
     },
   },
   test: {

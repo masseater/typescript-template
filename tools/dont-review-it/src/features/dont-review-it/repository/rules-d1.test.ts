@@ -155,7 +155,7 @@ const rawD1OutsideAdapter = [
 
 const rawD1Adapters = [
   ["libs/db/src/features/db/database-test-fixture.ts"],
-  ["libs/db-local/src/features/db-local/testing-node.ts"],
+  ["libs/db/src/features/db/node-database-test-fixture.ts"],
 ] as const;
 
 const nonD1Operations = [

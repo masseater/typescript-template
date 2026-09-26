@@ -8,18 +8,16 @@ import {
   appConfig,
   appRun,
   awaitingEffectDiagnostics,
-  checkCode,
   effectDiagnostics,
   effectRun,
   lifecycle,
-  modularBoundaries,
   paraglideAppRun,
   sliceBoundaries,
   taskInput,
   telemetryEnv,
-  workspaceCheckImports,
   workspaceParaglideCompile,
 } from "./vite.ts";
+import { checkCode, modularBoundaries, workspaceCheckImports } from "./workspace-checks.ts";
 
 import type { ConfigEnv, PluginOption } from "vite-plus";
 
@@ -63,7 +61,7 @@ describe("lifecycle", () => {
   });
 });
 
-const libraryRoot = paths.join(repositoryRoot, "libs/db-local");
+const libraryRoot = paths.join(repositoryRoot, "libs/config");
 const applicationRoot = paths.join(repositoryRoot, "apps/service-admin");
 
 describe("effectRun", () => {
@@ -81,6 +79,29 @@ describe("effectRun", () => {
         ...lifecycle({
           precommit: ["check:code"],
           prepush: ["check:effect", "check:imports", "check:modular"],
+        }),
+      },
+    });
+  });
+});
+
+describe("effectRun with workspace stages", () => {
+  const it = test.extend("stagedWorkspaceRun", () =>
+    effectRun(libraryRoot, { prepr: ["build"], prepush: ["check"] }));
+
+  it("appends the stages to the standard ones instead of replacing them", ({
+    stagedWorkspaceRun,
+  }) => {
+    expect(stagedWorkspaceRun).toStrictEqual({
+      tasks: {
+        ...effectDiagnostics(libraryRoot),
+        ...checkCode,
+        ...workspaceCheckImports,
+        ...modularBoundaries,
+        ...lifecycle({
+          precommit: ["check:code"],
+          prepush: ["check:effect", "check:imports", "check:modular", "check"],
+          prepr: ["build"],
         }),
       },
     });
@@ -137,7 +158,7 @@ describe("appRun", () => {
         },
         "check:dev": {
           cache: false,
-          command: "../../tools/dev/src/features/dev/dev-start.ts",
+          command: "dev-start",
           dependsOn: ["@repo/dev#setup"],
         },
         dev: { cache: false, command: "vp dev" },

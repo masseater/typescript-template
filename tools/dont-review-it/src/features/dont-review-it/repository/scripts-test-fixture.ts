@@ -104,9 +104,47 @@ function runsFileWithNode(tokens: readonly string[]): boolean {
   );
 }
 
+const shells = new Set(["bash", "sh", "zsh", "dash"]);
+
+function wrapsInShell(tokens: readonly string[]): boolean {
+  const index = leadingCommand(tokens);
+  return (
+    index !== -1 &&
+    shells.has(binaryName(tokens[index] ?? "")) &&
+    tokens.slice(index + 1).some((word) => /^-[A-Za-z]*c[A-Za-z]*$/u.test(word))
+  );
+}
+
+function launchesOutsideWorkspace(tokens: readonly string[]): boolean {
+  const index = leadingCommand(tokens);
+  return index !== -1 && (tokens[index] ?? "").startsWith("../");
+}
+
+function compositionViolations(name: string, command: string): string[] {
+  const segments = words(command);
+  return [
+    ...(segments.length > 1
+      ? [
+          `${name}: &&・;・| や改行で複数のコマンドをつながず、1 つのコマンド呼び出しにしてください。工程が複数あるなら vite.config.ts のタスクに分けて dependsOn でつないでください: ${command}`,
+        ]
+      : []),
+    ...(segments.some((tokens) => wrapsInShell(tokens))
+      ? [
+          `${name}: bash -c や sh -c でコマンドを包まず、1 つのコマンド呼び出しにしてください。中身の検査が効かなくなります: ${command}`,
+        ]
+      : []),
+    ...(segments.some((tokens) => launchesOutsideWorkspace(tokens))
+      ? [
+          `${name}: workspace の外のファイルを相対パスで起動せず、そのファイルを持つパッケージの bin を呼んでください: ${command}`,
+        ]
+      : []),
+  ];
+}
+
 function commandViolations(name: string, command: string): string[] {
   const segments = words(command);
   return [
+    ...compositionViolations(name, command),
     ...(segments.some((tokens) => runsFileWithNode(tokens))
       ? [
           `${name}: node でファイルを直接実行せず、パッケージの bin か vp run で実行してください: ${command}`,

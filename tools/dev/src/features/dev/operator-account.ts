@@ -8,7 +8,6 @@ import {
   type Application,
 } from "@repo/config";
 import { Database } from "@repo/db";
-import { localDatabasePlatform } from "@repo/db-local/platform";
 import { ensureAdminRole, type BootstrapKind } from "@repo/db/bootstrap";
 import { createEmailVerificationToken } from "better-auth/api";
 import {
@@ -28,6 +27,7 @@ import { URI } from "otpauth";
 
 import { LocalCommandFailure, failure } from "./failure.ts";
 import { local, readCredentials } from "./local-environment.ts";
+import { localDatabasePlatform } from "./local-platform.ts";
 import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
 import { assertOwnerOnly, replacePrivateFile } from "./private-files.ts";
 

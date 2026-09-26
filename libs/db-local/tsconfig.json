@@ -1,7 +1,0 @@
-{
-  "extends": "@repo/dont-review-it/tsconfig/library.json",
-  "compilerOptions": {
-    "types": ["vite-plus/client", "node", "@cloudflare/workers-types"]
-  },
-  "include": ["src/**/*.ts", "vite.config.ts"]
-}

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "guard": "throttle --timeout 1800 -- spool -- vp run prepr",
-    "prepare": "bash -c 'export NODE_OPTIONS=--throw-deprecation; vp config --no-agent && vp run --filter @repo/dev prepare-browser && effect-tsgo patch --typescript --oxlint'"
+    "prepare": "NODE_OPTIONS=--throw-deprecation vp run prepare:repository"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
@@ -13,7 +13,7 @@
     "@repo/ai-native": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/db-local": "workspace:*",
+    "@repo/dev": "workspace:*",
     "@repo/dont-review-it": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@repo/telemetry": "workspace:*",

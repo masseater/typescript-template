@@ -1,3 +1,7 @@
+import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
+import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
+
 import {
   EmptyTestDatabase,
   TestBinding,
@@ -5,11 +9,7 @@ import {
   describeDatabase,
   primaryKeyNullability,
   runStatement,
-} from "@repo/db-local";
-import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
-import { Effect } from "effect";
-import { describe, expect, test } from "vite-plus/test";
-
+} from "./node-database-test-fixture.ts";
 import { loadRemoteMigrations, migrateD1 } from "./remote-operations.ts";
 import * as schemaModule from "./schema.ts";
 import { schema } from "./schema.ts";
