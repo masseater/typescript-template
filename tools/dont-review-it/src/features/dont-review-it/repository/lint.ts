@@ -22,6 +22,15 @@ const midPresetEffectRules = Object.fromEntries(
   Object.keys(effectRecommended.rules ?? {}).map((ruleName) => [ruleName, LINT_SEVERITY.OFF]),
 );
 
+const sharedTestConfig = [{ source: "@repo/vite-config", name: "toolTest" }];
+
+const workspaceConfigsOutsideTestProjects = [
+  "apps/*/vite.config.ts",
+  "infra/*/vite.config.ts",
+  "libs/*/vite.config.ts",
+  "tools/load/vite.config.ts",
+];
+
 const softPresetPackages = [
   "apps/service-admin/**",
   "apps/service-member/**",
@@ -1055,6 +1064,15 @@ const lintOptions = {
       },
     },
     {
+      files: workspaceConfigsOutsideTestProjects,
+      rules: {
+        "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": LINT_SEVERITY.OFF,
+        "dont-review-it/no-shared-double-state--reset-doubles-between-tests": LINT_SEVERITY.OFF,
+        "dont-review-it/require-spec-directory-outside-coverage--exclude-it-from-the-measurement":
+          LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: softPresetPackages,
       rules: softPresetRules,
     },
@@ -1075,7 +1093,15 @@ const lintOptions = {
     "project/process-boundary": [LINT_SEVERITY.ERROR, { builtinLoaderOnly: true }],
     "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
       LINT_SEVERITY.ERROR,
-      { branches: 50, functions: 50, lines: 50, statements: 50 },
+      { branches: 50, functions: 50, lines: 50, statements: 50, configOwners: sharedTestConfig },
+    ],
+    "dont-review-it/no-shared-double-state--reset-doubles-between-tests": [
+      LINT_SEVERITY.ERROR,
+      { configOwners: sharedTestConfig },
+    ],
+    "dont-review-it/require-spec-directory-outside-coverage--exclude-it-from-the-measurement": [
+      LINT_SEVERITY.ERROR,
+      { configOwners: sharedTestConfig },
     ],
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,

@@ -1,6 +1,15 @@
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import {
+  CONFIG_OWNERS_KEY,
+  CONFIG_OWNERS_SCHEMA,
+  configOwnersFrom,
+  declaredAt,
+  declaredAtPath,
+  ownerNamesIn,
+  settlesTrue,
+  writtenObjectOf,
+} from "../../lib/config-owner.ts";
 import { defaultExportedObject } from "../../lib/default-exported-object.ts";
-import { declaresTrueAt, nestedObjectAt, objectPropertyOf } from "../../lib/object-literal.ts";
 import { isRecord } from "../../lib/record-value.ts";
 import { isTestRunnerConfig } from "../../lib/test-runner-config.ts";
 
@@ -45,26 +54,27 @@ type CoverageViolation = {
 const violationsIn = ({
   thresholds,
   requirements,
+  ownerNames,
 }: {
   readonly thresholds: ESTree.ObjectExpression;
   readonly requirements: readonly CoverageRequirement[];
+  readonly ownerNames: ReadonlySet<string>;
 }): readonly CoverageViolation[] => {
-  const shorthandDemandsFullCoverage = declaresTrueAt({
-    object: thresholds,
-    key: String(FULL_COVERAGE),
-  });
+  const shorthand = declaredAt({ object: thresholds, key: String(FULL_COVERAGE), ownerNames });
+  const shorthandDemandsFullCoverage = shorthand.kind === "written" && settlesTrue(shorthand);
   return requirements.flatMap<CoverageViolation>(({ metric, required }) => {
     if (shorthandDemandsFullCoverage && required <= FULL_COVERAGE) return [];
-    const property = objectPropertyOf({ object: thresholds, key: metric });
+    const settled = declaredAt({ object: thresholds, key: metric, ownerNames });
+    if (settled.kind === "owned") return [];
     const unset = { messageId: "unsetCoverageThreshold", data: { metric, required } };
-    if (property === null) return [{ node: thresholds, ...unset }];
-    const declared = declaredNumberOf(property.value);
-    if (declared === null) return [{ node: property, ...unset }];
+    if (settled.kind !== "written") return [{ node: thresholds, ...unset }];
+    const declared = declaredNumberOf(settled.value);
+    if (declared === null) return [{ node: settled.property, ...unset }];
     return declared >= required
       ? []
       : [
           {
-            node: property,
+            node: settled.property,
             messageId: "lenientCoverageThreshold",
             data: { metric, required, declared },
           },
@@ -99,6 +109,7 @@ export const noLenientCoverageThreshold = createDontReviewItRule({
           functions: THRESHOLD_SCHEMA,
           lines: THRESHOLD_SCHEMA,
           statements: THRESHOLD_SCHEMA,
+          [CONFIG_OWNERS_KEY]: CONFIG_OWNERS_SCHEMA,
         },
         additionalProperties: false,
       },
@@ -107,12 +118,18 @@ export const noLenientCoverageThreshold = createDontReviewItRule({
   create(inspection) {
     if (!isTestRunnerConfig(inspection.filename)) return {};
     const requirements = requirementsFrom(inspection.options);
+    const owners = configOwnersFrom(inspection.options);
 
     return {
       Program(node: ESTree.Program) {
         const config = defaultExportedObject(node);
-        const thresholds =
-          config === null ? null : nestedObjectAt({ object: config, path: THRESHOLDS_PATH });
+        const ownerNames = ownerNamesIn(node, owners);
+        const declared =
+          config === null
+            ? null
+            : declaredAtPath({ object: config, path: THRESHOLDS_PATH, ownerNames });
+        if (declared?.kind === "owned") return;
+        const thresholds = declared === null ? null : writtenObjectOf(declared);
         if (thresholds === null) {
           inspection.report({
             node,
@@ -124,10 +141,10 @@ export const noLenientCoverageThreshold = createDontReviewItRule({
           });
           return;
         }
-        if (!declaresTrueAt({ object: thresholds, key: PER_FILE_KEY })) {
+        if (!settlesTrue(declaredAt({ object: thresholds, key: PER_FILE_KEY, ownerNames }))) {
           inspection.report({ node: thresholds, messageId: "aggregateCoverageThreshold" });
         }
-        for (const violation of violationsIn({ thresholds, requirements })) {
+        for (const violation of violationsIn({ thresholds, requirements, ownerNames })) {
           inspection.report(violation);
         }
       },

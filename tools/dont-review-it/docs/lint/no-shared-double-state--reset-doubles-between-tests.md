@@ -11,7 +11,7 @@ Require the test config to declare that doubles are reset and restored before ea
 - Tool: `oxlint`
 - Fixable: no
 - Suggestions: no
-- Options: no
+- Options: yes
 - Bundle: `testing`
 - Source: [`no-shared-double-state--reset-doubles-between-tests.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-shared-double-state--reset-doubles-between-tests.ts)
 
@@ -36,6 +36,14 @@ export default defineConfig({ test: { mockReset: true, restoreMocks: true } });
 Code this rule rejects.
 
 ```ts
+// a setting the owner settles but the config writes over is reported
+// in vite.config.ts
+import { toolTest } from "@repo/vite-config";
+export default { test: { ...toolTest, mockReset: false } };
+
+```
+
+```ts
 // a config that declares no test block is reported once
 // in vite.config.ts
 import { defineConfig } from "vite-plus";
@@ -52,6 +60,15 @@ export default defineConfig({ test: { mockReset: false, restoreMocks: true } });
 ```
 
 Code this rule accepts.
+
+```ts
+// a test block taken whole from the configured owner passes
+// in vite.config.ts
+import { toolTest } from "@repo/vite-config";
+import { defineConfig } from "vite-plus";
+export default defineConfig({ test: toolTest });
+
+```
 
 ```ts
 // the settings declared beside the rest of the test options pass
@@ -91,6 +108,6 @@ export default defineConfig({ test: { mockReset: true, restoreMocks: true } });
 
 <!-- BEGIN GENERATED runtime -->
 
-This rule runs as an oxlint JS plugin, in the same pass as every other rule the workspace ships. It reads no options. A consumer turns it on or off as a whole.
+This rule runs as an oxlint JS plugin, in the same pass as every other rule the workspace ships. It reads options declared on `meta.schema` in the source linked above.
 
 <!-- END GENERATED runtime -->
