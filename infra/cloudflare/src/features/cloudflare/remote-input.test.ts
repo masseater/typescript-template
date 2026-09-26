@@ -45,6 +45,18 @@ describe("parseRemoteInput", () => {
     ],
     ["a bootstrap without an email", ["bootstrap", "--plan"], d1Target, "REMOTE_INPUT_INVALID"],
     [
+      "an execution without an email",
+      ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
+      { ...d1Target, apiToken: "test-token-at-least-20-characters" },
+      "REMOTE_INPUT_INVALID",
+    ],
+    [
+      "an execution with an empty email",
+      ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
+      { ...d1Target, apiToken: "test-token-at-least-20-characters", email: "" },
+      "REMOTE_INPUT_INVALID",
+    ],
+    [
       "a bootstrap with an invalid email",
       ["bootstrap", "--plan"],
       { ...d1Target, email: "private-invalid-email" },
@@ -68,6 +80,25 @@ describe("parseRemoteInput", () => {
         execute: false,
         operation: "bootstrap",
         target: bootstrapTarget,
+      });
+    });
+  });
+
+  describe("an execution for a real database", () => {
+    const executeTarget = { ...bootstrapTarget, apiToken: "test-token-at-least-20-characters" };
+    const it = test.extend("remoteInput", () =>
+      Effect.runPromise(
+        parseRemoteInput(
+          ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
+          executeTarget,
+        ),
+      ));
+
+    it("is accepted with the token and email it runs with", ({ remoteInput }) => {
+      expect(remoteInput).toStrictEqual({
+        execute: true,
+        operation: "bootstrap",
+        target: executeTarget,
       });
     });
   });

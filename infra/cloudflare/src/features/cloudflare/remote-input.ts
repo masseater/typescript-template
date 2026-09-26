@@ -14,12 +14,27 @@ const ApiToken = Schema.String.check(
   Schema.isPattern(/^[A-Za-z0-9_-]+$/u),
 );
 
-const RemoteTarget = Schema.Struct({
+const PlanTarget = Schema.Struct({
   accountId: CloudflareId,
   apiToken: Schema.optionalKey(ApiToken),
   databaseId: DatabaseId,
-  email: Schema.optionalKey(Email),
+  email: Email,
 });
+
+const ExecuteTarget = Schema.Struct({
+  accountId: CloudflareId,
+  apiToken: ApiToken,
+  databaseId: DatabaseId,
+  email: Email,
+});
+
+const decodedTarget = <Target>(
+  schema: Schema.Codec<Target, unknown>,
+  input: unknown,
+): Effect.Effect<Target, RemoteFailure> =>
+  Schema.decodeUnknownEffect(schema)(input, { onExcessProperty: "error" }).pipe(
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })),
+  );
 
 const parseCommand = (
   commandArguments: readonly string[],
@@ -47,14 +62,12 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRem
   input: unknown,
 ) {
   const { confirmation, execute, operation } = yield* parseCommand(commandArguments);
-  const remoteTarget = yield* Schema.decodeUnknownEffect(RemoteTarget)(input, {
-    onExcessProperty: "error",
-  }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
-  if (remoteTarget.email === undefined || (execute && remoteTarget.apiToken === undefined)) {
-    return yield* fail("REMOTE_INPUT_INVALID");
+  if (!execute) {
+    return { execute: false, operation, target: yield* decodedTarget(PlanTarget, input) } as const;
   }
-  if (execute && confirmation !== remoteTarget.databaseId) {
+  const target = yield* decodedTarget(ExecuteTarget, input);
+  if (confirmation !== target.databaseId) {
     return yield* fail("REMOTE_TARGET_MISMATCH");
   }
-  return { execute, operation, target: remoteTarget };
+  return { execute: true, operation, target } as const;
 });

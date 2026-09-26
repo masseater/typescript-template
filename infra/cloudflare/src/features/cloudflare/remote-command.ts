@@ -1,10 +1,8 @@
-import { bootstrapDatabase, fail, loadRemoteMigrations } from "@repo/db/migrations";
+import { bootstrapDatabase, loadRemoteMigrations } from "@repo/db/migrations";
 import { Effect } from "effect";
 
 import { remoteDatabase } from "./remote-http.ts";
 import { parseRemoteInput } from "./remote-input.ts";
-
-import type { RemoteFailure } from "@repo/db/migrations";
 
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
@@ -20,7 +18,7 @@ type PlanReport = {
 };
 
 const planReport = (
-  { operation, target }: Readonly<RemoteInput>,
+  { operation, target }: Extract<RemoteInput, { readonly execute: false }>,
   migrations: Migrations,
 ): PlanReport => {
   return {
@@ -35,38 +33,22 @@ const planReport = (
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   target,
-}: Readonly<RemoteInput>) {
-  if (target.apiToken === undefined) {
-    return yield* fail("REMOTE_INPUT_INVALID");
-  }
-  const database = remoteDatabase({ ...target, apiToken: target.apiToken });
-  if (target.email === undefined) {
-    return yield* fail("REMOTE_INPUT_INVALID");
-  }
-  yield* bootstrapDatabase({ database: database, email: target.email });
-  return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
+}: Extract<RemoteInput, { readonly execute: true }>) {
+  yield* bootstrapDatabase({ database: remoteDatabase(target), email: target.email });
+  return {
+    databaseId: target.databaseId,
+    event: "database.remote_admin_bootstrapped",
+    ok: true,
+  } as const;
 });
-
-type RemoteCommandResult =
-  | PlanReport
-  | {
-      readonly databaseId: string;
-      readonly event: "database.remote_admin_bootstrapped";
-      readonly ok: true;
-    };
 
 const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   function* runRemoteDatabaseCommand(commandArguments: readonly string[], input: unknown) {
     const remoteInput = yield* parseRemoteInput(commandArguments, input);
-    const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> =
-      remoteInput.execute
-        ? yield* executeRemote(remoteInput)
-        : planReport(remoteInput, yield* loadRemoteMigrations());
-    return report;
+    return remoteInput.execute
+      ? yield* executeRemote(remoteInput)
+      : planReport(remoteInput, yield* loadRemoteMigrations());
   },
-) as (
-  commandArguments: readonly string[],
-  input: unknown,
-) => Effect.Effect<RemoteCommandResult, RemoteFailure>;
+);
 
 export { runRemoteDatabaseCommand };

@@ -84,6 +84,15 @@ describe("assertCoreNotPublic", () => {
     ).toBeUndefined();
   });
 
+  it.for([
+    ["routes that are not a list", { routes: "core.example.com/*", workersDev: false }],
+    ["a workers.dev setting that is neither a switch nor settings", { workersDev: "off" }],
+  ] as const)("reports %s as unreadable", ([, declared]) => {
+    expect(assertCoreNotPublic(coreWithDeclared(declared))).toBe(
+      "core_worker_declaration_unreadable",
+    );
+  });
+
   it("rejects a core stack that gained a domain", () => {
     expect(
       assertCoreNotPublic({

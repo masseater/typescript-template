@@ -41,7 +41,7 @@ runDeploymentCommand(
         accountId: access.accountId,
         apiToken: access.apiToken,
         databaseId,
-        ...(email === "" ? {} : { email }),
+        email,
       });
       yield* Console.info(yield* encodeJson(result));
     }).pipe(Effect.provide(alchemistLayer()), Effect.scoped),
