@@ -16,7 +16,7 @@ log="$dir.log"
 git worktree add --quiet -b "$name" "$dir" HEAD
 cd "$dir"
 {
-  vp install --frozen-lockfile
+  "$CLAUDE_PROJECT_DIR/node_modules/.bin/vp" install --frozen-lockfile
   echo "/simplify 対象はコミット $sha の変更である。簡潔にできたら vp run verify を通してこのブランチにコミットする。" |
     claude -p --permission-mode acceptEdits --allowedTools "Bash(git *)" "Bash(vp *)"
 } >"$CLAUDE_PROJECT_DIR/$log" 2>&1 || true

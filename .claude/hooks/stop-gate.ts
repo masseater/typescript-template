@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { runCommand, runHook, writeJson } from "./env.ts";
+import { localBin, runCommand, runHook, writeJson } from "./env.ts";
 
 const REPORTED_OUTPUT_LENGTH = 6000;
 
@@ -11,7 +11,7 @@ const StopOutput = Schema.Struct({
 
 runHook(
   Effect.gen(function* stopGate() {
-    const verify = yield* runCommand("vp", ["run", "verify"]);
+    const verify = yield* runCommand(yield* localBin("vp"), ["run", "verify"]);
     if (!verify.succeeded) {
       yield* writeJson(StopOutput, {
         decision: "block",

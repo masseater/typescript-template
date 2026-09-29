@@ -24,6 +24,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
   vite-plus: 1.0.0
   jev-lint: 0.7.0
+  renovate: 44.116.1
 overrides:
   effect: "catalog:"
   "@effect/platform-node-shared": 4.0.0-rc.117
@@ -42,6 +43,9 @@ allowBuilds:
   esbuild: true
   workerd: true
   protobufjs: false
+  core-js-pure: false
+  dtrace-provider: false
+  re2: true
 packageExtensions:
   "@feature-sliced/steiger-plugin@0.8.0":
     dependencies:
