@@ -1,72 +1,33 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
 import { TypeSafeClient, noul } from "@typesafe-ai/sdk";
-import { block, projectDir, readHookInput, requireTypesafeKey } from "./env.ts";
+import { Array as Arr, Effect, FileSystem, Option, Path, Schema } from "effect";
+import type { Stdio } from "effect";
 
-type PostToolUseInput = { readonly tool_input: { readonly file_path?: string } };
+import {
+  HookBlocked,
+  blockWhen,
+  projectDir,
+  readHookInput,
+  runCommand,
+  runHook,
+  typesafeApiKey,
+  writeJson,
+} from "./env.ts";
+import type { CommandResult } from "./env.ts";
 
-const input = await readHookInput<PostToolUseInput>();
-const filePath = input.tool_input.file_path ?? "";
-const [scope = "", name = "", ...rest] = relative(projectDir, filePath).split(sep);
-const workspace =
-  ["apps", "libs", "infra", "tools"].includes(scope) && name !== "" ? join(scope, name) : undefined;
+const WORKSPACE_SCOPES: ReadonlySet<string> = new Set(["apps", "libs", "infra", "tools"]);
+const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set([".ts", ".tsx"]);
+const VIOLATION_THRESHOLD = 0.5;
 
-const fallow = (...args: Array<string>) =>
-  spawnSync(
-    join(projectDir, "node_modules/.bin/fallow"),
-    ["--changed-since", "HEAD", "--production", "--quiet", "--format", "compact", ...args],
-    {
-      cwd: projectDir,
-      encoding: "utf8",
-    },
-  );
+const PostToolUseInput = Schema.Struct({
+  tool_input: Schema.Struct({ file_path: Schema.optional(Schema.String) }),
+});
 
-const runs = [
-  fallow(),
-  ...(workspace !== undefined && existsSync(join(projectDir, workspace, ".fallowrc.jsonc"))
-    ? [fallow("-r", workspace)]
-    : []),
-];
-const failed = runs.filter((run) => run.status !== 0);
-if (failed.length > 0) {
-  block(failed.map((run) => `${run.stdout}${run.stderr}`).join("\n"));
-}
-
-const duplication = [
-  ...new Set(
-    runs
-      .flatMap((run) => run.stdout.split("\n"))
-      .filter((line) => line.startsWith("code-duplication:")),
-  ),
-];
-const finish = (): never => {
-  if (duplication.length > 0) {
-    process.stdout.write(
-      JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: "PostToolUse",
-          additionalContext: [
-            "fallow が重複を検出した。共通化すべきか判断すること。",
-            ...duplication,
-          ].join("\n"),
-        },
-      }),
-    );
-  }
-  process.exit(0);
-};
-
-const isAppSource =
-  workspace !== undefined &&
-  rest[0] === "src" &&
-  /\.(ts|tsx)$/.test(filePath) &&
-  !filePath.includes(`${sep}generated${sep}`);
-if (!isAppSource) {
-  finish();
-}
-
-requireTypesafeKey();
+const PostToolUseOutput = Schema.Struct({
+  hookSpecificOutput: Schema.Struct({
+    hookEventName: Schema.Literal("PostToolUse"),
+    additionalContext: Schema.String,
+  }),
+});
 
 const policy = {
   exclusiveStatus: noul(
@@ -89,18 +50,113 @@ const messages = {
     "サーバー状態を TanStack Query 以外で扱っている可能性がある。サーバー状態は TanStack Query だけで扱うこと。",
 } satisfies Record<keyof typeof policy, string>;
 
-try {
-  const { answers } = await new TypeSafeClient().systemOne({
-    state: readFileSync(filePath, "utf8"),
-    questions: policy,
-  });
-  const violations = Object.entries(messages).filter(
-    ([key]) => answers[key as keyof typeof policy].noul > 0.5,
+const locate = Effect.fn("locate")(function* locate(filePath: string) {
+  const path = yield* Path.Path;
+  const root = path.resolve(yield* projectDir);
+  const [scope = "", name = "", segment = "", ...rest] = path
+    .relative(root, filePath)
+    .split(path.sep);
+  const workspace = Option.some(path.join(scope, name)).pipe(
+    Option.filter(() => WORKSPACE_SCOPES.has(scope) && name !== ""),
   );
-  if (violations.length > 0) {
-    block([`jev: ${filePath}`, ...violations.map(([, message]) => `- ${message}`)].join("\n"));
+  const isAppSource =
+    Option.isSome(workspace) &&
+    segment === "src" &&
+    !rest.includes("generated") &&
+    SOURCE_EXTENSIONS.has(path.extname(filePath));
+  return { isAppSource, root, workspace };
+});
+
+const fallowTargets = Effect.fn("fallowTargets")(function* fallowTargets(
+  root: string,
+  workspace: Option.Option<string>,
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const withConfig = yield* Effect.filter(Option.toArray(workspace), (dir) =>
+    fs.exists(path.join(root, dir, ".fallowrc.jsonc")).pipe(Effect.orDie),
+  );
+  return [[], ...withConfig.map((dir) => ["-r", dir])];
+});
+
+const runFallow = Effect.fn("runFallow")(function* runFallow(
+  root: string,
+  workspace: Option.Option<string>,
+) {
+  const path = yield* Path.Path;
+  const fallow = path.join(root, "node_modules", ".bin", "fallow");
+  const targets = yield* fallowTargets(root, workspace);
+  const runs = yield* Effect.forEach(
+    targets,
+    (args) =>
+      runCommand(fallow, [
+        "--changed-since",
+        "HEAD",
+        "--production",
+        "--quiet",
+        "--format",
+        "compact",
+        ...args,
+      ]),
+    { concurrency: "unbounded" },
+  );
+  yield* blockWhen({
+    reasons: runs.filter((run) => !run.succeeded).map((run) => run.output),
+  });
+  return runs;
+});
+
+const reportDuplication = (
+  runs: readonly CommandResult[],
+): Effect.Effect<void, never, Stdio.Stdio> => {
+  const duplication = Arr.dedupe(
+    runs
+      .flatMap((run) => run.stdout.split("\n"))
+      .filter((line) => line.startsWith("code-duplication:")),
+  );
+  if (!Arr.isArrayNonEmpty(duplication)) {
+    return Effect.void;
   }
-} catch (error) {
-  block(`jev の状態ポリシー検査を実行できなかった: ${String(error)}`);
-}
-finish();
+  return writeJson(PostToolUseOutput, {
+    hookSpecificOutput: {
+      hookEventName: "PostToolUse",
+      additionalContext: [
+        "fallow が重複を検出した。共通化すべきか判断すること。",
+        ...duplication,
+      ].join("\n"),
+    },
+  });
+};
+
+const checkStatePolicy = Effect.fn("checkStatePolicy")(function* checkStatePolicy(
+  filePath: string,
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const apiKey = yield* typesafeApiKey;
+  const state = yield* fs.readFileString(filePath).pipe(Effect.orDie);
+  const { answers } = yield* Effect.tryPromise({
+    try: () => new TypeSafeClient({ apiKey }).systemOne({ state, questions: policy }),
+    catch: (error) =>
+      new HookBlocked({ reason: `jev の状態ポリシー検査を実行できなかった: ${String(error)}` }),
+  });
+  const violations = Arr.fromRecord(messages).filter(
+    ([key]) => answers[key].noul > VIOLATION_THRESHOLD,
+  );
+  yield* blockWhen({
+    heading: [`jev: ${filePath}`],
+    reasons: violations.map(([, message]) => `- ${message}`),
+  });
+});
+
+runHook(
+  Effect.gen(function* postEdit() {
+    const input = yield* readHookInput(PostToolUseInput);
+    const filePath = input.tool_input.file_path ?? "";
+    const { isAppSource, root, workspace } = yield* locate(filePath);
+    const runs = yield* runFallow(root, workspace);
+    if (isAppSource) {
+      yield* checkStatePolicy(filePath);
+    }
+    yield* reportDuplication(runs);
+  }),
+);

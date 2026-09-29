@@ -1,13 +1,22 @@
-import { spawnSync } from "node:child_process";
-import { projectDir } from "./env.ts";
+import { Effect, Schema } from "effect";
 
-const verify = spawnSync("vp", ["run", "verify"], { cwd: projectDir, encoding: "utf8" });
-if (verify.status !== 0) {
-  const output = `${verify.stdout}${verify.stderr}`;
-  process.stdout.write(
-    JSON.stringify({
-      decision: "block",
-      reason: `vp run verify が失敗している。\n${output.slice(-6000)}`,
-    }),
-  );
-}
+import { runCommand, runHook, writeJson } from "./env.ts";
+
+const REPORTED_OUTPUT_LENGTH = 6000;
+
+const StopOutput = Schema.Struct({
+  decision: Schema.Literal("block"),
+  reason: Schema.String,
+});
+
+runHook(
+  Effect.gen(function* stopGate() {
+    const verify = yield* runCommand("vp", ["run", "verify"]);
+    if (!verify.succeeded) {
+      yield* writeJson(StopOutput, {
+        decision: "block",
+        reason: `vp run verify が失敗している。\n${verify.output.slice(-REPORTED_OUTPUT_LENGTH)}`,
+      });
+    }
+  }),
+);

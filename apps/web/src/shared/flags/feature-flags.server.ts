@@ -1,20 +1,20 @@
-import { InMemoryProvider, OpenFeature } from "@openfeature/server-sdk";
+import { OpenFeature, TypedInMemoryProvider } from "@openfeature/server-sdk";
 import { Context, Effect, Layer } from "effect";
 
 import { flagConfiguration } from "./flag-configuration";
 
-export class FeatureFlags extends Context.Service<
+class FeatureFlags extends Context.Service<
   FeatureFlags,
   {
     readonly getBoolean: (key: string, defaultValue: boolean) => Effect.Effect<boolean>;
   }
->()("FeatureFlags") {}
+>()("web/shared/flags/feature-flags.server/FeatureFlags") {}
 
-export const featureFlagsLive = Layer.effect(
+const featureFlagsLive = Layer.effect(
   FeatureFlags,
-  Effect.gen(function* () {
+  Effect.gen(function* featureFlags() {
     yield* Effect.promise(() =>
-      OpenFeature.setProviderAndWait(new InMemoryProvider(flagConfiguration)),
+      OpenFeature.setProviderAndWait(new TypedInMemoryProvider(flagConfiguration)),
     );
     const client = OpenFeature.getClient();
     return FeatureFlags.of({
@@ -23,3 +23,5 @@ export const featureFlagsLive = Layer.effect(
     });
   }),
 );
+
+export { FeatureFlags, featureFlagsLive };

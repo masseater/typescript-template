@@ -1,17 +1,14 @@
-import { RegistryProvider } from "@effect/atom-react";
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import type { ReactNode } from "react";
+import { createRootRouteWithContext } from "@tanstack/react-router";
 
-import appCss from "../styles.css?url";
+import { RootDocument } from "#/app/shell/root-document";
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+import appCss from "#/app/styles.css?url";
+
+const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
-      { charSet: "utf-8" },
+      { charSet: "utf8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "web" },
     ],
@@ -20,22 +17,4 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   shellComponent: RootDocument,
 });
 
-function RootDocument({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <RegistryProvider>{children}</RegistryProvider>
-        <TanStackDevtools
-          plugins={[
-            { name: "TanStack Router", render: <TanStackRouterDevtoolsPanel /> },
-            { name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
-          ]}
-        />
-        <Scripts />
-      </body>
-    </html>
-  );
-}
+export { Route };

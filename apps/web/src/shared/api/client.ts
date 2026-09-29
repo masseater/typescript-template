@@ -1,15 +1,26 @@
-import { treaty, type Treaty } from "@elysiajs/eden";
+import { treaty } from "@elysiajs/eden";
+import type { Treaty } from "@elysiajs/eden";
 import { createEdenOptionsProxy } from "eden-tanstack-react-query";
+import type { EdenOptionsProxy } from "eden-tanstack-react-query";
+import { Effect } from "effect";
 import type { AnyElysia } from "elysia";
 
 const SERVER_ORIGIN = "http://localhost";
 
-export const serverClient = <App extends AnyElysia>(load: () => Promise<App>) =>
+const serverClient = <App extends AnyElysia>(load: () => Promise<App>): Treaty.Create<App> =>
   treaty<App>(SERVER_ORIGIN, {
-    fetcher: async (input, init) => (await load()).handle(new Request(input, init)),
+    fetcher: (input, init) =>
+      Effect.runPromise(
+        Effect.promise(load).pipe(
+          Effect.flatMap((app) => Effect.promise(() => app.handle(new Request(input, init)))),
+        ),
+      ),
   });
 
-export const browserClient = <App extends AnyElysia>() => treaty<App>(window.location.origin);
+const browserClient = <App extends AnyElysia>(): Treaty.Create<App> =>
+  treaty<App>(globalThis.location.origin);
 
-export const createQueries = <App extends AnyElysia>(client: Treaty.Create<App>) =>
+const createQueries = <App extends AnyElysia>(client: Treaty.Create<App>): EdenOptionsProxy<App> =>
   createEdenOptionsProxy<App>({ client });
+
+export { browserClient, createQueries, serverClient };

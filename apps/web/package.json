@@ -17,7 +17,8 @@
     "prepare": "effect-tsgo patch --typescript --oxlint && wrangler types",
     "auth:generate": "auth generate --config src/shared/auth/auth.server.ts --output src/shared/auth/generated/auth.table.ts --yes",
     "db:migrate:local": "wrangler d1 migrations apply web --local",
-    "fallow": "fallow --production --quiet --format compact && fallow dupes --quiet --format compact"
+    "fallow": "fallow --production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
+    "db:check": "drizzle-kit check && drizzle-kit generate --explain --output json | grep -q '\"status\":\"no_changes\"'"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.6",
