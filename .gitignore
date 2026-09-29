@@ -37,3 +37,4 @@ dist-ssr
 .output
 .alchemy
 .fallow
+.jev-lint/baseline.json
