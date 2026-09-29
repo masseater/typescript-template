@@ -34,8 +34,6 @@ dist-ssr
 
 .nitro
 .tanstack
-.wrangler
 .output
 .alchemy
 .fallow
-apps/web/worker-configuration.d.ts

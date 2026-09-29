@@ -135,13 +135,21 @@ export default defineConfig({
         "error",
         { namedComponents: "arrow-function", unnamedComponents: "arrow-function" },
       ],
-      "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(Config|Context|Data|Schema)\\." }],
+      "eslint/new-cap": [
+        "error",
+        {
+          capIsNewExceptions: ["Stack"],
+          capIsNewExceptionPattern: "^(Config|Context|Data|Schema|D1|Website)\\.",
+        },
+      ],
+      "typescript/no-empty-interface": ["error", { allowSingleExtends: true }],
+      "typescript/no-empty-object-type": ["error", { allowInterfaces: "with-single-extends" }],
       "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/only-export-components": ["error", { allowExportNames: ["Route"] }],
     },
     overrides: [
       {
-        files: ["**/*.config.ts"],
+        files: ["**/*.config.ts", "**/alchemy.run.ts"],
         rules: { "import/no-default-export": "off" },
       },
       {

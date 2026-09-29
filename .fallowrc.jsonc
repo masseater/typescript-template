@@ -83,6 +83,11 @@
       "alwaysUsed": ["src/app/routeTree.gen.ts"],
     },
     {
+      "name": "alchemy",
+      "enablers": ["alchemy"],
+      "entryPoints": ["alchemy.run.ts"],
+    },
+    {
       "name": "steiger",
       "enablers": ["steiger"],
       "alwaysUsed": ["steiger.config.{ts,js,mjs}"],

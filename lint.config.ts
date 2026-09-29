@@ -119,7 +119,10 @@ const requiredStack: Readonly<Record<string, readonly string[]>> = {
     "@vercel/flags",
   ],
   "計装は Effect のトレーシングだけで扱う": ["@opentelemetry/*", "dd-trace", "newrelic"],
-  "インフラは Alchemy と Cloudflare だけで扱う": [
+  "インフラは Alchemy の IaC と Cloudflare だけで扱い、wrangler は使わない": [
+    "wrangler",
+    "miniflare",
+    "@cloudflare/vite-plugin",
     "@vercel/*",
     "@netlify/*",
     "aws-cdk",
@@ -157,4 +160,4 @@ const restrictedImports = {
   patterns: [...requiredStackPatterns],
 };
 
-export { restrictedImports };
+export { requiredStack, restrictedImports };
