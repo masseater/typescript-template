@@ -29,6 +29,11 @@
       ],
       "alwaysUsed": ["src/app/routeTree.gen.ts"],
     },
+    {
+      "name": "steiger",
+      "enablers": ["steiger"],
+      "alwaysUsed": ["steiger.config.{ts,js,mjs}"],
+    },
   ],
   "rules": {
     "unused-files": "error",

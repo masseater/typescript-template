@@ -4,11 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run -r build && vp run textlint && vp run fallow",
+    "verify": "vp check && vp run textlint && vp run -r steiger && vp run -r fallow",
+    "textlint": "textlint \"**/*.md\"",
+    "fallow": "fallow --production --quiet --format compact && fallow dupes --quiet --format compact",
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@textlint-ja/textlint-rule-preset-ai-writing": "1.7.0",
     "@types/node": "catalog:",
+    "@typesafe-ai/sdk": "0.6.0",
+    "fallow": "3.30.0",
+    "skills": "1.7.0",
+    "textlint": "15.8.0",
+    "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "vite-plus": "catalog:"
   },
   "devEngines": {
@@ -20,5 +28,21 @@
   },
   "engines": {
     "node": ">=22.18.0"
+  },
+  "intent": {
+    "skills": [
+      "@tanstack/devtools-vite",
+      "@tanstack/react-start",
+      "drizzle-kit",
+      "@tanstack/devtools",
+      "@tanstack/devtools-event-client",
+      "@tanstack/match-sorter-utils",
+      "@tanstack/router-core",
+      "@tanstack/start-client-core",
+      "@tanstack/virtual-file-routes",
+      "@tanstack/router-plugin",
+      "@tanstack/start-server-core",
+      "fallow"
+    ]
   }
 }

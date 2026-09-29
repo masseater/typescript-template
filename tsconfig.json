@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": ["*.ts"],
+  "include": ["*.ts", ".claude/hooks/*.ts"],
   "compilerOptions": {
     "types": ["node"]
   }

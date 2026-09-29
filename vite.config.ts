@@ -1,6 +1,14 @@
 import { defineConfig } from "vite-plus";
 
-const generated = ["**/routeTree.gen.ts", "**/drizzle/**/snapshot.json"];
+const generated = [
+  "**/routeTree.gen.ts",
+  "**/drizzle/**/snapshot.json",
+  ".claude/skills/**",
+  ".claude/hooks/fallow-gate.sh",
+  ".intent/**",
+  "AGENTS.md",
+  "skills-lock.json",
+];
 
 export default defineConfig({
   staged: {
