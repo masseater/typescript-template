@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { env } from "cloudflare:workers";
 
 import { db } from "#/shared/db/client.server";
 
@@ -13,6 +14,7 @@ const auth = betterAuth({
   }),
   emailAndPassword: { enabled: true },
   plugins: [tanstackStartCookies()],
+  secret: env.BETTER_AUTH_SECRET,
 });
 
 export { auth };
