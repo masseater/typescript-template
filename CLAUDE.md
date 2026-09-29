@@ -37,6 +37,10 @@
 - UI 状態は effect-atom、サーバー状態は TanStack Query だけで扱う。
 - 状態は boolean フラグの組ではなく、排他的な status として判別共用体で表す。
 
+## 自己改善
+
+セッションを始めたら、引数なしの `/loop` を起動する。内容は .claude/loop.md にある。
+
 ## 検証
 
 作業の完了は `vp run verify` が通ることである。
