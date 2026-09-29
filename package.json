@@ -6,7 +6,7 @@
   "scripts": {
     "verify": "vp check && syncpack lint && vp run textlint && vp run -r steiger && vp run -r db:check && vp run -r fallow",
     "textlint": "textlint \"**/*.md\"",
-    "fallow": "fallow --production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
+    "fallow": "fallow --production --quiet --format compact && fallow dead-code --no-production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
     "prepare": "vp config"
   },
   "devDependencies": {

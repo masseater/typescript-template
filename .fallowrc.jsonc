@@ -3,6 +3,7 @@
   "production": true,
   "typeAware": { "enabled": true, "require": "complete" },
   "failOnParseError": true,
+  "ignoreDependencies": ["@effect/platform-node", "@typesafe-ai/sdk"],
   "audit": { "gate": "all" },
   "security": {
     "categories": {
@@ -86,6 +87,32 @@
       "name": "alchemy",
       "enablers": ["alchemy"],
       "entryPoints": ["alchemy.run.ts"],
+    },
+    {
+      "name": "vite-plus",
+      "enablers": ["vite-plus"],
+      "entryPoints": ["vite.config.ts"],
+      "toolingDependencies": ["eslint-plugin-drizzle"],
+    },
+    {
+      "name": "syncpack-ts",
+      "enablers": ["syncpack"],
+      "entryPoints": ["syncpack.config.ts"],
+    },
+    {
+      "name": "textlint",
+      "enablers": ["textlint"],
+      "configPatterns": [".textlintrc"],
+      "toolingDependencies": [
+        "@textlint-ja/textlint-rule-preset-ai-writing",
+        "textlint-rule-preset-ja-technical-writing",
+      ],
+    },
+    {
+      "name": "skills",
+      "enablers": ["skills"],
+      "configPatterns": ["skills-lock.json"],
+      "toolingDependencies": ["skills"],
     },
     {
       "name": "steiger",
