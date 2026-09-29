@@ -23,6 +23,7 @@ catalog:
   typescript: 7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
   vite-plus: 1.0.0
+  jev-lint: 0.7.0
 overrides:
   effect: "catalog:"
   "@effect/platform-node-shared": 4.0.0-rc.117
@@ -37,6 +38,7 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
 allowBuilds:
+  "@ast-grep/cli": true
   esbuild: true
   workerd: true
   protobufjs: false

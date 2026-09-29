@@ -197,6 +197,9 @@ catalogs:
     eslint-plugin-react-hooks:
       specifier: 7.1.1
       version: 7.1.1
+    jev-lint:
+      specifier: 0.7.0
+      version: 0.7.0
     syncpack:
       specifier: 15.3.3
       version: 15.3.3
@@ -249,9 +252,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
-      '@typesafe-ai/sdk':
-        specifier: 0.6.0
-        version: 0.6.0
       effect:
         specifier: 4.0.0-rc.117
         version: 4.0.0-rc.117
@@ -264,6 +264,9 @@ importers:
       fallow:
         specifier: 3.30.0
         version: 3.30.0
+      jev-lint:
+        specifier: 'catalog:'
+        version: 0.7.0
       skills:
         specifier: 1.7.0
         version: 1.7.0
@@ -447,6 +450,55 @@ packages:
         optional: true
       react-devtools-core:
         optional: true
+
+  '@ast-grep/cli-darwin-arm64@0.45.3':
+    resolution: {integrity: sha512-6RZg4gRMJcSJtEJuaW5z33qfwXD7kRDGZ0T0dTxVxsLSw5BkeAjR8REysxUwPWZn+oOkzPyZ3y7/qNnSI/diIA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@ast-grep/cli-darwin-x64@0.45.3':
+    resolution: {integrity: sha512-4z6ZknTMSlTirQuJ4xihXoLfG7YwAOxFCqkKuGAxAiP+K70zivib8R19vUoFJDy4s+rjyGNDdrm45/ClC5tITQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@ast-grep/cli-linux-arm64-gnu@0.45.3':
+    resolution: {integrity: sha512-T/N+Fl/pMqNjuyPV9PbTSR2bTlZrLKiCyHzJax6QNaOOVviXjEscROrAc6c0lFfc+Z07gW7Rt3oZKZdLEExutQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@ast-grep/cli-linux-x64-gnu@0.45.3':
+    resolution: {integrity: sha512-HbxIy6tZa8zn4J2hG8KVIo9n4+INAgVB8l2DyHqYxGKxnod8u2B4hfTGxbMm+BjBvYxKW4oGLZtYqInMyxidyQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@ast-grep/cli-win32-arm64-msvc@0.45.3':
+    resolution: {integrity: sha512-X0+81Mgr8zsH6hu4Pqdr5h1IyAFUWbKS1PMkKT6awYiiTo/1uhVM/6WzJ+ohOQPmMTyt4poyyg46u2E4WzKECg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@ast-grep/cli-win32-ia32-msvc@0.45.3':
+    resolution: {integrity: sha512-W4H27lU/xzzIOvRo4vDTjzq91PioLCjupR7jLmLVkAqAkX2YiNRixf8NjMcQgzAgr33jUsMlyutiTElLgi1O9g==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@ast-grep/cli-win32-x64-msvc@0.45.3':
+    resolution: {integrity: sha512-UZrpVbjLQqQIRxWqeMcwyLSIhlDZyhYb8SinssM38Oo6mEB2jMfHCEoigay9UOZTfUR268n72BBV48nW2h+QwA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@ast-grep/cli@0.45.3':
+    resolution: {integrity: sha512-Cm07SHb8Q8dJfAQhrPOveAGuuzznmf6IjQa2+0Yvjt8Qfo+XIVbEIo0Prng+UDVMlaCS/FkF2eA8M3F6z4+0Wg==}
+    engines: {node: '>= 12.0.0'}
+    hasBin: true
 
   '@aws-sdk/core@3.978.1':
     resolution: {integrity: sha512-LbY9aGsEiznDWmUc30Nwv3aIX/+dbwTx8KfS0yOC3NPYMO+O91e6jkT1azf34FwjOndq8/Q+RcVVZz5xnerwdg==}
@@ -4022,10 +4074,6 @@ packages:
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
-  '@typesafe-ai/sdk@0.6.0':
-    resolution: {integrity: sha512-IddX+Q0XM+VagOUZFeP7wZjaO4SHMdvnh2zEBdrZZnXedWI3BNK1lKhMx3ayrkFWvVLbVcUHJy6AVZlY+e6Jaw==}
-    engines: {node: '>=20'}
-
   '@typescript-eslint/project-service@8.70.1':
     resolution: {integrity: sha512-62xOgboPfwc3/IgPSX/W6oQR3ZbF04194FPGUGH8HL8iLFHbt/456/8Ph1wLNUgVF+s94FlHoipBsz+v7+LMnA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -5951,6 +5999,11 @@ packages:
   japanese-numerals-to-number@1.0.2:
     resolution: {integrity: sha512-rgs/V7G8Gfy8Z4XtnVBYXzWMAb9oUWp1pDdRmwHmh0hcjcy1kOu+DOpC5rwoHUAN4TqANwb7WD6z5W2v7v7PQQ==}
 
+  jev-lint@0.7.0:
+    resolution: {integrity: sha512-YoMm23felUmMEW50WCaEotj6EPzd/grjX4pR1tMTFetXPiEkmLzwzmLR684RUg48GW0pzu/HSXTQ9E3yk5TfZA==}
+    engines: {node: '>=24'}
+    hasBin: true
+
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
@@ -7744,6 +7797,39 @@ snapshots:
       scheduler: 0.28.0
     optionalDependencies:
       '@types/react': 19.3.0
+
+  '@ast-grep/cli-darwin-arm64@0.45.3':
+    optional: true
+
+  '@ast-grep/cli-darwin-x64@0.45.3':
+    optional: true
+
+  '@ast-grep/cli-linux-arm64-gnu@0.45.3':
+    optional: true
+
+  '@ast-grep/cli-linux-x64-gnu@0.45.3':
+    optional: true
+
+  '@ast-grep/cli-win32-arm64-msvc@0.45.3':
+    optional: true
+
+  '@ast-grep/cli-win32-ia32-msvc@0.45.3':
+    optional: true
+
+  '@ast-grep/cli-win32-x64-msvc@0.45.3':
+    optional: true
+
+  '@ast-grep/cli@0.45.3':
+    dependencies:
+      detect-libc: 2.1.2
+    optionalDependencies:
+      '@ast-grep/cli-darwin-arm64': 0.45.3
+      '@ast-grep/cli-darwin-x64': 0.45.3
+      '@ast-grep/cli-linux-arm64-gnu': 0.45.3
+      '@ast-grep/cli-linux-x64-gnu': 0.45.3
+      '@ast-grep/cli-win32-arm64-msvc': 0.45.3
+      '@ast-grep/cli-win32-ia32-msvc': 0.45.3
+      '@ast-grep/cli-win32-x64-msvc': 0.45.3
 
   '@aws-sdk/core@3.978.1':
     dependencies:
@@ -11253,8 +11339,6 @@ snapshots:
     dependencies:
       '@types/node': 26.6.3
 
-  '@typesafe-ai/sdk@0.6.0': {}
-
   '@typescript-eslint/project-service@8.70.1(supports-color@10.2.2)(typescript@5.9.3)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.70.1(typescript@5.9.3)
@@ -13088,6 +13172,11 @@ snapshots:
   isobject@3.0.1: {}
 
   japanese-numerals-to-number@1.0.2: {}
+
+  jev-lint@0.7.0:
+    dependencies:
+      '@ast-grep/cli': 0.45.3
+      yaml: 2.9.1
 
   jiti@2.7.0: {}
 

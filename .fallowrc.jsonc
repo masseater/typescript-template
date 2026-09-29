@@ -3,7 +3,7 @@
   "production": true,
   "typeAware": { "enabled": true, "require": "complete" },
   "failOnParseError": true,
-  "ignoreDependencies": ["@effect/platform-node", "@typesafe-ai/sdk"],
+  "ignoreDependencies": ["@effect/platform-node"],
   "audit": { "gate": "all" },
   "security": {
     "categories": {
@@ -107,6 +107,12 @@
         "@textlint-ja/textlint-rule-preset-ai-writing",
         "textlint-rule-preset-ja-technical-writing",
       ],
+    },
+    {
+      "name": "jev-lint",
+      "enablers": ["jev-lint"],
+      "configPatterns": [".jev-lint.yaml"],
+      "toolingDependencies": ["jev-lint"],
     },
     {
       "name": "skills",
