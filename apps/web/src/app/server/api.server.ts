@@ -1,4 +1,4 @@
-import { todoRoutes } from "#/entities/todo/index.server";
+import { todoRoutes } from "#/pages/home/index.server";
 import { createRouter } from "#/shared/api/index.server";
 import { auth } from "#/shared/auth/index.server";
 

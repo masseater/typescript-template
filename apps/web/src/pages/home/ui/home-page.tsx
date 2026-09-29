@@ -1,5 +1,5 @@
-import { SessionBadge } from "#/entities/session";
-import { TodoList } from "#/widgets/todo-list";
+import { SessionBadge } from "./session-badge";
+import { TodoList } from "./todo-list";
 
 export function HomePage() {
   return (

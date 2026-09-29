@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { api } from "../../server/api.server";
+import { api } from "../server/api.server";
 
 const handle = ({ request }: { request: Request }) => api.handle(request);
 

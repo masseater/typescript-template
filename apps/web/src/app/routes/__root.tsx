@@ -1,9 +1,11 @@
+import { RegistryProvider } from "@effect/atom-react";
+import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
 
-import { AppProviders } from "../providers/app-providers";
-import { Devtools } from "../providers/devtools";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -25,8 +27,13 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <AppProviders>{children}</AppProviders>
-        <Devtools />
+        <RegistryProvider>{children}</RegistryProvider>
+        <TanStackDevtools
+          plugins={[
+            { name: "TanStack Router", render: <TanStackRouterDevtoolsPanel /> },
+            { name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
+          ]}
+        />
         <Scripts />
       </body>
     </html>

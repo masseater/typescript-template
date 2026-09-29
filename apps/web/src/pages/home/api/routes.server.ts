@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { createRouter } from "#/shared/api/index.server";
-import { db } from "#/shared/db/client.server";
+import { db } from "#/shared/db/index.server";
 import { FeatureFlags, featureFlagsLive } from "#/shared/flags/index.server";
 import { telemetryLive } from "#/shared/telemetry/index.server";
 
