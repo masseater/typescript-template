@@ -11,7 +11,7 @@ catalog:
   "@cloudflare/workers-types": 5.20260928.1
   "@effect/platform-node": 4.0.0-rc.117
   "@effect/tsgo": 0.46.1
-  "@eslint-react/eslint-plugin": 5.22.1
+  "@eslint-react/eslint-plugin": 5.21.1
   "@shadcn/lint": 0.2.0
   "@tanstack/eslint-plugin-query": 5.104.0
   "@tanstack/eslint-plugin-router": 1.162.0
