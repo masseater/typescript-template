@@ -104,6 +104,18 @@
             "statusMessage": "fallow と jev で変更を検査中"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/simplify.sh",
+            "asyncRewake": true,
+            "timeout": 3600
+          }
+        ]
       }
     ],
     "Stop": [
