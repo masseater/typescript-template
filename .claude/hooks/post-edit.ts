@@ -1,7 +1,15 @@
 import { Array as Arr, Effect, FileSystem, Option, Path, Schema } from "effect";
 import type { Stdio } from "effect";
 
-import { blockWhen, projectDir, readHookInput, runCommand, runHook, writeJson } from "./env.ts";
+import {
+  blockWhen,
+  localBin,
+  projectDir,
+  readHookInput,
+  runCommand,
+  runHook,
+  writeJson,
+} from "./env.ts";
 import type { CommandResult } from "./env.ts";
 
 const WORKSPACE_SCOPES: ReadonlySet<string> = new Set(["apps", "libs", "infra", "tools"]);
@@ -51,8 +59,7 @@ const runFallow = Effect.fn("runFallow")(function* runFallow(
   root: string,
   workspace: Option.Option<string>,
 ) {
-  const path = yield* Path.Path;
-  const fallow = path.join(root, "node_modules", ".bin", "fallow");
+  const fallow = yield* localBin("fallow");
   const targets = yield* fallowTargets(root, workspace);
   const runs = yield* Effect.forEach(
     targets,
@@ -97,11 +104,9 @@ const reportDuplication = (
 };
 
 const checkStatePolicy = Effect.fn("checkStatePolicy")(function* checkStatePolicy(
-  root: string,
   filePath: string,
 ) {
-  const path = yield* Path.Path;
-  const jevLint = path.join(root, "node_modules", ".bin", "jev-lint");
+  const jevLint = yield* localBin("jev-lint");
   const run = yield* runCommand(jevLint, ["check", filePath]);
   yield* blockWhen({
     reasons: [run].filter(({ succeeded }) => !succeeded).map(({ output }) => output),
@@ -115,7 +120,7 @@ runHook(
     const { isAppSource, root, workspace } = yield* locate(filePath);
     const runs = yield* runFallow(root, workspace);
     if (isAppSource) {
-      yield* checkStatePolicy(root, filePath);
+      yield* checkStatePolicy(filePath);
     }
     yield* reportDuplication(runs);
   }),

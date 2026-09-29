@@ -9,6 +9,7 @@ import {
   Function as Fn,
   Layer,
   Option,
+  Path,
   Schema,
   Stdio,
   Stream,
@@ -33,6 +34,12 @@ const DATA_FIRST_ARITY = 2;
 const projectDir = Config.String("CLAUDE_PROJECT_DIR").pipe(Config.withDefault("."));
 
 const hookLayer = NodeServices.layer;
+
+const localBin = Effect.fn("localBin")(function* localBin(name: string) {
+  const path = yield* Path.Path;
+  const root = path.resolve(yield* projectDir);
+  return path.join(root, "node_modules", ".bin", name);
+});
 
 const block = (reason: string): Effect.Effect<never, HookBlocked> =>
   Effect.fail(new HookBlocked({ reason }));
@@ -108,7 +115,12 @@ const runCommand: {
       { concurrency: "unbounded" },
     );
     return { succeeded: exitCode === EXIT_SUCCESS, stdout, output: `${stdout}${stderr}` };
-  }).pipe(Effect.scoped, Effect.orDie),
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("PlatformError", (failure) =>
+      Effect.succeed({ succeeded: false, stdout: "", output: failure.message }),
+    ),
+  ),
 );
 
 const findBlocked = <Failure>(cause: Cause.Cause<Failure>): Option.Option<HookBlocked> =>
@@ -158,6 +170,7 @@ export {
   HookBlocked,
   block,
   blockWhen,
+  localBin,
   projectDir,
   readHookInput,
   runCommand,

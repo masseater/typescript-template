@@ -99,7 +99,10 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit.ts"],
+            "args": [
+              "--env-file-if-exists=${CLAUDE_PROJECT_DIR}/.env",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit.ts"
+            ],
             "timeout": 300,
             "statusMessage": "fallow と jev で変更を検査中"
           }
@@ -124,7 +127,10 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-gate.ts"],
+            "args": [
+              "--env-file-if-exists=${CLAUDE_PROJECT_DIR}/.env",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-gate.ts"
+            ],
             "timeout": 1800,
             "statusMessage": "vp run verify を実行中"
           },
