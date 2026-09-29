@@ -56,7 +56,7 @@
       ],
     },
   },
-  "duplicates": { "ignore": ["**/generated/**"] },
+  "duplicates": { "threshold": 1, "ignore": ["**/generated/**"] },
   "flags": {
     "sdkPatterns": [
       { "function": "getBooleanValue", "nameArg": 0, "provider": "OpenFeature" },
