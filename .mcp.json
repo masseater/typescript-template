@@ -2,8 +2,8 @@
   "mcpServers": {
     "fallow": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["--no", "fallow-mcp"]
+      "command": "vp",
+      "args": ["exec", "fallow-mcp"]
     }
   }
 }
