@@ -1,7 +1,16 @@
+import { presets as effectPresets } from "@effect/tsgo/oxlint-presets";
+import eslintReact from "@eslint-react/eslint-plugin";
+import { plugin as shadcn } from "@shadcn/lint";
+import tanstackQuery from "@tanstack/eslint-plugin-query";
+import tanstackRouter from "@tanstack/eslint-plugin-router";
+import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "vite-plus";
+
+import { restrictedImports } from "./lint.config.ts";
 
 const generated = [
   "**/routeTree.gen.ts",
+  "**/generated/**",
   "**/drizzle/**/snapshot.json",
   ".claude/skills/**",
   ".claude/hooks/fallow-gate.sh",
@@ -10,18 +19,142 @@ const generated = [
   "skills-lock.json",
 ];
 
+type Rules = Readonly<Record<string, "error">>;
+
+const asErrors = (names: readonly string[]): Rules =>
+  Object.fromEntries(names.map((name) => [name, "error"] as const));
+
+const allRulesOf = (prefix: string, plugin: Readonly<{ rules: object }>): Rules =>
+  asErrors(Object.keys(plugin.rules).map((rule) => `${prefix}/${rule}`));
+
+const reactHooksRules = asErrors(
+  Object.keys(reactHooks.configs["recommended-latest"].rules).map((name) =>
+    name.replace("react-hooks/", "react-hooks-js/"),
+  ),
+);
+
+const eslintReactRules = asErrors(
+  Object.keys(eslintReact.configs["strict-typescript"].rules ?? {}).filter(
+    (name) => !(name.replace("@eslint-react/", "react-hooks-js/") in reactHooksRules),
+  ),
+);
+
+const effectRules = asErrors(
+  Object.values(effectPresets).flatMap((preset) => Object.keys(preset.rules ?? {})),
+);
+
 export default defineConfig({
   staged: {
     "*": "vp check --fix",
   },
   fmt: {
     ignorePatterns: generated,
+    sortImports: true,
+    sortTailwindcss: true,
+    sortPackageJson: true,
   },
   lint: {
     ignorePatterns: generated,
-    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
-    rules: { "vite-plus/prefer-vite-plus-imports": "error" },
-    options: { typeAware: true, typeCheck: true },
+    plugins: [
+      "eslint",
+      "typescript",
+      "unicorn",
+      "oxc",
+      "import",
+      "react",
+      "react-perf",
+      "jsx-a11y",
+      "jsdoc",
+      "promise",
+      "node",
+      "effecttsgo",
+    ],
+    categories: {
+      correctness: "error",
+      suspicious: "error",
+      pedantic: "error",
+      perf: "error",
+      style: "error",
+      restriction: "error",
+      nursery: "error",
+    },
+    jsPlugins: [
+      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+      { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
+      { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
+      { name: "drizzle", specifier: "eslint-plugin-drizzle" },
+      { name: "react-hooks-js", specifier: "eslint-plugin-react-hooks" },
+      { name: "@eslint-react", specifier: "@eslint-react/eslint-plugin" },
+      { name: "shadcn", specifier: "@shadcn/lint" },
+    ],
+    rules: {
+      "vite-plus/prefer-vite-plus-imports": "error",
+      ...allRulesOf("tanstack-query", tanstackQuery),
+      ...allRulesOf("tanstack-router", tanstackRouter),
+      "drizzle/enforce-delete-with-where": "error",
+      "drizzle/enforce-update-with-where": "error",
+      ...allRulesOf("shadcn", shadcn),
+      ...reactHooksRules,
+      ...eslintReactRules,
+      ...effectRules,
+      "eslint/sort-imports": "off",
+      "eslint/sort-keys": "off",
+      "import/no-named-export": "off",
+      "import/prefer-default-export": "off",
+      "react/react-in-jsx-scope": "off",
+      "eslint/no-undef": "off",
+      "typescript/promise-function-async": "off",
+      "react/forbid-component-props": "off",
+      "oxc/no-rest-spread-properties": "off",
+      "node/no-top-level-await": "off",
+      "eslint/one-var": ["error", "never"],
+      "eslint/no-restricted-imports": ["error", restrictedImports],
+      "typescript/prefer-readonly-parameter-types": [
+        "error",
+        {
+          ignoreInferredTypes: true,
+          allow: [
+            { from: "lib", name: "Request" },
+            { from: "package", package: "@tanstack/query-core", name: "QueryClient" },
+            {
+              from: "package",
+              package: "react",
+              name: ["ReactNode", "ButtonHTMLAttributes", "ClassAttributes"],
+            },
+            { from: "package", package: "clsx", name: "ClassValue" },
+            {
+              from: "package",
+              package: "effect",
+              name: ["Cause", "Context", "Effect", "Exit", "Option"],
+            },
+          ],
+        },
+      ],
+      "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
+      "react/function-component-definition": [
+        "error",
+        { namedComponents: "arrow-function", unnamedComponents: "arrow-function" },
+      ],
+      "eslint/new-cap": ["error", { capIsNewExceptionPattern: "^(Config|Context|Data|Schema)\\." }],
+      "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
+      "react/only-export-components": ["error", { allowExportNames: ["Route"] }],
+    },
+    overrides: [
+      {
+        files: ["**/*.config.ts"],
+        rules: { "import/no-default-export": "off" },
+      },
+      {
+        files: ["**/shared/ui/**"],
+        rules: { "shadcn/no-restyle": "off", "react/jsx-props-no-spreading": "off" },
+      },
+    ],
+    options: {
+      typeAware: true,
+      typeCheck: true,
+      denyWarnings: true,
+      reportUnusedDisableDirectives: "error",
+    },
   },
   run: {
     cache: true,

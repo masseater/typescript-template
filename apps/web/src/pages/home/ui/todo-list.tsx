@@ -1,12 +1,14 @@
 import { useAtomValue } from "@effect/atom-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
-import { todoQueries } from "../api/queries";
-import { todoFilterAtom } from "../model/filter";
+import { todoQueries } from "#/pages/home/api/queries";
+import { todoFilterAtom } from "#/pages/home/model/filter";
+
 import { FilterTabs } from "./filter-tabs";
 import { TodoItem } from "./todo-item";
 
-export function TodoList() {
+const TodoList = (): ReactNode => {
   const { data } = useSuspenseQuery(todoQueries.api.todos.get.queryOptions());
   const filter = useAtomValue(todoFilterAtom);
   const visible = data.filter((item) => filter === "all" || item.status === filter);
@@ -20,4 +22,6 @@ export function TodoList() {
       </ul>
     </section>
   );
-}
+};
+
+export { TodoList };
