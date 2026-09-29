@@ -1,0 +1,11 @@
+id: ui-state-effect-atom
+languages: [TypeScript, Tsx]
+kind: noul
+rule: { kind: program }
+subject: file
+state: bare
+ask: This code holds client-side UI state with something other than effect-atom, such as useState, useReducer, React context used as a store, zustand, jotai or redux.
+criteria:
+  "true": Client-side UI state is held by something other than effect-atom.
+  "false": Client-side UI state is held only by effect-atom, or the file holds none.
+severity: error

@@ -3,15 +3,12 @@ import {
   Array as Arr,
   Cause,
   Config,
-  ConfigProvider,
   Data,
   Effect,
   Exit,
   Function as Fn,
   Layer,
   Option,
-  Path,
-  Redacted,
   Schema,
   Stdio,
   Stream,
@@ -35,13 +32,7 @@ const DATA_FIRST_ARITY = 2;
 
 const projectDir = Config.String("CLAUDE_PROJECT_DIR").pipe(Config.withDefault("."));
 
-const localEnv = Effect.gen(function* localEnv() {
-  const path = yield* Path.Path;
-  const dir = yield* projectDir;
-  return yield* ConfigProvider.fromDotEnv({ path: path.join(dir, ".env.local") });
-}).pipe(Effect.orElseSucceed(() => ConfigProvider.fromUnknown({})));
-
-const hookLayer = ConfigProvider.layerAdd(localEnv).pipe(Layer.provideMerge(NodeServices.layer));
+const hookLayer = NodeServices.layer;
 
 const block = (reason: string): Effect.Effect<never, HookBlocked> =>
   Effect.fail(new HookBlocked({ reason }));
@@ -120,15 +111,6 @@ const runCommand: {
   }).pipe(Effect.scoped, Effect.orDie),
 );
 
-const typesafeApiKey = Config.Redacted("TYPESAFE_API_KEY").pipe(
-  Effect.map(Redacted.value),
-  Effect.catchTag("ConfigError", () =>
-    block(
-      "TYPESAFE_API_KEY が未設定のため jev の検査を実行できない。環境変数か .env.local で設定すること。",
-    ),
-  ),
-);
-
 const findBlocked = <Failure>(cause: Cause.Cause<Failure>): Option.Option<HookBlocked> =>
   Cause.findErrorOption(cause).pipe(
     Option.filter((error): error is Failure & HookBlocked => error instanceof HookBlocked),
@@ -180,7 +162,6 @@ export {
   readHookInput,
   runCommand,
   runHook,
-  typesafeApiKey,
   writeJson,
   writeTo,
 };

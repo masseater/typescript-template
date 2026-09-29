@@ -1,0 +1,4 @@
+rules:
+  typescript/exclusive-status: on
+  typescript/ui-state-effect-atom: on
+  typescript/server-state-tanstack-query: on

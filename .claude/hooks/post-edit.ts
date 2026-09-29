@@ -1,22 +1,11 @@
-import { TypeSafeClient, noul } from "@typesafe-ai/sdk";
 import { Array as Arr, Effect, FileSystem, Option, Path, Schema } from "effect";
 import type { Stdio } from "effect";
 
-import {
-  HookBlocked,
-  blockWhen,
-  projectDir,
-  readHookInput,
-  runCommand,
-  runHook,
-  typesafeApiKey,
-  writeJson,
-} from "./env.ts";
+import { blockWhen, projectDir, readHookInput, runCommand, runHook, writeJson } from "./env.ts";
 import type { CommandResult } from "./env.ts";
 
 const WORKSPACE_SCOPES: ReadonlySet<string> = new Set(["apps", "libs", "infra", "tools"]);
 const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set([".ts", ".tsx"]);
-const VIOLATION_THRESHOLD = 0.5;
 
 const PostToolUseInput = Schema.Struct({
   tool_input: Schema.Struct({ file_path: Schema.optional(Schema.String) }),
@@ -28,27 +17,6 @@ const PostToolUseOutput = Schema.Struct({
     additionalContext: Schema.String,
   }),
 });
-
-const policy = {
-  exclusiveStatus: noul(
-    "Does this code represent a single piece of state with several boolean flags or optional fields that can contradict each other, instead of one exclusive status expressed as a discriminated union?",
-  ),
-  uiState: noul(
-    "Does this code hold client-side UI state with anything other than effect-atom (for example useState, useReducer, React context used as a store, zustand, jotai, redux)?",
-  ),
-  serverState: noul(
-    "Does this code fetch, cache or synchronize server data on the client with anything other than TanStack Query (for example fetch inside useEffect, SWR, a hand-written cache)?",
-  ),
-};
-
-const messages = {
-  exclusiveStatus:
-    "状態を boolean フラグの組で表している可能性がある。排他的な status を判別共用体で表すこと。",
-  uiState:
-    "UI 状態を effect-atom 以外で持っている可能性がある。UI 状態は effect-atom だけで扱うこと。",
-  serverState:
-    "サーバー状態を TanStack Query 以外で扱っている可能性がある。サーバー状態は TanStack Query だけで扱うこと。",
-} satisfies Record<keyof typeof policy, string>;
 
 const locate = Effect.fn("locate")(function* locate(filePath: string) {
   const path = yield* Path.Path;
@@ -129,22 +97,14 @@ const reportDuplication = (
 };
 
 const checkStatePolicy = Effect.fn("checkStatePolicy")(function* checkStatePolicy(
+  root: string,
   filePath: string,
 ) {
-  const fs = yield* FileSystem.FileSystem;
-  const apiKey = yield* typesafeApiKey;
-  const state = yield* fs.readFileString(filePath).pipe(Effect.orDie);
-  const { answers } = yield* Effect.tryPromise({
-    try: () => new TypeSafeClient({ apiKey }).systemOne({ state, questions: policy }),
-    catch: (error) =>
-      new HookBlocked({ reason: `jev の状態ポリシー検査を実行できなかった: ${String(error)}` }),
-  });
-  const violations = Arr.fromRecord(messages).filter(
-    ([key]) => answers[key].noul > VIOLATION_THRESHOLD,
-  );
+  const path = yield* Path.Path;
+  const jevLint = path.join(root, "node_modules", ".bin", "jev-lint");
+  const run = yield* runCommand(jevLint, ["check", filePath]);
   yield* blockWhen({
-    heading: [`jev: ${filePath}`],
-    reasons: violations.map(([, message]) => `- ${message}`),
+    reasons: [run].filter(({ succeeded }) => !succeeded).map(({ output }) => output),
   });
 });
 
@@ -155,7 +115,7 @@ runHook(
     const { isAppSource, root, workspace } = yield* locate(filePath);
     const runs = yield* runFallow(root, workspace);
     if (isAppSource) {
-      yield* checkStatePolicy(filePath);
+      yield* checkStatePolicy(root, filePath);
     }
     yield* reportDuplication(runs);
   }),
