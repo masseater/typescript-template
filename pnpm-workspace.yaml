@@ -30,7 +30,7 @@ overrides:
   "@effect/sql-sqlite-do": 4.0.0-rc.117
   "@effect/vitest": 4.0.0-rc.117
   vite@*: "catalog:"
-  eslint-plugin-react-hooks>zod-validation-error: ^4.0.0
+  eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
 peerDependencyRules:
   allowAny:
     - vite
