@@ -5,6 +5,8 @@ case "$CLAUDE_PROJECT_DIR" in
   */.claude/worktrees/*) exit 0 ;;
 esac
 
+node -e 'process.exit(/\bgit\s+commit\b/.test(JSON.parse(require("fs").readFileSync(0, "utf8")).tool_input.command) ? 0 : 1)' || exit 0
+
 cd "$CLAUDE_PROJECT_DIR"
 sha="$(git rev-parse --short HEAD)"
 name="simplify-$sha"
