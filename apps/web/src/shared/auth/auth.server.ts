@@ -4,7 +4,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { db } from "#/shared/db/client.server";
 
-import * as schema from "./auth.table";
+import * as schema from "./generated/auth.table";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "sqlite", schema }),
