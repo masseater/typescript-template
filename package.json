@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "verify": "vp check && syncpack lint && vp run textlint && vp run -r steiger && vp run -r db:check && vp run -r fallow",
+    "verify": "vp check && syncpack lint && vp run textlint && vp run renovate && vp run -r steiger && vp run -r db:check && vp run -r fallow",
     "textlint": "textlint \"**/*.md\"",
+    "renovate": "renovate-config-validator --strict",
     "fallow": "fallow --production --quiet --format compact && fallow dead-code --no-production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
     "prepare": "vp config"
   },
@@ -23,6 +24,7 @@
     "eslint-plugin-react-hooks": "catalog:",
     "fallow": "3.30.0",
     "jev-lint": "catalog:",
+    "renovate": "catalog:",
     "skills": "1.7.0",
     "syncpack": "catalog:",
     "textlint": "15.8.0",
