@@ -1,26 +1,21 @@
 # SPEC.md
 
-最小構成の Web アプリを量産するためのテンプレートである。
+最小構成のWebアプリを量産するためのテンプレートである。
 
 ## 要求
 
-- 必須技術を使っていなければ、ガイドではなく検査が失敗する。
-- ハーネスは、より厳しい手段を Claude が自ら調べて適用できる構成とする。
-- 要求はあえて曖昧に書く。ただし完了時には検証できる形にする。
-- テストと CI は持たない。RC や beta のバージョンも許容する。
+必須技術を使っていなければ、検査が失敗する。ガイドに書くだけでは強制しない。
+ハーネスは、より厳しい手段をClaudeが自ら調べて適用できる構成とする。
+要求はあえて曖昧に書く。ただし完了時には検証できる形にする。
+テストとCIは持たない。RCやbetaのバージョンも許容する。
 
 ## 技術
 
-- TypeScript 7、effect、@effect/tsgo
-- Vite+ によるモノレポ
-- TanStack Start、ElysiaJS と Eden、TanStack Query
-- effect-atom
-- shadcn/ui
-- Feature-Sliced Design
-- better-auth
-- Drizzle
-- OpenFeature
-- OpenTelemetry
-- Cloudflare Workers と D1、Alchemy
-- oxlint、oxfmt、fallow、steiger、textlint
-- Renovate
+言語はTypeScript 7で、effectと@effect/tsgoを使う。
+リポジトリはVite+によるモノレポである。
+アプリはTanStack Startで組み、APIはElysiaJSとEden、サーバー状態はTanStack Queryで扱う。
+UI状態はeffect-atom、UIはshadcn/ui、構成はFeature-Sliced Designに従う。
+認証はbetter-auth、データベースアクセスはDrizzle、機能フラグはOpenFeature、計測はOpenTelemetryを使う。
+デプロイ先はCloudflare WorkersとD1で、Alchemyで定義する。
+検査にはoxlint、oxfmt、fallow、steiger、textlint、yomiyasuを使う。
+依存の更新はRenovateで行う。
