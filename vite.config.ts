@@ -6,18 +6,7 @@ import tanstackRouter from "@tanstack/eslint-plugin-router";
 import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "vite-plus";
 
-import { restrictedImports } from "./lint.config.ts";
-
-const generated = [
-  "**/routeTree.gen.ts",
-  "**/generated/**",
-  "**/drizzle/**/snapshot.json",
-  ".claude/skills/**",
-  ".claude/hooks/fallow-gate.sh",
-  ".intent/**",
-  "AGENTS.md",
-  "skills-lock.json",
-];
+import { generated, restrictedImports } from "./lint.config.ts";
 
 type Rules = Readonly<Record<string, "error">>;
 
