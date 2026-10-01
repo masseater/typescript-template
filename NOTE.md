@@ -1,0 +1,26 @@
+# NOTE.md
+
+## ESLintを残している理由
+
+主のlinterはoxlintである。ESLintはRSC用のlintを動かすためだけに置いている。
+使っているのはTanStack公式の@tanstack/eslint-plugin-startである。
+no-client-code-in-server-componentとno-async-client-componentの2ルールを有効にしている。
+
+このプラグインはoxlintのJSプラグインとしては動かない。
+2026年10月1日にoxlint 1.85で試したところ、lint対象の全ファイルが「requires type information」というエラーで止まった。
+oxlintはJSプラグインに渡すparserServicesを空のオブジェクトに固定している。型情報を使うoxlintの仕組みはネイティブルール専用で、JSプラグインには届かない。
+一方で両ルールは、最初にTypeScriptのProgramと型チェッカーを取り出し、その上で解析を組み立てている。全ソースファイルを走査して描画グラフを作り、import先のシンボルをファイルをまたいで解決し、ESTreeとTypeScriptのノードを対応づけて報告する。
+型情報がなければ一部の検出が漏れるのではなく、ルールそのものが起動しない。
+oxlint側で動かすには、Programを自前で作ってASTの対応表を用意するラッパーが要る。これはtypescript-eslintのパーサーを作り直すことに等しく、自作は最終手段という原則に反する。そこで公式の統合手段である型情報付きのESLintを選んだ。
+
+## pnpm patch
+
+patches/にはこのプラグインへのpnpm patchがある。
+renderServerComponentに渡したコンポーネントの中を解析しない不具合と、ルートの下で描画されるasyncなコンポーネントを報告しない不具合を直している。
+ESLintで動かしている限り、このpatchも必要である。
+
+## ESLintを外せる条件
+
+oxlintのJSプラグインにTypeScriptのProgramが渡るようになるか、TanStackがoxlintに対応した版を出せば外せる。
+oxlintやプラグインを更新したときは、プラグインをoxlintのjsPluginsに載せて違反を仕込み、検出されるかを確かめる。
+検出できれば、ESLint本体と設定ファイル、関連する依存、verifyのESLintの段を取り除く。
