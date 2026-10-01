@@ -7,7 +7,7 @@
 必須技術を使っていなければ、検査が失敗する。ガイドに書くだけでは強制しない。
 ハーネスは、より厳しい手段をClaudeが自ら調べて適用できる構成とする。
 要求はあえて曖昧に書く。ただし完了時には検証できる形にする。
-テストとCIは持たない。RCやbetaのバージョンも許容する。
+テストは持たない。CIはGitHub Actionsで検証だけを走らせる。RCやbetaのバージョンも許容する。
 
 ## 技術
 
@@ -18,4 +18,4 @@ UI状態はeffect-atom、UIはshadcn/ui、構成はFeature-Sliced Designに従�
 認証はbetter-auth、データベースアクセスはDrizzle、機能フラグはOpenFeature、計測はOpenTelemetryを使う。
 デプロイ先はCloudflare WorkersとD1で、Alchemyで定義する。
 検査にはoxlint、oxfmt、fallow、steiger、textlint、yomiyasuを使う。
-依存の更新はRenovateで行う。
+依存の更新はRenovateで行い、CIが通ったものだけを自動でマージする。
