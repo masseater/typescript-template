@@ -1,8 +1,10 @@
 import { presets as effectPresets } from "@effect/tsgo/oxlint-presets";
 import eslintReact from "@eslint-react/eslint-plugin";
+import htmlReact from "@html-eslint/eslint-plugin-react";
 import { plugin as shadcn } from "@shadcn/lint";
 import tanstackQuery from "@tanstack/eslint-plugin-query";
 import tanstackRouter from "@tanstack/eslint-plugin-router";
+import baselineJs from "eslint-plugin-baseline-js";
 import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "vite-plus";
 
@@ -76,6 +78,8 @@ export default defineConfig({
       { name: "@eslint-react", specifier: "@eslint-react/eslint-plugin" },
       { name: "shadcn", specifier: "@shadcn/lint" },
       { name: "no-comments", specifier: "eslint-plugin-no-comments" },
+      { name: "baseline-js", specifier: "eslint-plugin-baseline-js" },
+      { name: "@html-eslint/react", specifier: "@html-eslint/eslint-plugin-react" },
     ],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
@@ -85,6 +89,9 @@ export default defineConfig({
       "drizzle/enforce-delete-with-where": "error",
       "drizzle/enforce-update-with-where": "error",
       ...allRulesOf("shadcn", shadcn),
+      ...allRulesOf("baseline-js", baselineJs),
+      ...baselineJs.configs.recommended().rules,
+      ...asErrors(Object.keys(htmlReact.configs.all.rules ?? {})),
       ...reactHooksRules,
       ...eslintReactRules,
       ...effectRules,
