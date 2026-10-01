@@ -148,6 +148,11 @@
             "type": "agent",
             "prompt": "別の目でこのリポジトリの変更を審査する。Feature-Sliced Design のスライスの中まで読み、コロケーションが守られているかを判断する。使われる場所の近くに置かれているか、早すぎる切り出しや不自然な分割がないかを見る。\n\n判定材料は `git status`・`git diff HEAD`・`git log main..HEAD -p` と、変更されたファイルおよび設定ファイルである。問題がなければ ok を true にする。問題があれば ok を false にし、reason に何が問題でどう直すべきかを具体的に書く。\n\n$ARGUMENTS",
             "timeout": 600
+          },
+          {
+            "type": "agent",
+            "prompt": "別の目でこのリポジトリの変更を審査する。HTML・CSS・クライアント側の JavaScript の変更が modern-web-guidance スキルの指針に沿っているかを判断する。スキルの手順で該当するガイドを検索して取得し、古いパターンや不要な依存、Baseline Widely available でない機能の無防備な使用、アクセシビリティの欠落がないかを見る。該当する変更がなければ ok を true にする。\n\n判定材料は `git status`・`git diff HEAD`・`git log main..HEAD -p` と、変更されたファイルおよび設定ファイルである。問題がなければ ok を true にする。問題があれば ok を false にし、reason に何が問題でどう直すべきかを具体的に書く。\n\n$ARGUMENTS",
+            "timeout": 600
           }
         ]
       }

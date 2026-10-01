@@ -25,6 +25,8 @@ catalog:
   jev-lint: 0.7.0
   "@eslint/config-helpers": 0.7.0
   eslint-plugin-no-comments: 1.2.1
+  eslint-plugin-baseline-js: 0.7.2
+  "@html-eslint/eslint-plugin-react": 0.66.1
 catalogs:
   stack:
     "@effect/atom-react": 4.0.0-rc.117

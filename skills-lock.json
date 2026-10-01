@@ -43,6 +43,12 @@
       "skillPath": "feature-sliced-design/SKILL.md",
       "computedHash": "ee5a0a74e2c5715c9b4573fbc2c64a72db5c6bd51415ad0734dab47ced77edcd"
     },
+    "modern-web-guidance": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "7350ef15ed8febd35f1a15750e57418eac6656b7e86259e7796aa5e7972af60c"
+    },
     "shadcn": {
       "source": "shadcn-ui/ui",
       "sourceType": "github",
