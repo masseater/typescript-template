@@ -34,6 +34,7 @@ const web = Effect.gen(function* web() {
   return yield* Website.Vite("Web", {
     env: { ...otlp, BETTER_AUTH_SECRET, DB },
     observability: { enabled: true, traces: { enabled: true } },
+    viteEnvironments: { entry: "ssr", children: ["rsc"] },
   });
 });
 
