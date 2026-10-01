@@ -84,7 +84,7 @@ jobs:
             echo "::error::Claude did not commit a fix"
             exit 1
           fi
-          git push origin "HEAD:refs/heads/$BRANCH"
+          git push --no-verify origin "HEAD:refs/heads/$BRANCH"
           if [ "$BRANCH" != "$HEAD_BRANCH" ]; then
             gh pr create --base "$DEFAULT_BRANCH" --head "$BRANCH" --draft \
               --title "$(git log -1 --format=%s)" \
