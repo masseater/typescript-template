@@ -206,6 +206,9 @@ catalogs:
     eslint-plugin-drizzle:
       specifier: 0.2.3
       version: 0.2.3
+    eslint-plugin-no-comments:
+      specifier: 1.2.1
+      version: 1.2.1
     eslint-plugin-react-hooks:
       specifier: 7.1.1
       version: 7.1.1
@@ -282,6 +285,9 @@ importers:
       eslint-plugin-drizzle:
         specifier: 'catalog:'
         version: 0.2.3(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
+      eslint-plugin-no-comments:
+        specifier: 'catalog:'
+        version: 1.2.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-react-hooks:
         specifier: 'catalog:'
         version: 7.1.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
@@ -6213,6 +6219,12 @@ packages:
     resolution: {integrity: sha512-BO+ymHo33IUNoJlC0rbd7HP9EwwpW4VIp49R/tWQF/d2E1K2kgTf0tCXT0v9MSiBr6gGR1LtPwMLapTKEWSg9A==}
     peerDependencies:
       eslint: '>=8.0.0'
+
+  eslint-plugin-no-comments@1.2.1:
+    resolution: {integrity: sha512-LsUTMY20oLw+fiu23c3ssBHqKXe7pWMHzaXNx2DM+anpmBwzKHclA3XLrY/YsYNqTipuDA0u28/Wxc2pxke6bA==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      eslint: ^9.0.0 || ^10.0.0
 
   eslint-plugin-react-dom@5.21.1:
     resolution: {integrity: sha512-4usGTGLBSe00fnepoYXMWcmWQAltnPNZkNlJDhdfYSGuTHPpnbinnBN0jxXAxLXBdPsx2V3k71cXXBlsCBAJUA==}
@@ -15405,6 +15417,10 @@ snapshots:
   escape-string-regexp@5.0.0: {}
 
   eslint-plugin-drizzle@0.2.3(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2)):
+    dependencies:
+      eslint: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
+
+  eslint-plugin-no-comments@1.2.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
 

@@ -30,6 +30,7 @@ catalog:
   jev-lint: 0.7.0
   renovate: 44.116.1
   "@eslint/config-helpers": 0.7.0
+  eslint-plugin-no-comments: 1.2.1
 overrides:
   effect: "catalog:"
   "@effect/platform-node-shared": 4.0.0-rc.117
