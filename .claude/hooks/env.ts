@@ -165,16 +165,5 @@ const runHook = <Value, Failure>(
   });
 };
 
-export type { CommandResult };
-export {
-  HookBlocked,
-  block,
-  blockWhen,
-  localBin,
-  projectDir,
-  readHookInput,
-  runCommand,
-  runHook,
-  writeJson,
-  writeTo,
-};
+export type { CommandResult, HookBlocked };
+export { blockWhen, localBin, projectDir, readHookInput, runCommand, runHook, writeJson };

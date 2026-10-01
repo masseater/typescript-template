@@ -1,4 +1,4 @@
-import { Array as Arr, Effect, FileSystem, Option, Path, Schema } from "effect";
+import { Array as Arr, Effect, FileSystem, Path, Schema, pipe } from "effect";
 import type { Stdio } from "effect";
 
 import {
@@ -26,41 +26,45 @@ const PostToolUseOutput = Schema.Struct({
   }),
 });
 
+const isWorkspace = (scope: string, name: string): boolean =>
+  WORKSPACE_SCOPES.has(scope) && name !== "";
+
+const isSourcePath = (segment: string, rest: readonly string[], extension: string): boolean =>
+  segment === "src" && !rest.includes("generated") && SOURCE_EXTENSIONS.has(extension);
+
 const locate = Effect.fn("locate")(function* locate(filePath: string) {
   const path = yield* Path.Path;
   const root = path.resolve(yield* projectDir);
   const [scope = "", name = "", segment = "", ...rest] = path
     .relative(root, filePath)
     .split(path.sep);
-  const workspace = Option.some(path.join(scope, name)).pipe(
-    Option.filter(() => WORKSPACE_SCOPES.has(scope) && name !== ""),
-  );
   const isAppSource =
-    Option.isSome(workspace) &&
-    segment === "src" &&
-    !rest.includes("generated") &&
-    SOURCE_EXTENSIONS.has(path.extname(filePath));
-  return { isAppSource, root, workspace };
+    isWorkspace(scope, name) && isSourcePath(segment, rest, path.extname(filePath));
+  const candidates = [scope, path.join(scope, name)].filter((dir) => dir !== "");
+  return { candidates, isAppSource, root };
 });
 
 const fallowTargets = Effect.fn("fallowTargets")(function* fallowTargets(
   root: string,
-  workspace: Option.Option<string>,
+  candidates: readonly string[],
 ) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const withConfig = yield* Effect.filter(Option.toArray(workspace), (dir) =>
-    fs.exists(path.join(root, dir, ".fallowrc.jsonc")).pipe(Effect.orDie),
+  const withConfig = yield* pipe(
+    candidates,
+    Effect.filter((dir: string) =>
+      fs.exists(path.join(root, dir, ".fallowrc.jsonc")).pipe(Effect.orDie),
+    ),
   );
   return [[], ...withConfig.map((dir) => ["-r", dir])];
 });
 
 const runFallow = Effect.fn("runFallow")(function* runFallow(
   root: string,
-  workspace: Option.Option<string>,
+  candidates: readonly string[],
 ) {
   const fallow = yield* localBin("fallow");
-  const targets = yield* fallowTargets(root, workspace);
+  const targets = yield* fallowTargets(root, candidates);
   const runs = yield* Effect.forEach(
     targets,
     (args) =>
@@ -117,8 +121,8 @@ runHook(
   Effect.gen(function* postEdit() {
     const input = yield* readHookInput(PostToolUseInput);
     const filePath = input.tool_input.file_path ?? "";
-    const { isAppSource, root, workspace } = yield* locate(filePath);
-    const runs = yield* runFallow(root, workspace);
+    const { candidates, isAppSource, root } = yield* locate(filePath);
+    const runs = yield* runFallow(root, candidates);
     if (isAppSource) {
       yield* checkStatePolicy(filePath);
     }

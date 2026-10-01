@@ -3,6 +3,7 @@ packages:
   - libs/*
   - infra/*
   - tools/*
+  - .claude
 
 catalogMode: prefer
 
