@@ -41,12 +41,10 @@ const requiredStack: Readonly<Record<string, readonly string[]>> = {
     "react-router",
     "react-router-dom",
     "next",
-    "next/*",
     "@remix-run/*",
     "wouter",
     "express",
     "hono",
-    "hono/*",
     "fastify",
     "koa",
     "@nestjs/*",
@@ -85,7 +83,6 @@ const requiredStack: Readonly<Record<string, readonly string[]>> = {
   ],
   "検証、日時、ログ、関数型ユーティリティは Effect だけで扱う": [
     "zod",
-    "zod/*",
     "yup",
     "joi",
     "valibot",
@@ -102,7 +99,6 @@ const requiredStack: Readonly<Record<string, readonly string[]>> = {
     "loglevel",
     "lodash",
     "lodash-es",
-    "lodash/*",
     "ramda",
     "rxjs",
     "fp-ts",
@@ -142,9 +138,12 @@ const requiredStackPaths: readonly Readonly<{ name: string; message: string }>[]
     .map(({ message, module }) => ({ name: module, message }));
 
 const requiredStackPatterns: readonly Readonly<{ group: readonly string[]; message: string }>[] =
-  requiredStackEntries
-    .filter(({ module }) => module.includes("*"))
-    .map(({ message, module }) => ({ group: [module], message }));
+  requiredStackEntries.map(({ message, module }) => {
+    if (module.includes("*")) {
+      return { group: [module, `${module}/**`], message };
+    }
+    return { group: [`${module}/**`], message };
+  });
 
 const restrictedImports = {
   paths: [
