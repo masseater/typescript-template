@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:stack"
   },
   "devDependencies": {
     "@types/node": "catalog:"

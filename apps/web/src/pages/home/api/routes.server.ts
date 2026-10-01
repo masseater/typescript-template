@@ -3,8 +3,9 @@ import { Effect } from "effect";
 import { todo } from "#/pages/home/model/todo.table";
 import { createRouter } from "#/shared/api/index.server";
 import { db } from "#/shared/db/index.server";
-import { FeatureFlags, featureFlagsLive } from "#/shared/flags/index.server";
-import { telemetryLive } from "#/shared/telemetry/index.server";
+import { FeatureFlags } from "#/shared/flags/index.server";
+
+import { runRequest } from "./runtime.server";
 
 const listTodos = Effect.gen(function* listTodos() {
   const flags = yield* FeatureFlags;
@@ -16,9 +17,7 @@ const listTodos = Effect.gen(function* listTodos() {
   return rows.filter((row) => row.status === "open");
 }).pipe(Effect.withSpan("todo.list"));
 
-const todoRoutes = createRouter("/api/todos").get("/", () =>
-  Effect.runPromise(listTodos.pipe(Effect.provide([featureFlagsLive, telemetryLive]))),
-);
+const todoRoutes = createRouter("/api/todos").get("/", () => runRequest(listTodos));
 
 type TodoRoutes = typeof todoRoutes;
 

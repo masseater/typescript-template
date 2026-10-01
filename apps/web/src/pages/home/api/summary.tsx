@@ -8,11 +8,13 @@ import { todo } from "#/pages/home/model/todo.table";
 import { TodoSummary } from "#/pages/home/ui/todo-summary";
 import { db } from "#/shared/db/index.server";
 
+import { runRequest } from "./runtime.server";
+
 const countByStatus = (status: "open" | "done"): Effect.Effect<number> =>
   Effect.promise(() => db.$count(todo, eq(todo.status, status)));
 
 const getTodoSummary = createServerFn({ method: "GET" }).handler(() =>
-  Effect.runPromise(
+  runRequest(
     Effect.all([countByStatus("open"), countByStatus("done")], { concurrency: "unbounded" }).pipe(
       Effect.flatMap(([open, done]) =>
         Effect.promise(() => renderServerComponent(<TodoSummary open={open} done={done} />)),
