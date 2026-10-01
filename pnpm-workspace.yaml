@@ -29,6 +29,7 @@ catalog:
   vite-plus: 1.0.0
   jev-lint: 0.7.0
   renovate: 44.116.1
+  "@eslint/config-helpers": 0.7.0
 overrides:
   effect: "catalog:"
   "@effect/platform-node-shared": 4.0.0-rc.117
