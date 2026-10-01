@@ -160,4 +160,15 @@ const restrictedImports = {
   patterns: [...requiredStackPatterns],
 };
 
-export { requiredStack, restrictedImports };
+const generated = [
+  "**/routeTree.gen.ts",
+  "**/generated/**",
+  "**/drizzle/**/snapshot.json",
+  ".claude/skills/**",
+  ".claude/hooks/fallow-gate.sh",
+  ".intent/**",
+  "AGENTS.md",
+  "skills-lock.json",
+];
+
+export { generated, requiredStack, restrictedImports };
