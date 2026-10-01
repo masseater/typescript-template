@@ -74,7 +74,8 @@ jobs:
             4. Commit the fix with a Conventional Commits message whose body explains the cause. Do not push.
           claude_args: >-
             --max-turns 200
-            --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(pnpm:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(gh run view:*)"
+            --model claude-opus-5-5
+            --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash"
       - if: steps.target.outputs.stale != 'true'
         env:
           BRANCH: ${{ steps.target.outputs.branch }}
