@@ -9,7 +9,7 @@ catalogMode: prefer
 
 catalog:
   "@cloudflare/workers-types": 5.20260928.1
-  "@effect/platform-node": 4.0.0-rc.117
+  "@effect/platform-node": 4.0.0-rc.118
   "@eslint-react/eslint-plugin": 5.21.1
   "@shadcn/lint": 0.2.0
   "@tanstack/eslint-plugin-query": 5.104.0
@@ -27,7 +27,7 @@ catalog:
   eslint-plugin-no-comments: 1.2.1
 catalogs:
   stack:
-    "@effect/atom-react": 4.0.0-rc.117
+    "@effect/atom-react": 4.0.0-rc.118
     "@effect/tsgo": 0.46.1
     "@elysiajs/eden": 1.4.9
     "@openfeature/server-sdk": 1.23.0
@@ -38,7 +38,7 @@ catalogs:
     drizzle-kit: 1.0.0-rc.5-ab785fc
     drizzle-orm: 1.0.0-rc.5-ab785fc
     eden-tanstack-react-query: 0.5.0
-    effect: 4.0.0-rc.117
+    effect: 4.0.0-rc.118
     elysia: 1.4.30
     fallow: 3.30.0
     radix-ui: 1.6.7
@@ -50,10 +50,10 @@ catalogs:
     vite-plus: 1.0.0
 overrides:
   effect: "catalog:stack"
-  "@effect/platform-node-shared": 4.0.0-rc.117
-  "@effect/sql-d1": 4.0.0-rc.117
-  "@effect/sql-sqlite-do": 4.0.0-rc.117
-  "@effect/vitest": 4.0.0-rc.117
+  "@effect/platform-node-shared": 4.0.0-rc.118
+  "@effect/sql-d1": 4.0.0-rc.118
+  "@effect/sql-sqlite-do": 4.0.0-rc.118
+  "@effect/vitest": 4.0.0-rc.118
   vite@*: "catalog:"
   eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
 peerDependencyRules:
