@@ -157,5 +157,21 @@ export default defineConfig({
   },
   run: {
     cache: true,
+    tasks: {
+      "jev-lint": {
+        command: "jev-lint check",
+        cache: {
+          untrackedEnv: [
+            "TYPESAFE_API_KEY",
+            "TYPESAFEAI_API_KEY",
+            "HTTPS_PROXY",
+            "https_proxy",
+            "NO_PROXY",
+            "no_proxy",
+            "NODE_EXTRA_CA_CERTS",
+          ],
+        },
+      },
+    },
   },
 });
