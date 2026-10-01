@@ -92,7 +92,7 @@
       "name": "vite-plus",
       "enablers": ["vite-plus"],
       "entryPoints": ["vite.config.ts"],
-      "toolingDependencies": ["eslint-plugin-drizzle"],
+      "toolingDependencies": ["eslint-plugin-drizzle", "eslint-plugin-no-comments"],
     },
     {
       "name": "syncpack-ts",

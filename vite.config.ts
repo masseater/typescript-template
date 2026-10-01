@@ -75,9 +75,11 @@ export default defineConfig({
       { name: "react-hooks-js", specifier: "eslint-plugin-react-hooks" },
       { name: "@eslint-react", specifier: "@eslint-react/eslint-plugin" },
       { name: "shadcn", specifier: "@shadcn/lint" },
+      { name: "no-comments", specifier: "eslint-plugin-no-comments" },
     ],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
+      "no-comments/disallowComments": "error",
       ...allRulesOf("tanstack-query", tanstackQuery),
       ...allRulesOf("tanstack-router", tanstackRouter),
       "drizzle/enforce-delete-with-where": "error",
