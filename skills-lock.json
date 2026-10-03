@@ -17,7 +17,7 @@
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/cloudflare/SKILL.md",
-      "computedHash": "163d684e39202f0073a15b84181d6bc1c825092d66947193daefd153102e2839"
+      "computedHash": "6f0a70840cad114f020e5950874f255b22e669f07036cf4f81d8f733ae0233a0"
     },
     "effect-ts": {
       "source": "Effect-TS/skills",
@@ -36,6 +36,11 @@
       "sourceType": "github",
       "skillPath": "better-auth/emailAndPassword/SKILL.md",
       "computedHash": "863886759f729081e265941f4f72c503835d55a1f34f6d63cebe6571159fff4a"
+    },
+    "fallow": {
+      "source": "fallow",
+      "sourceType": "node_modules",
+      "computedHash": "e2bbf585ac8a72312a0ad0abea7761f7fca500a61cef545262be215aead3d54d"
     },
     "feature-sliced-design": {
       "source": "feature-sliced/skills",
@@ -71,13 +76,13 @@
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/workers-best-practices/SKILL.md",
-      "computedHash": "61834fa098e16280aae54e584f5a16e047391790b1e1e4995c0e9a111d6d75c3"
+      "computedHash": "e1c30e93854345114dfa6a0a077363119eb99c03e5c64a8f2109349802e1f2aa"
     },
     "yomiyasu": {
       "source": "nanaism/yomiyasu",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "c13f52c0943b5fc780ab262414a112990bd591e571d99fab8c3caae3d1660465"
+      "computedHash": "406e8fa0f3af7163f10258c51bca4826bcf359f21e745c2fc02236151132ab80"
     }
   }
 }
