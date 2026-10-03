@@ -9,7 +9,7 @@
     "yomiyasu": "node -e \"const { execFileSync, spawnSync } = require('node:child_process'); const { path } = JSON.parse(execFileSync('skills', ['ls', '--json'])).find(({ name }) => name === 'yomiyasu'); const statuses = JSON.parse(spawnSync('textlint', ['--format', 'json', '**/*.md']).stdout).map(({ filePath }) => spawnSync('python3', [require('node:path').join(path, 'scripts', 'yomiyasu_lint.py'), '--strict', filePath], { stdio: 'inherit' }).status); process.exitCode = statuses.every((status) => status === 0) ? 0 : 1\"",
     "renovate": "renovate-config-validator --strict",
     "fallow": "fallow --production --quiet --format compact && fallow dead-code --no-production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
-    "prepare": "vp config"
+    "prepare": "vp config && skills experimental_install --force"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:stack",
