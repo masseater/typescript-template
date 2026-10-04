@@ -9,5 +9,16 @@
       "groupName": "effect and alchemy",
       "automerge": false
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^skills-lock\\.json$/"],
+      "matchStrings": [
+        "\"source\": \"(?<depName>[^\"]+)\",\\s*\"ref\": \"(?<currentDigest>[0-9a-f]{40})\",\\s*\"sourceType\": \"github\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "packageNameTemplate": "https://github.com/{{{depName}}}"
+    }
   ]
 }
