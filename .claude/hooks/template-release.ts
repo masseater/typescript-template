@@ -4,7 +4,7 @@ import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 import { projectDir, runHook, writeJson } from "./env.ts";
 
 const TEMPLATE_REPOSITORY = "masseater/typescript-template";
-const MANIFEST_FILE = ".release-please-manifest.json";
+const MANIFEST_FILE = ".github/release-please/manifest.json";
 const REQUEST_TIMEOUT = "5 seconds";
 const NOTES_LENGTH = 4000;
 
