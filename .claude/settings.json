@@ -3,6 +3,9 @@
   "env": {
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
   },
+  "permissions": {
+    "deny": ["Bash(pnpm *)", "Bash(pnpx *)", "Bash(pn *)", "Bash(pnx *)"]
+  },
   "enabledMcpjsonServers": ["fallow"],
   "extraKnownMarketplaces": {
     "typesafe-ai": {

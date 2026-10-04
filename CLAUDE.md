@@ -34,6 +34,12 @@ lint・fmt・checkだけは、Vite+の仕様によりルートの単一設定と
 アプリのsrc/直下には、FSDのレイヤーだけを置く。
 FSDはコロケーションが本質である。使われる場所の近くに置き、再利用されるまで切り出さない。
 
+## パッケージマネージャー
+
+pnpmは直接実行せず、`vp install`・`vp add`・`vp exec`・`vp dlx`・`vp pm`を使う。
+Claude Codeでは `.claude/settings.json` が pnpm・pnpx・pn・pnx の実行を拒否する。
+生成されたブロックにある `pnpm dlx` は `vp dlx` に読み替える。
+
 ## 状態
 
 UI状態はeffect-atom、サーバー状態はTanStack Queryだけで扱う。
