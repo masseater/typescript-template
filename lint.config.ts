@@ -163,7 +163,6 @@ const generated = [
   "**/routeTree.gen.ts",
   "**/generated/**",
   "**/drizzle/**/snapshot.json",
-  ".agents/skills/**",
   ".claude/skills/**",
   ".claude/hooks/fallow-gate.sh",
   ".intent/**",
