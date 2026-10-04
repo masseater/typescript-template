@@ -1,16 +1,18 @@
 import { waitUntil } from "cloudflare:workers";
 import { Effect, Layer, ManagedRuntime } from "effect";
-import { Flusher, layerFlusher } from "effect/unstable/observability/OtlpExporter";
+import { OtlpExporter } from "effect/observability";
 
 import { featureFlagsLive } from "#/shared/flags/index.server";
 import { telemetryLive } from "#/shared/telemetry/index.server";
 
-const runtime = ManagedRuntime.make(Layer.mergeAll(featureFlagsLive, telemetryLive, layerFlusher));
+const runtime = ManagedRuntime.make(
+  Layer.mergeAll(featureFlagsLive, telemetryLive, OtlpExporter.layerFlusher),
+);
 
 type Services = ManagedRuntime.ManagedRuntime.Services<typeof runtime>;
 
 const flushTelemetry = Effect.gen(function* flushTelemetry() {
-  const flusher = yield* Flusher;
+  const flusher = yield* OtlpExporter.Flusher;
   yield* flusher.flush;
 });
 

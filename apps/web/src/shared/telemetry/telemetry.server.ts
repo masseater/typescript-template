@@ -1,10 +1,9 @@
 import { Layer } from "effect";
-import { layer as fetchHttpClientLayer } from "effect/unstable/http/FetchHttpClient";
-import { layerFromConfig } from "effect/unstable/observability/Otlp";
-import { layerJson } from "effect/unstable/observability/OtlpSerialization";
+import { FetchHttpClient } from "effect/http";
+import { Otlp, OtlpSerialization } from "effect/observability";
 
-const telemetryLive = layerFromConfig({ resource: { serviceName: "web" } }).pipe(
-  Layer.provide([fetchHttpClientLayer, layerJson]),
+const telemetryLive = Otlp.layerFromConfig({ resource: { serviceName: "web" } }).pipe(
+  Layer.provide([FetchHttpClient.layer, OtlpSerialization.layerJson]),
 );
 
 export { telemetryLive };

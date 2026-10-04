@@ -1,8 +1,8 @@
-import { make } from "effect/unstable/reactivity/Atom";
+import { Atom } from "effect/reactivity";
 
 type TodoFilter = "all" | "open" | "done";
 
-const todoFilterAtom = make<TodoFilter>("all");
+const todoFilterAtom = Atom.make<TodoFilter>("all");
 
 export type { TodoFilter };
 export { todoFilterAtom };
