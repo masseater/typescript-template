@@ -168,6 +168,7 @@ const generated = [
   ".intent/**",
   "AGENTS.md",
   "skills-lock.json",
+  "CHANGELOG.md",
 ];
 
 export { generated, requiredStack, restrictedImports };

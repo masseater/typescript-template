@@ -14,6 +14,7 @@ import {
   Stdio,
   Stream,
 } from "effect";
+import { FetchHttpClient } from "effect/http";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 class HookBlocked extends Data.TaggedError("HookBlocked")<{ readonly reason: string }> {}
@@ -33,7 +34,7 @@ const DATA_FIRST_ARITY = 2;
 
 const projectDir = Config.String("CLAUDE_PROJECT_DIR").pipe(Config.withDefault("."));
 
-const hookLayer = NodeServices.layer;
+const hookLayer = Layer.mergeAll(NodeServices.layer, FetchHttpClient.layer);
 
 const localBin = Effect.fn("localBin")(function* localBin(name: string) {
   const path = yield* Path.Path;

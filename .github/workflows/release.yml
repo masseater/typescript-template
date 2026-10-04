@@ -1,0 +1,19 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release
+
+jobs:
+  release:
+    if: github.repository == 'masseater/typescript-template'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
