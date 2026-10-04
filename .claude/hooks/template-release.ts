@@ -1,5 +1,5 @@
 import { Config, Effect, FileSystem, Option, Path, Schema, String as Str } from "effect";
-import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/unstable/http";
+import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 
 import { projectDir, runHook, writeJson } from "./env.ts";
 

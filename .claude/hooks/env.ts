@@ -14,8 +14,8 @@ import {
   Stdio,
   Stream,
 } from "effect";
-import { FetchHttpClient } from "effect/unstable/http";
-import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { FetchHttpClient } from "effect/http";
+import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 class HookBlocked extends Data.TaggedError("HookBlocked")<{ readonly reason: string }> {}
 
