@@ -52,13 +52,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - if: steps.target.outputs.stale != 'true'
-        uses: actions/setup-node@v7
+        uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
         with:
-          node-version-file: package.json
-      - if: steps.target.outputs.stale != 'true'
-        uses: pnpm/setup@v3
-        with:
-          require-lockfile: true
+          cache: true
+          run-install: |
+            - args: ['--frozen-lockfile']
       - if: steps.target.outputs.stale != 'true'
         uses: anthropics/claude-code-action@v1
         with:
@@ -71,7 +69,7 @@ jobs:
 
             1. Read the failure with `gh run view ${{ github.event.workflow_run.id }} --log-failed`.
             2. Fix the root cause in the code, following AGENTS.md. Do not weaken lint rules, add disable directives, or skip checks to make verify pass.
-            3. Run `pnpm exec vp run verify` and repeat until it passes.
+            3. Run `vp run verify` and repeat until it passes.
             4. Commit the fix with a Conventional Commits message whose body explains the cause. Do not push.
           claude_args: >-
             --max-turns 200
