@@ -19,7 +19,7 @@
     "destroy": "alchemy destroy"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "1.7.6",
+    "@better-auth/drizzle-adapter": "1.7.7",
     "@effect/atom-react": "catalog:stack",
     "@elysiajs/eden": "catalog:stack",
     "@openfeature/core": "1.12.0",
@@ -57,7 +57,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "@vitejs/plugin-rsc": "0.5.35",
     "alchemy": "catalog:stack",
-    "auth": "1.7.6",
+    "auth": "1.7.7",
     "drizzle-kit": "catalog:stack",
     "steiger": "catalog:stack",
     "typescript": "catalog:stack",
