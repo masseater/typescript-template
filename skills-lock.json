@@ -46,7 +46,7 @@
     "fallow": {
       "source": "fallow",
       "sourceType": "node_modules",
-      "computedHash": "e2bbf585ac8a72312a0ad0abea7761f7fca500a61cef545262be215aead3d54d"
+      "computedHash": "4c105770a5dc3af14ae91287f4c867321a5e35412fe0c15c2bda87b1d05b7b1e"
     },
     "feature-sliced-design": {
       "source": "feature-sliced/skills",
