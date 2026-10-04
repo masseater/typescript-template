@@ -12,6 +12,8 @@
     "prepare": "vp config && skills experimental_install --force"
   },
   "devDependencies": {
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@eslint-react/eslint-plugin": "catalog:",
     "@eslint/config-helpers": "catalog:",
@@ -36,6 +38,11 @@
     "textlint": "catalog:stack",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "vite-plus": "catalog:stack"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   },
   "devEngines": {
     "packageManager": {

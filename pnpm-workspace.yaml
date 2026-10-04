@@ -27,6 +27,8 @@ catalog:
   eslint-plugin-no-comments: 1.2.1
   eslint-plugin-baseline-js: 0.7.2
   "@html-eslint/eslint-plugin-react": 0.66.1
+  "@commitlint/cli": 21.2.3
+  "@commitlint/config-conventional": 21.2.3
 catalogs:
   stack:
     "@effect/atom-react": 4.0.0
