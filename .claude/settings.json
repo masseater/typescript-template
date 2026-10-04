@@ -97,7 +97,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/template-release.ts"],
+            "args": ["--use-env-proxy", "${CLAUDE_PROJECT_DIR}/.claude/hooks/template-release.ts"],
             "timeout": 10,
             "statusMessage": "テンプレートの新しいリリースを確認中"
           }
