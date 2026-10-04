@@ -1,4 +1,4 @@
-import { Config, Effect, FileSystem, Option, Path, Schema, String as Str } from "effect";
+import { Effect, FileSystem, Path, Schema, String as Str } from "effect";
 import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 
 import { projectDir, runHook, writeJson } from "./env.ts";
@@ -24,11 +24,6 @@ const SessionStartOutput = Schema.Struct({
   }),
 });
 
-const githubToken = Config.String("GH_TOKEN").pipe(
-  Config.orElse(() => Config.String("GITHUB_TOKEN")),
-  Config.option,
-);
-
 const currentVersion = Effect.gen(function* currentVersion() {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -43,12 +38,8 @@ const latestRelease = Effect.gen(function* latestRelease() {
     `https://api.github.com/repos/${TEMPLATE_REPOSITORY}/releases/latest`,
     { acceptJson: true },
   );
-  const authorized = Option.match(yield* githubToken, {
-    onNone: () => request,
-    onSome: (token) => HttpClientRequest.bearerToken(request, token),
-  });
   const response = yield* client
-    .execute(authorized)
+    .execute(request)
     .pipe(Effect.flatMap(HttpClientResponse.filterStatusOk));
   return yield* HttpClientResponse.schemaBodyJson(Release)(response);
 }).pipe(Effect.timeout(REQUEST_TIMEOUT));
