@@ -50,7 +50,7 @@ UI状態はeffect-atom、サーバー状態はTanStack Queryだけで扱う。
 OpenRouterのAPIキーを使うときは、App Attributionを必ず設定する。
 すべてのリクエストに`HTTP-Referer`と`X-OpenRouter-Title`ヘッダーを付け、アプリのURLと名前を送る。
 `HTTP-Referer`がアプリの識別子になり、`X-OpenRouter-Title`だけではアプリとして記録されない。
-公開ランキングに載せると決めたアプリ以外は、`X-OpenRouter-App-Visibility: hidden`も付けて非公開にする。
+あわせて`X-OpenRouter-App-Visibility: hidden`を必ず付け、公開ランキングやアプリページに載せない。
 
 ## 自己改善
 
