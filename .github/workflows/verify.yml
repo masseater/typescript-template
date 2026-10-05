@@ -33,9 +33,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           gh auth setup-git
-          git fetch --no-tags --depth=1 origin "$BASE_SHA"
-          git fetch --no-tags --depth="$COMMITS" origin "$HEAD_SHA"
-          vp exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+          merge_base="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_SHA...$HEAD_SHA" --jq .merge_base_commit.sha)"
+          git fetch --no-tags --depth="$((COMMITS + 1))" origin "$HEAD_SHA"
+          vp exec commitlint --from "$merge_base" --to "$HEAD_SHA" --verbose
       - run: vp run verify
         env:
           GH_TOKEN: ${{ github.token }}
