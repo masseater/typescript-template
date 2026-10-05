@@ -164,6 +164,9 @@ settings:
 
 catalogs:
   default:
+    '@ast-grep/cli':
+      specifier: 0.45.3
+      version: 0.45.3
     '@cloudflare/workers-types':
       specifier: 5.20261001.1
       version: 5.20261001.1
@@ -307,6 +310,9 @@ importers:
 
   .:
     devDependencies:
+      '@ast-grep/cli':
+        specifier: 'catalog:'
+        version: 0.45.3
       '@commitlint/cli':
         specifier: 'catalog:'
         version: 21.2.3(@types/node@24.19.1)(conventional-commits-parser@7.1.2)(typescript@5.9.3)
