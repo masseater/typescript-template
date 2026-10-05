@@ -45,6 +45,12 @@ Claude Codeでは `.claude/settings.json` が pnpm・pnpx・pn・pnx の実行�
 UI状態はeffect-atom、サーバー状態はTanStack Queryだけで扱う。
 状態は排他的なstatusを持つ判別共用体で表し、booleanフラグの組を使わない。
 
+## OpenRouter
+
+OpenRouterのAPIキーを使うときは、App Attributionを必ず設定する。
+すべてのリクエストに`HTTP-Referer`と`X-OpenRouter-Title`ヘッダーを付け、アプリのURLと名前を送る。
+`HTTP-Referer`がアプリの識別子になり、`X-OpenRouter-Title`だけではアプリとして記録されない。
+
 ## 自己改善
 
 セッションを始めたら、引数なしの `/loop` を起動する。内容は .claude/loop.md にある。
