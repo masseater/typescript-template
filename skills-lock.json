@@ -46,7 +46,12 @@
     "fallow": {
       "source": "fallow",
       "sourceType": "node_modules",
-      "computedHash": "4c105770a5dc3af14ae91287f4c867321a5e35412fe0c15c2bda87b1d05b7b1e"
+      "computedHash": "d8495ec147ad5b04f56a8964965cb3a81b8a718033707d419e583425fe478e81"
+    },
+    "fallow-setup": {
+      "source": "fallow",
+      "sourceType": "node_modules",
+      "computedHash": "94f7dfc9b1b02e536c8da519af853ca5ec5fa084469fe6fc39f4776e257b557b"
     },
     "feature-sliced-design": {
       "source": "feature-sliced/skills",
@@ -95,7 +100,7 @@
       "ref": "986da6ffc89316a90e509d007c1efe1fc59057e6",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "aaab4ea4b99c2442c536c9d6a66271b98a5f139714de6169faf9232746b2a99e"
+      "computedHash": "0b8ca56f301dc56184291b19dc2ec92d561b46776abb3c5bb7c1bc0266623421"
     }
   }
 }
