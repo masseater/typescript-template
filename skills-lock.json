@@ -17,10 +17,10 @@
     },
     "cloudflare": {
       "source": "cloudflare/skills",
-      "ref": "41e0d19858946d18af9ee2c2feebbe2e11d829ff",
+      "ref": "a18ffe2a99448ebff262fc87915b0fd14bab9b70",
       "sourceType": "github",
       "skillPath": "skills/cloudflare/SKILL.md",
-      "computedHash": "6f0a70840cad114f020e5950874f255b22e669f07036cf4f81d8f733ae0233a0"
+      "computedHash": "a64e89b484f773624771fce462ebd48eed7feeeb068ce640ab70cea2987af4ef"
     },
     "effect-ts": {
       "source": "Effect-TS/skills",
@@ -45,21 +45,21 @@
     },
     "feature-sliced-design": {
       "source": "feature-sliced/skills",
-      "ref": "fd71da42a89e916f2ced63e5349fd865c87070a6",
+      "ref": "538e1002f89a2f168ec849ea469493799cb0b6e1",
       "sourceType": "github",
       "skillPath": "feature-sliced-design/SKILL.md",
-      "computedHash": "ee5a0a74e2c5715c9b4573fbc2c64a72db5c6bd51415ad0734dab47ced77edcd"
+      "computedHash": "98d09ea1a9acac34fc5720c610c4ee7c7780dd30b2f287d733961f8e7e9d980b"
     },
     "modern-web-guidance": {
       "source": "GoogleChrome/modern-web-guidance",
-      "ref": "84ae7251ee919239d5ea85aef25897983f26601e",
+      "ref": "a97286845f2baba38988f9e5fe2b2a1351021e50",
       "sourceType": "github",
       "skillPath": "skills/modern-web-guidance/SKILL.md",
-      "computedHash": "7350ef15ed8febd35f1a15750e57418eac6656b7e86259e7796aa5e7972af60c"
+      "computedHash": "dbd30d9c331c8957e065270150ffe44b4ba11ad5259cc9144240f63c45b05f1c"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
-      "ref": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "ref": "c003e96852fa9534aee40b2cb85a96d8bd38732d",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
       "computedHash": "f615de216e085a84e31593ad0fa9062232adc40cd87b7c7ab2b8e49abf6500be"
@@ -80,17 +80,17 @@
     },
     "workers-best-practices": {
       "source": "cloudflare/skills",
-      "ref": "41e0d19858946d18af9ee2c2feebbe2e11d829ff",
+      "ref": "a18ffe2a99448ebff262fc87915b0fd14bab9b70",
       "sourceType": "github",
       "skillPath": "skills/workers-best-practices/SKILL.md",
       "computedHash": "e1c30e93854345114dfa6a0a077363119eb99c03e5c64a8f2109349802e1f2aa"
     },
     "yomiyasu": {
       "source": "nanaism/yomiyasu",
-      "ref": "986da6ffc89316a90e509d007c1efe1fc59057e6",
+      "ref": "373356eb874af5184962c88e925ea7eb58450318",
       "sourceType": "github",
-      "skillPath": "SKILL.md",
-      "computedHash": "aaab4ea4b99c2442c536c9d6a66271b98a5f139714de6169faf9232746b2a99e"
+      "skillPath": "skills/yomiyasu/SKILL.md",
+      "computedHash": "a3d50b77af3cd0c9c2fdd796ed7a21f0f13d5da91709a5067d168a4a183638a4"
     }
   }
 }

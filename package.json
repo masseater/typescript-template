@@ -36,7 +36,7 @@
     "fallow": "catalog:stack",
     "jev-lint": "catalog:",
     "renovate": "catalog:stack",
-    "skills": "1.7.0",
+    "skills": "catalog:",
     "syncpack": "catalog:",
     "textlint": "catalog:stack",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
@@ -55,7 +55,7 @@
     }
   },
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=26.0.0"
   },
   "intent": {
     "skills": [
