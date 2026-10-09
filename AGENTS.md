@@ -94,3 +94,11 @@ release. Add a tool name to select part of the graph. For example, run
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+## レビューとCI
+
+- PRのレビューは行わない。PRは作ったらすぐマージする。
+- PR単位のCIは走らせない。`pull_request` トリガーのワークフローを追加しない。
+- CIはmainへのpushで必ず走らせる。ワークフローは `.github/workflows/verify.yml` である。
+- デプロイやリリースのジョブは、同じワークフローで `needs: verify` を指定し、mainの必須CIが通ってから実行する。
+- マージ前の確認は手元の `vp run verify` で行う。

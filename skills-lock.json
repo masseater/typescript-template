@@ -43,16 +43,6 @@
       "skillPath": "better-auth/emailAndPassword/SKILL.md",
       "computedHash": "863886759f729081e265941f4f72c503835d55a1f34f6d63cebe6571159fff4a"
     },
-    "fallow": {
-      "source": "fallow",
-      "sourceType": "node_modules",
-      "computedHash": "d8495ec147ad5b04f56a8964965cb3a81b8a718033707d419e583425fe478e81"
-    },
-    "fallow-setup": {
-      "source": "fallow",
-      "sourceType": "node_modules",
-      "computedHash": "94f7dfc9b1b02e536c8da519af853ca5ec5fa084469fe6fc39f4776e257b557b"
-    },
     "feature-sliced-design": {
       "source": "feature-sliced/skills",
       "ref": "538e1002f89a2f168ec849ea469493799cb0b6e1",
