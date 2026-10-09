@@ -169,8 +169,7 @@ export default defineConfig({
         command: "jev-lint check",
         cache: {
           untrackedEnv: [
-            "TYPESAFE_API_KEY",
-            "TYPESAFEAI_API_KEY",
+            "OPENROUTER_API_KEY",
             "HTTPS_PROXY",
             "https_proxy",
             "NO_PROXY",

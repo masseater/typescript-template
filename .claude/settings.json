@@ -14,18 +14,6 @@
         "repo": "typesafe-ai/skills"
       }
     },
-    "fast-jev-compaction": {
-      "source": {
-        "source": "github",
-        "repo": "tamaratran/fast-jev-compaction"
-      }
-    },
-    "fast-jev-output": {
-      "source": {
-        "source": "github",
-        "repo": "tamaratran/jev-pruner"
-      }
-    },
     "jev-lint": {
       "source": {
         "source": "github",
@@ -41,8 +29,6 @@
   },
   "enabledPlugins": {
     "typesafe@typesafe-ai": true,
-    "fast-jev-compaction@fast-jev-compaction": true,
-    "fast-jev-output@fast-jev-output": true,
     "jev-lint@jev-lint": true,
     "cc-jev-teacher@cc-jev-teacher": true
   },

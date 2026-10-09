@@ -1,3 +1,6 @@
+baseUrl: https://openrouter.ai/api
+apiKeyEnv: OPENROUTER_API_KEY
+model: typesafe/jev-1.13
 rules:
   typescript/exclusive-status: on
   typescript/ui-state-effect-atom: on

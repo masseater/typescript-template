@@ -13,9 +13,9 @@ vp run verify
 
 ルートの `.env` に書く。
 
-| 名前               | 用途                              |
-| ------------------ | --------------------------------- |
-| `TYPESAFE_API_KEY` | jev-lint（`vp run verify`）の判定 |
+| 名前                 | 用途                              |
+| -------------------- | --------------------------------- |
+| `OPENROUTER_API_KEY` | jev-lint（`vp run verify`）の判定 |
 
 `apps/web/.env` に書く。
 
@@ -35,7 +35,7 @@ vp run verify
 
 | 名前                      | 用途                                       |
 | ------------------------- | ------------------------------------------ |
-| `TYPESAFE_API_KEY`        | verify ワークフローの jev-lint             |
+| `OPENROUTER_API_KEY`      | verify ワークフローの jev-lint             |
 | `CLAUDE_CODE_OAUTH_TOKEN` | verify 失敗時に Claude Code が自動修正する |
 
 Settings → Actions → General で「Allow GitHub Actions to create and approve pull requests」を有効にする。
