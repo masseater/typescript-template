@@ -37,7 +37,7 @@ jobs:
       - run: vp run verify
         env:
           GH_TOKEN: ${{ github.token }}
-          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
   autofix:
     needs: verify
@@ -51,7 +51,7 @@ jobs:
       group: verify-autofix-${{ github.ref_name }}
     env:
       GH_TOKEN: ${{ github.token }}
-      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       HEAD_BRANCH: ${{ github.ref_name }}
       HEAD_SHA: ${{ github.sha }}
       FAILED_RUN_ID: ${{ github.run_id }}
