@@ -1,8 +1,4 @@
-<!-- fallow:agent-install v1 authored sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 -->
-<!-- fallow:agent-install v1 claude-import:start -->
-
 @AGENTS.md
-<!-- fallow:agent-install v1 claude-import:end -->
 
 # CLAUDE.md
 
@@ -22,7 +18,7 @@
 
 ドキュメントはすぐ腐るため、必要最小限にする。
 コードを説明する手書きドキュメントは書かない。価値があるのは自動生成されたものだけである。
-手書きの文章はルートのCLAUDE.md・SPEC.md・DESIGN.md・NOTE.mdとルートのdocs/に限る。
+手書きの文章はルートのCLAUDE.md・README.md・SPEC.md・DESIGN.md・NOTE.mdとルートのdocs/に限る。
 コードコメントは書かず、lintが落とす。「なぜ」はコミットメッセージに書く。
 lintの抑止ディレクティブはツールの既定で通るが、検査を通すために使ってはならない。
 
@@ -47,7 +43,7 @@ UI状態はeffect-atom、サーバー状態はTanStack Queryだけで扱う。
 
 ## 自己改善
 
-セッションを始めたら、引数なしの `/loop` を起動する。内容は .claude/loop.md にある。
+ユーザーと対話するセッションを始めたら、テンプレート更新の確認を求められていればそれを済ませてから、引数なしの `/loop` を起動する。内容は .claude/loop.md にある。
 
 ## 検証
 
