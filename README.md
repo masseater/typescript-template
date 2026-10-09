@@ -1,12 +1,5 @@
 # typescript-template
 
-## 必要なもの
-
-- Node.js 22.18 以上
-- [Vite+](https://viteplus.dev/guide/) の `vp`
-- [uv](https://docs.astral.sh/uv/)
-- Python 3
-
 ## セットアップ
 
 ```sh
