@@ -121,6 +121,12 @@
       "toolingDependencies": ["skills"],
     },
     {
+      "name": "tanstack-intent",
+      "enablers": ["@tanstack/intent"],
+      "configPatterns": [".intent/hooks/*.mjs"],
+      "toolingDependencies": ["@tanstack/intent"],
+    },
+    {
       "name": "steiger",
       "enablers": ["steiger"],
       "alwaysUsed": ["steiger.config.{ts,js,mjs}"],
