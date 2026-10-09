@@ -34,7 +34,7 @@ FSDはコロケーションが本質である。使われる場所の近くに�
 
 pnpmは直接実行せず、`vp install`・`vp add`・`vp exec`・`vp dlx`・`vp pm`を使う。
 Claude Codeでは `.claude/settings.json` が pnpm・pnpx・pn・pnx の実行を拒否する。
-生成されたブロックにある `pnpm dlx` は `vp dlx` に読み替える。
+生成されたブロックにある `pnpm exec`・`pnpm dlx` は `vp exec`・`vp dlx` に読み替える。
 
 ## 状態
 
