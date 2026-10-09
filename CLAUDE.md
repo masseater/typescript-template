@@ -1,8 +1,4 @@
-<!-- fallow:agent-install v1 authored sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 -->
-<!-- fallow:agent-install v1 claude-import:start -->
-
 @AGENTS.md
-<!-- fallow:agent-install v1 claude-import:end -->
 
 # CLAUDE.md
 
@@ -47,7 +43,7 @@ UI状態はeffect-atom、サーバー状態はTanStack Queryだけで扱う。
 
 ## 自己改善
 
-セッションを始めたら、引数なしの `/loop` を起動する。内容は .claude/loop.md にある。
+ユーザーと対話するセッションを始めたら、テンプレート更新の確認を求められていればそれを済ませてから、引数なしの `/loop` を起動する。内容は .claude/loop.md にある。
 
 ## 検証
 
