@@ -24,6 +24,7 @@
     "@tanstack/eslint-plugin-query": "catalog:",
     "@tanstack/eslint-plugin-router": "catalog:",
     "@tanstack/eslint-plugin-start": "catalog:",
+    "@tanstack/intent": "catalog:",
     "@textlint-ja/textlint-rule-preset-ai-writing": "1.7.0",
     "@types/node": "catalog:",
     "@typescript-eslint/parser": "catalog:",

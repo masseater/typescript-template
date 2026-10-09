@@ -30,6 +30,7 @@ catalog:
   "@html-eslint/eslint-plugin-react": 0.66.1
   "@commitlint/cli": 21.2.3
   "@commitlint/config-conventional": 21.2.3
+  "@tanstack/intent": 0.5.5
 catalogs:
   stack:
     "@effect/atom-react": 4.0.0
