@@ -154,19 +154,6 @@ export default defineConfig({
         files: ["apps/web/src/pages/home/api/tracing.server.ts"],
         rules: {
           "import/no-nodejs-modules": ["error", { allow: ["node:async_hooks"] }],
-          "typescript/prefer-readonly-parameter-types": [
-            "error",
-            {
-              ignoreInferredTypes: true,
-              allow: [
-                {
-                  from: "package",
-                  package: "effect",
-                  name: ["Cause", "Context", "Effect", "Exit", "Option", "SpanLink"],
-                },
-              ],
-            },
-          ],
         },
       },
       {

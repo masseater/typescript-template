@@ -6,9 +6,6 @@ import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
 type RunInContext = ReturnType<typeof AsyncLocalStorage.snapshot>;
 type SpanOptions =
   Parameters<Tracer.Tracer["span"]> extends readonly [infer Options] ? Options : never;
-type ReadonlySpanOptions = Omit<SpanOptions, "links"> & {
-  readonly links: readonly Tracer.SpanLink[];
-};
 type CloudflareSpan = ReturnType<typeof tracing.startSpan>;
 
 const isAttributeValue = Predicate.or(
@@ -31,13 +28,13 @@ class MirroredSpan extends Tracer.NativeSpan {
   public readonly cloudflareSpan: Option.Option<CloudflareSpan>;
 
   public constructor(
-    options: ReadonlySpanOptions,
+    makeOptions: () => SpanOptions,
     runInContext: RunInContext,
     cloudflareSpan: Option.Option<CloudflareSpan>,
   ) {
+    const options = makeOptions();
     super({
       ...options,
-      links: [...options.links],
       sampled: options.sampled && Option.exists(cloudflareSpan, (span) => span.isTraced),
     });
     this.runInContext = runInContext;
@@ -78,13 +75,14 @@ const makeTracer = (): Tracer.Tracer => {
   return Tracer.make({
     span(options) {
       if (!options.sampled) {
-        return new MirroredSpan(options, invocationContext, Option.none());
+        return new MirroredSpan(() => options, invocationContext, Option.none());
       }
       const startIn = (parentContext: RunInContext): Tracer.Span =>
         parentContext(() =>
           tracing.startActiveSpan(
             options.name,
-            (span) => new MirroredSpan(options, AsyncLocalStorage.snapshot(), Option.some(span)),
+            (span) =>
+              new MirroredSpan(() => options, AsyncLocalStorage.snapshot(), Option.some(span)),
           ),
         );
       if (options.root) {
