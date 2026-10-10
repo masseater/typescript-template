@@ -6,8 +6,12 @@
 vp install
 cp .env.example .env
 cp apps/web/.env.example apps/web/.env
+vp exec --filter web alchemy profile edit --add Cloudflare
 vp run verify
 ```
+
+Cloudflare の認証情報は環境変数ではなく Alchemy のプロファイル（`~/.alchemy`）で管理する。
+デプロイと `.mcp.json` の Cloudflare MCP は、どちらもこのプロファイルの認証情報を使う。
 
 ## 環境変数
 
@@ -19,15 +23,11 @@ vp run verify
 
 `apps/web/.env` に書く。
 
-| 名前                          | 用途                                                        |
-| ----------------------------- | ----------------------------------------------------------- |
-| `CLOUDFLARE_ACCOUNT_ID`       | デプロイ先の Cloudflare アカウント                          |
-| `CLOUDFLARE_API_TOKEN`        | Cloudflare の認証                                           |
-| `CLOUDFLARE_API_KEY`          | `CLOUDFLARE_API_TOKEN` の代わりに Global API Key を使う場合 |
-| `CLOUDFLARE_EMAIL`            | `CLOUDFLARE_API_KEY` と組で使う                             |
-| `ALCHEMY_STAGE`               | Alchemy のステージ名（任意）                                |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry の送信先（任意）                              |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | OTLP の認証ヘッダー（任意）                                 |
+| 名前                          | 用途                           |
+| ----------------------------- | ------------------------------ |
+| `ALCHEMY_STAGE`               | Alchemy のステージ名（任意）   |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry の送信先（任意） |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | OTLP の認証ヘッダー（任意）    |
 
 ## GitHub の設定
 
