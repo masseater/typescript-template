@@ -151,7 +151,7 @@ export default defineConfig({
         rules: { "import/no-default-export": "off" },
       },
       {
-        files: ["apps/web/src/shared/telemetry/telemetry.server.ts"],
+        files: ["apps/web/src/pages/home/api/tracing.server.ts"],
         rules: {
           "import/no-nodejs-modules": ["error", { allow: ["node:async_hooks"] }],
           "typescript/prefer-readonly-parameter-types": [

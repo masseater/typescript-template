@@ -37,7 +37,7 @@ description: 仮説を白黒つける計測を実装や修正の前に決めて�
 ## 何を計るか
 
 サーバーの信号はEffectのAPIで出し、Cloudflare Workers Observabilityに集める。
-`Effect.withSpan` は `apps/web/src/shared/telemetry/telemetry.server.ts` がWorkersのトレースに写す。
+`Effect.withSpan` は `apps/web/src/pages/home/api/tracing.server.ts` がWorkersのトレースに写す。
 `Effect.log*` はWorkers Logsに入る。
 D1やfetchの呼び出しは、Cloudflareが自動でスパンにする。
 メトリクスは、Workersのリクエスト数・エラー数・CPU時間・所要時間を使う。

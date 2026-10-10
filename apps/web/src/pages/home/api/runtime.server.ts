@@ -2,7 +2,8 @@ import type { Effect } from "effect";
 import { ManagedRuntime } from "effect";
 
 import { featureFlagsLive } from "#/shared/flags/index.server";
-import { withCloudflareTracing } from "#/shared/telemetry/index.server";
+
+import { withCloudflareTracing } from "./tracing.server";
 
 const runtime = ManagedRuntime.make(featureFlagsLive);
 
