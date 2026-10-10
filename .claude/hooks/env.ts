@@ -150,21 +150,34 @@ const reportFailure = <Failure>(
     })}\n`,
   );
 
-const runHook = <Value, Failure>(
-  program: Effect.Effect<Value, Failure, Layer.Success<typeof hookLayer>>,
-): void => {
-  const reported = program.pipe(Effect.tapCause(reportFailure));
-  const main = Layer.build(hookLayer).pipe(
-    Effect.flatMap((context) => Effect.provideContext(reported, context)),
-    Effect.scoped,
-  );
-  NodeRuntime.runMain(main, {
-    disableErrorReporting: true,
-    teardown: (exit, onExit) => {
-      onExit(exitCodeOf(exit));
-    },
-  });
-};
+type HookServices = Layer.Success<typeof hookLayer>;
 
-export type { CommandResult, HookBlocked };
-export { blockWhen, localBin, projectDir, readHookInput, runCommand, runHook, writeJson };
+const runHookWith =
+  <Provided, LayerFailure>(layer: Layer.Layer<Provided, LayerFailure, HookServices>) =>
+  <Value, Failure>(program: Effect.Effect<Value, Failure, HookServices | Provided>): void => {
+    const reported = program.pipe(Effect.tapCause(reportFailure));
+    const main = Layer.build(Layer.provideMerge(layer, hookLayer)).pipe(
+      Effect.flatMap((context) => Effect.provideContext(reported, context)),
+      Effect.scoped,
+    );
+    NodeRuntime.runMain(main, {
+      disableErrorReporting: true,
+      teardown: (exit, onExit) => {
+        onExit(exitCodeOf(exit));
+      },
+    });
+  };
+
+const runHook = runHookWith(Layer.empty);
+
+export type { CommandResult, HookBlocked, HookServices };
+export {
+  blockWhen,
+  localBin,
+  projectDir,
+  readHookInput,
+  runCommand,
+  runHook,
+  runHookWith,
+  writeJson,
+};
