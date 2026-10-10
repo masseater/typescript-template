@@ -10,14 +10,7 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "allowedUnstableApis": [
-          "effect/http/FetchHttpClient#layer",
-          "effect/observability/Otlp#layerFromConfig",
-          "effect/observability/OtlpExporter#Flusher",
-          "effect/observability/OtlpExporter#layerFlusher",
-          "effect/observability/OtlpSerialization#layerJson",
-          "effect/reactivity/Atom"
-        ]
+        "allowedUnstableApis": ["effect/reactivity/Atom"]
       }
     ]
   }

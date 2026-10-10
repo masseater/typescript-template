@@ -5,7 +5,6 @@
 ```sh
 vp install
 cp .env.example .env
-cp apps/web/.env.example apps/web/.env
 vp exec --filter web alchemy profile edit --add Cloudflare
 vp run verify
 ```
@@ -20,13 +19,6 @@ Cloudflare の認証情報は環境変数ではなく Alchemy のプロファイ
 | 名前                 | 用途                              |
 | -------------------- | --------------------------------- |
 | `OPENROUTER_API_KEY` | jev-lint（`vp run verify`）の判定 |
-
-`apps/web/.env` に書く。
-
-| 名前                          | 用途                           |
-| ----------------------------- | ------------------------------ |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry の送信先（任意） |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | OTLP の認証ヘッダー（任意）    |
 
 ## GitHub の設定
 
