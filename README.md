@@ -25,7 +25,6 @@ Cloudflare の認証情報は環境変数ではなく Alchemy のプロファイ
 
 | 名前                          | 用途                           |
 | ----------------------------- | ------------------------------ |
-| `ALCHEMY_STAGE`               | Alchemy のステージ名（任意）   |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry の送信先（任意） |
 | `OTEL_EXPORTER_OTLP_HEADERS`  | OTLP の認証ヘッダー（任意）    |
 
