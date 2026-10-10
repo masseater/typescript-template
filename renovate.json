@@ -23,7 +23,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^package\\.json$/"],
+      "managerFilePatterns": ["/^vite\\.config\\.ts$/"],
       "matchStrings": ["uvx (?:--from )?(?<depName>[a-z0-9-]+)@(?<currentValue>[0-9.]+)"],
       "datasourceTemplate": "pypi"
     }
