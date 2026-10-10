@@ -106,7 +106,6 @@ export default defineConfig({
       "oxc/no-rest-spread-properties": "off",
       "node/no-top-level-await": "off",
       "eslint/one-var": ["error", "never"],
-      "import/no-nodejs-modules": ["error", { allow: ["node:async_hooks"] }],
       "eslint/no-restricted-imports": ["error", restrictedImports],
       "typescript/prefer-readonly-parameter-types": [
         "error",
@@ -124,7 +123,7 @@ export default defineConfig({
             {
               from: "package",
               package: "effect",
-              name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option", "SpanLink"],
+              name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option"],
             },
           ],
         },
@@ -150,6 +149,25 @@ export default defineConfig({
       {
         files: ["**/*.config.ts", "**/alchemy.run.ts"],
         rules: { "import/no-default-export": "off" },
+      },
+      {
+        files: ["apps/web/src/shared/telemetry/telemetry.server.ts"],
+        rules: {
+          "import/no-nodejs-modules": ["error", { allow: ["node:async_hooks"] }],
+          "typescript/prefer-readonly-parameter-types": [
+            "error",
+            {
+              ignoreInferredTypes: true,
+              allow: [
+                {
+                  from: "package",
+                  package: "effect",
+                  name: ["Cause", "Context", "Effect", "Exit", "Option", "SpanLink"],
+                },
+              ],
+            },
+          ],
+        },
       },
       {
         files: ["**/shared/ui/**"],
