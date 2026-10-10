@@ -98,7 +98,7 @@
               "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit.ts"
             ],
             "timeout": 300,
-            "statusMessage": "fallow と jev で変更を検査中"
+            "statusMessage": "fallow で変更を検査中"
           }
         ]
       },

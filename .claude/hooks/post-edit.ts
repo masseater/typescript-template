@@ -12,9 +12,6 @@ import {
 } from "./env.ts";
 import type { CommandResult } from "./env.ts";
 
-const WORKSPACE_SCOPES: ReadonlySet<string> = new Set(["apps", "libs", "infra", "tools"]);
-const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set([".ts", ".tsx"]);
-
 const PostToolUseInput = Schema.Struct({
   tool_input: Schema.Struct({ file_path: Schema.optional(Schema.String) }),
 });
@@ -26,22 +23,12 @@ const PostToolUseOutput = Schema.Struct({
   }),
 });
 
-const isWorkspace = (scope: string, name: string): boolean =>
-  WORKSPACE_SCOPES.has(scope) && name !== "";
-
-const isSourcePath = (segment: string, rest: readonly string[], extension: string): boolean =>
-  segment === "src" && !rest.includes("generated") && SOURCE_EXTENSIONS.has(extension);
-
 const locate = Effect.fn("locate")(function* locate(filePath: string) {
   const path = yield* Path.Path;
   const root = path.resolve(yield* projectDir);
-  const [scope = "", name = "", segment = "", ...rest] = path
-    .relative(root, filePath)
-    .split(path.sep);
-  const isAppSource =
-    isWorkspace(scope, name) && isSourcePath(segment, rest, path.extname(filePath));
+  const [scope = "", name = ""] = path.relative(root, filePath).split(path.sep);
   const candidates = [scope, path.join(scope, name)].filter((dir) => dir !== "");
-  return { candidates, isAppSource, root };
+  return { candidates, root };
 });
 
 const fallowTargets = Effect.fn("fallowTargets")(function* fallowTargets(
@@ -107,25 +94,12 @@ const reportDuplication = (
   });
 };
 
-const checkStatePolicy = Effect.fn("checkStatePolicy")(function* checkStatePolicy(
-  filePath: string,
-) {
-  const jevLint = yield* localBin("jev-lint");
-  const run = yield* runCommand(jevLint, ["check", filePath]);
-  yield* blockWhen({
-    reasons: [run].filter(({ succeeded }) => !succeeded).map(({ output }) => output),
-  });
-});
-
 runHook(
   Effect.gen(function* postEdit() {
     const input = yield* readHookInput(PostToolUseInput);
     const filePath = input.tool_input.file_path ?? "";
-    const { candidates, isAppSource, root } = yield* locate(filePath);
+    const { candidates, root } = yield* locate(filePath);
     const runs = yield* runFallow(root, candidates);
-    if (isAppSource) {
-      yield* checkStatePolicy(filePath);
-    }
     yield* reportDuplication(runs);
   }),
 );
