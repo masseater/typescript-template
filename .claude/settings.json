@@ -8,12 +8,6 @@
   },
   "enabledMcpjsonServers": ["fallow", "grafana"],
   "extraKnownMarketplaces": {
-    "typesafe-ai": {
-      "source": {
-        "source": "github",
-        "repo": "typesafe-ai/skills"
-      }
-    },
     "jev-lint": {
       "source": {
         "source": "github",
@@ -28,7 +22,6 @@
     }
   },
   "enabledPlugins": {
-    "typesafe@typesafe-ai": true,
     "jev-lint@jev-lint": true,
     "cc-jev-teacher@cc-jev-teacher": true
   },
