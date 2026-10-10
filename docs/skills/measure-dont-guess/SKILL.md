@@ -1,100 +1,64 @@
 ---
 name: measure-dont-guess
-description: 「推測するな、計測しろ」を実践する手順。仮説を立てたら、実装や修正に入る前に何を計れば白黒がつくかを決め、計る仕組みを作り、計って記録し、その結果だけで判断する。不具合の原因を調べるとき、性能や挙動を比べるとき、新しい機能を書き始めるとき、「たぶん」で判断しそうになったときに使う。
+description: 仮説を白黒つける計測を実装や修正の前に決めて実行し、その結果だけで判断する。不具合の原因を調べるとき、性能や挙動を比べるとき、新しい機能を書き始めるとき、「たぶん」で判断しそうになったときに使う。
 ---
 
 # 推測するな、計測しろ
 
-推測は仮説を作るためだけに使う。
-判断と変更は、計測した事実だけを根拠にする。
-
-## ほかのスキルとの分担
-
-不具合や失敗するテストの根本原因は、`systematic-debugging` スキルの手順で調べる。
-「直った」「通った」と報告する前の確認は、`verification-before-completion` スキルに従う。
-どちらも obra/superpowers のスキルで、`skills-lock.json` で入れている。
-
-このスキルは、その2つが扱わない部分を受け持つ。
-計る前に判定基準を決めること、機能開発や性能比較の前に計る仕組みを作ること、このリポジトリで何をどう計るかである。
+根本原因の調べ方は `.agents/skills/systematic-debugging/SKILL.md` に従う。
+完了と報告する前の確認は `.agents/skills/verification-before-completion/SKILL.md` に従う。
 
 ## どこで計るか
 
 判断の根拠にする計測は、本番環境で行う。
-本番で計れないときは、あらゆる手段で本番と同等であることを保証したステージング環境を作って計る。
-同等とは、コード、設定、インフラ、データの規模と形、外部サービスがどれも本番と同じであることを指す。
-手元やテスト環境で計った結果は、判断の根拠にしない。
-手元の計測は、計る仕組みが動くかを確かめるためだけに使う。
+本番で計れないときは、コード、設定、インフラ、データの規模と形、外部サービスを本番と同じにしたステージング環境を作って計る。
+手元やテスト環境の計測は、計る仕組みが動くかを確かめるためだけに使う。
 
 ## 手順
 
-1. 問いを1つに絞る。「なぜ一覧が空になるのか」「AとBのどちらが速いか」のように、答えが事実で決まる形にする。
-2. 仮説を書き出す。思いつく原因や結果をすべて挙げ、1つに決め打ちしない。
-3. 計る対象と判定基準を先に決める。仮説ごとに、何を計ればその仮説が正しいか間違いかが分かるかを書く。どの値なら採用し、どの値なら捨てるかも計る前に決める。
-4. 計る仕組みを作る。再現手段と観測点を用意し、結果が分かっている入力で一度動かして、仕組みが正しく計れることを確かめる。
-5. 計る。条件を固定し、変えるのは1つだけにする。時間や性能は複数回計り、ばらつきも見る。
-6. 記録する。条件、実行したコマンド、生の結果をそのまま残す。
-7. 判断する。仮説を採るか捨てるかは、手順3の基準に従う。予想と違う結果が出たら、仮説の方を疑う。
-8. 変えたあと、同じ仕組みで同じように計り、効果を確かめる。
+1. 答えが事実で決まる問いを1つ立てる。
+2. 考えられる仮説をすべて挙げる。
+3. 仮説ごとに、計る対象と、採用する値・捨てる値を計る前に書く。
+4. 再現手段と観測点を作り、結果が分かっている入力で正しく計れることを確かめる。
+5. 変える条件を1つにして計る。時間や性能は複数回計り、ばらつきも見る。
+6. 条件、コマンド、生の結果を残す。
+7. 手順3の基準で判断する。予想と違えば仮説を疑う。
+8. 変更後に同じ仕組みで計り直し、効果を確かめる。
 
-どの仮説も確定しないときは、計る対象を増やして手順3に戻る。
-計れない理由があるときは、推測で進めずに何が足りないかをユーザーに伝える。
+どの仮説も確定しなければ、計る対象を増やして手順3に戻る。
+計れないときは推測で進めず、何が足りないかをユーザーに伝える。
 
-## 機能開発の前に
+新しい機能は、受け入れ条件を確かめるテストかスクリプトを先に書き、失敗することを確かめてから実装する。
 
-新しい機能は、完成したことを計る仕組みと、動作を観測する点を先に作ってから書く。
-受け入れ条件を自動で確かめるテストかスクリプトを用意し、まだ失敗することを確かめる。
-そのうえで機能を書き、同じ仕組みが通ることで完成とする。
-
-## 記録の残し方
-
-計測していない主張は、推測であると明記する。
-変更の根拠になった計測は、条件とコマンドと結果をコミットメッセージに書く。
+計測していない主張は推測と明記する。
+変更の根拠にした計測は、条件とコマンドと結果をコミットメッセージに書く。
 都合の悪い結果を、計り方を変えて消さない。
 
-## 何をどう計るか
+## 何を計るか
 
-計る信号は、OpenTelemetryのMELT（Metrics、Events、Logs、Traces）から選ぶ。
-サーバーのコードはEffectで書き、どの信号もEffectのAPIで出す。
-`apps/web/src/shared/telemetry/telemetry.server.ts` の `telemetryLive` が、OTLPで外へ送る。
+サーバーの信号はEffectのAPIで出す。
+送信先の設定は `apps/web/src/shared/telemetry/telemetry.server.ts` にある。
 
-| 信号    | 答える問い                         | Effectでの出し方                                        |
-| ------- | ---------------------------------- | ------------------------------------------------------- |
-| Metrics | 何回起きたか、どれだけかかったか   | `Metric.counter`・`Metric.histogram` を `Metric.update` |
-| Events  | その時点で何が起きたか             | スパンの中で `Effect.logInfo` を出す                    |
-| Logs    | どの入力でどの分岐を通ったか       | `Effect.logInfo` と `Effect.annotateLogs`               |
-| Traces  | どこで時間を使い、どの順に呼んだか | `Effect.withSpan` と `Effect.annotateCurrentSpan`       |
+| 課題   | 出すもの                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------------------------- |
+| 不具合 | 入力と分岐を `Effect.annotateLogs` 付きの `Effect.logInfo` で出し、`Effect.withSpan` で経路を見て、テストで再現する |
+| 遅さ   | `Effect.withSpan` の所要時間を変更の前後で比べ、ロジック単体は `vp test bench` で比べる                             |
+| 新機能 | 受け入れテストに加え、成功と失敗の回数を `Metric.counter`、処理の区間を `Effect.withSpan` で出す                    |
 
-スパンの中で出したログは、そのスパンのイベントとしても記録される。
-ログには `trace_id` と `span_id` が付き、トレースとログを突き合わせられる。
-`console` はlintが落とすため、計測にはEffectのAPIを使う。
+テストは対象のコードの隣に置き、`vp test` で回す。
 
-課題ごとに、計る信号を次のように選ぶ。
-不具合なら、入力と分岐をログの属性に出し、トレースで通った経路を確かめ、失敗するテストで再現する。
-遅さなら、スパンの所要時間を変更の前後で比べ、ロジック単体は `vp test bench` で比べる。
-新しい機能なら、受け入れテストに加えて、成功と失敗の回数をメトリクスで、処理の区間をスパンで出す。
+## 計測結果を読む
 
-## 計測結果をAIが自分で読む
-
-ローカルでは、OTLPの受け口とGrafanaをまとめた `grafana/otel-lgtm` を立てる。
-これは計る仕組みを確かめるためのもので、判断に使う計測は本番かステージングの送信先で行う。
-
-```sh
-cd apps/web
-vp run otel
-```
-
-`apps/web/.env` に `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` を書いてから `vp run dev` を起動する。
-`apps/web/alchemy.run.ts` は、この値があると `OTEL_TRACES_EXPORTER` などを `otlp` にして渡す。
-Effectの `Otlp.layerFromConfig` はこれらがないと何も送らないため、アプリの外で計るときも同じ値を設定する。
-トレースは送ってから検索できるまで数十秒かかる。
-Grafanaはポート3000で、ユーザー名とパスワードはどちらも `admin` である。
-
-計測結果は、`.mcp.json` に登録した `grafana` MCPサーバー（mcp-grafana）で読む。
+以下の手元の環境は、計る仕組みが動くかを確かめるためのものである。
+判断に使う計測は、本番かステージングの送信先で行う。
+クラウド環境では、先に `dockerd` をバックグラウンドで起動する。
+`apps/web` で `vp run otel` を実行し、`apps/web/.env` に `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` を書いてから `vp run dev` を起動する。
+アプリの外で計るときも、同じ値を設定する。
+結果は `.mcp.json` の `grafana` MCPサーバーで読む。
 データソースのUIDは `prometheus`・`loki`・`tempo` である。
-メトリクスは `query_prometheus`、ログは `query_loki_logs` で読む。
-トレースは `search_tempo_traces` で探し、`get_tempo_trace` で中身を読む。
+トレースは送ってから検索できるまで数十秒かかる。
 
-MCPサーバーがつながっていないときは、GrafanaのHTTP APIで同じものを読む。
+MCPサーバーがつながらないときは、GrafanaのHTTP APIで読む。
 
 ```sh
 curl -s -u admin:admin -G localhost:3000/api/datasources/proxy/uid/prometheus/api/v1/query --data-urlencode 'query=todo_list_requests'
@@ -102,24 +66,13 @@ curl -s -u admin:admin -G localhost:3000/api/datasources/proxy/uid/loki/loki/api
 curl -s 'localhost:3200/api/search?tags=service.name%3Dweb'
 ```
 
-Claude Codeのクラウド環境ではDockerデーモンが止まっているため、先に `dockerd` をバックグラウンドで起動する。
-
+Effectのログとブラウザのconsoleは、`vp run dev` のターミナルにも出る。
 デプロイしたWorkerのログは `vp exec alchemy logs --tail` で読む。
-CloudflareのWorkers Observabilityには、公式のリモートMCPサーバー（`https://observability.mcp.cloudflare.com/sse`）がある。
-これをつなぐと、AIが本番のログを直接問い合わせられる。
+本番のログは、`.mcp.json` の `cloudflare-api` MCPサーバーでWorkers Observabilityに問い合わせる。
 
-## そのほかの計り方
+## ブラウザ
 
-再現とロジックの検証には、Vitestのテストを `vp test` で使う。
-テストは対象のコードの隣に置く。
-速さの比較には `vp test bench` でVitestのベンチマークを使う。
+`vp dlx @playwright/cli` で操作し、`console`・`requests`・`snapshot` で観測する。
+クラウド環境では、`.playwright/cli.config.json` の `launchOptions.executablePath` に `/opt/pw-browsers` のChromiumを書く。
 
-Effectのログは、`apps/web` の `vp run dev`（`alchemy dev`）のターミナルにも出る。
-
-ブラウザは `vp dlx @playwright/cli` で操作し、`console`・`requests`・`snapshot` で観測する。
-`@tanstack/devtools-vite` は、ブラウザのconsoleを開発サーバーのターミナルへ転送する。
-Claude Codeのクラウド環境にはChromeがない。
-`.playwright/cli.config.json` の `launchOptions.executablePath` で、`/opt/pw-browsers` のChromiumを指す。
-
-`alchemy dev` にはCloudflareの認証情報が要り、ない場合は `CredentialsUnavailable` で止まる。
-このときはテストとログで計れる範囲を進め、画面を計れていないことをユーザーに伝える。
+`alchemy dev` が `CredentialsUnavailable` で止まったら、テストとログで計れる範囲を進め、画面を計れていないことをユーザーに伝える。
