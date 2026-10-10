@@ -4,6 +4,25 @@
       "type": "stdio",
       "command": "vp",
       "args": ["exec", "fallow-mcp"]
+    },
+    "grafana": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--add-host=host.docker.internal:host-gateway",
+        "-e",
+        "GRAFANA_URL=http://host.docker.internal:3000",
+        "-e",
+        "GRAFANA_USERNAME=admin",
+        "-e",
+        "GRAFANA_PASSWORD=admin",
+        "grafana/mcp-grafana:2.0.1",
+        "-t",
+        "stdio"
+      ]
     }
   }
 }

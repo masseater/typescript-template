@@ -16,6 +16,7 @@
     "fallow": "fallow --production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
     "db:check": "drizzle-kit check && drizzle-kit generate --explain --output json | grep -q '\"status\":\"no_changes\"'",
     "deploy": "alchemy deploy",
+    "otel": "docker run --rm -d --name otel-lgtm -p 3000:3000 -p 3200:3200 -p 4317:4317 -p 4318:4318 grafana/otel-lgtm:0.36.0",
     "destroy": "alchemy destroy"
   },
   "dependencies": {
