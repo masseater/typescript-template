@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "alchemy dev",
     "typecheck": "tsc --noEmit",
+    "test": "vp test run --passWithNoTests",
     "steiger": "steiger ./src",
     "db:generate": "drizzle-kit generate",
     "prepare": "effect-tsgo patch --typescript --oxlint",

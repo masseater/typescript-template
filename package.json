@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "verify": "vp check && eslint --max-warnings 0 . && syncpack lint && vp run textlint && vp run yomiyasu && vp run renovate && vp run actions-lint && vp run -r steiger && vp run -r db:check && vp run -r fallow",
+    "verify": "vp check && vp run -r test && eslint --max-warnings 0 . && syncpack lint && vp run textlint && vp run yomiyasu && vp run renovate && vp run actions-lint && vp run -r steiger && vp run -r db:check && vp run -r fallow",
     "textlint": "textlint \"**/*.md\"",
     "yomiyasu": "node -e \"const { execFileSync, spawnSync } = require('node:child_process'); const { path } = JSON.parse(execFileSync('skills', ['ls', '--json'])).find(({ name }) => name === 'yomiyasu'); const statuses = JSON.parse(spawnSync('textlint', ['--format', 'json', '**/*.md']).stdout).map(({ filePath }) => spawnSync('python3', [require('node:path').join(path, 'scripts', 'yomiyasu_lint.py'), '--strict', filePath], { stdio: 'inherit' }).status); process.exitCode = statuses.every((status) => status === 0) ? 0 : 1\"",
     "renovate": "renovate-config-validator --strict",
