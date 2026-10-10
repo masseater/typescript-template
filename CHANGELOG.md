@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.3](https://github.com/masseater/typescript-template/compare/v0.0.2...v0.0.3) (2026-10-10)
+
+
+### Features
+
+* authenticate the Cloudflare MCP server through the Alchemy profile ([#92](https://github.com/masseater/typescript-template/issues/92)) ([9998036](https://github.com/masseater/typescript-template/commit/999803647bcec89f5653fb7c4da700bc9fc6dced))
+* **web:** measure MELT on Cloudflare Workers Observability only ([#96](https://github.com/masseater/typescript-template/issues/96)) ([dcfa190](https://github.com/masseater/typescript-template/commit/dcfa19080506d2bb9fbcb5151165a4a56a40f56d))
+
 ## [0.0.2](https://github.com/masseater/typescript-template/compare/v0.0.1...v0.0.2) (2026-10-10)
 
 
