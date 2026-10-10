@@ -10,7 +10,7 @@ import {
   runHook,
   writeJson,
 } from "./env.ts";
-import type { CommandResult } from "./env.ts";
+import type { CommandResult } from "./platform.ts";
 
 const PostToolUseInput = Schema.Struct({
   tool_input: Schema.Struct({ file_path: Schema.optional(Schema.String) }),
