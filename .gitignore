@@ -41,3 +41,7 @@ dist-ssr
 .alchemy
 .fallow
 .jev-lint/baseline.json
+
+# Playwright CLI
+.playwright/
+.playwright-cli/

@@ -50,6 +50,11 @@
       "skillPath": "feature-sliced-design/SKILL.md",
       "computedHash": "98d09ea1a9acac34fc5720c610c4ee7c7780dd30b2f287d733961f8e7e9d980b"
     },
+    "measure-dont-guess": {
+      "source": "./docs/skills/measure-dont-guess",
+      "sourceType": "local",
+      "computedHash": "2d185e371c47c3fcb759f8c9c8a5fd314e2285eda871c16384dfc3a082f498dc"
+    },
     "modern-web-guidance": {
       "source": "GoogleChrome/modern-web-guidance",
       "ref": "a97286845f2baba38988f9e5fe2b2a1351021e50",
