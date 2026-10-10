@@ -4,7 +4,6 @@
   "typeAware": { "enabled": true, "require": "complete" },
   "failOnParseError": true,
   "ignorePatterns": [".claude/**"],
-  "ignoreExports": [{ "file": "**/__mocks__/**", "exports": ["*"] }],
   "audit": { "gate": "all" },
   "security": {
     "categories": {
