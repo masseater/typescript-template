@@ -165,6 +165,20 @@ export default defineConfig({
   run: {
     cache: true,
     tasks: {
+      "actions-lint": {
+        command:
+          "uvx --from actionlint-py@1.7.12.25 actionlint && uvx zizmor@1.30.1 .github && ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows",
+        cache: {
+          untrackedEnv: [
+            "GH_TOKEN",
+            "HTTPS_PROXY",
+            "https_proxy",
+            "NO_PROXY",
+            "no_proxy",
+            "SSL_CERT_FILE",
+          ],
+        },
+      },
       "jev-lint": {
         command: "jev-lint check",
         cache: {
