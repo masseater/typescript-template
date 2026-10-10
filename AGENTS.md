@@ -38,9 +38,10 @@ release. Add a tool name to select part of the graph. For example, run
 
 <!--VITE PLUS END-->
 
-## 設定と認証
+## 環境変数と認証
 
-- 設定や認証情報を環境変数で管理しない。Cloudflare などのクラウドの認証は Alchemy のプロファイルで管理する。
+- 環境変数は、設定や認証に限らず、本当に環境ごとに変わる値だけにする。環境で変わらない値はコードや Alchemy の設定に書く。
+- Cloudflare などのクラウドの認証は Alchemy のプロファイルで管理する。
 
 ## レビューとCI
 
