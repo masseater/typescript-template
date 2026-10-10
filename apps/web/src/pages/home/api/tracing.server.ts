@@ -53,6 +53,11 @@ class MirroredSpan extends Tracer.NativeSpan {
     super.end(endTime, exit);
     if (Option.isSome(this.cloudflareSpan)) {
       this.cloudflareSpan.value.setAttribute("effect.exit", exitLabel(exit));
+      if (Exit.isFailure(exit) && !Cause.hasInterruptsOnly(exit.cause)) {
+        const message = Cause.pretty(exit.cause);
+        this.cloudflareSpan.value.recordException({ message });
+        this.cloudflareSpan.value.setStatus({ code: "error", message });
+      }
       this.cloudflareSpan.value.end();
     }
   }

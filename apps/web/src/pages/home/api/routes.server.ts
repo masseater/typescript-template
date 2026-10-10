@@ -11,6 +11,9 @@ const listTodos = Effect.gen(function* listTodos() {
   const flags = yield* FeatureFlags;
   const includeDone = yield* flags.getBoolean("show-done-todos", true);
   const rows = yield* Effect.promise(() => db.select().from(todo));
+  yield* Effect.logInfo("todos listed").pipe(
+    Effect.annotateLogs({ includeDone, total: rows.length }),
+  );
   if (includeDone) {
     return rows;
   }

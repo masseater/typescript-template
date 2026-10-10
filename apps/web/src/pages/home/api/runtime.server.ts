@@ -1,11 +1,13 @@
 import type { Effect } from "effect";
-import { ManagedRuntime } from "effect";
+import { Layer, Logger, ManagedRuntime } from "effect";
 
 import { featureFlagsLive } from "#/shared/flags/index.server";
 
 import { withCloudflareTracing } from "./tracing.server";
 
-const runtime = ManagedRuntime.make(featureFlagsLive);
+const loggerLive = Logger.layer([Logger.withLeveledConsole(Logger.formatStructured)]);
+
+const runtime = ManagedRuntime.make(Layer.mergeAll(featureFlagsLive, loggerLive));
 
 type Services = ManagedRuntime.ManagedRuntime.Services<typeof runtime>;
 
