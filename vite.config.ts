@@ -83,7 +83,7 @@ export default defineConfig({
     ],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
-      "no-comments/disallowComments": "error",
+      "no-comments/disallowComments": ["error", { allow: ["oxlint-disable", "eslint-disable"] }],
       ...allRulesOf("tanstack-query", tanstackQuery),
       ...allRulesOf("tanstack-router", tanstackRouter),
       "drizzle/enforce-delete-with-where": "error",
@@ -149,12 +149,6 @@ export default defineConfig({
       {
         files: ["**/*.config.ts", "**/alchemy.run.ts"],
         rules: { "import/no-default-export": "off" },
-      },
-      {
-        files: ["apps/web/src/pages/home/api/tracing.server.ts"],
-        rules: {
-          "import/no-nodejs-modules": ["error", { allow: ["node:async_hooks"] }],
-        },
       },
       {
         files: ["**/shared/ui/**"],

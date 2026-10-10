@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-nodejs-modules
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import { tracing } from "cloudflare:workers";
