@@ -41,17 +41,69 @@ description: 「推測するな、計測しろ」を実践する手順。仮説�
 都合の悪い結果を、計り方を変えて消さない。
 複数の条件を同時に変えて計らない。
 
-## このリポジトリでの計り方
+## 何をどう計るか
+
+計る信号は、OpenTelemetryのMELT（Metrics、Events、Logs、Traces）から選ぶ。
+サーバーのコードはEffectで書き、どの信号もEffectのAPIで出す。
+`apps/web/src/shared/telemetry/telemetry.server.ts` の `telemetryLive` が、OTLPで外へ送る。
+
+| 信号    | 答える問い                         | Effectでの出し方                                        |
+| ------- | ---------------------------------- | ------------------------------------------------------- |
+| Metrics | 何回起きたか、どれだけかかったか   | `Metric.counter`・`Metric.histogram` を `Metric.update` |
+| Events  | その時点で何が起きたか             | スパンの中で `Effect.logInfo` を出す                    |
+| Logs    | どの入力でどの分岐を通ったか       | `Effect.logInfo` と `Effect.annotateLogs`               |
+| Traces  | どこで時間を使い、どの順に呼んだか | `Effect.withSpan` と `Effect.annotateCurrentSpan`       |
+
+スパンの中で出したログは、そのスパンのイベントとしても記録される。
+ログには `trace_id` と `span_id` が付き、トレースとログを突き合わせられる。
+`console` はlintが落とすため、計測にはEffectのAPIを使う。
+
+課題ごとに、計る信号を次のように選ぶ。
+不具合なら、入力と分岐をログの属性に出し、トレースで通った経路を確かめ、失敗するテストで再現する。
+遅さなら、スパンの所要時間を変更の前後で比べ、ロジック単体は `vp test bench` で比べる。
+新しい機能なら、受け入れテストに加えて、成功と失敗の回数をメトリクスで、処理の区間をスパンで出す。
+
+## 計測結果をAIが自分で読む
+
+ローカルでは、OTLPの受け口とGrafanaをまとめた `grafana/otel-lgtm` を立てる。
+
+```sh
+cd apps/web
+vp run otel
+```
+
+`apps/web/.env` に `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` を書いてから `vp run dev` を起動する。
+`apps/web/alchemy.run.ts` は、この値があると `OTEL_TRACES_EXPORTER` などを `otlp` にして渡す。
+Effectの `Otlp.layerFromConfig` はこれらがないと何も送らないため、アプリの外で計るときも同じ値を設定する。
+トレースは送ってから検索できるまで数十秒かかる。
+Grafanaはポート3000で、ユーザー名とパスワードはどちらも `admin` である。
+
+計測結果は、`.mcp.json` に登録した `grafana` MCPサーバー（mcp-grafana）で読む。
+データソースのUIDは `prometheus`・`loki`・`tempo` である。
+メトリクスは `query_prometheus`、ログは `query_loki_logs` で読む。
+トレースは `search_tempo_traces` で探し、`get_tempo_trace` で中身を読む。
+
+MCPサーバーがつながっていないときは、GrafanaのHTTP APIで同じものを読む。
+
+```sh
+curl -s -u admin:admin -G localhost:3000/api/datasources/proxy/uid/prometheus/api/v1/query --data-urlencode 'query=todo_list_requests'
+curl -s -u admin:admin -G localhost:3000/api/datasources/proxy/uid/loki/loki/api/v1/query_range --data-urlencode 'query={service_name="web"}'
+curl -s 'localhost:3200/api/search?tags=service.name%3Dweb'
+```
+
+Claude Codeのクラウド環境ではDockerデーモンが止まっているため、先に `dockerd` をバックグラウンドで起動する。
+
+デプロイしたWorkerのログは `vp exec alchemy logs --tail` で読む。
+CloudflareのWorkers Observabilityには、公式のリモートMCPサーバー（`https://observability.mcp.cloudflare.com/sse`）がある。
+これをつなぐと、AIが本番のログを直接問い合わせられる。
+
+## そのほかの計り方
 
 再現とロジックの検証には、Vitestのテストを `vp test` で使う。
 テストは対象のコードの隣に置く。
 速さの比較には `vp test bench` でVitestのベンチマークを使う。
 
-サーバーの観測点は、Effectの `Effect.log`・`Effect.annotateLogs`・`Effect.withSpan` で置く。
-`console` はlintが落とす。
-`apps/web` の `vp run dev`（`alchemy dev`）のターミナルでログを読む。
-`OTEL_EXPORTER_OTLP_ENDPOINT` を設定すると、トレースとログがOTLPで送られる。
-デプロイ後のログは `vp exec alchemy logs --tail` で読む。
+Effectのログは、`apps/web` の `vp run dev`（`alchemy dev`）のターミナルにも出る。
 
 ブラウザは `vp dlx @playwright/cli` で操作し、`console`・`requests`・`snapshot` で観測する。
 `@tanstack/devtools-vite` は、ブラウザのconsoleを開発サーバーのターミナルへ転送する。
