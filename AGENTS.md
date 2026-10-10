@@ -51,6 +51,7 @@ release. Add a tool name to select part of the graph. For example, run
 - CIはmainへのpushで必ず走らせる。ワークフローは `.github/workflows/verify.yml` である。
 - デプロイやリリースのジョブは、同じワークフローで `needs: verify` を指定し、mainの必須CIが通ってから実行する。
 - マージ前の確認は手元の `vp run verify` で行う。
+- PRごとの動作検証やデプロイはしない。動作の確認は、mainにマージしてデプロイされた本番で実測して行う。
 
 ## 計測
 
