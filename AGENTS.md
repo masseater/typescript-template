@@ -38,6 +38,10 @@ release. Add a tool name to select part of the graph. For example, run
 
 <!--VITE PLUS END-->
 
+## 設定と認証
+
+- 設定や認証情報を環境変数で管理しない。Cloudflare などのクラウドの認証は Alchemy のプロファイルで管理する。
+
 ## レビューとCI
 
 - PRのレビューは行わない。PRは作ったらすぐマージする。

@@ -123,7 +123,7 @@ export default defineConfig({
             {
               from: "package",
               package: "effect",
-              name: ["Cause", "Context", "Effect", "Exit", "Option"],
+              name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option"],
             },
           ],
         },
@@ -136,7 +136,7 @@ export default defineConfig({
       "eslint/new-cap": [
         "error",
         {
-          capIsNewExceptions: ["Stack"],
+          capIsNewExceptions: ["CloudflareApiLive", "Stack"],
           capIsNewExceptionPattern: "^(Config|Context|Data|Schema|D1|Website)\\.",
         },
       ],
