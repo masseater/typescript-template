@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.4](https://github.com/masseater/typescript-template/compare/v0.0.3...v0.0.4) (2026-10-10)
+
+
+### Features
+
+* verify でテストを実行し、__mocks__ のエクスポートを fallow から外す ([b82e768](https://github.com/masseater/typescript-template/commit/b82e768e18f7147f2bd9f8747550ad84980a2056))
+* verify でテストを実行し、__mocks__ のエクスポートを fallow から外す ([ccf17b2](https://github.com/masseater/typescript-template/commit/ccf17b2a9b3d1784e212ff0c29359786f71691ad))
+* **web:** add a Cloudflare-aware Effect logger ([#107](https://github.com/masseater/typescript-template/issues/107)) ([be7a28d](https://github.com/masseater/typescript-template/commit/be7a28dc32a10d8db6c214f8ac005d3deffe3d0a))
+
 ## [0.0.3](https://github.com/masseater/typescript-template/compare/v0.0.2...v0.0.3) (2026-10-10)
 
 
