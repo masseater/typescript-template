@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2](https://github.com/masseater/typescript-template/compare/v0.0.1...v0.0.2) (2026-10-10)
+
+
+### Features
+
+* connect the Cloudflare API MCP server ([#89](https://github.com/masseater/typescript-template/issues/89)) ([10ae6e1](https://github.com/masseater/typescript-template/commit/10ae6e185a149cc05935531ac011740b763172bc))
+* let the AI read OpenTelemetry MELT data through mcp-grafana ([#84](https://github.com/masseater/typescript-template/issues/84)) ([9f45666](https://github.com/masseater/typescript-template/commit/9f45666e2f3f90f9070936ff78084f307a15c334))
+
 ## 0.0.1 (2026-10-04)
 
 
