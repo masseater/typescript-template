@@ -2,7 +2,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import { tracing } from "cloudflare:workers";
-import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
+import { Cause, Effect, Exit, Logger, Option, Predicate, Tracer } from "effect";
 
 type RunInContext = ReturnType<typeof AsyncLocalStorage.snapshot>;
 type SpanOptions =
@@ -103,8 +103,38 @@ const makeTracer = (): Tracer.Tracer => {
   });
 };
 
+const spanFields = (span: Option.Option<Tracer.AnySpan>): Record<string, unknown> => {
+  if (Option.isNone(span) || !Predicate.isTagged(span.value, "Span")) {
+    return {};
+  }
+  if (span.value instanceof MirroredSpan) {
+    return {
+      span: span.value.name,
+      traced: Option.exists(span.value.cloudflareSpan, (cloudflareSpan) => cloudflareSpan.isTraced),
+    };
+  }
+  return { span: span.value.name };
+};
+
+const leveledLogger = Logger.withLeveledConsole(
+  Logger.make((options) => ({
+    ...Logger.formatStructured.log(options),
+    ...spanFields(Option.fromUndefinedOr(options.fiber.cache.span)),
+  })),
+);
+
+const cloudflareLogger = Logger.make((options) => {
+  const run = contextFor(
+    Option.fromUndefinedOr(options.fiber.cache.span),
+    AsyncLocalStorage.snapshot(),
+  );
+  run(() => {
+    leveledLogger.log(options);
+  });
+});
+
 const withCloudflareTracing = <Success, Failure, Requirements>(
   effect: Effect.Effect<Success, Failure, Requirements>,
 ): Effect.Effect<Success, Failure, Requirements> => Effect.withTracer(effect, makeTracer());
 
-export { withCloudflareTracing };
+export { cloudflareLogger, withCloudflareTracing };
