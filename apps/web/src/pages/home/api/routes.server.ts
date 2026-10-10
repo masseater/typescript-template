@@ -20,11 +20,7 @@ const listTodos = Effect.gen(function* listTodos() {
   return rows.filter((row) => row.status === "open");
 }).pipe(Effect.withSpan("todo.list"));
 
-const failProbe = Effect.die(new Error("telemetry probe")).pipe(Effect.withSpan("todo.fail"));
-
-const todoRoutes = createRouter("/api/todos")
-  .get("/", () => runRequest(listTodos))
-  .get("/fail", () => runRequest(failProbe));
+const todoRoutes = createRouter("/api/todos").get("/", () => runRequest(listTodos));
 
 type TodoRoutes = typeof todoRoutes;
 
