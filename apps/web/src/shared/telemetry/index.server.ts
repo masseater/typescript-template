@@ -1,1 +1,1 @@
-export { telemetryLive } from "./telemetry.server";
+export { withCloudflareTracing } from "./telemetry.server";

@@ -36,39 +36,34 @@ description: 仮説を白黒つける計測を実装や修正の前に決めて�
 
 ## 何を計るか
 
-サーバーの信号はEffectのAPIで出す。
-送信先の設定は `apps/web/src/shared/telemetry/telemetry.server.ts` にある。
+サーバーの信号はEffectのAPIで出し、Cloudflare Workers Observabilityに集める。
+`Effect.withSpan` は `apps/web/src/shared/telemetry/telemetry.server.ts` がWorkersのトレースに写す。
+`Effect.log*` はWorkers Logsに入る。
+D1やfetchの呼び出しは、Cloudflareが自動でスパンにする。
+メトリクスは、Workersのリクエスト数・エラー数・CPU時間・所要時間を使う。
+観測の設定とサンプリング率は `apps/web/alchemy.run.ts` の `observability` にある。
 
 | 課題   | 出すもの                                                                                                            |
 | ------ | ------------------------------------------------------------------------------------------------------------------- |
 | 不具合 | 入力と分岐を `Effect.annotateLogs` 付きの `Effect.logInfo` で出し、`Effect.withSpan` で経路を見て、テストで再現する |
 | 遅さ   | `Effect.withSpan` の所要時間を変更の前後で比べ、ロジック単体は `vp test bench` で比べる                             |
-| 新機能 | 受け入れテストに加え、成功と失敗の回数を `Metric.counter`、処理の区間を `Effect.withSpan` で出す                    |
+| 新機能 | 受け入れテストに加え、成功と失敗を `Effect.annotateLogs` 付きのログで出し、Workers Logsで件数を集計する             |
 
 テストは対象のコードの隣に置き、`vp test` で回す。
 
 ## 計測結果を読む
 
-以下の手元の環境は、計る仕組みが動くかを確かめるためのものである。
-判断に使う計測は、本番かステージングの送信先で行う。
-クラウド環境では、先に `dockerd` をバックグラウンドで起動する。
-`apps/web` で `vp run otel` を実行し、`apps/web/.env` に `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` を書いてから `vp run dev` を起動する。
-アプリの外で計るときも、同じ値を設定する。
-結果は `.mcp.json` の `grafana` MCPサーバーで読む。
-データソースのUIDは `prometheus`・`loki`・`tempo` である。
-トレースは送ってから検索できるまで数十秒かかる。
+ログとトレースは、リクエストの一部だけを標本として残す。
+計測のあいだだけサンプリング率を上げ、終わったら戻す。
+判断には、標本の件数が足りているかも添える。
 
-MCPサーバーがつながらないときは、GrafanaのHTTP APIで読む。
-
-```sh
-curl -s -u admin:admin -G localhost:3000/api/datasources/proxy/uid/prometheus/api/v1/query --data-urlencode 'query=todo_list_requests'
-curl -s -u admin:admin -G localhost:3000/api/datasources/proxy/uid/loki/loki/api/v1/query_range --data-urlencode 'query={service_name="web"}'
-curl -s 'localhost:3200/api/search?tags=service.name%3Dweb'
-```
+本番のログ・トレース・メトリクスは、`.mcp.json` の `cloudflare-observability` MCPサーバーで問い合わせる。
+ほかのCloudflareのAPIは `cloudflare-api` MCPサーバーで呼ぶ。
+どちらもAlchemyのプロファイルの認証情報を使う。
+デプロイしたWorkerのログを流して見るときは、`apps/web` で `vp exec alchemy logs --tail` を使う。
 
 Effectのログとブラウザのconsoleは、`vp run dev` のターミナルにも出る。
-デプロイしたWorkerのログは `vp exec alchemy logs --tail` で読む。
-本番のログは、`.mcp.json` の `cloudflare-api` MCPサーバーでWorkers Observabilityに問い合わせる。
+手元の出力は、計る仕組みが動くかを確かめるためだけに使う。
 
 ## ブラウザ
 

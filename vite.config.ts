@@ -106,6 +106,7 @@ export default defineConfig({
       "oxc/no-rest-spread-properties": "off",
       "node/no-top-level-await": "off",
       "eslint/one-var": ["error", "never"],
+      "import/no-nodejs-modules": ["error", { allow: ["node:async_hooks"] }],
       "eslint/no-restricted-imports": ["error", restrictedImports],
       "typescript/prefer-readonly-parameter-types": [
         "error",
@@ -123,7 +124,7 @@ export default defineConfig({
             {
               from: "package",
               package: "effect",
-              name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option"],
+              name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option", "SpanLink"],
             },
           ],
         },

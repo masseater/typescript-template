@@ -1,9 +1,106 @@
-import { Layer } from "effect";
-import { FetchHttpClient } from "effect/http";
-import { Otlp, OtlpSerialization } from "effect/observability";
+import { AsyncLocalStorage } from "node:async_hooks";
 
-const telemetryLive = Otlp.layerFromConfig({ resource: { serviceName: "web" } }).pipe(
-  Layer.provide([FetchHttpClient.layer, OtlpSerialization.layerJson]),
+import { tracing } from "cloudflare:workers";
+import { Cause, Effect, Exit, Option, Predicate, Tracer } from "effect";
+
+type RunInContext = ReturnType<typeof AsyncLocalStorage.snapshot>;
+type SpanOptions =
+  Parameters<Tracer.Tracer["span"]> extends readonly [infer Options] ? Options : never;
+type ReadonlySpanOptions = Omit<SpanOptions, "links"> & {
+  readonly links: readonly Tracer.SpanLink[];
+};
+type CloudflareSpan = ReturnType<typeof tracing.startSpan>;
+
+const isAttributeValue = Predicate.or(
+  Predicate.or(Predicate.isString, Predicate.isNumber),
+  Predicate.isBoolean,
 );
 
-export { telemetryLive };
+const exitLabel = (exit: Exit.Exit<unknown, unknown>): string => {
+  if (Exit.isSuccess(exit)) {
+    return "success";
+  }
+  if (Cause.hasInterruptsOnly(exit.cause)) {
+    return "interrupted";
+  }
+  return "failure";
+};
+
+class MirroredSpan extends Tracer.NativeSpan {
+  public readonly runInContext: RunInContext;
+  public readonly cloudflareSpan: Option.Option<CloudflareSpan>;
+
+  public constructor(
+    options: ReadonlySpanOptions,
+    runInContext: RunInContext,
+    cloudflareSpan: Option.Option<CloudflareSpan>,
+  ) {
+    super({
+      ...options,
+      links: [...options.links],
+      sampled: options.sampled && Option.exists(cloudflareSpan, (span) => span.isTraced),
+    });
+    this.runInContext = runInContext;
+    this.cloudflareSpan = cloudflareSpan;
+  }
+
+  public override attribute(key: string, value: unknown): void {
+    super.attribute(key, value);
+    if (isAttributeValue(value) && Option.isSome(this.cloudflareSpan)) {
+      this.cloudflareSpan.value.setAttribute(key, value);
+    }
+  }
+
+  public override end(endTime: bigint, exit: Exit.Exit<unknown, unknown>): void {
+    super.end(endTime, exit);
+    if (Option.isSome(this.cloudflareSpan)) {
+      this.cloudflareSpan.value.setAttribute("effect.exit", exitLabel(exit));
+      this.cloudflareSpan.value.end();
+    }
+  }
+}
+
+const contextFor = (span: Option.Option<Tracer.AnySpan>, fallback: RunInContext): RunInContext => {
+  if (Option.isNone(span)) {
+    return fallback;
+  }
+  if (span.value instanceof MirroredSpan) {
+    return span.value.runInContext;
+  }
+  if (Predicate.isTagged(span.value, "Span")) {
+    return contextFor(span.value.parent, fallback);
+  }
+  return fallback;
+};
+
+const makeTracer = (): Tracer.Tracer => {
+  const invocationContext = AsyncLocalStorage.snapshot();
+  return Tracer.make({
+    span(options) {
+      if (!options.sampled) {
+        return new MirroredSpan(options, invocationContext, Option.none());
+      }
+      const startIn = (parentContext: RunInContext): Tracer.Span =>
+        parentContext(() =>
+          tracing.startActiveSpan(
+            options.name,
+            (span) => new MirroredSpan(options, AsyncLocalStorage.snapshot(), Option.some(span)),
+          ),
+        );
+      if (options.root) {
+        return startIn(invocationContext);
+      }
+      return startIn(contextFor(options.parent, invocationContext));
+    },
+    context(primitive, fiber) {
+      const run = contextFor(Option.fromUndefinedOr(fiber.cache.span), invocationContext);
+      return run(() => primitive["~effect/Effect/evaluate"](fiber));
+    },
+  });
+};
+
+const withCloudflareTracing = <Success, Failure, Requirements>(
+  effect: Effect.Effect<Success, Failure, Requirements>,
+): Effect.Effect<Success, Failure, Requirements> => Effect.withTracer(effect, makeTracer());
+
+export { withCloudflareTracing };

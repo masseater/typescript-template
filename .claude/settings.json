@@ -6,7 +6,7 @@
   "permissions": {
     "deny": ["Bash(pnpm *)", "Bash(pnpx *)", "Bash(pn *)", "Bash(pnx *)"]
   },
-  "enabledMcpjsonServers": ["fallow", "grafana"],
+  "enabledMcpjsonServers": ["fallow"],
   "extraKnownMarketplaces": {
     "jev-lint": {
       "source": {

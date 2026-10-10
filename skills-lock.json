@@ -53,7 +53,7 @@
     "measure-dont-guess": {
       "source": "./docs/skills/measure-dont-guess",
       "sourceType": "local",
-      "computedHash": "826050b198c4abd656914510ba072d61050610fdb43bdd79b3c07eb732a07082"
+      "computedHash": "3a93149fb4a93572c723c944497e691da3964455b0d6223149f5cc9b69041fa5"
     },
     "modern-web-guidance": {
       "source": "GoogleChrome/modern-web-guidance",
