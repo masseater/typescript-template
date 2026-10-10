@@ -3,7 +3,7 @@ import { D1, Website, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-const SAMPLING_RATE = 0.1;
+const TRACE_SAMPLING_RATE = 0.1;
 
 const web = Effect.gen(function* web() {
   const DB = yield* D1.Database("DB", { migrations: "./drizzle" });
@@ -16,10 +16,9 @@ const web = Effect.gen(function* web() {
       logs: {
         enabled: true,
         invocationLogs: true,
-        headSamplingRate: SAMPLING_RATE,
         persist: true,
       },
-      traces: { enabled: true, headSamplingRate: SAMPLING_RATE, persist: true },
+      traces: { enabled: true, headSamplingRate: TRACE_SAMPLING_RATE, persist: true },
     },
     viteEnvironments: { entry: "ssr", children: ["rsc"] },
   });
