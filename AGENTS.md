@@ -45,3 +45,9 @@ release. Add a tool name to select part of the graph. For example, run
 - CIはmainへのpushで必ず走らせる。ワークフローは `.github/workflows/verify.yml` である。
 - デプロイやリリースのジョブは、同じワークフローで `needs: verify` を指定し、mainの必須CIが通ってから実行する。
 - マージ前の確認は手元の `vp run verify` で行う。
+
+## 計測
+
+- 推測するな、計測しろ。挙動や原因は観測した事実で判断する。
+- 機能開発に取り掛かる前に、AIが自分でデバッグできる仕組みを必ず作る。再現手段、ログやスパン、その出力を読む経路の3つである。
+- 具体的な手段は `measure-dont-guess` スキル（`docs/skills/measure-dont-guess/SKILL.md`）にある。
