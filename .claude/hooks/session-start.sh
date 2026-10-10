@@ -12,4 +12,5 @@ if ! command -v vp >/dev/null 2>&1; then
 fi
 
 cd "$CLAUDE_PROJECT_DIR"
+vp env on >&2
 vp install --frozen-lockfile >&2
