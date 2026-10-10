@@ -171,6 +171,7 @@ export default defineConfig({
         cache: {
           untrackedEnv: [
             "GH_TOKEN",
+            "ZIZMOR_NO_ONLINE_AUDITS",
             "HTTPS_PROXY",
             "https_proxy",
             "NO_PROXY",
