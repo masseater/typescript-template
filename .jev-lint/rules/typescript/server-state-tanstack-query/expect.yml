@@ -1,0 +1,37 @@
+default: clean
+fixtures/order-panel.tsx:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "the order is fetched in useEffect and kept in useState",
+    }
+fixtures/user-cache.ts:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "users are fetched with fetch and cached in a hand-written Map with its own expiry",
+    }
+fixtures/checkout-button.tsx:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: the order is placed with useMutation over the Eden client",
+    }
+fixtures/todo-queries.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: the todos are read with queryOptions and useSuspenseQuery over the Eden client",
+    }
+fixtures/sidebar.tsx:
+  - { line: 1, label: clean, window: 0, reason: "UI state only; no server data" }
+fixtures/theme-store.ts:
+  - { line: 1, label: clean, window: 0, reason: "UI state only; no server data" }
+fixtures/filter-hooks.ts:
+  - { line: 1, label: clean, window: 0, reason: "UI state only; no server data" }
+fixtures/upload-state.ts:
+  - { line: 1, label: clean, window: 0, reason: "pure functions over a value; nothing is fetched" }

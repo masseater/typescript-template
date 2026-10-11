@@ -56,8 +56,9 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## jev-lint
 
-- ルールは無料の `respan/span-01-lite` で判定する `.jev-lint.yaml` に置く。正解の分かる違反例と違反でない例を `--cache none --retry 3` で判定させ、span-01-lite で両者を分けられないルールだけを `.jev-lint.decider.yaml`（有料の decider）に置く。無料で判定できるルールにまで課金しないためである。
-- span-01-lite は `kind: noul` のルールしか判定できない。
+- ルールには、正解の分かる違反例と違反でない例を `fixtures/` と `expect.yml` で添える。違反でない例には、このリポジトリの書き方どおりのコードを入れる。何も状態を持たないような易しい例だけでは、規約どおりのコードを誤って指摘するモデルを見落とすためである。
+- ルールの問いや `.jev-lint.yaml` の `model` を変えたら、`jev-lint eval .jev-lint/rules --accept` で fixtures を判定させ、違反と違反でない例が分かれることを確かめてから baseline を更新する。verify の `jev-lint eval --replay` は、baseline を取り直さずに問いを変えると失敗する。
+- 無料の `respan/span-01-lite` を使えるのは `kind: noul` のルールだけである。いまのルールは fixtures で違反と違反でない例を分けられなかったため、有料の decider で判定している。
 
 ## 計測
 

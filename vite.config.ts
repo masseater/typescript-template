@@ -181,8 +181,7 @@ export default defineConfig({
         },
       },
       "jev-lint": {
-        command:
-          "jev-lint review --base origin/main && jev-lint review --base origin/main --config .jev-lint.decider.yaml",
+        command: "jev-lint review --base origin/main",
         cache: false,
       },
     },

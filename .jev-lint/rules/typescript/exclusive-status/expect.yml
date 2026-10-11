@@ -1,0 +1,52 @@
+default: clean
+fixtures/order-panel.tsx:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "isLoading, isError, isEmpty and a nullable order can all be set at once",
+    }
+fixtures/upload-state.ts:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "uploading, done and failed are three booleans, with progress, error and url optional beside them",
+    }
+fixtures/dialog-state.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: the dialog is one discriminated union, and the invoice exists only in the states that need it",
+    }
+fixtures/menu.tsx:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: the menu is one status, closed or open",
+    }
+fixtures/checkout-button.tsx:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: one status from the mutation picks the message",
+    }
+fixtures/filter-hooks.ts:
+  - { line: 1, label: clean, window: 0, reason: "one union-typed filter" }
+fixtures/theme-store.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "a single boolean, with nothing it could contradict",
+    }
+fixtures/user-cache.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "a cache entry is a user and when it was fetched; no flags",
+    }

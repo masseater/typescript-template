@@ -1,0 +1,66 @@
+default: clean
+fixtures/order-panel.tsx:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "the loading, error and empty flags and the order are useState",
+    }
+fixtures/sidebar.tsx:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "whether the sidebar is open lives in useReducer and is shared through React context",
+    }
+fixtures/theme-store.ts:
+  - { line: 1, label: bad, window: 0, reason: "the theme is a zustand store" }
+fixtures/jotai-filter.ts:
+  - {
+      line: 1,
+      label: bad,
+      window: 0,
+      reason: "the filter is a jotai atom; useAtomValue here comes from jotai, not @effect/atom-react",
+    }
+fixtures/upload-state.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "a type and pure functions over it; nothing holds state",
+    }
+fixtures/user-cache.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "a module-level cache of fetched users, which is server state, not UI state",
+    }
+fixtures/filter-hooks.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: an effect-atom Atom.make exposed through hooks that wrap useAtomValue and useAtomSet from @effect/atom-react",
+    }
+fixtures/menu.tsx:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: the component reads and writes an effect-atom with useAtom from @effect/atom-react",
+    }
+fixtures/dialog-state.ts:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "hard clean: a union-typed effect-atom behind wrapping hooks",
+    }
+fixtures/checkout-button.tsx:
+  - {
+      line: 1,
+      label: clean,
+      window: 0,
+      reason: "the only state is the TanStack Query mutation status, which is server state",
+    }

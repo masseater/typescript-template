@@ -11,3 +11,7 @@ criteria:
     what: Server data on the client goes only through TanStack Query, or the file handles none.
     not_for: Creating an API client such as a better-auth or Eden client, which fetches nothing until a query calls it.
 severity: error
+inconclusive: >-
+  blind: the fixtures are clear violations and the compliant shapes this
+  repository writes, so they catch a model or a question that cannot tell the
+  two apart, not a small drift at the cutoff.

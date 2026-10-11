@@ -1,0 +1,244 @@
+{
+  "schema": "jev-lint-eval-1",
+  "recorded": "2026-10-11T02:24:07.340Z",
+  "model": "perplexity/pplx-decider-v1.1-27b-20261006",
+  "suite": "typescript/exclusive-status",
+  "rules": [
+    {
+      "id": "exclusive-status",
+      "draft": "3285a64e957e",
+      "at": 0.5
+    }
+  ],
+  "cutoffs": {},
+  "passes": [
+    [
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.16192823497856396,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.10379449028573276,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.0022047750566935986,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.8561025140553068,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/dialog-state.ts",
+        "line": 1,
+        "endLine": 19,
+        "kind": "noul",
+        "value": 0.1547746834665362,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.762095002500152,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.13476969677572276,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/menu.tsx",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0018027549025469217,
+        "confidence": null
+      }
+    ],
+    [
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.762095002500152,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/dialog-state.ts",
+        "line": 1,
+        "endLine": 19,
+        "kind": "noul",
+        "value": 0.1547746834665362,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.16192823497856396,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.13476969677572276,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.10379449028573276,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.8561025140553068,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.0022047750566935986,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/menu.tsx",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0018027549025469217,
+        "confidence": null
+      }
+    ],
+    [
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.762095002500152,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/dialog-state.ts",
+        "line": 1,
+        "endLine": 19,
+        "kind": "noul",
+        "value": 0.1547746834665362,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.16192823497856396,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/menu.tsx",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0018027549025469217,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.0022047750566935986,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.13476969677572276,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.10379449028573276,
+        "confidence": null
+      },
+      {
+        "rule": "exclusive-status",
+        "file": ".jev-lint/rules/typescript/exclusive-status/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.8561025140553068,
+        "confidence": null
+      }
+    ]
+  ],
+  "spent": {
+    "calls": 24,
+    "inputTokens": 10407,
+    "usd": 0.00020813999999999994,
+    "ms": 720
+  }
+}

@@ -6,6 +6,12 @@ subject: file
 state: bare
 ask: This code represents one piece of state with several boolean flags or optional fields that can contradict each other, instead of one exclusive status expressed as a discriminated union.
 criteria:
-  "true": A state is split into flags or optional fields whose combinations can contradict each other.
-  "false": Every state is a single exclusive status, or the file holds no such state.
+  "true": Two or more boolean flags, or optional fields that are set together, describe one state, so some combinations contradict each other, such as loading and failed both true.
+  "false":
+    what: Every state is a single exclusive status, or the file holds no such state.
+    not_for: A value that is simply present or absent, such as a cache lookup that may miss or a nullable result, which has no second flag to contradict.
 severity: error
+inconclusive: >-
+  blind: the fixtures are clear violations and the compliant shapes this
+  repository writes, so they catch a model or a question that cannot tell the
+  two apart, not a small drift at the cutoff.

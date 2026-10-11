@@ -1,0 +1,244 @@
+{
+  "schema": "jev-lint-eval-1",
+  "recorded": "2026-10-11T02:23:28.393Z",
+  "model": "perplexity/pplx-decider-v1.1-27b-20261006",
+  "suite": "typescript/server-state-tanstack-query",
+  "rules": [
+    {
+      "id": "server-state-tanstack-query",
+      "draft": "b9a3f669b5ef",
+      "at": 0.5
+    }
+  ],
+  "cutoffs": {},
+  "passes": [
+    [
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.9919817888340446,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.015160874907061089,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.004639485029126969,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.10466207755392407,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/sidebar.tsx",
+        "line": 1,
+        "endLine": 16,
+        "kind": "noul",
+        "value": 0.0017527799591194031,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/todo-queries.ts",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0015856945445725244,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.9268557683285709,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.014164679517956393,
+        "confidence": null
+      }
+    ],
+    [
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.015160874907061089,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.10466207755392407,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.9919817888340446,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.014164679517956393,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/todo-queries.ts",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0015856945445725244,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/sidebar.tsx",
+        "line": 1,
+        "endLine": 16,
+        "kind": "noul",
+        "value": 0.0017527799591194031,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.004639485029126969,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.9268557683285709,
+        "confidence": null
+      }
+    ],
+    [
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.9268557683285709,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.10466207755392407,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.9919817888340446,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.014164679517956393,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/todo-queries.ts",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0015856945445725244,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.015160874907061089,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/sidebar.tsx",
+        "line": 1,
+        "endLine": 16,
+        "kind": "noul",
+        "value": 0.0017527799591194031,
+        "confidence": null
+      },
+      {
+        "rule": "server-state-tanstack-query",
+        "file": ".jev-lint/rules/typescript/server-state-tanstack-query/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.004639485029126969,
+        "confidence": null
+      }
+    ]
+  ],
+  "spent": {
+    "calls": 24,
+    "inputTokens": 10194,
+    "usd": 0.00020387999999999998,
+    "ms": 1318
+  }
+}

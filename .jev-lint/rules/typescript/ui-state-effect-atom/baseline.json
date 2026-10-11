@@ -1,0 +1,298 @@
+{
+  "schema": "jev-lint-eval-1",
+  "recorded": "2026-10-11T02:23:29.884Z",
+  "model": "perplexity/pplx-decider-v1.1-27b-20261006",
+  "suite": "typescript/ui-state-effect-atom",
+  "rules": [
+    {
+      "id": "ui-state-effect-atom",
+      "draft": "f5393c5f1afa",
+      "at": 0.5
+    }
+  ],
+  "cutoffs": {},
+  "passes": [
+    [
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.045284332595998615,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/sidebar.tsx",
+        "line": 1,
+        "endLine": 16,
+        "kind": "noul",
+        "value": 0.9994837683550756,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.0007177308902249894,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/menu.tsx",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0012757847482363059,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/jotai-filter.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.9950016961171163,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.9989347340217667,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.994425722525757,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/dialog-state.ts",
+        "line": 1,
+        "endLine": 19,
+        "kind": "noul",
+        "value": 0.0003916689328148942,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.3038998234458297,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.03150144762632158,
+        "confidence": null
+      }
+    ],
+    [
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.994425722525757,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/dialog-state.ts",
+        "line": 1,
+        "endLine": 19,
+        "kind": "noul",
+        "value": 0.0003916689328148942,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/sidebar.tsx",
+        "line": 1,
+        "endLine": 16,
+        "kind": "noul",
+        "value": 0.9994837683550756,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.0007177308902249894,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.045284332595998615,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.9989347340217667,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.03150144762632158,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/jotai-filter.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.9950016961171163,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/menu.tsx",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0012757847482363059,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.3038998234458297,
+        "confidence": null
+      }
+    ],
+    [
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/sidebar.tsx",
+        "line": 1,
+        "endLine": 16,
+        "kind": "noul",
+        "value": 0.9994837683550756,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/dialog-state.ts",
+        "line": 1,
+        "endLine": 19,
+        "kind": "noul",
+        "value": 0.0003916689328148942,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/jotai-filter.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.9950016961171163,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/order-panel.tsx",
+        "line": 1,
+        "endLine": 30,
+        "kind": "noul",
+        "value": 0.994425722525757,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/theme-store.ts",
+        "line": 1,
+        "endLine": 9,
+        "kind": "noul",
+        "value": 0.9989347340217667,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/upload-state.ts",
+        "line": 1,
+        "endLine": 18,
+        "kind": "noul",
+        "value": 0.03150144762632158,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/user-cache.ts",
+        "line": 1,
+        "endLine": 13,
+        "kind": "noul",
+        "value": 0.3038998234458297,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/checkout-button.tsx",
+        "line": 1,
+        "endLine": 28,
+        "kind": "noul",
+        "value": 0.045284332595998615,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/menu.tsx",
+        "line": 1,
+        "endLine": 22,
+        "kind": "noul",
+        "value": 0.0012757847482363059,
+        "confidence": null
+      },
+      {
+        "rule": "ui-state-effect-atom",
+        "file": ".jev-lint/rules/typescript/ui-state-effect-atom/fixtures/filter-hooks.ts",
+        "line": 1,
+        "endLine": 14,
+        "kind": "noul",
+        "value": 0.0007177308902249894,
+        "confidence": null
+      }
+    ]
+  ],
+  "spent": {
+    "calls": 30,
+    "inputTokens": 12819,
+    "usd": 0.00025638,
+    "ms": 1449
+  }
+}

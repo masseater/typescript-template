@@ -163,6 +163,7 @@ const generated = [
   "**/routeTree.gen.ts",
   "**/generated/**",
   "**/drizzle/**/snapshot.json",
+  ".jev-lint/rules/**/fixtures/**",
   ".claude/skills/**",
   ".claude/hooks/fallow-gate.sh",
   ".intent/**",
