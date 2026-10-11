@@ -4,7 +4,7 @@ import type { Stdio } from "effect";
 import {
   blockWhen,
   localBin,
-  projectDir,
+  projectRoot,
   readHookInput,
   runCommand,
   runHook,
@@ -25,7 +25,7 @@ const PostToolUseOutput = Schema.Struct({
 
 const locate = Effect.fn("locate")(function* locate(filePath: string) {
   const path = yield* Path.Path;
-  const root = path.resolve(yield* projectDir);
+  const root = yield* projectRoot;
   const [scope = "", name = ""] = path.relative(root, filePath).split(path.sep);
   const candidates = [scope, path.join(scope, name)].filter((dir) => dir !== "");
   return { candidates, root };
@@ -55,20 +55,10 @@ const runFallow = Effect.fn("runFallow")(function* runFallow(
   const runs = yield* Effect.forEach(
     targets,
     (args) =>
-      runCommand(fallow, [
-        "--changed-since",
-        "HEAD",
-        "--production",
-        "--quiet",
-        "--format",
-        "compact",
-        ...args,
-      ]),
+      runCommand(fallow, ["--changed-since", "HEAD", "--quiet", "--format", "compact", ...args]),
     { concurrency: "unbounded" },
   );
-  yield* blockWhen({
-    reasons: runs.filter((run) => !run.succeeded).map((run) => run.output),
-  });
+  yield* blockWhen(runs.filter((run) => !run.succeeded).map((run) => run.output));
   return runs;
 });
 

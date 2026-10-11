@@ -10,7 +10,7 @@ import { db } from "#/shared/db/index.server";
 
 import { runRequest } from "./runtime.server";
 
-const countByStatus = (status: "open" | "done"): Effect.Effect<number> =>
+const countByStatus = (status: (typeof todo.$inferSelect)["status"]): Effect.Effect<number> =>
   Effect.promise(() => db.$count(todo, eq(todo.status, status)));
 
 const getTodoSummary = createServerFn({ method: "GET" }).handler(() =>

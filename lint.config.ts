@@ -5,9 +5,10 @@ const REACT_STATE_HOOKS: readonly string[] = [
   "useContext",
 ];
 const HAND_WRITTEN_SQL = "SQL を手書きせず Drizzle のクエリビルダーを使う";
+const UI_STATE = "UI 状態は effect-atom だけで扱う";
 
 const requiredStack: Readonly<Record<string, readonly string[]>> = {
-  "UI 状態は effect-atom だけで扱う": [
+  [UI_STATE]: [
     "zustand",
     "jotai",
     "valtio",
@@ -150,7 +151,7 @@ const restrictedImports = {
     {
       name: "react",
       importNames: [...REACT_STATE_HOOKS],
-      message: "UI 状態は effect-atom だけで扱う",
+      message: UI_STATE,
     },
     { name: "drizzle-orm", importNames: ["sql"], message: HAND_WRITTEN_SQL },
     { name: "drizzle-orm/sql", message: HAND_WRITTEN_SQL },

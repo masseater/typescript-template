@@ -1,7 +1,9 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 
-type TodoFilter = "all" | "open" | "done";
+import type { todo } from "./todo.table";
+
+type TodoFilter = "all" | (typeof todo.$inferSelect)["status"];
 
 const todoFilterAtom = Atom.make<TodoFilter>("all");
 

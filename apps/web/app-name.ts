@@ -17,17 +17,10 @@ const describeUnprefixed = ({
     Option.toArray,
   );
 
-const describeStack = (name: string): readonly string[] => {
-  if (name === APP_NAME) {
-    return [];
-  }
-  return [`Stack: ${name}`];
-};
-
 const requireAppPrefix = Effect.gen(function* requireAppPrefix() {
   const { name, resources } = yield* Stack;
   const offenders = [
-    ...describeStack(name),
+    ...Arr.filter([`Stack: ${name}`], () => name !== APP_NAME),
     ...Object.values(resources).flatMap((resource) => describeUnprefixed(resource)),
   ];
   if (Arr.isReadonlyArrayNonEmpty(offenders)) {
