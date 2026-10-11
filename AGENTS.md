@@ -44,6 +44,10 @@ release. Add a tool name to select part of the graph. For example, run
 - 環境変数にしてよいのは、設定や認証に限らず、本当に環境ごとに変わる値だけである。環境で変わらない値はコードや Alchemy の設定に書き、ツールにフラグがあればフラグを使う。
 - Cloudflare などのクラウドの認証は Alchemy のプロファイルで管理する。
 
+## Cloudflare
+
+- Cloudflare は Workers Paid プランを契約している前提でよい。Paid プランでしか使えない機能や上限を前提に設計してよい。
+
 ## レビューとCI
 
 - PRのレビューは行わない。PRは作ったらすぐマージする。
