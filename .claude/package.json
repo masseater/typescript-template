@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
+    "@yarnpkg/parsers": "catalog:",
     "alchemy": "catalog:stack",
     "effect": "catalog:stack"
   },
