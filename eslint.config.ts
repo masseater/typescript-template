@@ -8,7 +8,7 @@ export default defineConfig(
   includeIgnoreFile(`${import.meta.dirname}/.gitignore`),
   globalIgnores(generated),
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["apps/*/src/**/*.{ts,tsx}"],
     languageOptions: { parser, parserOptions: { projectService: true } },
     extends: [tanstackStart.configs["flat/recommended"]],
     linterOptions: { reportUnusedDisableDirectives: "error", reportUnusedInlineConfigs: "error" },
