@@ -1,10 +1,11 @@
 baseUrl: https://openrouter.ai/api
 apiKeyEnv: OPENROUTER_API_KEY
-model: respan/span-01-lite
+model: perplexity/pplx-decider-v1.1-27b
 files: [apps/web/src]
 exclude:
   - "**/*.test.ts"
   - "**/*.gen.ts"
   - apps/web/src/shared/auth/generated
 rules:
-  typescript/ui-state-effect-atom: on
+  typescript/exclusive-status: on
+  typescript/server-state-tanstack-query: on

@@ -85,3 +85,4 @@ packageExtensions:
       "@steiger/toolkit": 0.2.3
 patchedDependencies:
   "@tanstack/eslint-plugin-start@0.1.0": patches/@tanstack__eslint-plugin-start@0.1.0.patch
+  jev-lint@0.7.0: patches/jev-lint@0.7.0.patch
