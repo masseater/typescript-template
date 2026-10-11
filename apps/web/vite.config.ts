@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "app", include: ["src/**/*.test.{ts,tsx}"] } },
-      { extends: false, test: { name: "alchemy", root: "./alchemy" } },
+      { extends: false, test: { name: "alchemy", include: ["*.test.ts"] } },
     ],
   },
   plugins: [
