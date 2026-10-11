@@ -32,6 +32,13 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/block-pnpm.ts"],
+            "timeout": 10,
+            "statusMessage": "pnpm の直接実行を確認中"
+          },
+          {
+            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fallow-gate.sh"
           }
         ]

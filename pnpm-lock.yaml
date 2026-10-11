@@ -218,6 +218,9 @@ catalogs:
     '@vitejs/plugin-rsc':
       specifier: 0.5.36
       version: 0.5.36
+    '@yarnpkg/parsers':
+      specifier: 3.1.0
+      version: 3.1.0
     eslint:
       specifier: 10.12.0
       version: 10.12.0
@@ -416,6 +419,9 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0(effect@4.0.0)(redis@6.2.1(@opentelemetry/api@1.9.1))
+      '@yarnpkg/parsers':
+        specifier: 'catalog:'
+        version: 3.1.0
       alchemy:
         specifier: catalog:stack
         version: 2.0.0-beta.81(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.2.1(@opentelemetry/api@1.9.1)))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(esbuild@0.28.1)(hono@4.11.4)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(ws@8.22.0)

@@ -37,7 +37,7 @@ Alchemy のリソース定義に足りない設定があるときは、alchemy �
 ## パッケージマネージャー
 
 pnpmは直接実行せず、`vp install`・`vp add`・`vp exec`・`vp dlx`・`vp pm`を使う。
-Claude Codeでは `.claude/settings.json` が pnpm・pnpx・pn・pnx の実行を拒否する。
+Claude Codeでは `.claude/settings.json` の deny と PreToolUse フック（`.claude/hooks/block-pnpm.ts`）が pnpm・pnpx・pn・pnx の実行を拒否する。フックは npx・env・bash -c・コマンド置換などを経由した呼び出しも止める。
 生成されたブロックにある `pnpm exec`・`pnpm dlx` は `vp exec`・`vp dlx` に読み替える。
 
 ## 状態
