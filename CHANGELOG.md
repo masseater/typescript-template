@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.6](https://github.com/masseater/typescript-template/compare/v0.0.5...v0.0.6) (2026-10-11)
+
+
+### Features
+
+* manage repository settings and rulesets with Alchemy in infra/github ([#117](https://github.com/masseater/typescript-template/issues/117)) ([652e310](https://github.com/masseater/typescript-template/commit/652e31089174dc86df3ee3cdb799340d3551a020))
+
 ## [0.0.5](https://github.com/masseater/typescript-template/compare/v0.0.4...v0.0.5) (2026-10-11)
 
 
