@@ -1,0 +1,14 @@
+{
+  "name": "github",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy"
+  },
+  "devDependencies": {
+    "alchemy": "catalog:stack",
+    "effect": "catalog:stack"
+  }
+}

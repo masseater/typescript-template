@@ -1,0 +1,55 @@
+diff --git a/lib/GitHub/Repository.d.ts b/lib/GitHub/Repository.d.ts
+index c11e1ee888e4fde351b645b36210fb6f7a063b0c..8bf687526788a8da06e3345f8b75da812a048915 100644
+--- a/lib/GitHub/Repository.d.ts
++++ b/lib/GitHub/Repository.d.ts
+@@ -96,6 +96,12 @@ export interface RepositoryProps {
+      * @default false
+      */
+     deleteBranchOnMerge?: boolean;
++    /**
++     * Who can create pull requests. `collaborators_only` limits it to users and
++     * apps with write access.
++     * @default "all"
++     */
++    pullRequestCreationPolicy?: "all" | "collaborators_only";
+     /**
+      * Repository topics. The provided list fully replaces the existing topics.
+      */
+diff --git a/lib/GitHub/Repository.js b/lib/GitHub/Repository.js
+index fbe65fc791b06336f2724dc6e4ffdcbcb9141f43..7426d4923ceead96f96c8935ecd3b3fee131fac9 100644
+--- a/lib/GitHub/Repository.js
++++ b/lib/GitHub/Repository.js
+@@ -295,6 +295,7 @@ export const RepositoryProvider = () => Provider.succeed(Repository, {
+             allow_rebase_merge: news.allowRebaseMerge,
+             allow_auto_merge: news.allowAutoMerge,
+             delete_branch_on_merge: news.deleteBranchOnMerge,
++            pull_request_creation_policy: news.pullRequestCreationPolicy,
+             // Only set the default branch when it actually differs from the
+             // observed branch. GitHub returns 422 if the branch does not yet
+             // exist (e.g. an empty repo), so the 422 handler below strips it and
+diff --git a/src/GitHub/Repository.ts b/src/GitHub/Repository.ts
+index 16776c6edf0fa02b1537c6f8c9db40f4c9e5e58d..548a64947815266c43f5f08894c08b5e58202468 100644
+--- a/src/GitHub/Repository.ts
++++ b/src/GitHub/Repository.ts
+@@ -117,6 +117,13 @@ export interface RepositoryProps {
+    */
+   deleteBranchOnMerge?: boolean;
+ 
++  /**
++   * Who can create pull requests. `collaborators_only` limits it to users and
++   * apps with write access.
++   * @default "all"
++   */
++  pullRequestCreationPolicy?: "all" | "collaborators_only";
++
+   /**
+    * Repository topics. The provided list fully replaces the existing topics.
+    */
+@@ -510,6 +517,7 @@ export const RepositoryProvider = () =>
+         allow_rebase_merge: news.allowRebaseMerge,
+         allow_auto_merge: news.allowAutoMerge,
+         delete_branch_on_merge: news.deleteBranchOnMerge,
++        pull_request_creation_policy: news.pullRequestCreationPolicy,
+         // Only set the default branch when it actually differs from the
+         // observed branch. GitHub returns 422 if the branch does not yet
+         // exist (e.g. an empty repo), so the 422 handler below strips it and
