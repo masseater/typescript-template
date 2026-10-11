@@ -5,7 +5,7 @@ import { inMemoryState } from "alchemy/State";
 import { Effect, Exit, Layer } from "effect";
 import { expect, test } from "vite-plus/test";
 
-import { APP_NAME, requireAppPrefix } from "./index.ts";
+import { APP_NAME, requireAppPrefix } from "./app-name.ts";
 
 const deploys = (stackName: string, props: Readonly<{ name?: string }>): Promise<boolean> =>
   Effect.runPromise(

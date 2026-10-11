@@ -58,7 +58,6 @@
     "@vitejs/plugin-react": "catalog:",
     "@vitejs/plugin-rsc": "catalog:",
     "alchemy": "catalog:stack",
-    "app-name": "workspace:*",
     "auth": "1.7.7",
     "drizzle-kit": "catalog:stack",
     "steiger": "catalog:stack",

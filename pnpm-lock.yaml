@@ -544,9 +544,6 @@ importers:
       alchemy:
         specifier: catalog:stack
         version: 2.0.0-beta.81(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.2.1(@opentelemetry/api@1.9.1)))(@types/node@26.6.4)(@types/react@19.3.0)(drizzle-kit@1.0.0-rc.5-5935859)(drizzle-orm@1.0.0-rc.5-5935859(@cloudflare/workers-types@5.20261009.1)(@effect/sql-d1@4.0.0(effect@4.0.0))(@effect/sql-sqlite-do@4.0.0(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(effect@4.0.0)(valibot@1.2.0(typescript@7.0.2))(zod@3.25.76))(effect@4.0.0)(esbuild@0.28.1)(hono@4.11.4)(jiti@2.7.0)(terser@5.51.2)(typescript@7.0.2)(ws@8.22.0)
-      app-name:
-        specifier: workspace:*
-        version: link:../../libs/app-name
       auth:
         specifier: 1.7.7
         version: 1.7.7(4dfd95dee531d3c2f78ede3470784931)
@@ -565,19 +562,6 @@ importers:
       vite-plus:
         specifier: catalog:stack
         version: 1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.1)
-
-  libs/app-name:
-    dependencies:
-      alchemy:
-        specifier: catalog:stack
-        version: 2.0.0-beta.81(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.2.1(@opentelemetry/api@1.9.1)))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(esbuild@0.28.1)(hono@4.11.4)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(ws@8.22.0)
-      effect:
-        specifier: 4.0.0
-        version: 4.0.0
-    devDependencies:
-      vite-plus:
-        specifier: catalog:stack
-        version: 1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(yaml@2.9.1)
 
 packages:
 
