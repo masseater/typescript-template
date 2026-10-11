@@ -85,7 +85,7 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.event_name == 'push' && github.repository == 'masseater/typescript-template'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
