@@ -1,6 +1,7 @@
 import { Stack, makeRandom } from "alchemy";
 import { D1, Website, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
+import { APP_NAME, requireAppPrefix } from "app-name";
 import { Effect } from "effect";
 
 const TRACE_SAMPLING_RATE = 0.1;
@@ -28,10 +29,11 @@ type WebEnv = InferEnv<typeof web>;
 
 export type { WebEnv };
 export default Stack(
-  "typescript-template",
+  APP_NAME,
   { providers: providers(), state: state() },
   Effect.gen(function* stack() {
     const { url } = yield* web;
+    yield* requireAppPrefix;
     return { url };
   }),
 );
