@@ -20,13 +20,13 @@ export default defineConfig(
         "error",
         {
           selector: 'CallExpression[callee.name="Stack"]:not([arguments.0.name="APP_NAME"])',
-          message: "スタック名には alchemy/app-name.ts の APP_NAME を渡す",
+          message: "スタック名には app-name.ts の APP_NAME を渡す",
         },
         {
           selector:
             'Program:not(:has(YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
           message:
-            "スタックの最後で alchemy/app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
+            "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
         },
       ],
     },
