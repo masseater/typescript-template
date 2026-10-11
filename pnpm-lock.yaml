@@ -320,6 +320,7 @@ packageExtensionsChecksum: sha256-+VMdP1PtirSQ7Lhy8zZaF5Ha03FJIIM31JqoRyxSKXQ=
 
 patchedDependencies:
   '@tanstack/eslint-plugin-start@0.1.0': 364cc40b73326fe59c5d685ac247690de2302e3e731b7b7d37583701f9370644
+  jev-lint@0.7.0: e482068f949218fd0893e69710a21e0b7bb96e425684d6e2c099ba2ecd1dcb21
 
 importers:
 
@@ -390,7 +391,7 @@ importers:
         version: 3.32.0
       jev-lint:
         specifier: 'catalog:'
-        version: 0.7.0
+        version: 0.7.0(patch_hash=e482068f949218fd0893e69710a21e0b7bb96e425684d6e2c099ba2ecd1dcb21)
       renovate:
         specifier: catalog:stack
         version: 44.148.3(supports-color@7.2.0)(typanion@3.14.0)
@@ -17595,7 +17596,7 @@ snapshots:
       supports-color: 8.1.1
     optional: true
 
-  jev-lint@0.7.0:
+  jev-lint@0.7.0(patch_hash=e482068f949218fd0893e69710a21e0b7bb96e425684d6e2c099ba2ecd1dcb21):
     dependencies:
       '@ast-grep/cli': 0.45.3
       yaml: 2.9.1

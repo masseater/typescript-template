@@ -54,6 +54,11 @@ release. Add a tool name to select part of the graph. For example, run
 - PRごとの動作検証やデプロイはしない。動作の確認は、mainにマージしてデプロイされた本番で実測して行う。
 - Claude のクラウドセッションではプロキシが GitHub API を拒むため、session-start フック（`.claude/hooks/session-start.sh`）が `ZIZMOR_NO_ONLINE_AUDITS=true` を設定し、zizmor はオフライン監査だけを行う。オンライン監査は main の CI（`.github/workflows/verify.yml`）が担う。
 
+## jev-lint
+
+- ルールは無料の `respan/span-01-lite` で判定する `.jev-lint.yaml` に置く。正解の分かる違反例と違反でない例を `--cache none --retry 3` で判定させ、span-01-lite で両者を分けられないルールだけを `.jev-lint.decider.yaml`（有料の decider）に置く。無料で判定できるルールにまで課金しないためである。
+- span-01-lite は `kind: noul` のルールしか判定できない。
+
 ## 計測
 
 - 推測するな、計測しろ。仮説を立てたら、実装や修正の前に計測で事実を確かめ、その結果だけで判断する。
