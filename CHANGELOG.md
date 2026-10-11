@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.7](https://github.com/masseater/typescript-template/compare/v0.0.6...v0.0.7) (2026-10-11)
+
+
+### Features
+
+* **infra:** run infra/github in any repository made from the template ([#130](https://github.com/masseater/typescript-template/issues/130)) ([a211877](https://github.com/masseater/typescript-template/commit/a211877698c6630e39ab3c16fe62232b8661b18c))
+
 ## [0.0.6](https://github.com/masseater/typescript-template/compare/v0.0.5...v0.0.6) (2026-10-11)
 
 
