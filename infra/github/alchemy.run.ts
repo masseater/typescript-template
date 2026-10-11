@@ -1,6 +1,11 @@
 import { Resource, Stack } from "alchemy";
 import { providers as cloudflareProviders, state } from "alchemy/Cloudflare";
-import { GitHubCredentials, Ruleset, providers as gitHubProviders } from "alchemy/GitHub";
+import {
+  GitHubCredentials,
+  GitHubEnv,
+  Ruleset,
+  providers as gitHubProviders,
+} from "alchemy/GitHub";
 import { succeed } from "alchemy/Provider";
 import { Effect, Layer } from "effect";
 
@@ -42,13 +47,11 @@ const pullRequestCreationPolicyProvider = succeed(PullRequestCreationPolicy, {
 
 const gitHub = Layer.provideMerge(pullRequestCreationPolicyProvider, gitHubProviders());
 
-const owner = "masseater";
-const repository = "typescript-template";
-
 export default Stack(
   "typescript-template-github",
   { providers: Layer.mergeAll(cloudflareProviders(), gitHub), state: state() },
   Effect.gen(function* stack() {
+    const { owner, repository } = yield* Effect.fromNullishOr(yield* GitHubEnv).pipe(Effect.orDie);
     yield* PullRequestCreationPolicy("PullRequestCreationPolicy", {
       owner,
       repository,
