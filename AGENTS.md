@@ -56,7 +56,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## jev-lint
 
-- ルールは無料の `respan/span-01-lite` で判定する `.jev-lint.yaml` に置く。正解の分かる違反例と違反でない例を `--cache none --retry 3` で判定させ、span-01-lite で両者を分けられないルールだけを `.jev-lint.decider.yaml`（有料の decider）に置く。無料で判定できるルールにまで課金しないためである。
+- ルールは `.jev-lint.yaml` に置き、無料の `respan/span-01-lite` で判定できないものだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と、このリポジトリの書き方どおりに書いた違反でない例を `--cache none --retry 3` で判定させて確かめる。無料で判定できるルールにまで課金しないためである。
 - span-01-lite は `kind: noul` のルールしか判定できない。
 
 ## 計測
