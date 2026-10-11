@@ -34,7 +34,7 @@ jobs:
           commits="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE_SHA...$HEAD_SHA" --jq .total_commits)"
           git fetch --no-tags --depth="$((commits + 1))" origin "$HEAD_SHA"
           vp exec commitlint --from "$BEFORE_SHA" --to "$HEAD_SHA" --verbose
-      - run: vp run verify
+      - run: vp run --log grouped verify
         env:
           GH_TOKEN: ${{ github.token }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

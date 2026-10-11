@@ -1,4 +1,15 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": ["*.ts"]
+  "include": ["*.ts"],
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "allowedUnstableApis": [
+          "effect/process/ChildProcess#make",
+          "effect/process/ChildProcessSpawner#ChildProcessSpawner"
+        ]
+      }
+    ]
+  }
 }
