@@ -4,9 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "verify": "vp check && vp run -r test && NODE_OPTIONS=--max-old-space-size=4096 eslint --max-warnings 0 . && syncpack lint && vp run textlint && vp run yomiyasu && vp run renovate && vp run actions-lint && vp run -r steiger && vp run -r db:check && vp run -r fallow",
-    "textlint": "textlint \"**/*.md\"",
-    "yomiyasu": "node -e \"const { execFileSync, spawnSync } = require('node:child_process'); const { path } = JSON.parse(execFileSync('skills', ['ls', '--json'])).find(({ name }) => name === 'yomiyasu'); const statuses = JSON.parse(spawnSync('textlint', ['--format', 'json', '**/*.md']).stdout).map(({ filePath }) => spawnSync('python3', [require('node:path').join(path, 'scripts', 'yomiyasu_lint.py'), '--strict', filePath], { stdio: 'inherit' }).status); process.exitCode = statuses.every((status) => status === 0) ? 0 : 1\"",
+    "markdown-lint": "node markdown-lint.ts",
     "renovate": "renovate-config-validator --strict",
     "fallow": "fallow --skip dupes --quiet --format compact && fallow dead-code --no-production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
     "prepare": "vp config && skills experimental_install --force"
@@ -15,6 +13,7 @@
     "@ast-grep/cli": "catalog:",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@eslint-react/eslint-plugin": "catalog:",
     "@eslint/config-helpers": "catalog:",
@@ -27,6 +26,7 @@
     "@textlint-ja/textlint-rule-preset-ai-writing": "1.7.0",
     "@types/node": "catalog:",
     "@typescript-eslint/parser": "catalog:",
+    "effect": "catalog:stack",
     "eslint": "catalog:",
     "eslint-plugin-baseline-js": "catalog:",
     "eslint-plugin-drizzle": "catalog:",

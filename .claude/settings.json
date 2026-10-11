@@ -33,7 +33,11 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/block-pnpm.ts"],
+            "args": [
+              "--import",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/compile-cache.ts",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-pnpm.ts"
+            ],
             "timeout": 10,
             "statusMessage": "pnpm の直接実行を確認中"
           },
@@ -86,7 +90,12 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["--use-env-proxy", "${CLAUDE_PROJECT_DIR}/.claude/hooks/template-release.ts"],
+            "args": [
+              "--use-env-proxy",
+              "--import",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/compile-cache.ts",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/template-release.ts"
+            ],
             "timeout": 10,
             "statusMessage": "テンプレートの新しいリリースを確認中"
           }
@@ -102,6 +111,8 @@
             "command": "node",
             "args": [
               "--env-file-if-exists=${CLAUDE_PROJECT_DIR}/.env",
+              "--import",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/compile-cache.ts",
               "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit.ts"
             ],
             "timeout": 300,
@@ -130,6 +141,8 @@
             "command": "node",
             "args": [
               "--env-file-if-exists=${CLAUDE_PROJECT_DIR}/.env",
+              "--import",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/compile-cache.ts",
               "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-gate.ts"
             ],
             "timeout": 1800,
