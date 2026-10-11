@@ -24,6 +24,12 @@ export default defineConfig(
         },
         {
           selector:
+            'Program:not(:has(YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
+          message:
+            "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
+        },
+        {
+          selector:
             'CallExpression[callee.name="Stack"] > .arguments:nth-child(3):not(:has(FunctionExpression > BlockStatement > ExpressionStatement:nth-last-child(2) > YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
           message:
             "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
