@@ -22,7 +22,7 @@ Cloudflare の認証情報は環境変数ではなく Alchemy のプロファイ
 
 ## GitHub の設定
 
-Actions の secrets と variables、GitHub App、Actions による PR 作成の許可を設定する。
+Actions の secrets、Actions による PR 作成の許可、PR を作れる人の制限、既定ブランチのルールセットを gh で設定する。
 手順は `setup-github` スキル（`docs/skills/setup-github/SKILL.md`）にある。
 
 ## 起動とデプロイ
@@ -32,6 +32,3 @@ cd apps/web
 vp run dev
 vp run deploy
 ```
-
-リポジトリ設定とルールセットは `infra/github` で Alchemy が管理する。
-main への push で verify が通ると、GitHub Actions から反映される。

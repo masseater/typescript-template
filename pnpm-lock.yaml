@@ -557,15 +557,6 @@ importers:
         specifier: catalog:stack
         version: 1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.1)
 
-  infra/github:
-    devDependencies:
-      alchemy:
-        specifier: catalog:stack
-        version: 2.0.0-beta.81(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.2.1(@opentelemetry/api@1.9.1)))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(esbuild@0.28.1)(hono@4.11.4)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(ws@8.22.0)
-      effect:
-        specifier: 4.0.0
-        version: 4.0.0
-
 packages:
 
   '@alchemy.run/cloudflare-runtime@2.0.0-beta.81':
