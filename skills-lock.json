@@ -62,6 +62,11 @@
       "skillPath": "skills/modern-web-guidance/SKILL.md",
       "computedHash": "dbd30d9c331c8957e065270150ffe44b4ba11ad5259cc9144240f63c45b05f1c"
     },
+    "setup-github": {
+      "source": "./docs/skills/setup-github",
+      "sourceType": "local",
+      "computedHash": "3aa4d77efefefd1d8c800b065dc835aa2034d2ced530c9450463cd61f7241ff1"
+    },
     "shadcn": {
       "source": "shadcn-ui/ui",
       "ref": "2d3f1cd436b18ea12f24130de4df781355925b08",

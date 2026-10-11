@@ -22,20 +22,8 @@ Cloudflare の認証情報は環境変数ではなく Alchemy のプロファイ
 
 ## GitHub の設定
 
-リポジトリの Actions secrets に次を登録する。
-
-| 名前                           | 用途                                          |
-| ------------------------------ | --------------------------------------------- |
-| `OPENROUTER_API_KEY`           | verify ワークフローの jev-lint                |
-| `CLAUDE_CODE_OAUTH_TOKEN`      | verify 失敗時に Claude Code が自動修正する    |
-| `INFRA_GITHUB_APP_PRIVATE_KEY` | `infra/github` を反映する GitHub App の秘密鍵 |
-
-Actions variables の `INFRA_GITHUB_APP_CLIENT_ID` に、その GitHub App の Client ID を登録する。
-GitHub App は Repository permissions の Administration を Read and write にして作り、このリポジトリにインストールする。
-GitHub Actions の `GITHUB_TOKEN` には Administration の権限を付けられないためである。
-
-Settings → Actions → General で「Allow GitHub Actions to create and approve pull requests」を有効にする。
-release-pleaseと自動修正がPRを作るためである。
+Actions の secrets と variables、GitHub App、Actions による PR 作成の許可を設定する。
+手順は `setup-github` スキル（`docs/skills/setup-github/SKILL.md`）にある。
 
 ## 起動とデプロイ
 
@@ -46,4 +34,4 @@ vp run deploy
 ```
 
 リポジトリ設定とルールセットは `infra/github` で Alchemy が管理する。
-main への push で verify が通ると反映される。手元からは `infra/github` で `vp run deploy` を実行する。
+main への push で verify が通ると、GitHub Actions から反映される。
