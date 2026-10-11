@@ -13,4 +13,22 @@ export default defineConfig(
     extends: [tanstackStart.configs["flat/recommended"]],
     linterOptions: { reportUnusedDisableDirectives: "error", reportUnusedInlineConfigs: "error" },
   },
+  {
+    files: ["**/alchemy.run.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: 'CallExpression[callee.name="Stack"]:not([arguments.0.name="APP_NAME"])',
+          message: "スタック名には app-name の APP_NAME を渡す",
+        },
+        {
+          selector:
+            'Program:not(:has(YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
+          message:
+            "スタックの最後で app-name の requireAppPrefix を yield* して、リソース名の prefix を検査する",
+        },
+      ],
+    },
+  },
 );
