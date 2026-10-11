@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.5](https://github.com/masseater/typescript-template/compare/v0.0.4...v0.0.5) (2026-10-11)
+
+
+### Features
+
+* judge jev-lint rules with the free span-01-lite where it holds up ([#115](https://github.com/masseater/typescript-template/issues/115)) ([4c76164](https://github.com/masseater/typescript-template/commit/4c7616423ca987aec486369aee1498155cc868fd))
+
 ## [0.0.4](https://github.com/masseater/typescript-template/compare/v0.0.3...v0.0.4) (2026-10-10)
 
 
