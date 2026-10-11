@@ -5,9 +5,16 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "allowedUnstableApis": [
-          "effect/process/ChildProcess#make",
-          "effect/process/ChildProcessSpawner#ChildProcessSpawner"
+        "overrides": [
+          {
+            "include": ["markdown-lint.ts"],
+            "options": {
+              "allowedUnstableApis": [
+                "effect/process/ChildProcess#make",
+                "effect/process/ChildProcessSpawner#ChildProcessSpawner"
+              ]
+            }
+          }
         ]
       }
     ]

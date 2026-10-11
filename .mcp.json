@@ -8,12 +8,12 @@
     "cloudflare-api": {
       "type": "http",
       "url": "https://mcp.cloudflare.com/mcp",
-      "headersHelper": "node --import ./.claude/hooks/compile-cache.ts .claude/hooks/cloudflare-mcp-headers.ts"
+      "headersHelper": "node .claude/hooks/cloudflare-mcp-headers.ts"
     },
     "cloudflare-observability": {
       "type": "http",
       "url": "https://observability.mcp.cloudflare.com/mcp",
-      "headersHelper": "node --import ./.claude/hooks/compile-cache.ts .claude/hooks/cloudflare-mcp-headers.ts"
+      "headersHelper": "node .claude/hooks/cloudflare-mcp-headers.ts"
     }
   }
 }
