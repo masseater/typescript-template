@@ -5,13 +5,19 @@ import viteReact from "@vitejs/plugin-react";
 import rsc from "@vitejs/plugin-rsc";
 import { defineConfig } from "vite-plus";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   resolve: { tsconfigPaths: true },
+  test: {
+    projects: [
+      { extends: true, test: { name: "app", include: ["src/**/*.test.{ts,tsx}"] } },
+      { extends: false, test: { name: "alchemy", root: "./alchemy" } },
+    ],
+  },
   plugins: [
     devtools(),
     tailwindcss(),
     tanstackStart({ srcDirectory: "src/app", rsc: { enabled: true } }),
-    mode !== "test" && rsc(),
+    rsc(),
     viteReact(),
   ],
-}));
+});

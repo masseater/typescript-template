@@ -3,7 +3,7 @@ import { D1, Website, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-import { APP_NAME, requireAppPrefix } from "./app-name.ts";
+import { APP_NAME, requireAppPrefix } from "./alchemy/app-name.ts";
 
 const TRACE_SAMPLING_RATE = 0.1;
 
