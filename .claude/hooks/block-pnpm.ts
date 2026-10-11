@@ -78,29 +78,15 @@ const parse = (script: string): Option.Option<Line> => Option.liftThrowable(pars
 
 const textOf = (segments: Frozen<ArgumentSegment[]>): string =>
   segments
-    .flatMap((segment) => {
-      if (segment.type === "text") {
-        return [segment.text];
-      }
-      return [];
-    })
+    .filter((segment) => segment.type === "text")
+    .map((segment) => segment.text)
     .join("");
 
 const nestedLines = (segments: Frozen<ArgumentSegment[]>): Line[] =>
-  segments.flatMap((segment) => {
-    if (segment.type === "shell") {
-      return [segment.shell];
-    }
-    return [];
-  });
+  segments.filter((segment) => segment.type === "shell").map((segment) => segment.shell);
 
 const valuesOf = (args: Frozen<Argument[]>): Frozen<Extract<Argument, { type: "argument" }>>[] =>
-  args.flatMap((arg) => {
-    if (arg.type === "argument") {
-      return [arg];
-    }
-    return [];
-  });
+  args.filter((arg) => arg.type === "argument");
 
 const shellScript = ([head = "", ...args]: Argv): Option.Option<string> => {
   const [, script] = Arr.dropWhile(args, (word) => word !== SHELL_SCRIPT_FLAG);
@@ -135,15 +121,6 @@ const chainsOf = (commandLine: Frozen<CommandLine>): Frozen<CommandChain>[] => [
   ),
 ];
 
-const argvsOfChain = Match.type<Frozen<CommandChain>>().pipe(
-  Match.discriminatorsExhaustive("type")({
-    subshell: (): Argv[] => [],
-    group: (): Argv[] => [],
-    envs: (): Argv[] => [],
-    command: (command): Argv[] => [argvOf(command.args)],
-  }),
-);
-
 const linesOfChain = Match.type<Frozen<CommandChain>>().pipe(
   Match.discriminatorsExhaustive("type")({
     subshell: (command): Line[] => [command.subshell],
@@ -156,7 +133,7 @@ const linesOfChain = Match.type<Frozen<CommandChain>>().pipe(
 const simpleCommands = (line: Line): readonly Argv[] => {
   const chains = line.flatMap((entry) => chainsOf(entry.command));
   return [
-    ...chains.flatMap((chain) => argvsOfChain(chain)),
+    ...chains.filter((chain) => chain.type === "command").map((chain) => argvOf(chain.args)),
     ...chains.flatMap((chain) => linesOfChain(chain)).flatMap((nested) => simpleCommands(nested)),
   ];
 };
@@ -167,6 +144,6 @@ runHook(
     const blocked = Option.exists(parse(input.tool_input.command ?? ""), (line) =>
       simpleCommands(line).some((argv) => invokesPnpm(argv)),
     );
-    yield* blockWhen({ reasons: Arr.filter([MESSAGE], () => blocked) });
+    yield* blockWhen(Arr.filter([MESSAGE], () => blocked));
   }),
 );

@@ -1,4 +1,5 @@
-import { NodeRuntime, NodeServices } from "@effect/platform-node";
+import { runMain } from "@effect/platform-node/NodeRuntime";
+import { layer as nodeServicesLayer } from "@effect/platform-node/NodeServices";
 import {
   Array as Arr,
   Cause,
@@ -31,37 +32,28 @@ const DATA_FIRST_ARITY = 2;
 
 const projectDir = Config.String("CLAUDE_PROJECT_DIR").pipe(Config.withDefault("."));
 
-const localBin = Effect.fn("localBin")(function* localBin(name: string) {
+const projectRoot = Effect.gen(function* projectRoot() {
   const path = yield* Path.Path;
-  const root = path.resolve(yield* projectDir);
-  return path.join(root, "node_modules", ".bin", name);
+  return path.resolve(yield* projectDir);
 });
 
-const block = (reason: string): Effect.Effect<never, HookBlocked> =>
-  Effect.fail(new HookBlocked({ reason }));
+const localBin = Effect.fn("localBin")(function* localBin(name: string) {
+  const path = yield* Path.Path;
+  return path.join(yield* projectRoot, "node_modules", ".bin", name);
+});
 
-const blockWhen = ({
-  reasons,
-  heading = [],
-}: Readonly<{
-  reasons: readonly string[];
-  heading?: readonly string[];
-}>): Effect.Effect<void, HookBlocked> => {
+const blockWhen = (reasons: readonly string[]): Effect.Effect<void, HookBlocked> => {
   if (!Arr.isReadonlyArrayNonEmpty(reasons)) {
     return Effect.void;
   }
-  return block([...heading, ...reasons].join("\n"));
+  return Effect.fail(new HookBlocked({ reason: reasons.join("\n") }));
 };
 
-const writeTo: {
-  (text: string): (sink: Sink) => Effect.Effect<void, never, Stdio.Stdio>;
-  (sink: Sink, text: string): Effect.Effect<void, never, Stdio.Stdio>;
-} = Fn.dual(DATA_FIRST_ARITY, (sink: Sink, text: string) =>
+const writeTo = (sink: Sink, text: string): Effect.Effect<void, never, Stdio.Stdio> =>
   Effect.gen(function* write() {
     const stdio = yield* Stdio.Stdio;
     yield* Stream.make(text).pipe(Stream.run(stdio[sink]()), Effect.orDie);
-  }),
-);
+  });
 
 const writeJson: {
   <Codec extends Schema.Top>(
@@ -134,7 +126,7 @@ const platformLayer = Layer.effect(
 );
 
 const hookLayer = platformLayer.pipe(
-  Layer.provideMerge(Layer.mergeAll(NodeServices.layer, FetchHttpClient.layer)),
+  Layer.provideMerge(Layer.mergeAll(nodeServicesLayer, FetchHttpClient.layer)),
 );
 
 const runCommand: {
@@ -198,7 +190,7 @@ const runHookWith =
       Effect.flatMap((context) => Effect.provideContext(reported, context)),
       Effect.scoped,
     );
-    NodeRuntime.runMain(main, {
+    runMain(main, {
       disableErrorReporting: true,
       teardown: (exit, onExit) => {
         onExit(exitCodeOf(exit));
@@ -214,6 +206,7 @@ export {
   getJson,
   localBin,
   projectDir,
+  projectRoot,
   readHookInput,
   runCommand,
   runHook,
