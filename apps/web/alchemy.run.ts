@@ -1,8 +1,9 @@
 import { Stack, makeRandom } from "alchemy";
 import { D1, Website, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
-import { APP_NAME, requireAppPrefix } from "app-name";
 import { Effect } from "effect";
+
+import { APP_NAME, requireAppPrefix } from "./app-name.ts";
 
 const TRACE_SAMPLING_RATE = 0.1;
 
