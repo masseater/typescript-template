@@ -1,6 +1,6 @@
 import { runMain } from "@effect/platform-node/NodeRuntime";
 import { layer as nodeServicesLayer } from "@effect/platform-node/NodeServices";
-import { Array as Arr, Cause, Console, Effect, Layer, Path, Schema, Stream } from "effect";
+import { Cause, Console, Effect, Layer, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 import { createLinter, loadLinterFormatter, loadTextlintrc } from "textlint";
 
@@ -8,9 +8,7 @@ const MARKDOWN_FILES = ["**/*.md"];
 const ERROR_SEVERITY = 2;
 const EXIT_SUCCESS = 0;
 
-const SkillList = Schema.fromJsonString(
-  Schema.Array(Schema.Struct({ name: Schema.String, path: Schema.String })),
-);
+const YOMIYASU_SCRIPT = ".agents/skills/yomiyasu/scripts/yomiyasu_lint.py";
 
 const run = Effect.fn("run")(function* run(command: string, args: readonly string[]) {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -23,7 +21,7 @@ const run = Effect.fn("run")(function* run(command: string, args: readonly strin
     ],
     { concurrency: "unbounded" },
   );
-  return { succeeded: exitCode === EXIT_SUCCESS, stdout, output: `${stdout}${stderr}` };
+  return { succeeded: exitCode === EXIT_SUCCESS, output: `${stdout}${stderr}` };
 }, Effect.scoped);
 
 const textlint = Effect.gen(function* textlint() {
@@ -41,19 +39,12 @@ const textlint = Effect.gen(function* textlint() {
   };
 });
 
-const yomiyasuScript = Effect.gen(function* yomiyasuScript() {
-  const path = yield* Path.Path;
-  const listed = yield* run("skills", ["ls", "--json"]);
-  const skills = yield* Schema.decodeEffect(SkillList)(listed.stdout);
-  const skill = yield* Effect.fromOption(Arr.findFirst(skills, ({ name }) => name === "yomiyasu"));
-  return path.join(skill.path, "scripts", "yomiyasu_lint.py");
-});
-
 const yomiyasu = Effect.fn("yomiyasu")(function* yomiyasu(files: readonly string[]) {
-  const script = yield* yomiyasuScript;
-  const runs = yield* Effect.forEach(files, (file) => run("python3", [script, "--strict", file]), {
-    concurrency: "unbounded",
-  });
+  const runs = yield* Effect.forEach(
+    files,
+    (file) => run("python3", [YOMIYASU_SCRIPT, "--strict", file]),
+    { concurrency: "unbounded" },
+  );
   yield* Console.log(runs.map((result) => result.output).join("\n"));
   return runs.every((result) => result.succeeded);
 });
