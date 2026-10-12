@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.9](https://github.com/masseater/typescript-template/compare/v0.0.8...v0.0.9) (2026-10-12)
+
+
+### Features
+
+* jev-lint を oxlint-plugin-decision に置き換える ([#156](https://github.com/masseater/typescript-template/issues/156)) ([1eacd14](https://github.com/masseater/typescript-template/commit/1eacd14b7eba58a4e6661ce9b6e87a77fa0f3d29))
+* pass the caller's environment to the decision lint for OpenRouter attribution ([#175](https://github.com/masseater/typescript-template/issues/175)) ([f9c03db](https://github.com/masseater/typescript-template/commit/f9c03dbfeee51422488a5c3d3dd2c7d0beddd10e))
+
 ## [0.0.8](https://github.com/masseater/typescript-template/compare/v0.0.7...v0.0.8) (2026-10-12)
 
 
