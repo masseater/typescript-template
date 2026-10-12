@@ -5,6 +5,7 @@ import { Config, Effect, Option, Schema } from "effect";
 
 import { APP_NAME, CI_TELEMETRY_AUDIENCE, requireAppPrefix } from "./app-name.ts";
 import { edgeGuard } from "./edge-guard.ts";
+import { logArchive } from "./log-archive.ts";
 
 const TRACE_SAMPLING_RATE = 0.1;
 
@@ -17,6 +18,7 @@ const web = Effect.gen(function* web() {
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
   return yield* Website.Vite("Web", {
     compatibility: COMPATIBILITY,
+    logpush: true,
     env: { BETTER_AUTH_SECRET, DB },
     observability: {
       enabled: true,
@@ -39,6 +41,7 @@ const ciTelemetry = Effect.gen(function* ciTelemetry() {
     name: CI_TELEMETRY_AUDIENCE,
     main: "./ci-telemetry.worker.ts",
     compatibility: COMPATIBILITY,
+    logpush: true,
     env: { GITHUB_REPOSITORY },
     observability: {
       enabled: true,
@@ -58,7 +61,11 @@ export default Stack(
     const { url } = yield* web;
     yield* Option.match(OWNED_ZONE, {
       onNone: () => Effect.void,
-      onSome: (zone) => edgeGuard(zone, COMPATIBILITY),
+      onSome: (zone) =>
+        Effect.gen(function* accountWide() {
+          yield* edgeGuard(zone, COMPATIBILITY);
+          yield* logArchive;
+        }),
     });
     yield* ciTelemetry;
     yield* requireAppPrefix;

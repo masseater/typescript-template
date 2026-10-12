@@ -151,7 +151,7 @@ export default defineConfig({
         {
           capIsNewExceptions: ["App", "CloudflareApiLive", "Secret", "Stack"],
           capIsNewExceptionPattern:
-            "^(Config|Context|Data|Schema|AnalyticsEngine|D1|Ruleset|Rules|Website|Workers|Zone)\\.",
+            "^(Config|Context|Data|Schema|AnalyticsEngine|ApiToken|D1|Logpush|R2|Ruleset|Rules|Website|Workers|Zone)\\.",
         },
       ],
       "typescript/no-empty-interface": ["error", { allowSingleExtends: true }],
