@@ -54,6 +54,11 @@ test.each<Readonly<{ stackName: string; resource: Resource; expected: boolean }>
   },
   { stackName: APP_NAME, resource: { type: "list", name: `${LIST_PREFIX}hosts` }, expected: true },
   { stackName: APP_NAME, resource: { type: "list", name: "web_hosts" }, expected: false },
+  {
+    stackName: `${APP_NAME}-gateway`,
+    resource: { type: "database", props: {} },
+    expected: true,
+  },
   { stackName: "web", resource: { type: "database", props: {} }, expected: false },
 ])("stack $stackName with $resource deploys: $expected", ({ stackName, resource, expected }) =>
   expect(deploys(stackName, resource)).resolves.toBe(expected),
