@@ -24,7 +24,7 @@ jobs:
           target: ${{ vars.ZAP_TARGET_URL }}
           rules_file_name: .github/zap/rules.tsv
           allow_issue_writing: false
-          fail_action: false
+          fail_action: true
 
   ci-telemetry:
     needs: [zap]
