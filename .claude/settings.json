@@ -3,6 +3,11 @@
   "env": {
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
   },
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
   "permissions": {
     "deny": ["Bash(pnpm *)", "Bash(pnpx *)", "Bash(pn *)", "Bash(pnx *)"]
   },
