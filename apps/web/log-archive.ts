@@ -5,7 +5,7 @@ import { Effect, Redacted, pipe } from "effect";
 
 import { APP_NAME } from "./app-name.ts";
 
-const RETENTION_DAYS = 90;
+const RETENTION_DAYS = 30;
 
 const SECONDS_PER_DAY = 86_400;
 
