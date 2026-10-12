@@ -1,5 +1,5 @@
 import { Stack } from "alchemy";
-import { D1, Rules } from "alchemy/Cloudflare";
+import { D1, Rules, Zone } from "alchemy/Cloudflare";
 import { App, Secret } from "alchemy/Fly";
 import { Stage } from "alchemy/Stage";
 import { inMemoryState } from "alchemy/State";
@@ -13,7 +13,8 @@ const ENV_PREFIX = `${APP_NAME.replaceAll("-", "_")}_`;
 type Resource =
   | Readonly<{ type: "database"; props: Readonly<{ name?: string }> }>
   | Readonly<{ type: "list"; name: string }>
-  | Readonly<{ type: "secret"; name: string }>;
+  | Readonly<{ type: "secret"; name: string }>
+  | Readonly<{ type: "zone"; name: string }>;
 
 const flySecret = Effect.fn("flySecret")(function* flySecret(name: string) {
   const app = yield* App("App", { name: `${APP_NAME}-app` });
@@ -31,6 +32,7 @@ const deploys = (stackName: string, resource: Resource): Promise<boolean> =>
             database: ({ props }) => D1.Database("DB", props),
             list: ({ name }) => Rules.List("List", { name, kind: "ip", items: [] }),
             secret: ({ name }) => flySecret(name),
+            zone: ({ name }) => Zone.Zone("Zone", { name }),
           }),
         );
         yield* requireAppPrefix;
@@ -65,6 +67,7 @@ test.each<Readonly<{ stackName: string; resource: Resource; expected: boolean }>
   { stackName: APP_NAME, resource: { type: "secret", name: `${ENV_PREFIX}TOKEN` }, expected: true },
   { stackName: APP_NAME, resource: { type: "secret", name: "TOKEN" }, expected: false },
   { stackName: APP_NAME, resource: { type: "secret", name: `${APP_NAME}-TOKEN` }, expected: false },
+  { stackName: APP_NAME, resource: { type: "zone", name: "example.com" }, expected: true },
   {
     stackName: `${APP_NAME}-gateway`,
     resource: { type: "database", props: {} },

@@ -1,13 +1,16 @@
 import { Stack, makeRandom } from "alchemy";
 import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
-import { Config, Effect, Schema } from "effect";
+import { Config, Effect, Option, Schema } from "effect";
 
 import { APP_NAME, CI_TELEMETRY_AUDIENCE, requireAppPrefix } from "./app-name.ts";
+import { edgeGuard } from "./edge-guard.ts";
 
 const TRACE_SAMPLING_RATE = 0.1;
 
 const COMPATIBILITY = { date: "2026-08-25" } as const;
+
+const OWNED_ZONE = Option.none<string>();
 
 const web = Effect.gen(function* web() {
   const DB = yield* D1.Database("DB", { migrations: "./drizzle" });
@@ -53,6 +56,10 @@ export default Stack(
   { providers: providers(), state: state() },
   Effect.gen(function* stack() {
     const { url } = yield* web;
+    yield* Option.match(OWNED_ZONE, {
+      onNone: () => Effect.void,
+      onSome: (zone) => edgeGuard(zone, COMPATIBILITY),
+    });
     yield* ciTelemetry;
     yield* requireAppPrefix;
     return { url };

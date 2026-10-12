@@ -1,5 +1,5 @@
 import { Stack, isResourceOfType } from "alchemy";
-import { Rules } from "alchemy/Cloudflare";
+import { Rules, Zone } from "alchemy/Cloudflare";
 import { Secret } from "alchemy/Fly";
 import { Array as Arr, Effect, Match, Option, Schema } from "effect";
 
@@ -13,12 +13,15 @@ const CI_TELEMETRY_AUDIENCE = `${PREFIX}ci-telemetry`;
 
 const isFlySecret = (resource: unknown): boolean => isResourceOfType(resource, Secret.Type);
 
+const isZone = (resource: unknown): boolean => isResourceOfType(resource, Zone.Zone.Type);
+
 const decodeNamed = Schema.decodeUnknownOption(Schema.Struct({ name: Schema.String }));
 
 const prefixOf = (resource: unknown): string =>
   Match.value(resource).pipe(
     Match.when(Rules.isList, () => ENV_PREFIX),
     Match.when(isFlySecret, () => ENV_PREFIX),
+    Match.when(isZone, () => ""),
     Match.orElse(() => PREFIX),
   );
 
