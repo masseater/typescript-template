@@ -1,20 +1,24 @@
-import { Stack } from "alchemy";
+import { Stack, isResourceOfType } from "alchemy";
 import { Rules } from "alchemy/Cloudflare";
+import { Secret } from "alchemy/Fly";
 import { Array as Arr, Effect, Match, Option, Schema } from "effect";
 
 const APP_NAME = "typescript-template";
 
 const PREFIX = `${APP_NAME}-`;
 
-const LIST_PREFIX = `${APP_NAME.replaceAll("-", "_")}_`;
+const ENV_PREFIX = `${APP_NAME.replaceAll("-", "_")}_`;
 
 const CI_TELEMETRY_AUDIENCE = `${PREFIX}ci-telemetry`;
+
+const isFlySecret = (resource: unknown): boolean => isResourceOfType(resource, Secret.Type);
 
 const decodeNamed = Schema.decodeUnknownOption(Schema.Struct({ name: Schema.String }));
 
 const prefixOf = (resource: unknown): string =>
   Match.value(resource).pipe(
-    Match.when(Rules.isList, () => LIST_PREFIX),
+    Match.when(Rules.isList, () => ENV_PREFIX),
+    Match.when(isFlySecret, () => ENV_PREFIX),
     Match.orElse(() => PREFIX),
   );
 
@@ -36,7 +40,7 @@ const requireAppPrefix = Effect.gen(function* requireAppPrefix() {
   if (Arr.isReadonlyArrayNonEmpty(offenders)) {
     return yield* Effect.die(
       new Error(
-        `Alchemy のスタック名は "${APP_NAME}" か "${PREFIX}" で始まる名前、リソース名は "${PREFIX}"（Rules.List は "${LIST_PREFIX}"）で始める: ${offenders.join(", ")}`,
+        `Alchemy のスタック名は "${APP_NAME}" か "${PREFIX}" で始まる名前、リソース名は "${PREFIX}"（Rules.List と Fly.Secret は "${ENV_PREFIX}"）で始める: ${offenders.join(", ")}`,
       ),
     );
   }
