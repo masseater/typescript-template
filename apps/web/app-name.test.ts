@@ -1,17 +1,24 @@
 import { Stack } from "alchemy";
 import { D1, Rules } from "alchemy/Cloudflare";
+import { App, Secret } from "alchemy/Fly";
 import { Stage } from "alchemy/Stage";
 import { inMemoryState } from "alchemy/State";
-import { Effect, Exit, Layer, Match } from "effect";
+import { Effect, Exit, Layer, Match, Redacted } from "effect";
 import { expect, test } from "vite-plus/test";
 
 import { APP_NAME, requireAppPrefix } from "./app-name.ts";
 
-const LIST_PREFIX = `${APP_NAME.replaceAll("-", "_")}_`;
+const ENV_PREFIX = `${APP_NAME.replaceAll("-", "_")}_`;
 
 type Resource =
   | Readonly<{ type: "database"; props: Readonly<{ name?: string }> }>
-  | Readonly<{ type: "list"; name: string }>;
+  | Readonly<{ type: "list"; name: string }>
+  | Readonly<{ type: "secret"; name: string }>;
+
+const flySecret = Effect.fn("flySecret")(function* flySecret(name: string) {
+  const app = yield* App("App", { name: `${APP_NAME}-app` });
+  return yield* Secret("Secret", { app, name, value: Redacted.make("value") });
+});
 
 const deploys = (stackName: string, resource: Resource): Promise<boolean> =>
   Effect.runPromise(
@@ -23,6 +30,7 @@ const deploys = (stackName: string, resource: Resource): Promise<boolean> =>
           Match.discriminatorsExhaustive("type")({
             database: ({ props }) => D1.Database("DB", props),
             list: ({ name }) => Rules.List("List", { name, kind: "ip", items: [] }),
+            secret: ({ name }) => flySecret(name),
           }),
         );
         yield* requireAppPrefix;
@@ -49,11 +57,14 @@ test.each<Readonly<{ stackName: string; resource: Resource; expected: boolean }>
   },
   {
     stackName: APP_NAME,
-    resource: { type: "database", props: { name: `${LIST_PREFIX}db` } },
+    resource: { type: "database", props: { name: `${ENV_PREFIX}db` } },
     expected: false,
   },
-  { stackName: APP_NAME, resource: { type: "list", name: `${LIST_PREFIX}hosts` }, expected: true },
+  { stackName: APP_NAME, resource: { type: "list", name: `${ENV_PREFIX}hosts` }, expected: true },
   { stackName: APP_NAME, resource: { type: "list", name: "web_hosts" }, expected: false },
+  { stackName: APP_NAME, resource: { type: "secret", name: `${ENV_PREFIX}TOKEN` }, expected: true },
+  { stackName: APP_NAME, resource: { type: "secret", name: "TOKEN" }, expected: false },
+  { stackName: APP_NAME, resource: { type: "secret", name: `${APP_NAME}-TOKEN` }, expected: false },
   {
     stackName: `${APP_NAME}-gateway`,
     resource: { type: "database", props: {} },
