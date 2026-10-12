@@ -74,7 +74,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 - 推測するな、計測しろ。仮説を立てたら、実装や修正の前に計測で事実を確かめ、その結果だけで判断する。
 - 機能開発に取り掛かる前に、AIが自分でデバッグできる仕組みを必ず作る。再現手段、ログやスパン、その出力を読む経路の3つである。
-- 時間かお金を使う処理（外部APIやモデルへのリクエスト、子プロセス、ファイルの入出力など）は、Workersに限らずすべてスパンにし、外から読めるようにする。Workers以外のプロセス（CLI、ライブラリ、ワーカースレッド）は、Effect公式の `OtlpTracer.layerFromConfig` を使い、標準の `OTEL_EXPORTER_OTLP_ENDPOINT` が設定されたときだけOTLPに出す。
+- 時間かお金を使う処理（外部APIやモデルへのリクエスト、子プロセス、ファイルの入出力など）は、Workersに限らずすべてスパンにし、外から読めるようにする。Workers以外のプロセス（CLI、ライブラリ、ワーカースレッド）は、Effect公式の `OtlpTracer.layerFromConfig` を使い、標準の `OTEL_TRACES_EXPORTER=otlp` と `OTEL_EXPORTER_OTLP_ENDPOINT` が設定されたときだけOTLPに出す。Effect は `OTEL_TRACES_EXPORTER` が無いと送らない。
 - スパンは時間を使っている処理そのものに仕込む。計測のためだけにコマンドやプロセスを包まない。
 - 計測は本番環境で行えるようにする。できないときは、あらゆる手段で本番同等を保証したステージング環境を作って行う。手元やテスト環境だけの計測は判断の根拠にしない。
 - 実践の手順は `measure-dont-guess` スキル（`docs/skills/measure-dont-guess/SKILL.md`）にある。不具合の調査は `systematic-debugging`、完了の確認は `verification-before-completion` スキルに従う。
