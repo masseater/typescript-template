@@ -116,20 +116,8 @@ jobs:
     concurrency:
       group: release
     steps:
-      - env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::RELEASE_PLEASE_TOKEN is not set. Issue a fine-grained PAT (Contents and Pull requests: write) and register it with gh secret set RELEASE_PLEASE_TOKEN."
-            exit 1
-          fi
-          if ! gh api "repos/$GITHUB_REPOSITORY" --silent; then
-            echo "::error::RELEASE_PLEASE_TOKEN was rejected; it has probably expired. Regenerate the fine-grained PAT and run gh secret set RELEASE_PLEASE_TOKEN again."
-            exit 1
-          fi
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
 
