@@ -58,7 +58,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 - PRのレビューは行わない。PRは作ったらすぐマージする。
 - PRのタイトルと本文は基本的に人間が読まないので、人間向けの説明を書かない。後でエージェント自身が検索したときに、自然に思いつく単語で引っかかり、何をしたか分かる程度でよい。
-- PR単位のCIは走らせない。`pull_request` トリガーのワークフローを追加しない。
+- PR単位のCIは走らせない。`pull_request` トリガーのワークフローは、最新の main を取り込んでいない PR のマージをルールセットで拒むための `up-to-date`（何も検査しない）だけにする。
 - CIはmainへのpushで必ず走らせる。ワークフローは `.github/workflows/verify.yml` である。
 - デプロイやリリースのジョブは、同じワークフローで `needs: verify` を指定し、mainの必須CIが通ってから実行する。
 - マージ前に必ず base ブランチを取り込み、手元の `vp run verify` を通してからマージする。コンフリクトしないからといって、取り込まないままマージしない。マージしてよいかは聞かない。
