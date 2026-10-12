@@ -56,7 +56,8 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## 外部 API クライアント
 
-- Effect から外部 API や SaaS を呼ぶクライアントは手で包まない。公開されている OpenAPI から `@effect/openapi-generator` の `openapigen` で生成する（`-f httpclient` なら Schema で実行時にデコードする。spec の不備は `-p` で JSON Patch を当てて直す）
+- 外部 API や SaaS を呼ぶ前に、distilled.cloud に Effect 定義が存在するかどうかを確認する
+- Effect から外部 API や SaaS を呼ぶクライアントは手で包まない。公開されている OpenAPI から `@effect/openapi-generator` の `openapigen` で生成する
 - Cloudflare は生成済みの `@distilled.cloud/cloudflare` を使う
 
 ## レビューとCI
