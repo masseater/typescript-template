@@ -54,6 +54,11 @@ release. Add a tool name to select part of the graph. For example, run
 - ライブラリが export する型・スキーマ・enum・定数を自前で書き写さない。一部だけ使うときも `Pick` などでライブラリの型から作る。
 - 入力が `unknown` でなければ、`@effect/tsgo` の `prefer-typed-schema-decoder`（error）が `decode*` を求める。
 
+## 外部 API クライアント
+
+- Effect から外部 API や SaaS を呼ぶクライアントは手で包まない。公開されている OpenAPI から `@effect/openapi-generator` の `openapigen` で生成する（`-f httpclient` なら Schema で実行時にデコードする。spec の不備は `-p` で JSON Patch を当てて直す）
+- Cloudflare は生成済みの `@distilled.cloud/cloudflare` を使う
+
 ## レビューとCI
 
 - PRのレビューは行わない。PRは作ったらすぐマージする。
