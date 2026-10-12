@@ -65,7 +65,7 @@
     "setup-github": {
       "source": "./docs/skills/setup-github",
       "sourceType": "local",
-      "computedHash": "e199a98e6b64b4ae47924863b78b7635aca269bd93d566863cb6adfdb72888df"
+      "computedHash": "03bb8de1881c5ca31cc961bb811452cf9fa0cd760e85722b0f61d817528e3a19"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
