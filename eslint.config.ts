@@ -14,13 +14,15 @@ export default defineConfig(
     linterOptions: { reportUnusedDisableDirectives: "error", reportUnusedInlineConfigs: "error" },
   },
   {
-    files: ["**/alchemy.run.ts"],
+    files: ["**/alchemy.*.ts"],
     rules: {
       "no-restricted-syntax": [
         "error",
         {
-          selector: 'CallExpression[callee.name="Stack"]:not([arguments.0.name="APP_NAME"])',
-          message: "スタック名には app-name.ts の APP_NAME を渡す",
+          selector:
+            'CallExpression[callee.name="Stack"]:not([arguments.0.name="APP_NAME"]):not([arguments.0.type="TemplateLiteral"][arguments.0.quasis.0.value.raw=""][arguments.0.expressions.0.name="PREFIX"])',
+          message:
+            "スタック名には app-name.ts の APP_NAME か、PREFIX で始まるテンプレートリテラルを渡す",
         },
         {
           selector:
