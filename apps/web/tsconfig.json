@@ -11,7 +11,7 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "allowedUnstableApis": ["effect/reactivity/Atom"]
+        "allowedUnstableApis": ["@effect/atom-react", "effect/reactivity/Atom"]
       }
     ]
   }
