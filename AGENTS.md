@@ -50,6 +50,7 @@ release. Add a tool name to select part of the graph. For example, run
 - `.php` や `.env` を総当たりする脆弱性スキャンは、ゾーンの WAF カスタムルールで block する。`/.env` と `/wp-login.php` だけはハニーポットの Worker が受け、404 を返して Analytics Engine に 1 件ずつ記録する。どちらも `apps/web/edge-guard.ts` にある。block した分は Security Events に残り、Worker に届かないので普段の Workers Logs やトレースには混ざらない。
 - ゾーンの WAF カスタムルールは、1 つのゾーンにつき 1 つのスタックだけが持つ。ゾーンを持つリポだけが `apps/web/alchemy.run.ts` の `OWNED_ZONE` にゾーン名を入れる。サブドメインで動くリポは入れず、ゾーンを持つリポのルールで守られる。今の持ち主は masseater.dev ゾーンの masseater/masseater.dev である。
 - Workers Logs は 7 日で消えるので、Worker にはすべて `logpush: true` を付け、Workers Logpush で R2 に日付ごとに書き出して残す。保持日数は `apps/web/log-archive.ts` の `RETENTION_DAYS` にある。サービスの規模では全件を残すと高いので、例外や CPU 超過など `Outcome` が `ok` でないものは全件、それ以外は 1% だけを残す。Logpush のジョブと R2 のバケットはアカウントに 1 つあれば全 Worker の分を受けられるので、`OWNED_ZONE` を持つリポだけが `apps/web/log-archive.ts` で持つ。
+- 検索に載せるアプリだけが、`apps/web/src/shared/config/search.ts` の `SEARCH_INDEX_ORIGIN` に公開する origin を入れる。入れると TanStack Start が `sitemap.xml` を生成し、`robots.txt` に `Sitemap:` 行が載る。入れないアプリは、すべての応答に `X-Robots-Tag: noindex` が付く。
 - Bot Fight Mode は、GitHub Actions からの送信や MCP クライアントのような正当な自動アクセスまで止めるので使わない。
 
 ## ライブラリの型

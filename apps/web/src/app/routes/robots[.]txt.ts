@@ -1,0 +1,24 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { Option } from "effect";
+
+import { SEARCH_INDEX_ORIGIN, SITEMAP_FILE } from "#/shared/config";
+
+const body = [
+  "User-agent: *",
+  "Allow: /",
+  ...Option.match(SEARCH_INDEX_ORIGIN, {
+    onNone: () => [],
+    onSome: (origin) => ["", `Sitemap: ${new URL(SITEMAP_FILE, origin).href}`],
+  }),
+  "",
+].join("\n");
+
+const Route = createFileRoute("/robots.txt")({
+  server: {
+    handlers: {
+      GET: () => new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8" } }),
+    },
+  },
+});
+
+export { Route };
