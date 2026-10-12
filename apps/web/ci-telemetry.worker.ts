@@ -103,7 +103,7 @@ const record = (request: Request, env: CiTelemetryEnv): Effect.Effect<Response> 
       jobs,
       Effect.forEach((job) => logJob(toRun(claims), job)),
     );
-    return new Response("", { status: 204 });
+    return new Response("", { status: 202 });
   }).pipe(
     Effect.catchTag("Unauthorized", (unauthorized) =>
       Effect.logWarning("ci.unauthorized").pipe(
