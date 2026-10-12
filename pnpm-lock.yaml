@@ -189,8 +189,8 @@ catalogs:
       specifier: 0.66.1
       version: 0.66.1
     '@r_masseater/oxlint-plugin-decision':
-      specifier: 0.0.3
-      version: 0.0.3
+      specifier: 0.0.4
+      version: 0.0.4
     '@shadcn/lint':
       specifier: 0.2.0
       version: 0.2.0
@@ -357,7 +357,7 @@ importers:
         version: 0.66.1(eslint@10.12.0(jiti@2.7.0)(supports-color@7.2.0))
       '@r_masseater/oxlint-plugin-decision':
         specifier: 'catalog:'
-        version: 0.0.3(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.9.1))
+        version: 0.0.4(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.2.0(@typescript-eslint/parser@8.71.1(eslint@10.12.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3))(eslint@10.12.0(jiti@2.7.0)(supports-color@7.2.0))
@@ -1125,9 +1125,6 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
-
-  '@cloudflare/workers-types@5.20261008.1':
-    resolution: {integrity: sha512-Ya6zuPTAQPka+Mn5rMI5f8Zl5bihhm+ytqhHiMzMgpLDGrD24A1k/Z/JPSBIqhIC0bx0AclgYyoZoRs6UWVlmw==}
 
   '@cloudflare/workers-types@5.20261009.1':
     resolution: {integrity: sha512-Oa/7pS2upeCKG0lEvPSGHLK8B8sx3lPanEaXDlOj13H6HfZV5agBeHq5A1VtJj+/x9dXuMJpHTg7U7kTYt4xDA==}
@@ -3224,8 +3221,8 @@ packages:
   '@qnighy/marshal@0.1.3':
     resolution: {integrity: sha512-uaDZTJYtD2UgQTGemmgWeth+e2WapZm+GkAq8UU8AJ55PKRFaf1GkH7X/uzA+Ygu8iInzIlM2FGyCUnruyMKMg==}
 
-  '@r_masseater/oxlint-plugin-decision@0.0.3':
-    resolution: {integrity: sha512-bgOavYDLp6WPro0kxwCYkLl/7gQYmwSMJaaIJETabes7XIpypp7PjU/dihggjbH8M2Fnh2oaO06OhG80IqyeUw==}
+  '@r_masseater/oxlint-plugin-decision@0.0.4':
+    resolution: {integrity: sha512-elorXe2tEkHeCEMKGR9BChgzHd4i7RpoNXsZPGCI6GW81fZk9yUK4p3Pk+3RKRjrtjZz6q3fv1K2HdH1fTKrPQ==}
     engines: {node: '>=20'}
     peerDependencies:
       oxlint: '>=1.87.0'
@@ -10921,8 +10918,6 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260918.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20261008.1': {}
-
   '@cloudflare/workers-types@5.20261009.1': {}
 
   '@commitlint/cli@21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.2)(typescript@5.9.3)':
@@ -11165,7 +11160,7 @@ snapshots:
 
   '@effect/sql-d1@4.0.0(effect@4.0.0)':
     dependencies:
-      '@cloudflare/workers-types': 5.20261008.1
+      '@cloudflare/workers-types': 5.20261009.1
       effect: 4.0.0
 
   '@effect/sql-sqlite-do@4.0.0(effect@4.0.0)':
@@ -12661,7 +12656,7 @@ snapshots:
     dependencies:
       '@babel/runtime-corejs3': 7.29.7
 
-  '@r_masseater/oxlint-plugin-decision@0.0.3(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.9.1))':
+  '@r_masseater/oxlint-plugin-decision@0.0.4(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@5.9.3)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.9.1))':
     dependencies:
       '@effect/platform-node': 4.0.0(effect@4.0.0)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@openrouter/sdk': 1.4.25
@@ -20538,7 +20533,7 @@ snapshots:
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
-      magic-string: 1.4.2
+      magic-string: 1.4.3
       obug: 2.2.1
       picomatch: 4.0.7
       std-env: 4.2.0
@@ -20582,7 +20577,7 @@ snapshots:
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
-      magic-string: 1.4.2
+      magic-string: 1.4.3
       obug: 2.2.1
       picomatch: 4.0.7
       std-env: 4.2.0
