@@ -225,6 +225,7 @@ export default defineConfig({
           "db-check-all",
           "fallow-all",
           "gitleaks",
+          "audit",
         ],
       },
       "test-all": "vp run -r test",
@@ -233,6 +234,10 @@ export default defineConfig({
       "steiger-all": "vp run -r steiger",
       "db-check-all": "vp run -r db:check",
       "fallow-all": "vp run -r fallow",
+      audit: {
+        command: "vp pm audit",
+        cache: false,
+      },
       gitleaks: {
         command: "go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --redact --no-banner",
         cache: false,
