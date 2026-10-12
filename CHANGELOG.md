@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.10](https://github.com/masseater/typescript-template/compare/v0.0.9...v0.0.10) (2026-10-12)
+
+
+### Features
+
+* **ci:** GitHub Actions のジョブ・ステップ所要時間を自前 Worker (OIDC 認証) で受けて Workers Logs に記録する ([b87f05f](https://github.com/masseater/typescript-template/commit/b87f05f11e572174c0ecdfc03e47d7110c71add0))
+* **ci:** record GitHub Actions job and step timings in Workers Logs ([9dcbc6a](https://github.com/masseater/typescript-template/commit/9dcbc6af4a3c5689e3f43e1ca7dd751118925eb7))
+
 ## [0.0.9](https://github.com/masseater/typescript-template/compare/v0.0.8...v0.0.9) (2026-10-12)
 
 
