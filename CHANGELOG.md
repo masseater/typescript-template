@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.8](https://github.com/masseater/typescript-template/compare/v0.0.7...v0.0.8) (2026-10-12)
+
+
+### Features
+
+* block pnpm calls from Claude Code with a PreToolUse hook ([#134](https://github.com/masseater/typescript-template/issues/134)) ([8babf76](https://github.com/masseater/typescript-template/commit/8babf76c1b7f3f62ad108cd407a1225bc39ee01f))
+* define the app name once and require it as the alchemy prefix ([705a471](https://github.com/masseater/typescript-template/commit/705a47148cf50c6053cd26ea78a41d59f2c89a6a))
+* define the app name once and require it as the alchemy prefix ([ed68b00](https://github.com/masseater/typescript-template/commit/ed68b0006548b001dbfb723d7f4f88b58e334e2d))
+* **skills:** add stop-describing-ui from artouc/stop-describe-ui ([#142](https://github.com/masseater/typescript-template/issues/142)) ([cff2b52](https://github.com/masseater/typescript-template/commit/cff2b529887cbe4f8d2628a063b95e9933935143))
+
 ## [0.0.7](https://github.com/masseater/typescript-template/compare/v0.0.6...v0.0.7) (2026-10-11)
 
 
