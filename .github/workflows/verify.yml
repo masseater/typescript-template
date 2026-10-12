@@ -87,14 +87,14 @@ jobs:
           gh workflow run autofix.yml --repo "$GITHUB_REPOSITORY" --ref "$HEAD_BRANCH"
           -f run_id="$FAILED_RUN_ID" -f branch="$HEAD_BRANCH" -f sha="$HEAD_SHA"
 
-  deploy-target:
+  deploy:
     needs: verify
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      latest: ${{ steps.head.outputs.latest }}
+    concurrency:
+      group: deploy
     steps:
       - id: head
         env:
@@ -106,25 +106,18 @@ jobs:
           if [ "$current" = "$HEAD_SHA" ]; then
             echo "latest=true" >> "$GITHUB_OUTPUT"
           fi
-
-  deploy:
-    needs: deploy-target
-    if: needs.deploy-target.outputs.latest == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    concurrency:
-      group: deploy
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: steps.head.outputs.latest == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+      - if: steps.head.outputs.latest == 'true'
+        uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
         with:
           cache: true
           run-install: |
             - args: ['--frozen-lockfile']
-      - run: vp exec alchemy deploy --stage production --yes
+      - if: steps.head.outputs.latest == 'true'
+        run: vp exec alchemy deploy --stage production --yes
         working-directory: apps/web
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -146,7 +139,7 @@ jobs:
           manifest-file: .github/release-please/manifest.json
 
   otel:
-    needs: [verify, jev-lint, autofix, deploy-target, deploy, release]
+    needs: [verify, jev-lint, autofix, deploy, release]
     if: always() && vars.OTEL_EXPORTER_OTLP_ENDPOINT != ''
     runs-on: ubuntu-latest
     permissions:
