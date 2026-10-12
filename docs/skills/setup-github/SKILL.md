@@ -26,12 +26,12 @@ gh secret set CLOUDFLARE_ACCOUNT_ID --repo "$REPO"
 gh secret set CLOUDFLARE_API_TOKEN --repo "$REPO"
 ```
 
-| 名前                      | 用途                                        |
-| ------------------------- | ------------------------------------------- |
-| `OPENROUTER_API_KEY`      | verify ワークフローの jev-lint              |
-| `CLAUDE_CODE_OAUTH_TOKEN` | verify 失敗時に Claude Code が自動修正する  |
-| `CLOUDFLARE_ACCOUNT_ID`   | デプロイ先と Alchemy の状態を置くアカウント |
-| `CLOUDFLARE_API_TOKEN`    | 同じアカウントの API トークン               |
+| 名前                      | 用途                                         |
+| ------------------------- | -------------------------------------------- |
+| `OPENROUTER_API_KEY`      | verify ワークフローの oxlint-plugin-decision |
+| `CLAUDE_CODE_OAUTH_TOKEN` | verify 失敗時に Claude Code が自動修正する   |
+| `CLOUDFLARE_ACCOUNT_ID`   | デプロイ先と Alchemy の状態を置くアカウント  |
+| `CLOUDFLARE_API_TOKEN`    | 同じアカウントの API トークン                |
 
 Organization のリポジトリなら、Organization の secrets に一度登録すれば、各リポジトリでの登録は要らない。
 
