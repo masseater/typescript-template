@@ -203,6 +203,8 @@ export default defineConfig({
         cache: {
           env: ["OPENROUTER_API_KEY"],
           untrackedEnv: [
+            "CLAUDECODE",
+            "CLAUDE_CODE_REMOTE",
             "HTTPS_PROXY",
             "https_proxy",
             "NO_PROXY",

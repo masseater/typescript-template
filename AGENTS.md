@@ -77,6 +77,7 @@ Effect から外部 API や SaaS を呼ぶクライアントは手で包まず�
 
 - 文章で書く lint ルールは `decision-rules.ts` に `defineDecisionRule` で書き、`vite.config.ts` で有効にする。`vp check` が判定し、答えは `node_modules/.cache/oxlint-plugin-decision` にキャッシュされる。
 - 無料の `openrouter/respan/span-01-lite` で判定できないルールだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と、このリポジトリの書き方どおりに書いた違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で判定させて確かめる。無料で判定できるルールにまで課金しないためである。
+- OpenRouter の使用量は、リポジトリと実行元（`github-actions`・`claude-code-cloud`・`claude-code`・`local`）ごとのアプリに分かれる。実行元は `GITHUB_ACTIONS`・`CLAUDE_CODE_REMOTE`・`CLAUDECODE` で見分けるため、`verify` タスクはこれらを `untrackedEnv` で lint に渡す。
 
 ## 計測
 
