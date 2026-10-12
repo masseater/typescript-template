@@ -43,6 +43,7 @@ const honeypot = Effect.fn("honeypot")(function* honeypot(
     name: `${APP_NAME}-honeypot`,
     main: "./honeypot.worker.ts",
     compatibility,
+    logpush: true,
     env: { HONEYPOT },
     routes: HONEYPOT_PATHS.map((path) => ({ pattern: `${domain}${path}`, zoneName: domain })),
   });
