@@ -177,8 +177,10 @@
       "computedHash": "7e1aee96370e3dc0abccdeb632aeee52061e437c2c25c71576c0500dcaeb118e"
     },
     "measure-dont-guess": {
-      "source": "./docs/skills/measure-dont-guess",
-      "sourceType": "local",
+      "source": "masseater/skills",
+      "ref": "e0ac8eabaafbf78d9e7e1731d75e4236d45cc6e4",
+      "sourceType": "github",
+      "skillPath": "skills/measure-dont-guess/SKILL.md",
       "computedHash": "26c3183fedaad983b439d63804240dd4d822ce87f0ca0718e85e6b96b4ef910d"
     },
     "modern-web-guidance": {
@@ -196,8 +198,10 @@
       "computedHash": "ee96e0a9fe6f55c69609c0fc40866276949fc2db2de3666c5cf954213e68d573"
     },
     "setup-github": {
-      "source": "./docs/skills/setup-github",
-      "sourceType": "local",
+      "source": "masseater/skills",
+      "ref": "e0ac8eabaafbf78d9e7e1731d75e4236d45cc6e4",
+      "sourceType": "github",
+      "skillPath": "skills/setup-github/SKILL.md",
       "computedHash": "95112c6fadc0712bc49e6c3e7fdb03c8961896e78b0501e092ada6d51dd8c93e"
     },
     "shadcn": {
