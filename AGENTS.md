@@ -73,10 +73,10 @@ Effect から外部 API や SaaS を呼ぶクライアントは手で包まず�
 - PRごとの動作検証やデプロイはしない。動作の確認は、mainにマージしてデプロイされた本番で実測して行う。
 - Claude のクラウドセッションではプロキシが GitHub API を拒むため、`actions-lint` タスク（`vite.config.ts`）は `CLAUDE_CODE_REMOTE` が設定されていると zizmor に `--no-online-audits` を付け、オフライン監査だけを行う。フックにも渡る環境変数で切り替えるため、Stop フックの verify でも同じになる。オンライン監査は main の CI（`.github/workflows/verify.yml`）が担う。
 
-## jev-lint
+## oxlint-plugin-decision
 
-- ルールは `.jev-lint.yaml` に置き、無料の `respan/span-01-lite` で判定できないものだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と、このリポジトリの書き方どおりに書いた違反でない例を `--cache none --retry 3` で判定させて確かめる。無料で判定できるルールにまで課金しないためである。
-- span-01-lite は `kind: noul` のルールしか判定できない。
+- 文章で書く lint ルールは `decision-rules.ts` に `defineDecisionRule` で書き、`vite.config.ts` で有効にする。`vp check` が判定し、答えは `node_modules/.cache/oxlint-plugin-decision` にキャッシュされる。
+- 無料の `openrouter/respan/span-01-lite` で判定できないルールだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と、このリポジトリの書き方どおりに書いた違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で判定させて確かめる。無料で判定できるルールにまで課金しないためである。
 
 ## 計測
 

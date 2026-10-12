@@ -6,7 +6,7 @@
   "scripts": {
     "markdown-lint": "textlint \"**/*.md\" && git ls-files -co --exclude-standard '*.md' | git -c core.excludesFile=.textlintignore check-ignore --no-index --stdin -nv | awk '$1 == \"::\" { print $2 }' | xargs -r -n 1 -P 4 python3 \"$(skills ls --json | jq -r '.[] | select(.name == \"yomiyasu\").path')/scripts/yomiyasu_lint.py\" --strict",
     "renovate": "renovate-config-validator --strict",
-    "fallow": "fallow --skip dupes --quiet --format compact && fallow dead-code --no-production --quiet --format compact && fallow dupes --quiet --format compact && fallow security --fail-on-issues --quiet",
+    "fallow": "fallow --skip dupes --fail-on-issues --quiet --format compact && fallow dead-code --no-production --fail-on-issues --quiet --format compact && fallow dupes --fail-on-issues --quiet --format compact && fallow security --fail-on-issues --quiet",
     "prepare": "vp config && skills experimental_install --force"
   },
   "devDependencies": {
@@ -17,6 +17,7 @@
     "@eslint-react/eslint-plugin": "catalog:",
     "@eslint/config-helpers": "catalog:",
     "@html-eslint/eslint-plugin-react": "catalog:",
+    "@r_masseater/oxlint-plugin-decision": "catalog:",
     "@shadcn/lint": "catalog:",
     "@tanstack/eslint-plugin-query": "catalog:",
     "@tanstack/eslint-plugin-router": "catalog:",
@@ -31,7 +32,6 @@
     "eslint-plugin-no-comments": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "fallow": "catalog:stack",
-    "jev-lint": "catalog:",
     "renovate": "catalog:stack",
     "skills": "catalog:",
     "syncpack": "catalog:",
