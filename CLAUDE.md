@@ -35,7 +35,7 @@ FSDはコロケーションが本質である。使われる場所の近くに�
 ## Alchemy
 
 Alchemy のリソース定義に足りない設定があるときは、alchemy にパッチを当てず、公式の拡張手段であるカスタムリソースを定義する。
-アプリ名は `apps/web/app-name.ts` の `APP_NAME` だけで定義する。スタック名に `APP_NAME` を渡し、スタックの最後で `requireAppPrefix` を `yield*` する。名前を明示するリソースは `APP_NAME-` で始める。守らなければ ESLint か実行時検査が落とす。
+アプリ名は `apps/web/app-name.ts` の `APP_NAME` だけで定義する。スタック名に `APP_NAME` を渡し、スタックの最後で `requireAppPrefix` を `yield*` する。名前を明示するリソースは `APP_NAME-` で始める。名前に英数字と `_` しか使えない Rules.List は、`APP_NAME` の `-` を `_` に替えた `LIST_PREFIX` で始める。守らなければ ESLint か実行時検査が落とす。
 `APP_NAME` を変えると別のスタックになり、リソースは作り直される。
 
 ## パッケージマネージャー
