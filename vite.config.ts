@@ -121,6 +121,11 @@ export default defineConfig({
           ignoreInferredTypes: true,
           allow: [
             { from: "lib", name: "Request" },
+            {
+              from: "package",
+              package: "@cloudflare/workers-types",
+              name: "AnalyticsEngineDataset",
+            },
             { from: "package", package: "@tanstack/query-core", name: "QueryClient" },
             {
               from: "package",
@@ -145,7 +150,8 @@ export default defineConfig({
         "error",
         {
           capIsNewExceptions: ["App", "CloudflareApiLive", "Secret", "Stack"],
-          capIsNewExceptionPattern: "^(Config|Context|Data|Schema|D1|Rules|Website|Workers)\\.",
+          capIsNewExceptionPattern:
+            "^(Config|Context|Data|Schema|AnalyticsEngine|D1|Ruleset|Rules|Website|Workers|Zone)\\.",
         },
       ],
       "typescript/no-empty-interface": ["error", { allowSingleExtends: true }],
