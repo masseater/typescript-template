@@ -57,6 +57,20 @@
       ],
     },
   },
+  "boundaries": {
+    "zones": [
+      { "name": "apps", "autoDiscover": ["apps"] },
+      { "name": "libs", "patterns": ["libs/**"] },
+      { "name": "tools", "patterns": ["tools/**"], "autoDiscover": ["tools"] },
+      { "name": "infra", "patterns": ["infra/**"], "autoDiscover": ["infra"] },
+    ],
+    "rules": [
+      { "from": "apps", "allow": ["libs"] },
+      { "from": "libs", "allow": [] },
+      { "from": "tools", "allow": ["libs"] },
+      { "from": "infra", "allow": ["libs", "apps"] },
+    ],
+  },
   "duplicates": { "threshold": 1, "ignore": ["**/generated/**"] },
   "flags": {
     "sdkPatterns": [
