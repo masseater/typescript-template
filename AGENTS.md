@@ -69,7 +69,7 @@ Effect から外部 API や SaaS を呼ぶクライアントは手で包まず�
 - PR単位のCIは走らせない。`pull_request` トリガーのワークフローは、最新の main を取り込んでいない PR のマージをルールセットで拒むための `up-to-date`（何も検査しない）だけにする。
 - CIはmainへのpushで必ず走らせる。ワークフローは `.github/workflows/verify.yml` である。
 - デプロイやリリースのジョブは、同じワークフローで `needs: verify` を指定し、mainの必須CIが通ってから実行する。
-- release-please のリリースPRは、Secrets の `RELEASE_PLEASE_TOKEN`（fine-grained PAT）で作る。`GITHUB_TOKEN` で作った PR では `pull_request` のワークフローが動かず、必須の `up-to-date` が付かないためである。ルールセットのバイパスや `--admin` でマージを通さない。登録手順は `setup-github` スキルにある。
+- release-please のリリースPRは、ほかの PR と同じく Claude が main を取り込み、手元の `vp run verify` を通してからマージする。`GITHUB_TOKEN` で作られたリリースPRの `pull_request` のワークフローは承認待ちになるため、Claude が取り込みを push して動いた `up-to-date` で必須チェックを満たす。取り込むものが無く承認待ちのままなら、ユーザーに承認を頼む。ルールセットのバイパスや `--admin` でマージを通さない。
 - マージ前に必ず base ブランチを取り込み、手元の `vp run verify` を通してからマージする。コンフリクトしないからといって、取り込まないままマージしない。マージしてよいかは聞かない。
 - PRごとの動作検証やデプロイはしない。動作の確認は、mainにマージしてデプロイされた本番で実測して行う。
 - Claude のクラウドセッションではプロキシが GitHub API を拒むため、`actions-lint` タスク（`vite.config.ts`）は `CLAUDE_CODE_REMOTE` が設定されていると zizmor に `--no-online-audits` を付け、オフライン監査だけを行う。フックにも渡る環境変数で切り替えるため、Stop フックの verify でも同じになる。オンライン監査は main の CI（`.github/workflows/verify.yml`）が担う。
