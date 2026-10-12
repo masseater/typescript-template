@@ -56,10 +56,11 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## 外部 API クライアント
 
-- Effect 公式が提供しているライブラリが色々あるので、ちゃんと見る（https://github.com/Effect-TS/effect#packages）
-- 外部 API や SaaS を呼ぶ前に、distilled.cloud に Effect 定義が存在するかどうかを確認する
-- Effect から外部 API や SaaS を呼ぶクライアントは手で包まない。公開されている OpenAPI から `@effect/openapi-generator` の `openapigen` で生成する
-- Cloudflare は生成済みの `@distilled.cloud/cloudflare` を使う
+Effect から外部 API や SaaS を呼ぶクライアントは手で包まず、次の順で選ぶ。
+
+1. Effect 公式のパッケージ（https://github.com/Effect-TS/effect#packages）にあれば使う。
+2. distilled.cloud に Effect 定義があれば使う。Cloudflare は生成済みの `@distilled.cloud/cloudflare` を使う。
+3. どちらにもなければ、公開されている OpenAPI から `@effect/openapi-generator` の `openapigen` で生成する。
 
 ## レビューとCI
 
