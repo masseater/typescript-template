@@ -129,7 +129,7 @@ jobs:
           manifest-file: .github/release-please/manifest.json
 
   otel:
-    needs: [verify, jev-lint, autofix, deploy-target, deploy, release]
+    needs: [verify, autofix, deploy-target, deploy, release]
     if: always() && vars.OTEL_EXPORTER_OTLP_ENDPOINT != ''
     runs-on: ubuntu-latest
     permissions:

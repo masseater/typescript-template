@@ -23,7 +23,7 @@ catalog:
   eslint-plugin-react-hooks: 7.1.1
   syncpack: 15.3.3
   vite: npm:@voidzero-dev/vite-plus-core@1.1.0
-  "@r_masseater/oxlint-plugin-decision": 0.0.1
+  "@r_masseater/oxlint-plugin-decision": 0.0.3
   "@eslint/config-helpers": 0.7.0
   eslint-plugin-no-comments: 1.2.1
   eslint-plugin-baseline-js: 0.7.4
@@ -86,3 +86,5 @@ packageExtensions:
       "@steiger/toolkit": 0.2.3
 patchedDependencies:
   "@tanstack/eslint-plugin-start@0.1.0": patches/@tanstack__eslint-plugin-start@0.1.0.patch
+minimumReleaseAgeExclude:
+  - "@r_masseater/oxlint-plugin-decision@0.0.3"
