@@ -4,32 +4,31 @@ import type { InferEnv } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { APP_NAME } from "./app-name.ts";
-
-const SCANNER_PATH_FRAGMENTS = [
-  ".php",
-  ".asp",
-  ".jsp",
-  ".cgi",
-  ".sql",
-  ".bak",
-  "/wp-",
-  "/cgi-bin/",
-  "/phpmyadmin",
-  "/actuator",
-  "/vendor/",
-] as const;
+import { SCANNER_PROBES } from "./scanner-probes.ts";
 
 const HONEYPOT_PATHS = ["/.env", "/wp-login.php"] as const;
 
 const PATH = "lower(http.request.uri.path)";
 
-const scannerExpression = (domain: string): string => {
-  const honeypot = `(http.host eq "${domain}" and http.request.uri.path in {${HONEYPOT_PATHS.map((path) => `"${path}"`).join(" ")}})`;
-  const probes = [
-    ...SCANNER_PATH_FRAGMENTS.map((fragment) => `${PATH} contains "${fragment}"`),
+const quote = (value: string): string => `"${value}"`;
+
+const SCANNER_CONDITIONS = {
+  contains: [
+    ...SCANNER_PROBES.contains.map((fragment) => `${PATH} contains ${quote(fragment)}`),
     `(${PATH} contains "/." and not starts_with(${PATH}, "/.well-known/"))`,
-  ].join(" or ");
-  return `(${probes}) and not ${honeypot}`;
+  ],
+  startsWith: SCANNER_PROBES.startsWith.map((prefix) => `starts_with(${PATH}, ${quote(prefix)})`),
+  endsWith: SCANNER_PROBES.endsWith.map((suffix) => `ends_with(${PATH}, ${quote(suffix)})`),
+  equals: SCANNER_PROBES.equals.map((path) => `${PATH} eq ${quote(path)}`),
+} as const;
+
+const scannerRules = (domain: string): Ruleset.Rule[] => {
+  const honeypot = `(http.host eq ${quote(domain)} and http.request.uri.path in {${HONEYPOT_PATHS.map((path) => quote(path)).join(" ")}})`;
+  return Object.entries(SCANNER_CONDITIONS).map(([kind, conditions]) => ({
+    description: `Block vulnerability scanner probes (${kind})`,
+    expression: `(${conditions.join(" or ")}) and not ${honeypot}`,
+    action: "block",
+  }));
 };
 
 const honeypot = Effect.fn("honeypot")(function* honeypot(
@@ -58,13 +57,7 @@ const edgeGuard = Effect.fn("edgeGuard")(function* edgeGuard(
     zone,
     name: `${APP_NAME}-scanner-block`,
     phase: "http_request_firewall_custom",
-    rules: [
-      {
-        description: "Block vulnerability scanner probes",
-        expression: scannerExpression(domain),
-        action: "block",
-      },
-    ],
+    rules: scannerRules(domain),
   });
   return yield* honeypot(domain, compatibility);
 });
