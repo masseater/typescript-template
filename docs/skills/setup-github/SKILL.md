@@ -24,6 +24,7 @@ gh secret set OPENROUTER_API_KEY --repo "$REPO"
 gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo "$REPO"
 gh secret set CLOUDFLARE_ACCOUNT_ID --repo "$REPO"
 gh secret set CLOUDFLARE_API_TOKEN --repo "$REPO"
+gh secret set RELEASE_PLEASE_TOKEN --repo "$REPO"
 ```
 
 | 名前                      | 用途                                         |
@@ -32,6 +33,12 @@ gh secret set CLOUDFLARE_API_TOKEN --repo "$REPO"
 | `CLAUDE_CODE_OAUTH_TOKEN` | verify 失敗時に Claude Code が自動修正する   |
 | `CLOUDFLARE_ACCOUNT_ID`   | デプロイ先と Alchemy の状態を置くアカウント  |
 | `CLOUDFLARE_API_TOKEN`    | 同じアカウントの API トークン                |
+| `RELEASE_PLEASE_TOKEN`    | release-please がリリースPRを作る            |
+
+`RELEASE_PLEASE_TOKEN` は、https://github.com/settings/personal-access-tokens/new で発行する fine-grained PAT である。
+Repository access で対象リポジトリだけを選び、Contents と Pull requests を Read and write にする。
+`GITHUB_TOKEN` で作った PR では `pull_request` のワークフローが動かず、5 の必須チェックが付かないため、リリースPRはこのトークンで作る。
+有効期限が切れると release ジョブがその旨のエラーで落ちるので、発行し直して登録し直す。
 
 Organization のリポジトリなら、Organization の secrets に一度登録すれば、各リポジトリでの登録は要らない。
 
@@ -55,7 +62,7 @@ gh api --method PATCH "repos/$REPO" -f pull_request_creation_policy=collaborator
 
 既定ブランチの削除と force push を禁じ、最新の既定ブランチを取り込んでいない PR のマージを拒むルールセットを置く。
 取り込みの検査は、`up-to-date` ワークフローのチェックを必須にし、`strict_required_status_checks_policy` を有効にして行う。
-release-please など GitHub Actions が作る PR では `pull_request` のワークフローが動かないため、GitHub Actions（integration 15368）をバイパスに入れる。
+バイパスは置かない。release-please の PR は 2 の `RELEASE_PLEASE_TOKEN` で作るため、ほかの PR と同じく検査が動く。
 同じ名前のルールセットがあれば置き換える。
 
 ```sh
@@ -66,7 +73,7 @@ gh api --method "$([ -n "$id" ] && echo PUT || echo POST)" "repos/$REPO/rulesets
   "target": "branch",
   "enforcement": "active",
   "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
-  "bypass_actors": [{ "actor_type": "Integration", "actor_id": 15368, "bypass_mode": "always" }],
+  "bypass_actors": [],
   "rules": [
     { "type": "deletion" },
     { "type": "non_fast_forward" },
