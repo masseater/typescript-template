@@ -40,73 +40,53 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## 環境変数と認証
 
-- 環境変数は必要最小限にする。環境変数が一つ増えるだけで、どの環境で何を設定するかという考慮事項が爆発的に増えるためである。
-- 環境変数にしてよいのは、設定や認証に限らず、本当に環境ごとに変わる値だけである。環境で変わらない値はコードや Alchemy の設定に書き、ツールにフラグがあればフラグを使う。
-- Cloudflare などのクラウドの認証は Alchemy のプロファイルで管理する。
+- 環境変数は、本当に環境ごとに変わる値だけにする。変わらない値はコードか Alchemy の設定に書き、ツールにフラグがあればフラグを使う。
+- クラウドの認証は Alchemy のプロファイルで管理する。
 
 ## Cloudflare
 
-- Cloudflare は Workers Paid プランを契約している前提でよい。Paid プランでしか使えない機能や上限を前提に設計してよい。
-- `.php` や `.env` を総当たりする脆弱性スキャンは、ゾーンの WAF カスタムルールで block する。`/.env` と `/wp-login.php` だけはハニーポットの Worker が受け、404 を返して Analytics Engine に 1 件ずつ記録する。どちらも `apps/web/edge-guard.ts` にある。block した分は Security Events に残り、Worker に届かないので普段の Workers Logs やトレースには混ざらない。
-- ゾーンの WAF カスタムルールは、1 つのゾーンにつき 1 つのスタックだけが持つ。ゾーンを持つリポだけが `apps/web/alchemy.run.ts` の `OWNED_ZONE` にゾーン名を入れる。サブドメインで動くリポは入れず、ゾーンを持つリポのルールで守られる。今の持ち主は masseater.dev ゾーンの masseater/masseater.dev である。
-- Workers Logs は 7 日で消えるので、Worker にはすべて `logpush: true` を付け、Workers Logpush で R2 に日付ごとに書き出して残す。保持日数は `apps/web/log-archive.ts` の `RETENTION_DAYS` にある。サービスの規模では全件を残すと高いので、例外や CPU 超過など `Outcome` が `ok` でないものは全件、それ以外は 1% だけを残す。Logpush のジョブと R2 のバケットはアカウントに 1 つあれば全 Worker の分を受けられるので、`OWNED_ZONE` を持つリポだけが `apps/web/log-archive.ts` で持つ。
-- 検索に載せるアプリだけが、`apps/web/src/shared/config/search.ts` の `SEARCH_INDEX_ORIGIN` に公開する origin を入れる。入れると TanStack Start が `sitemap.xml` を生成し、`robots.txt` に `Sitemap:` 行が載る。入れないアプリは、すべての応答に `X-Robots-Tag: noindex` が付く。
-- Bot Fight Mode は、GitHub Actions からの送信や MCP クライアントのような正当な自動アクセスまで止めるので使わない。
+- Workers Paid プランを前提に設計してよい。
+- ゾーンの WAF カスタムルールは 1 ゾーンにつき 1 スタックだけが持つ。持ち主のリポだけが `OWNED_ZONE` にゾーン名を入れる。今の持ち主は masseater.dev ゾーンの masseater/masseater.dev で、Logpush のジョブとバケットもそこが持つ。
+- Worker にはすべて `logpush: true` を付ける。
+- Bot Fight Mode は正当な自動アクセスまで止めるので使わない。
 
 ## ライブラリの型
 
-- ライブラリが型を提供する値は、`Schema.decodeUnknown*` で受けて型を捨てない。ライブラリの型のまま受けて `Schema.decode*` に渡す。入力の型が Schema の Encoded と食い違えばコンパイルが落ちる。
-- ライブラリが export する型・スキーマ・enum・定数を自前で書き写さない。一部だけ使うときも `Pick` などでライブラリの型から作る。
-- 入力が `unknown` でなければ、`@effect/tsgo` の `prefer-typed-schema-decoder`（error）が `decode*` を求める。
+- ライブラリが型を提供する値は `Schema.decodeUnknown*` で受けて型を捨てない。ライブラリの型のまま `Schema.decode*` に渡す。
+- ライブラリが export する型・スキーマ・enum・定数を書き写さない。一部だけ使うときも `Pick` などで作る。
 
 ## 外部 API クライアント
 
-Effect から外部 API や SaaS を呼ぶクライアントは手で包まず、次の順で選ぶ。
-
-1. Effect 公式のパッケージ（https://github.com/Effect-TS/effect#packages）にあれば使う。
-2. distilled.cloud に Effect 定義があれば使う。Cloudflare は生成済みの `@distilled.cloud/cloudflare` を使う。
-3. どちらにもなければ、公開されている OpenAPI から `@effect/openapi-generator` の `openapigen` で生成する。
+手で包まず、Effect 公式のパッケージ（https://github.com/Effect-TS/effect#packages ）、distilled.cloud の Effect 定義（Cloudflare は `@distilled.cloud/cloudflare`）、公開 OpenAPI からの `@effect/openapi-generator` 生成、の順に選ぶ。
 
 ## レビューとCI
 
-- PRのレビューは行わない。PRは作ったらすぐマージする。
-- PRのタイトルと本文は基本的に人間が読まないので、人間向けの説明を書かない。後でエージェント自身が検索したときに、自然に思いつく単語で引っかかり、何をしたか分かる程度でよい。
-- PR単位のCIは走らせない。`pull_request` トリガーのワークフローは、最新の main を取り込んでいない PR のマージをルールセットで拒むための `up-to-date`（何も検査しない）だけにする。
-- CIはmainへのpushで必ず走らせる。ワークフローは `.github/workflows/verify.yml` である。
-- デプロイやリリースのジョブは、同じワークフローで `needs: verify` を指定し、mainの必須CIが通ってから実行する。
-- release-please のリリースPRは main への push では作らず、更新もしない。push のたびに更新すると、そのたびに承認待ちの `up-to-date` が残るためである。リリースするときは Claude が `verify` ワークフローを手動実行してリリースPRを作り直す。タグ付けとリリースは、リリースPRをマージした push で動く。
-- release-please のリリースPRは、ほかの PR と同じく Claude が main を取り込み、手元の `vp run verify` を通してからマージする。`GITHUB_TOKEN` で作られたリリースPRの `pull_request` のワークフローは承認待ちになるため、Claude が取り込みを push して動いた `up-to-date` で必須チェックを満たす。取り込むものが無く承認待ちのままなら、ユーザーに承認を頼む。ルールセットのバイパスや `--admin` でマージを通さない。
-- マージ前に必ず base ブランチを取り込み、手元の `vp run verify` を通してからマージする。コンフリクトしないからといって、取り込まないままマージしない。マージしてよいかは聞かない。
-- PRごとの動作検証やデプロイはしない。動作の確認は、mainにマージしてデプロイされた本番で実測して行う。
-- Claude のクラウドセッションではプロキシが GitHub API を拒むため、`actions-lint` タスク（`vite.config.ts`）は `CLAUDE_CODE_REMOTE` が設定されていると zizmor に `--no-online-audits` を付け、オフライン監査だけを行う。フックにも渡る環境変数で切り替えるため、Stop フックの verify でも同じになる。オンライン監査は main の CI（`.github/workflows/verify.yml`）が担う。
+- PR のレビューも PR ごとの CI・動作検証・デプロイもしない。動作は main からデプロイされた本番で確かめる。
+- PR のタイトルと本文は、後でエージェントが検索して引っかかる程度でよい。
+- マージ前に必ず base を取り込み、手元の `vp run verify` を通してから自分でマージする。マージしてよいかは聞かない。ルールセットのバイパスや `--admin` は使わない。
+- CI は main への push で `.github/workflows/verify.yml` が走らせる。デプロイやリリースのジョブは同じワークフローで `needs: verify` にする。
+- release-please のリリース PR は、Claude が `verify` を手動実行して作り直す。`up-to-date` が承認待ちのまま取り込むものも無ければ、ユーザーに承認を頼む。
 
 ## oxlint-plugin-decision
 
-- 文章で書く lint ルールは `decision-rules.ts` に `defineDecisionRule` で書き、`vite.config.ts` で有効にする。`vp check` が判定し、答えは `node_modules/.cache/oxlint-plugin-decision` にキャッシュされる。
-- 無料の `openrouter/respan/span-01-lite` で判定できないルールだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と、このリポジトリの書き方どおりに書いた違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で判定させて確かめる。無料で判定できるルールにまで課金しないためである。
-- OpenRouter の使用量は、リポジトリと実行元（`github-actions`・`claude-code-cloud`・`claude-code`・`local`）ごとのアプリに分かれる。実行元は `GITHUB_ACTIONS`・`CLAUDE_CODE_REMOTE`・`CLAUDECODE` で見分けるため、`verify` タスクはこれらを `untrackedEnv` で lint に渡す。
+- 文章で書く lint ルールは `decision-rules.ts` に書く。
+- 無料の `openrouter/respan/span-01-lite` で判定できないルールだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で判定させて確かめる。
+- ルールが使うモデルは、ユーザーの指示なしに変えない。
 
 ## 計測
 
-- 推測するな、計測しろ。仮説を立てたら、実装や修正の前に計測で事実を確かめ、その結果だけで判断する。
-- 機能開発に取り掛かる前に、AIが自分でデバッグできる仕組みを必ず作る。再現手段、ログやスパン、その出力を読む経路の3つである。
-- 時間かお金を使う処理（外部APIやモデルへのリクエスト、子プロセス、ファイルの入出力など）は、Workersに限らずすべてスパンにし、外から読めるようにする。Workers以外のプロセス（CLI、ライブラリ、ワーカースレッド）は、Effect公式の `OtlpTracer.layerFromConfig` を使い、標準の `OTEL_TRACES_EXPORTER=otlp` と `OTEL_EXPORTER_OTLP_ENDPOINT` が設定されたときだけOTLPに出す。Effect は `OTEL_TRACES_EXPORTER` が無いと送らない。
-- スパンは時間を使っている処理そのものに仕込む。計測のためだけにコマンドやプロセスを包まない。
-- GitHub Actions も計測対象である。各ワークフローの最後に `.github/scripts/ci-telemetry.sh` を動かすジョブを置き、ジョブとステップの所要時間を `apps/web/ci-telemetry.worker.ts` の Worker に送る。Worker は GitHub の OIDC トークンで送り元のリポジトリを確かめ、1 件ずつ構造化ログとして Workers Logs に残す。受け口は Alchemy で定義し、Cloudflare の外にサービスやシークレットを増やさない。
-- 計測は本番環境で行えるようにする。できないときは、あらゆる手段で本番同等を保証したステージング環境を作って行う。手元やテスト環境だけの計測は判断の根拠にしない。
-- 実践の手順は `measure-dont-guess` スキルにある。不具合の調査は `systematic-debugging`、完了の確認は `verification-before-completion` スキルに従う。
+- 推測するな、計測しろ。実装や修正の前に計測で事実を確かめ、その結果だけで判断する。手元やテスト環境だけの計測は根拠にしない。
+- 機能開発の前に、AI が自分でデバッグできる仕組み（再現手段、ログやスパン、それを読む経路）を作る。
+- 時間かお金を使う処理はすべてスパンにする。Workers 以外のプロセスは Effect 公式の `OtlpTracer.layerFromConfig` を使う。計測のためだけにコマンドやプロセスを包まない。
+- ワークフローを足したら、最後に `.github/scripts/ci-telemetry.sh` を動かすジョブを置く。
+- 手順は `measure-dont-guess`、不具合の調査は `systematic-debugging`、完了の確認は `verification-before-completion` スキルに従う。
 
-## 脆弱性スキャン
+## 脆弱性
 
-- OWASP ZAP のベースラインスキャンを `.github/workflows/zap.yml` に置く。verify とは別のワークフローで、毎週と手動で動く。
-- 既定では動かない。リポジトリの Variables に `ZAP_TARGET_URL`（本番の URL）を設定すると有効になる。
-- 警告を含め、ZAP のアラートが 1 件でもあればジョブを失敗にし、すぐ直す。レポートはワークフローの成果物 `zap_scan` に残る。誤検知だけを `.github/zap/rules.tsv` に `ルールID<TAB>IGNORE<TAB>(ルール名)` で書く。
-- 依存パッケージの既知の脆弱性は、verify の `audit` タスク（`vp pm audit`）が落とす。直すときは `vp pm audit --fix` で `pnpm-workspace.yaml` の overrides に修正版を足す。修正版が出ていない勧告だけを、`auditConfig.ignoreGhsas` に GHSA の ID で載せ、理由をコミットメッセージに書く。
+- ZAP のアラートは警告を含めすぐ直す。誤検知だけを `.github/zap/rules.tsv` に書く。
+- `audit` が落ちたら `vp pm audit --fix` で直す。修正版の無い勧告だけを `auditConfig.ignoreGhsas` に載せ、理由をコミットメッセージに書く。
 
-## スキル
+## スキルとベース
 
-- 複数のリポジトリで共通に使う自作のスキルは https://github.com/masseater/skills に置き、skills CLI で `skills-lock.json` に追加する。リポジトリにコピーしない。
-
-## ベース
-
-- このリポジトリのベースは https://github.com/masseater/typescript-template である。テンプレート由来の構成・方針はテンプレートに従う。
+- 複数リポで使う自作スキルは https://github.com/masseater/skills に置き、skills CLI で入れる。リポにコピーしない。
+- このリポジトリのベースは https://github.com/masseater/typescript-template である。
