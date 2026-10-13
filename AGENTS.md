@@ -38,55 +38,46 @@ release. Add a tool name to select part of the graph. For example, run
 
 <!--VITE PLUS END-->
 
-## 環境変数と認証
+## 環境変数
 
-- 環境変数は、本当に環境ごとに変わる値だけにする。変わらない値はコードか Alchemy の設定に書き、ツールにフラグがあればフラグを使う。
-- クラウドの認証は Alchemy のプロファイルで管理する。
+- 環境変数は環境ごとに変わる値だけにする。変わらない値はコードか Alchemy の設定に、ツールにフラグがあればフラグにする。
 
 ## Cloudflare
 
-- Workers Paid プランを前提に設計してよい。
-- ゾーンの WAF カスタムルールは 1 ゾーンにつき 1 スタックだけが持つ。持ち主のリポだけが `OWNED_ZONE` にゾーン名を入れる。今の持ち主は masseater.dev ゾーンの masseater/masseater.dev で、Logpush のジョブとバケットもそこが持つ。
+- Workers Paid プランを前提にする。
+- ゾーンの WAF カスタムルールと Logpush のジョブは、masseater.dev ゾーンの持ち主の masseater/masseater.dev だけが持つ。ほかのリポは `OWNED_ZONE` を入れない。
 - Worker にはすべて `logpush: true` を付ける。
-- Bot Fight Mode は正当な自動アクセスまで止めるので使わない。
+- Bot Fight Mode は使わない。
 
-## ライブラリの型
+## ライブラリ
 
-- ライブラリが型を提供する値は `Schema.decodeUnknown*` で受けて型を捨てない。ライブラリの型のまま `Schema.decode*` に渡す。
-- ライブラリが export する型・スキーマ・enum・定数を書き写さない。一部だけ使うときも `Pick` などで作る。
+- ライブラリが型を提供する値は、その型のまま `Schema.decode*` に渡す。
+- ライブラリが export する型・スキーマ・enum・定数を書き写さない。
+- 外部 API のクライアントは手で包まず、Effect 公式のパッケージ、distilled.cloud（Cloudflare は `@distilled.cloud/cloudflare`）、公開 OpenAPI から `@effect/openapi-generator` で生成、の順に選ぶ。
 
-## 外部 API クライアント
+## PR とマージ
 
-手で包まず、Effect 公式のパッケージ（https://github.com/Effect-TS/effect#packages ）、distilled.cloud の Effect 定義（Cloudflare は `@distilled.cloud/cloudflare`）、公開 OpenAPI からの `@effect/openapi-generator` 生成、の順に選ぶ。
-
-## レビューとCI
-
-- PR のレビューも PR ごとの CI・動作検証・デプロイもしない。動作は main からデプロイされた本番で確かめる。
-- PR のタイトルと本文は、後でエージェントが検索して引っかかる程度でよい。
-- マージ前に必ず base を取り込み、手元の `vp run verify` を通してから自分でマージする。マージしてよいかは聞かない。ルールセットのバイパスや `--admin` は使わない。
-- CI は main への push で `.github/workflows/verify.yml` が走らせる。デプロイやリリースのジョブは同じワークフローで `needs: verify` にする。
-- release-please のリリース PR は、Claude が `verify` を手動実行して作り直す。`up-to-date` が承認待ちのまま取り込むものも無ければ、ユーザーに承認を頼む。
+- PR のレビュー、PR ごとの CI・動作検証・デプロイはしない。動作は本番で確かめる。
+- マージ前に base を取り込み、手元の `vp run verify` を通してから自分でマージする。マージしてよいかは聞かない。ルールセットのバイパスや `--admin` は使わない。
+- release-please のリリース PR は `verify` を手動実行して作り直す。`up-to-date` が承認待ちで取り込むものも無ければ、ユーザーに承認を頼む。
 
 ## oxlint-plugin-decision
 
-- 文章で書く lint ルールは `decision-rules.ts` に書く。
-- 無料の `openrouter/respan/span-01-lite` で判定できないルールだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で判定させて確かめる。
+- 有料の decider は、無料の `openrouter/respan/span-01-lite` で判定できないルールだけに使う。判定できるかは、正解の分かる違反例と違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で確かめる。
 - ルールが使うモデルは、ユーザーの指示なしに変えない。
 
 ## 計測
 
-- 推測するな、計測しろ。実装や修正の前に計測で事実を確かめ、その結果だけで判断する。手元やテスト環境だけの計測は根拠にしない。
+- 推測せず計測する。実装や修正の前に本番で事実を確かめ、その結果だけで判断する。
 - 機能開発の前に、AI が自分でデバッグできる仕組み（再現手段、ログやスパン、それを読む経路）を作る。
-- 時間かお金を使う処理はすべてスパンにする。Workers 以外のプロセスは Effect 公式の `OtlpTracer.layerFromConfig` を使う。計測のためだけにコマンドやプロセスを包まない。
-- ワークフローを足したら、最後に `.github/scripts/ci-telemetry.sh` を動かすジョブを置く。
-- 手順は `measure-dont-guess`、不具合の調査は `systematic-debugging`、完了の確認は `verification-before-completion` スキルに従う。
+- 時間かお金を使う処理はすべてスパンにする。Workers 以外は `OtlpTracer.layerFromConfig` で出す。計測のためだけにコマンドやプロセスを包まない。
+- ワークフローの最後には `.github/scripts/ci-telemetry.sh` を動かすジョブを置く。
 
 ## 脆弱性
 
-- ZAP のアラートは警告を含めすぐ直す。誤検知だけを `.github/zap/rules.tsv` に書く。
-- `audit` が落ちたら `vp pm audit --fix` で直す。修正版の無い勧告だけを `auditConfig.ignoreGhsas` に載せ、理由をコミットメッセージに書く。
+- ZAP のアラートは警告も含めすぐ直す。誤検知だけを `.github/zap/rules.tsv` に書く。
+- `audit` は `vp pm audit --fix` で直す。修正版の無い勧告だけを `auditConfig.ignoreGhsas` に載せ、理由をコミットメッセージに書く。
 
-## スキルとベース
+## スキル
 
-- 複数リポで使う自作スキルは https://github.com/masseater/skills に置き、skills CLI で入れる。リポにコピーしない。
-- このリポジトリのベースは https://github.com/masseater/typescript-template である。
+- 複数リポで使う自作スキルは masseater/skills に置き、skills CLI で入れる。
