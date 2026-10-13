@@ -1,5 +1,9 @@
 # typescript-template
 
+## 公開先
+
+- Web: https://typescript-template-web-production-ntesuocc46gilfjl.masseater.workers.dev
+
 ## セットアップ
 
 ```sh
