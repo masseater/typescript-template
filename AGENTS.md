@@ -38,10 +38,9 @@ release. Add a tool name to select part of the graph. For example, run
 
 <!--VITE PLUS END-->
 
-## 環境変数と認証
+## 環境変数
 
 - 環境変数は、本当に環境ごとに変わる値だけにする。変わらない値はコードか Alchemy の設定に書き、ツールにフラグがあればフラグを使う。
-- クラウドの認証は Alchemy のプロファイルで管理する。
 
 ## Cloudflare
 
@@ -62,14 +61,11 @@ release. Add a tool name to select part of the graph. For example, run
 ## レビューとCI
 
 - PR のレビューも PR ごとの CI・動作検証・デプロイもしない。動作は main からデプロイされた本番で確かめる。
-- PR のタイトルと本文は、後でエージェントが検索して引っかかる程度でよい。
 - マージ前に必ず base を取り込み、手元の `vp run verify` を通してから自分でマージする。マージしてよいかは聞かない。ルールセットのバイパスや `--admin` は使わない。
-- CI は main への push で `.github/workflows/verify.yml` が走らせる。デプロイやリリースのジョブは同じワークフローで `needs: verify` にする。
 - release-please のリリース PR は、Claude が `verify` を手動実行して作り直す。`up-to-date` が承認待ちのまま取り込むものも無ければ、ユーザーに承認を頼む。
 
 ## oxlint-plugin-decision
 
-- 文章で書く lint ルールは `decision-rules.ts` に書く。
 - 無料の `openrouter/respan/span-01-lite` で判定できないルールだけを有料の decider で判定する。判定できるかは、正解の分かる違反例と違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で判定させて確かめる。
 - ルールが使うモデルは、ユーザーの指示なしに変えない。
 
@@ -79,7 +75,6 @@ release. Add a tool name to select part of the graph. For example, run
 - 機能開発の前に、AI が自分でデバッグできる仕組み（再現手段、ログやスパン、それを読む経路）を作る。
 - 時間かお金を使う処理はすべてスパンにする。Workers 以外のプロセスは Effect 公式の `OtlpTracer.layerFromConfig` を使う。計測のためだけにコマンドやプロセスを包まない。
 - ワークフローを足したら、最後に `.github/scripts/ci-telemetry.sh` を動かすジョブを置く。
-- 手順は `measure-dont-guess`、不具合の調査は `systematic-debugging`、完了の確認は `verification-before-completion` スキルに従う。
 
 ## 脆弱性
 
