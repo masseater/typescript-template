@@ -43,11 +43,14 @@ jobs:
           path: node_modules/.cache/oxlint-plugin-decision
           key: oxlint-plugin-decision-${{ github.sha }}
           restore-keys: oxlint-plugin-decision-
+      - if: github.event_name == 'push'
+        run: vp run gitleaks
+        env:
+          GITLEAKS_BASE: ${{ github.event.before }}
       - id: verify
         run: vp run --log grouped verify
         env:
           GH_TOKEN: ${{ github.token }}
-          GITLEAKS_BASE: ${{ github.event.before }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       - if: always() && steps.verify.outcome != 'skipped'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

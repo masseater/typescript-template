@@ -230,7 +230,6 @@ export default defineConfig({
           "steiger-all",
           "db-check-all",
           "fallow-all",
-          "gitleaks",
           "audit",
         ],
       },
