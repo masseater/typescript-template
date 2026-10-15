@@ -1,55 +1,16 @@
-<!-- intent-skills:start -->
-## Skill Loading
-
-Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
-Before editing files for a substantial task:
-- Run `pnpm exec intent list` from the workspace root to see available local skills.
-- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
-- Use the loaded `SKILL.md` guidance while making the change.
-- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
-- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
-<!-- intent-skills:end -->
-
-<!--VITE PLUS START-->
-
-# Using Vite+, the Unified Toolchain for the Web
-
-This project is using Vite+, a unified toolchain built on top of Vite, Rolldown, Vitest, tsdown, Oxlint, Oxfmt, and Vite Task. Vite+ wraps runtime management, package management, and frontend tooling in a single global CLI called `vp`. Vite+ is distinct from Vite, and it invokes Vite through `vp dev` and `vp build`. Run `vp help` to print a list of commands and `vp <command> --help` for information about a specific command.
-
-Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
-
-## Built-in Commands vs Scripts
-
-`vp <name>` runs a built-in command. `vp run <name>` runs a `package.json` script or a `vite.config.ts` task. Scripts cannot overwrite built-ins, so `vp dev` and `vp run dev` may do different things. Check `package.json` and `vite.config.ts` first, and run `vp run <name>` when the project defines a script or task with that name.
-
-## Tool Versions
-
-Run `vp toolchain` to show versions and relationships in the active Vite+
-release. Add a tool name to select part of the graph. For example, run
-`vp toolchain vite`. Use `--global` to ignore the local `vite-plus` package. Use
-`vp why <package>` to show the package-manager dependency graph.
-
-## Review Checklist
-
-- [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
-- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
-- [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
-
-<!--VITE PLUS END-->
-
 ## コマンド
 
-- `vp run verify` は、ルートの `vp check` にテスト・ESLint・steiger・`db:check`・fallow・gitleaks・audit などの検査を束ねたタスクである。pre-push フックと Stop フックも同じ verify を走らせる。
+- コマンドは `vp` から実行し、`pnpm`・`npx` は直接使わない。`vp run <name>` は `package.json` と `vite.config.ts` のタスクで、組み込みコマンドとは別物である。
+- `vp run verify` が検査をまとめて流す。pre-push フックと Stop フックも同じ verify を走らせる。
 - `vp check` は oxlint-plugin-decision の判定に `.env` の `OPENROUTER_API_KEY` を使う。
 - テストを 1 つだけ走らせるときは、`apps/web` で `vp test run <ファイル>` を実行する。
-- D1 のスキーマは `*.table.ts` に書き、`apps/web` で `vp run db:generate` を実行してマイグレーションを `drizzle/` に作る。better-auth のテーブルは `vp run auth:generate` で生成する。
+- D1 のスキーマは `*.table.ts` に書き、`apps/web` で `vp run db:generate` を実行してマイグレーションを作る。better-auth のテーブルは `vp run auth:generate` で生成する。
 
 ## 構成
 
 - `apps/web` は TanStack Start のアプリである。`alchemy.run.ts` が D1 と Worker を定義し、Cloudflare にデプロイする。
-- API は Elysia で書く。`src/app/routes/api.$.ts` が `/api/*` を `src/app/server/api.server.ts` のルーターに渡す。各スライスは `index.server.ts` から出したルートを、そのルーターに足す。
-- クライアントは `shared/api` で Eden の型から TanStack Query のクエリを作る。SSR 中は HTTP を通らず、`createIsomorphicFn` でルートの `handle` を直接呼ぶ。
+- API は Elysia で書く。`src/app/routes/api.$.ts` が `/api/*` を `src/app/server/api.server.ts` のルーターへ渡し、各スライスのルートは `index.server.ts` からそこへ足す。
+- クライアントは `shared/api` で Eden の型から TanStack Query のクエリを作る。SSR 中は `createIsomorphicFn` がルートの `handle` を直接呼ぶ。
 
 ## 環境変数
 
@@ -78,7 +39,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 - 有料の decider は、無料の `openrouter/respan/span-01-lite` で判定できないルールだけに使う。判定できるかは、正解の分かる違反例と違反でない例を、キャッシュを消して `OXLINT_DECISION_EXPLAIN=json` で確かめる。
 - ルールが使うモデルは、ユーザーの指示なしに変えない。
-- 確信できるものだけを違反にする。取りこぼしは許容し、閾値を下げて拾いにいかない。
+- 確信できるものだけを違反にする。閾値を下げて取りこぼしを拾いにいかない。
 
 ## 計測
 
@@ -98,4 +59,5 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## スキル
 
+- 編集の前に、リポジトリのルートで `vp exec intent list` を実行する。合う skill があれば `vp exec intent load <package>#<skill>` で読む。`intent` が無いときはインストールせず、不足を報告する。
 - 複数リポで使う自作スキルは masseater/skills に置き、skills CLI で入れる。
