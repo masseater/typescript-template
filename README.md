@@ -1,11 +1,12 @@
 # typescript-template
 
-Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロイ・AI エージェントとの作業の決まりがそろった状態から始めるための GitHub テンプレートである。
+Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロイ・AI エージェントとの作業の決まりが
+そろった状態から始めるための GitHub テンプレートである。
 新しいリポジトリを作るたびに、lint や CI やデプロイの仕組みを組み直さずに済む。
 
 ## 公開先
 
-- テンプレートのままのアプリ: https://typescript-template-web-production-ntesuocc46gilfjl.masseater.workers.dev
+- テンプレートのままのアプリ: <https://typescript-template-web-production-ntesuocc46gilfjl.masseater.workers.dev>
 
 ## 始めたときに入っているもの
 
@@ -26,7 +27,8 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 ### 1. テンプレートからリポジトリを作る
 
 ```sh
-gh repo create <owner>/<name> --template masseater/typescript-template --private --clone
+gh repo create <owner>/<name> --template masseater/typescript-template \
+  --private --clone
 cd <name>
 ```
 
