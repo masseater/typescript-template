@@ -1,6 +1,6 @@
-@AGENTS.md
-
 # CLAUDE.md
+
+@AGENTS.md
 
 ## 最上位原則
 

@@ -43,7 +43,8 @@ const effectRules = asErrors(
 
 export default defineConfig({
   staged: {
-    "*": "vp check --fix",
+    "!(*.md)": "vp check --fix",
+    "*.md": ["markdownlint-cli2 --fix", "vp check --fix"],
   },
   fmt: {
     ignorePatterns: generated,
