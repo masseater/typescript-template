@@ -1,0 +1,2 @@
+m="$(dirname "$0")/_/mergify-hooks/post-commit.sh"
+if [ -f "$m" ]; then sh "$m" "$@"; fi
