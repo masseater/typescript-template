@@ -1,2 +1,0 @@
-m="$(dirname "$0")/_/mergify-hooks/prepare-commit-msg.sh"
-if [ -f "$m" ]; then sh "$m" "$@"; fi
