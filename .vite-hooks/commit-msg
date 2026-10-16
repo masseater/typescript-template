@@ -1,3 +1,1 @@
 vp exec commitlint --edit "$1"
-m="$(dirname "$0")/_/mergify-hooks/commit-msg.sh"
-if [ -f "$m" ]; then sh "$m" "$@"; fi
