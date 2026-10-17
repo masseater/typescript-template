@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.11](https://github.com/masseater/typescript-template/compare/v0.0.10...v0.0.11) (2026-10-13)
+
+
+### Features
+
+* add integrate, skill-authoring and how-to-use-react from masseater/skills ([#200](https://github.com/masseater/typescript-template/issues/200)) ([8f653a3](https://github.com/masseater/typescript-template/commit/8f653a360285a931a71167ff9c079f04436395a0))
+* **ci:** add opt-in OWASP ZAP baseline scan workflow ([#191](https://github.com/masseater/typescript-template/issues/191)) ([27ddb2a](https://github.com/masseater/typescript-template/commit/27ddb2aca6fb8cd366eebae23517a35496fe346d))
+* **ci:** fail the ZAP job on any alert ([#193](https://github.com/masseater/typescript-template/issues/193)) ([977327e](https://github.com/masseater/typescript-template/commit/977327eba77a9e30e32fbdb22e62b48878f1c065))
+* keep archived Workers logs for 30 days instead of 90 ([#199](https://github.com/masseater/typescript-template/issues/199)) ([c349d4e](https://github.com/masseater/typescript-template/commit/c349d4e2928f527aa73444f2bebb952ea8f1a9af))
+* **skills:** add every skill from philtzjp/skills to skills-lock.json ([#187](https://github.com/masseater/typescript-template/issues/187)) ([5425a86](https://github.com/masseater/typescript-template/commit/5425a86de7b73f5d5df63354b7bb1f0360bce548))
+* **skills:** install measure-dont-guess and setup-github from masseater/skills ([#189](https://github.com/masseater/typescript-template/issues/189)) ([d392929](https://github.com/masseater/typescript-template/commit/d392929e8c737d7355696eb7b378cd2e5afa95b2))
+* **verify:** fail verify on known dependency vulnerabilities ([#192](https://github.com/masseater/typescript-template/issues/192)) ([757c044](https://github.com/masseater/typescript-template/commit/757c044faeb249044f7397bfb71c73cde7a037e9))
+* WAF scanner block rules from hono-honeypot pattern list (scanner-probes.ts) ([#202](https://github.com/masseater/typescript-template/issues/202)) ([2984163](https://github.com/masseater/typescript-template/commit/2984163ee5cac968df04367a9068d2b5f3987592))
+* **web:** archive Workers logs to R2 for 90 days via Workers Logpush ([#196](https://github.com/masseater/typescript-template/issues/196)) ([bc66237](https://github.com/masseater/typescript-template/commit/bc66237429aa705c8be7a867eece249ea0c5f3f3))
+* **web:** edge guard blocks scanner probes and records a honeypot ([#194](https://github.com/masseater/typescript-template/issues/194)) ([6abd674](https://github.com/masseater/typescript-template/commit/6abd67419577bcf578997bd8d515b7a932f1581e))
+* **web:** keep only failed invocations and a 1% sample in the 90-day log archive ([#197](https://github.com/masseater/typescript-template/issues/197)) ([bbc1a65](https://github.com/masseater/typescript-template/commit/bbc1a65c3ff8ddab33c34eb2eb94c4584e64f657))
+* **web:** let requireAppPrefix accept ENV_PREFIX for Fly.Secret ([#190](https://github.com/masseater/typescript-template/issues/190)) ([8150612](https://github.com/masseater/typescript-template/commit/81506121c23291978c96c9c0f6b95bbb2da3460c))
+* **web:** let requireAppPrefix accept LIST_PREFIX for Cloudflare Rules.List ([#182](https://github.com/masseater/typescript-template/issues/182)) ([5765dbd](https://github.com/masseater/typescript-template/commit/5765dbdf30e2de95d3cdd6029927d1d31d30ddde))
+* **web:** let requireAppPrefix accept stack names starting with APP_NAME- ([#183](https://github.com/masseater/typescript-template/issues/183)) ([3e060e3](https://github.com/masseater/typescript-template/commit/3e060e348d030ef38ca463c32c9a89197a9722fe))
+* **web:** sitemap・robots.txt・noindex の切り替え（SEARCH_INDEX_ORIGIN、検索クロール、SEO） ([6f028ac](https://github.com/masseater/typescript-template/commit/6f028ac2dcd74d3a99bd7103f2c31ca46433281e))
+* **web:** sitemap, robots.txt and noindex switch for search crawlers ([ef2bb9b](https://github.com/masseater/typescript-template/commit/ef2bb9b19d4188ccecc450291f4a6362a489cb3d))
+
 ## [0.0.10](https://github.com/masseater/typescript-template/compare/v0.0.9...v0.0.10) (2026-10-12)
 
 
