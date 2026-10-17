@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "markdown-lint": "textlint \"**/*.md\" && git ls-files -co --exclude-standard '*.md' | git -c core.excludesFile=.textlintignore check-ignore --no-index --stdin -nv | awk '$1 == \"::\" { print $2 }' | xargs -r -n 1 -P 4 python3 \"$(skills ls --json | jq -r '.[] | select(.name == \"yomiyasu\").path')/scripts/yomiyasu_lint.py\" --strict",
+    "markdown-lint": "markdownlint-cli2 \"**/*.md\" && textlint \"**/*.md\" && git ls-files -co --exclude-standard '*.md' | git -c core.excludesFile=.textlintignore check-ignore --no-index --stdin -nv | awk '$1 == \"::\" { print $2 }' | xargs -r -n 1 -P 4 python3 \"$(skills ls --json | jq -r '.[] | select(.name == \"yomiyasu\").path')/scripts/yomiyasu_lint.py\" --strict",
     "renovate": "renovate-config-validator --strict",
     "fallow": "fallow --skip dupes --fail-on-issues --quiet --format compact && fallow dead-code --no-production --fail-on-issues --quiet --format compact && fallow dead-code --no-production --quiet --format json | jq -e '[.prop_drilling_chains, .thin_wrappers, .duplicate_prop_shapes] | all(length == 0)' > /dev/null && fallow dupes --fail-on-issues --quiet --format compact && fallow security --fail-on-issues --quiet",
     "prepare": "vp config && skills experimental_install --force"
@@ -32,6 +32,7 @@
     "eslint-plugin-no-comments": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "fallow": "catalog:stack",
+    "markdownlint-cli2": "catalog:",
     "renovate": "catalog:stack",
     "skills": "catalog:",
     "syncpack": "catalog:",

@@ -43,6 +43,10 @@ jobs:
           path: node_modules/.cache/oxlint-plugin-decision
           key: oxlint-plugin-decision-${{ github.sha }}
           restore-keys: oxlint-plugin-decision-
+      - if: github.event_name == 'push'
+        run: vp run gitleaks
+        env:
+          GITLEAKS_BASE: ${{ github.event.before }}
       - id: verify
         run: vp run --log grouped verify
         env:

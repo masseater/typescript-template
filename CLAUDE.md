@@ -1,6 +1,6 @@
-@AGENTS.md
-
 # CLAUDE.md
+
+@AGENTS.md
 
 ## 最上位原則
 
@@ -33,7 +33,6 @@
 
 ## その他
 
-生成されたブロックの `pnpm exec`・`pnpm dlx` は `vp exec`・`vp dlx` に読み替える。
 UI 状態は effect-atom、サーバー状態は TanStack Query だけで扱う。状態は排他的な status を持つ判別共用体で表す。
 ユーザーと対話するセッションを始めたら、テンプレート更新の確認を求められていればそれを済ませてから、引数なしの `/loop` を起動する。
 作業の完了は `vp run verify` が通ることである。
