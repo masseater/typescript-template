@@ -11,6 +11,12 @@ if ! command -v vp >/dev/null 2>&1; then
   . "$HOME/.config/vite-plus/env"
 fi
 
+for chrome in /opt/pw-browsers/chromium-*/chrome-linux/chrome; do
+  if [ -x "$chrome" ] && [ -z "${CHROME_PATH:-}" ]; then
+    echo "export CHROME_PATH=\"$chrome\"" >>"$CLAUDE_ENV_FILE"
+  fi
+done
+
 cd "$CLAUDE_PROJECT_DIR"
 vp env on >&2
 vp install --frozen-lockfile >&2

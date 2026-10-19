@@ -47,6 +47,9 @@
 - 機能開発の前に、AI が自分でデバッグできる仕組み（再現手段、ログやスパン、それを読む経路）を作る。
 - 時間かお金を使う処理はすべてスパンにする。Workers 以外は `OtlpTracer.layerFromConfig` で出す。計測のためだけにコマンドやプロセスを包まない。
 - ワークフローの最後には `.github/scripts/ci-telemetry.sh` を動かすジョブを置く。
+- Web Vitals（LCP・INP・CLS・FCP・TTFB・TBT）は、`tools/web-vitals` で `vp run measure <URL>...` を実行して測る。各 URL の読み込みと、そのページの同じオリジンのリンクを押した遷移を Lighthouse の user flow で測り、`report/` に flow.html と flow.json を書く。LCP・INP・CLS のどれかが Lighthouse の合格点（0.9）に届かなければ失敗する。
+- main の verify はデプロイの後に `vars.ZAP_TARGET_URL` の本番を測り、レポートを Actions の成果物に残す。
+- クラウドのセッションでは `--chrome-flags="--no-sandbox --proxy-server=$HTTPS_PROXY"` を付ける。Chrome は session-start フックが `CHROME_PATH` で渡す。
 
 ## 脆弱性
 
