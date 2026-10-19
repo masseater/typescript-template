@@ -44,3 +44,4 @@ dist-ssr
 # Playwright CLI
 .playwright/
 .playwright-cli/
+tools/web-vitals/report/

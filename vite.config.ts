@@ -134,6 +134,8 @@ export default defineConfig({
               name: ["ReactNode", "ButtonHTMLAttributes", "ClassAttributes"],
             },
             { from: "package", package: "clsx", name: "ClassValue" },
+            { from: "package", package: "lighthouse", name: ["FlowResult", "Step"] },
+            { from: "package", package: "puppeteer-core", name: ["Browser", "Page"] },
             {
               from: "package",
               package: "effect",
@@ -179,7 +181,7 @@ export default defineConfig({
       },
     ],
     settings: {
-      [decisionPluginName]: { model: "openrouter/perplexity/pplx-decider-v1.1-27b" },
+      [decisionPluginName]: { model: "openrouter/typesafe/jev-1.14" },
     },
     options: {
       typeAware: true,
