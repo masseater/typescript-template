@@ -1,4 +1,4 @@
-import { Array, Option } from "effect";
+import { Array, Option, String, pipe } from "effect";
 import type { FlowResult } from "lighthouse";
 
 const PASSING_SCORE = 0.9;
@@ -45,30 +45,48 @@ const measurementOf = (step: FlowResult.Step, metric: Metric): Option.Option<Mea
   );
 
 const vitalsOf = (flow: FlowResult): readonly StepVitals[] =>
-  flow.steps.map((step) => ({
-    name: step.name,
-    measurements: Array.getSomes(METRICS.map((metric) => measurementOf(step, metric))),
-  }));
+  pipe(
+    flow.steps,
+    Array.map((step) => ({
+      name: step.name,
+      measurements: pipe(
+        METRICS,
+        Array.map((metric) => measurementOf(step, metric)),
+        Array.getSomes,
+      ),
+    })),
+  );
 
 const isPoor = (measurement: Measurement): boolean =>
   measurement.metric.core && measurement.score < PASSING_SCORE;
 
 const failuresOf = (steps: readonly StepVitals[]): readonly string[] =>
-  steps.flatMap((step) =>
-    step.measurements
-      .filter(isPoor)
-      .map((measurement) => `${step.name}: ${measurement.metric.label}`),
+  pipe(
+    steps,
+    Array.flatMap((step) =>
+      pipe(
+        step.measurements,
+        Array.filter(isPoor),
+        Array.map((measurement) => `${step.name}: ${measurement.metric.label}`),
+      ),
+    ),
   );
 
-const lineOf = (measurement: Measurement): string =>
-  [
-    `  ${measurement.metric.label.padEnd(LABEL_WIDTH)}`,
-    measurement.metric.format(measurement.value).padStart(VALUE_WIDTH),
-    `  score ${measurement.score.toFixed(SCORE_DIGITS)}`,
-  ].join(" ");
+const lineOf = (measurement: Measurement): string => {
+  const label = pipe(measurement.metric.label, String.padEnd(LABEL_WIDTH));
+  const value = pipe(measurement.metric.format(measurement.value), String.padStart(VALUE_WIDTH));
+  return pipe(
+    [`  ${label}`, value, `  score ${measurement.score.toFixed(SCORE_DIGITS)}`],
+    Array.join(" "),
+  );
+};
 
 const tableOf = (steps: readonly StepVitals[]): string =>
-  steps.flatMap((step) => [step.name, ...step.measurements.map(lineOf)]).join("\n");
+  pipe(
+    steps,
+    Array.flatMap((step) => [step.name, ...pipe(step.measurements, Array.map(lineOf))]),
+    Array.join("\n"),
+  );
 
 const summarize = (
   flow: FlowResult,
