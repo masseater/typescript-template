@@ -1,3 +1,13 @@
+import { presets as effectPresets } from "@effect/tsgo/oxlint-presets";
+import eslintReact from "@eslint-react/eslint-plugin";
+import htmlReact from "@html-eslint/eslint-plugin-react";
+import { plugin as shadcn } from "@shadcn/lint";
+import tanstackQuery from "@tanstack/eslint-plugin-query";
+import tanstackRouter from "@tanstack/eslint-plugin-router";
+import { Array, Record, String, Struct, pipe } from "effect";
+import baselineJs from "eslint-plugin-baseline-js";
+import reactHooks from "eslint-plugin-react-hooks";
+
 import decisionPlugin from "./decision-rules.ts";
 
 const REACT_STATE_HOOKS: readonly string[] = [
@@ -131,22 +141,32 @@ const requiredStack: Readonly<Record<string, readonly string[]>> = {
   ],
 };
 
-const requiredStackEntries = Object.entries(requiredStack).flatMap(([message, modules]) =>
-  modules.map((module) => ({ message, module })),
+const requiredStackEntries = pipe(
+  Record.toEntries(requiredStack),
+  Array.flatMap(([message, modules]) =>
+    pipe(
+      modules,
+      Array.map((module) => ({ message, module })),
+    ),
+  ),
 );
 
-const requiredStackPaths: readonly Readonly<{ name: string; message: string }>[] =
-  requiredStackEntries
-    .filter(({ module }) => !module.includes("*"))
-    .map(({ message, module }) => ({ name: module, message }));
+const requiredStackPaths: readonly Readonly<{ name: string; message: string }>[] = pipe(
+  requiredStackEntries,
+  Array.filter(({ module }) => !pipe(module, String.includes("*"))),
+  Array.map(({ message, module }) => ({ name: module, message })),
+);
 
 const requiredStackPatterns: readonly Readonly<{ group: readonly string[]; message: string }>[] =
-  requiredStackEntries.map(({ message, module }) => {
-    if (module.includes("*")) {
-      return { group: [module, `${module}/**`], message };
-    }
-    return { group: [`${module}/**`], message };
-  });
+  pipe(
+    requiredStackEntries,
+    Array.map(({ message, module }) => {
+      if (pipe(module, String.includes("*"))) {
+        return { group: [module, `${module}/**`], message };
+      }
+      return { group: [`${module}/**`], message };
+    }),
+  );
 
 const restrictedImports = {
   paths: [
@@ -176,8 +196,82 @@ const generated = [
 
 const decisionPluginName = decisionPlugin.meta.name;
 
-const decisionRuleNames = Object.keys(decisionPlugin.rules).map(
-  (id) => `${decisionPluginName}/${id}`,
+type Rules = Record.ReadonlyRecord<string, "error">;
+
+const asErrors = (names: readonly string[]): Rules =>
+  Record.fromEntries(
+    pipe(
+      names,
+      Array.map((name) => [name, "error"] as const),
+    ),
+  );
+
+const prefixed = (
+  prefix: string,
+  plugin: Readonly<{ rules: Record.ReadonlyRecord<string, unknown> }>,
+): Rules =>
+  asErrors(
+    pipe(
+      Record.keys(plugin.rules),
+      Array.map((rule) => `${prefix}/${rule}`),
+    ),
+  );
+
+const turnedOff = (rules: Rules): Record.ReadonlyRecord<string, "off"> =>
+  pipe(
+    rules,
+    Record.map(() => "off" as const),
+  );
+
+const decisionRules = prefixed(decisionPluginName, decisionPlugin);
+
+const tanstackQueryRules = prefixed("tanstack-query", tanstackQuery);
+
+const tanstackRouterRules = prefixed("tanstack-router", tanstackRouter);
+
+const shadcnRules = prefixed("shadcn", shadcn);
+
+const baselineJsRules = prefixed("baseline-js", baselineJs);
+
+const reactHooksRuleNames = pipe(
+  Struct.keys(reactHooks.configs["recommended-latest"].rules),
+  Array.map(String.replace("react-hooks/", "react-hooks-js/")),
 );
 
-export { decisionPluginName, decisionRuleNames, generated, requiredStack, restrictedImports };
+const reactHooksRules = asErrors(reactHooksRuleNames);
+
+const eslintReactRuleNames = pipe(
+  Struct.keys(eslintReact.configs["strict-typescript"].rules ?? {}),
+  Array.filter(
+    (name) => !(pipe(name, String.replace("@eslint-react/", "react-hooks-js/")) in reactHooksRules),
+  ),
+);
+
+const eslintReactRules = asErrors(eslintReactRuleNames);
+
+const htmlReactRules = asErrors(Struct.keys(htmlReact.configs.all.rules ?? {}));
+
+const effectRuleNames = pipe(
+  Record.values(effectPresets),
+  Array.flatMap((preset) => Struct.keys(preset.rules ?? {})),
+);
+
+const effectRules = asErrors(effectRuleNames);
+
+export type { Rules };
+export {
+  baselineJsRules,
+  decisionPluginName,
+  decisionRules,
+  effectRules,
+  eslintReactRules,
+  generated,
+  htmlReactRules,
+  reactHooksRules,
+  requiredStack,
+  restrictedImports,
+  shadcnRules,
+  tanstackQueryRules,
+  tanstackRouterRules,
+  turnedOff,
+};

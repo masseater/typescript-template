@@ -110,6 +110,7 @@
         "@ast-grep/cli",
         "eslint-plugin-drizzle",
         "eslint-plugin-no-comments",
+        "oxlint-plugin-eslint",
       ],
     },
     {

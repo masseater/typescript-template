@@ -7,7 +7,7 @@ import type {
   EnvSegment,
   ShellLine,
 } from "@yarnpkg/parsers";
-import { Array as Arr, Effect, Match, Option, Schema } from "effect";
+import { Array as Arr, Effect, Match, Option, Schema, String as Str, pipe } from "effect";
 
 import { blockWhen, readHookInput, runHook } from "./env.ts";
 
@@ -19,12 +19,12 @@ const PreToolUseInput = Schema.Struct({
   tool_input: Schema.Struct({ command: Schema.optional(Schema.String) }),
 });
 
-const MESSAGE = [
+const MESSAGE = Arr.join("\n")([
   "pnpm・pnpx・pn・pnx は直接実行しない。Vite+ の vp を使うこと。",
   "pnpm install → vp install、pnpm add → vp add、pnpm remove → vp remove",
   "pnpm exec → vp exec、pnpm dlx → vp dlx、pnpm run <script> → vp run <script>",
   "その他の pnpm サブコマンド → vp pm <subcommand>",
-].join("\n");
+]);
 
 const SHELL_SCRIPT_FLAG = "-c";
 const PNPM_BINARIES = new Set(["pnpm", "pnpx", "pn", "pnx"]);
@@ -58,35 +58,45 @@ const WRAPPERS = new Set([
   "!",
 ]);
 
-const basename = (word: string): string => word.replace(/^.*\//u, "");
+const basename = (word: string): string => pipe(word, Str.replace(/^.*\//u, ""));
 
 const isPnpm = (word: string): boolean => PNPM_BINARIES.has(basename(word));
 
 const invocationRules: readonly ((name: string, args: Argv) => boolean)[] = [
   (name) => PNPM_BINARIES.has(name),
-  (name, args) => WRAPPERS.has(name) && args.some((word) => isPnpm(word)),
+  (name, args) => WRAPPERS.has(name) && pipe(args, Arr.some(isPnpm)),
   (name, [subcommand = "", ...rest]) =>
-    LAUNCHERS.has(name) &&
-    LAUNCHER_SUBCOMMANDS.has(subcommand) &&
-    rest.some((word) => isPnpm(word)),
+    LAUNCHERS.has(name) && LAUNCHER_SUBCOMMANDS.has(subcommand) && pipe(rest, Arr.some(isPnpm)),
 ];
 
 const invokesPnpm = ([head = "", ...args]: Argv): boolean =>
-  invocationRules.some((rule) => rule(basename(head), args));
+  pipe(
+    invocationRules,
+    Arr.some((rule) => rule(basename(head), args)),
+  );
 
 const parse = (script: string): Option.Option<Line> => Option.liftThrowable(parseShell)(script);
 
 const textOf = (segments: Frozen<ArgumentSegment[]>): string =>
-  segments
-    .filter((segment) => segment.type === "text")
-    .map((segment) => segment.text)
-    .join("");
+  pipe(
+    segments,
+    Arr.filter((segment) => segment.type === "text"),
+    Arr.map((segment) => segment.text),
+    Arr.join(""),
+  );
 
 const nestedLines = (segments: Frozen<ArgumentSegment[]>): Line[] =>
-  segments.filter((segment) => segment.type === "shell").map((segment) => segment.shell);
+  pipe(
+    segments,
+    Arr.filter((segment) => segment.type === "shell"),
+    Arr.map((segment) => segment.shell),
+  );
 
 const valuesOf = (args: Frozen<Argument[]>): Frozen<Extract<Argument, { type: "argument" }>>[] =>
-  args.filter((arg) => arg.type === "argument");
+  pipe(
+    args,
+    Arr.filter((arg) => arg.type === "argument"),
+  );
 
 const shellScript = ([head = "", ...args]: Argv): Option.Option<string> => {
   const [, script] = Arr.dropWhile(args, (word) => word !== SHELL_SCRIPT_FLAG);
@@ -94,13 +104,25 @@ const shellScript = ([head = "", ...args]: Argv): Option.Option<string> => {
 };
 
 const argvOf = (args: Frozen<Argument[]>): Argv =>
-  valuesOf(args).map((arg) => textOf(arg.segments));
+  pipe(
+    valuesOf(args),
+    Arr.map((arg) => textOf(arg.segments)),
+  );
+
+const linesInArgs = (args: readonly Frozen<Extract<Argument, { type: "argument" }>>[]): Line[] =>
+  pipe(
+    args,
+    Arr.flatMap((arg) => nestedLines(arg.segments)),
+  );
 
 const linesInEnvs = (envs: Frozen<EnvSegment[]>): Line[] =>
-  envs.flatMap((env) => env.args.flatMap((arg) => nestedLines(arg.segments)));
+  pipe(
+    envs,
+    Arr.flatMap((env) => linesInArgs(valuesOf(env.args))),
+  );
 
 const linesInCommand = (args: Frozen<Argument[]>, envs: Frozen<EnvSegment[]>): Line[] => [
-  ...valuesOf(args).flatMap((arg) => nestedLines(arg.segments)),
+  ...linesInArgs(valuesOf(args)),
   ...linesInEnvs(envs),
   ...Option.toArray(shellScript(argvOf(args)).pipe(Option.flatMap(parse))),
 ];
@@ -131,18 +153,28 @@ const linesOfChain = Match.type<Frozen<CommandChain>>().pipe(
 );
 
 const simpleCommands = (line: Line): readonly Argv[] => {
-  const chains = line.flatMap((entry) => chainsOf(entry.command));
-  return [
-    ...chains.filter((chain) => chain.type === "command").map((chain) => argvOf(chain.args)),
-    ...chains.flatMap((chain) => linesOfChain(chain)).flatMap((nested) => simpleCommands(nested)),
-  ];
+  const chains = pipe(
+    line,
+    Arr.flatMap((entry) => chainsOf(entry.command)),
+  );
+  const direct = pipe(
+    chains,
+    Arr.filter((chain) => chain.type === "command"),
+    Arr.map((chain) => argvOf(chain.args)),
+  );
+  const nested = pipe(
+    chains,
+    Arr.flatMap((chain) => linesOfChain(chain)),
+    Arr.flatMap((inner) => simpleCommands(inner)),
+  );
+  return [...direct, ...nested];
 };
 
 runHook(
   Effect.gen(function* blockPnpm() {
     const input = yield* readHookInput(PreToolUseInput);
     const blocked = Option.exists(parse(input.tool_input.command ?? ""), (line) =>
-      simpleCommands(line).some((argv) => invokesPnpm(argv)),
+      pipe(simpleCommands(line), Arr.some(invokesPnpm)),
     );
     yield* blockWhen(Arr.filter([MESSAGE], () => blocked));
   }),

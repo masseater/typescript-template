@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, String as Str } from "effect";
+import { Array as Arr, Effect, Option, Schema, String as Str, pipe } from "effect";
 
 import { getJson, projectDir, runHook, writeJson } from "./env.ts";
 import { HookPlatform } from "./platform.ts";
@@ -42,7 +42,7 @@ const latestRelease = getJson(
 const instructions = (current: string, release: typeof Release.Type): string => {
   const latest = release.tag_name;
   const remote = `https://github.com/${TEMPLATE_REPOSITORY}.git`;
-  return [
+  const lines = [
     `このリポジトリの元になったテンプレート ${TEMPLATE_REPOSITORY} に新しいリリース ${latest} がある。このリポジトリが取り込んでいるのは ${current} である。`,
     "最初の応答で、この更新があることと主な変更点をユーザーに伝え、最新状態を取り込むかを聞く。ユーザーの作業依頼があっても、先にこの確認をする。",
     "取り込むと答えたら、次の手順で差分を取り込む。",
@@ -53,12 +53,13 @@ const instructions = (current: string, release: typeof Release.Type): string => 
     `リリースページ: ${release.html_url}`,
     "リリースノート:",
     Str.takeLeft(release.body ?? "", NOTES_LENGTH),
-  ].join("\n");
+  ];
+  return pipe(lines, Arr.join("\n"));
 };
 
 runHook(
   Effect.gen(function* templateRelease() {
-    if ((yield* projectDir).includes(WORKTREE_SEGMENT)) {
+    if (pipe(yield* projectDir, Str.includes(WORKTREE_SEGMENT))) {
       return;
     }
     const current = yield* currentVersion;

@@ -1,5 +1,5 @@
 import { NodeRuntime, NodeServices } from "@effect/platform-node";
-import { Array, Console, Data, Effect, FileSystem, Layer, Path, Schema } from "effect";
+import { Array, Console, Effect, FileSystem, Layer, Path, Schema, String, pipe } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import { FetchHttpClient } from "effect/http";
 import { OtlpSerialization, OtlpTracer } from "effect/observability";
@@ -10,7 +10,12 @@ import { summarize } from "./metrics.ts";
 const REPORT_DIRECTORY = "report";
 const MINIMUM_URLS = 1;
 
-class PoorVitals extends Data.TaggedError("PoorVitals")<{ readonly failures: readonly string[] }> {}
+const taggedError = Schema.TaggedError;
+
+class PoorVitals extends taggedError<PoorVitals, { readonly brand: unique symbol }>()(
+  "PoorVitals",
+  { failures: Schema.Array(Schema.String) },
+) {}
 
 const tracing = OtlpTracer.layerFromConfig({
   resource: { serviceName: "web-vitals" },
@@ -28,7 +33,8 @@ const command = Command.make(
   },
   ({ urls, chromeFlags }) =>
     Effect.gen(function* measure() {
-      const { result, html } = yield* measureFlow(urls, chromeFlags.split(" ").filter(Boolean));
+      const flags = pipe(chromeFlags, String.split(" "), Array.filter(Boolean));
+      const { result, html } = yield* measureFlow(urls, flags);
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       yield* fileSystem.makeDirectory(REPORT_DIRECTORY, { recursive: true });
@@ -41,7 +47,7 @@ const command = Command.make(
       yield* Console.log(table);
       return yield* Array.match(failures, {
         onEmpty: () => Effect.void,
-        onNonEmpty: (poor) => Effect.fail(new PoorVitals({ failures: poor })),
+        onNonEmpty: (poor) => Effect.fail(PoorVitals.make({ failures: poor })),
       });
     }),
 );
