@@ -1,45 +1,21 @@
-import { presets as effectPresets } from "@effect/tsgo/oxlint-presets";
-import eslintReact from "@eslint-react/eslint-plugin";
-import htmlReact from "@html-eslint/eslint-plugin-react";
-import { plugin as shadcn } from "@shadcn/lint";
-import tanstackQuery from "@tanstack/eslint-plugin-query";
-import tanstackRouter from "@tanstack/eslint-plugin-router";
 import baselineJs from "eslint-plugin-baseline-js";
-import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "vite-plus";
 
 import {
+  baselineJsRules,
   decisionPluginName,
-  decisionRuleNames,
+  decisionRules,
+  effectRules,
+  eslintReactRules,
   generated,
+  htmlReactRules,
+  reactHooksRules,
   restrictedImports,
+  shadcnRules,
+  tanstackQueryRules,
+  tanstackRouterRules,
+  turnedOff,
 } from "./lint.config.ts";
-
-type Rules = Readonly<Record<string, "error">>;
-
-const asErrors = (names: readonly string[]): Rules =>
-  Object.fromEntries(names.map((name) => [name, "error"] as const));
-
-const allRulesOf = (prefix: string, plugin: Readonly<{ rules: object }>): Rules =>
-  asErrors(Object.keys(plugin.rules).map((rule) => `${prefix}/${rule}`));
-
-const reactHooksRules = asErrors(
-  Object.keys(reactHooks.configs["recommended-latest"].rules).map((name) =>
-    name.replace("react-hooks/", "react-hooks-js/"),
-  ),
-);
-
-const eslintReactRules = asErrors(
-  Object.keys(eslintReact.configs["strict-typescript"].rules ?? {}).filter(
-    (name) => !(name.replace("@eslint-react/", "react-hooks-js/") in reactHooksRules),
-  ),
-);
-
-const decisionRules = asErrors(decisionRuleNames);
-
-const effectRules = asErrors(
-  Object.values(effectPresets).flatMap((preset) => Object.keys(preset.rules ?? {})),
-);
 
 export default defineConfig({
   staged: {
@@ -89,18 +65,19 @@ export default defineConfig({
       { name: "baseline-js", specifier: "eslint-plugin-baseline-js" },
       { name: "@html-eslint/react", specifier: "@html-eslint/eslint-plugin-react" },
       { name: decisionPluginName, specifier: "./decision-rules.ts" },
+      { name: "eslint-js", specifier: "oxlint-plugin-eslint" },
     ],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
       "no-comments/disallowComments": ["error", { allow: ["oxlint-disable", "eslint-disable"] }],
-      ...allRulesOf("tanstack-query", tanstackQuery),
-      ...allRulesOf("tanstack-router", tanstackRouter),
+      ...tanstackQueryRules,
+      ...tanstackRouterRules,
       "drizzle/enforce-delete-with-where": "error",
       "drizzle/enforce-update-with-where": "error",
-      ...allRulesOf("shadcn", shadcn),
-      ...allRulesOf("baseline-js", baselineJs),
+      ...shadcnRules,
+      ...baselineJsRules,
       ...baselineJs.configs.recommended().rules,
-      ...asErrors(Object.keys(htmlReact.configs.all.rules ?? {})),
+      ...htmlReactRules,
       ...reactHooksRules,
       ...eslintReactRules,
       ...effectRules,
@@ -134,6 +111,8 @@ export default defineConfig({
               name: ["ReactNode", "ButtonHTMLAttributes", "ClassAttributes"],
             },
             { from: "package", package: "clsx", name: "ClassValue" },
+            { from: "package", package: "lighthouse", name: ["FlowResult", "Step"] },
+            { from: "package", package: "puppeteer-core", name: ["Browser", "Page"] },
             {
               from: "package",
               package: "effect",
@@ -151,8 +130,7 @@ export default defineConfig({
         "error",
         {
           capIsNewExceptions: ["App", "CloudflareApiLive", "Secret", "Stack"],
-          capIsNewExceptionPattern:
-            "^(Config|Context|Data|Schema|AnalyticsEngine|ApiToken|D1|Logpush|R2|Ruleset|Rules|Website|Workers|Zone)\\.",
+          capIsNewExceptionPattern: String.raw`^(Config|Context|Data|Schema|AnalyticsEngine|ApiToken|D1|Logpush|R2|Ruleset|Rules|Website|Workers|Zone)\.`,
         },
       ],
       "typescript/no-empty-interface": ["error", { allowSingleExtends: true }],
@@ -166,6 +144,32 @@ export default defineConfig({
         rules: { "import/no-default-export": "off" },
       },
       {
+        files: ["**/alchemy.*.ts"],
+        rules: {
+          "eslint-js/no-restricted-syntax": [
+            "error",
+            {
+              selector:
+                'CallExpression[callee.name="Stack"]:not([arguments.0.name="APP_NAME"]):not([arguments.0.type="TemplateLiteral"][arguments.0.quasis.0.value.raw=""][arguments.0.expressions.0.name="PREFIX"])',
+              message:
+                "スタック名には app-name.ts の APP_NAME か、PREFIX で始まるテンプレートリテラルを渡す",
+            },
+            {
+              selector:
+                'Program:not(:has(YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
+              message:
+                "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
+            },
+            {
+              selector:
+                'CallExpression[callee.name="Stack"] > .arguments:nth-child(3):not(:has(FunctionExpression > BlockStatement > ExpressionStatement:nth-last-child(2) > YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
+              message:
+                "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
+            },
+          ],
+        },
+      },
+      {
         files: ["**/shared/ui/**"],
         rules: { "shadcn/no-restyle": "off", "react/jsx-props-no-spreading": "off" },
       },
@@ -175,11 +179,11 @@ export default defineConfig({
       },
       {
         files: ["**/*.test.ts"],
-        rules: Object.fromEntries(Object.keys(decisionRules).map((name) => [name, "off"] as const)),
+        rules: turnedOff(decisionRules),
       },
     ],
     settings: {
-      [decisionPluginName]: { model: "openrouter/perplexity/pplx-decider-v1.1-27b" },
+      [decisionPluginName]: { model: "openrouter/typesafe/jev-1.14" },
     },
     options: {
       typeAware: true,

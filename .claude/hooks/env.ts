@@ -4,7 +4,6 @@ import {
   Array as Arr,
   Cause,
   Config,
-  Data,
   Effect,
   Exit,
   FileSystem,
@@ -15,6 +14,7 @@ import {
   Schema,
   Stdio,
   Stream,
+  pipe,
 } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
@@ -22,7 +22,14 @@ import { ChildProcess, ChildProcessSpawner } from "effect/process";
 import { HookPlatform } from "./platform.ts";
 import type { CommandResult, Sink } from "./platform.ts";
 
-class HookBlocked extends Data.TaggedError("HookBlocked")<{ readonly reason: string }> {}
+const taggedError = Schema.TaggedError;
+
+class HookBlocked extends taggedError<HookBlocked, { readonly brand: unique symbol }>()(
+  "HookBlocked",
+  { reason: Schema.String },
+) {}
+
+const isHookBlocked = Schema.is(HookBlocked);
 
 const EXIT_SUCCESS = 0;
 const EXIT_FAILURE = 1;
@@ -45,7 +52,8 @@ const blockWhen = (reasons: readonly string[]): Effect.Effect<void, HookBlocked>
   if (!Arr.isReadonlyArrayNonEmpty(reasons)) {
     return Effect.void;
   }
-  return Effect.fail(new HookBlocked({ reason: reasons.join("\n") }));
+  const reason = pipe(reasons, Arr.join("\n"));
+  return Effect.fail(HookBlocked.make({ reason }));
 };
 
 const writeTo = (sink: Sink, text: string): Effect.Effect<void, never, HookPlatform> =>
@@ -168,7 +176,7 @@ const getJson: {
 
 const findBlocked = <Failure>(cause: Cause.Cause<Failure>): Option.Option<HookBlocked> =>
   Cause.findErrorOption(cause).pipe(
-    Option.filter((error): error is Failure & HookBlocked => error instanceof HookBlocked),
+    Option.filter((error): error is Failure & HookBlocked => isHookBlocked(error)),
   );
 
 const exitCodeOf = <Value, Failure>(exit: Exit.Exit<Value, Failure>): number => {

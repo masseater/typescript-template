@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array, Effect, pipe } from "effect";
 
 import { FeatureFlags } from "#/pages/home/config/feature-flags.server";
 import { todo } from "#/pages/home/model/todo.table";
@@ -17,7 +17,10 @@ const listTodos = Effect.gen(function* listTodos() {
   if (includeDone) {
     return rows;
   }
-  return rows.filter((row) => row.status === "open");
+  return pipe(
+    rows,
+    Array.filter((row) => row.status === "open"),
+  );
 }).pipe(Effect.withSpan("todo.list"));
 
 const todoRoutes = createRouter("/api/todos").get("/", () => runRequest(listTodos));
