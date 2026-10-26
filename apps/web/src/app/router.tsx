@@ -2,6 +2,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import type { Router } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+import { createIsomorphicFn, getGlobalStartContext } from "@tanstack/react-start";
+import { Option } from "effect";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -13,6 +15,15 @@ declare module "@tanstack/react-router" {
   }
 }
 
+const ssrOf = createIsomorphicFn()
+  .server(() =>
+    Option.match(Option.fromNullishOr(getGlobalStartContext()), {
+      onNone: () => ({}),
+      onSome: ({ nonce }) => ({ nonce }),
+    }),
+  )
+  .client(() => ({}));
+
 const getRouter = (): AppRouter => {
   const queryClient = new QueryClient();
   const router = createRouter({
@@ -21,6 +32,7 @@ const getRouter = (): AppRouter => {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
+    ssr: ssrOf(),
   });
   setupRouterSsrQueryIntegration({ router, queryClient });
   return router;
