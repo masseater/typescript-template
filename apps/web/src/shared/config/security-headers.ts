@@ -11,7 +11,7 @@ const SECURITY_HEADERS = {
   "Cross-Origin-Resource-Policy": "same-origin",
 } as const;
 
-const DOCUMENT_CACHE_CONTROL = "no-store";
+const DOCUMENT_CACHE_CONTROL = "no-cache, no-store, must-revalidate";
 
 const ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
