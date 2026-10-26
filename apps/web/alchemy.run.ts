@@ -1,15 +1,30 @@
 import { Stack, makeRandom } from "alchemy";
 import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
-import { Config, Effect, Option, Schema } from "effect";
+import { Array as Arr, Config, Effect, Option, Record as Rec, Schema, pipe } from "effect";
 
 import { APP_NAME, CI_TELEMETRY_AUDIENCE, requireAppPrefix } from "./app-name.ts";
 import { edgeGuard } from "./edge-guard.ts";
 import { logArchive } from "./log-archive.ts";
+import { ASSET_CACHE_CONTROL, SECURITY_HEADERS } from "./src/shared/config/index.ts";
 
 const TRACE_SAMPLING_RATE = 0.1;
 
 const COMPATIBILITY = { date: "2026-08-25" } as const;
+
+const ASSET_HEADERS = pipe(
+  [
+    "/*",
+    ...pipe(
+      Rec.toEntries(SECURITY_HEADERS),
+      Arr.map(([name, value]) => `  ${name}: ${value}`),
+    ),
+    "/assets/*",
+    `  Cache-Control: ${ASSET_CACHE_CONTROL}`,
+    "",
+  ],
+  Arr.join("\n"),
+);
 
 const OWNED_ZONE = Option.none<string>();
 
@@ -30,6 +45,7 @@ const web = Effect.gen(function* web() {
       traces: { enabled: true, headSamplingRate: TRACE_SAMPLING_RATE, persist: true },
     },
     viteEnvironments: { entry: "ssr", children: ["rsc"] },
+    assets: { headers: ASSET_HEADERS },
   });
 });
 
