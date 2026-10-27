@@ -36,6 +36,13 @@
       "skillPath": "skills/cloudflare/SKILL.md",
       "computedHash": "4f0291c3924bb6cfec5311b23cc9798ee0292c055ce88543cf2d2cc3001174f6"
     },
+    "cloudflare-caution": {
+      "source": "masseater/skills",
+      "ref": "538d3e5da6425df398398f046767d96d698c590b",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare-caution/SKILL.md",
+      "computedHash": "8890a9d4ed50ce0a74d009596723df9012d2c218f4c9b4cbff417d6802ddf7f0"
+    },
     "commit-and-git": {
       "source": "philtzjp/skills",
       "ref": "acbcf941cae90b101dfb83598e3322504eeda64f",
