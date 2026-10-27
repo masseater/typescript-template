@@ -3,12 +3,12 @@ import { createRootRouteWithContext } from "@tanstack/react-router";
 
 import { RootDocument } from "#/app/shell/root-document";
 
-import appCss from "#/app/styles.css?url";
+import appCss from "#/app/styles.css?inline";
 
 const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [{ name: "viewport", content: "width=device-width, initial-scale=1" }, { title: "web" }],
-    links: [{ rel: "stylesheet", href: appCss }],
+    styles: [{ children: appCss }],
   }),
   shellComponent: RootDocument,
 });
