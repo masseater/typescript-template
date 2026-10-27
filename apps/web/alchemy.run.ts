@@ -1,7 +1,7 @@
 import { Stack, makeRandom } from "alchemy";
 import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
-import { Array as Arr, Config, Effect, Option, Record as Rec, Schema, pipe } from "effect";
+import { Array as Arr, Config, Effect, Hash, Option, Record as Rec, Schema, pipe } from "effect";
 
 import { APP_NAME, CI_TELEMETRY_AUDIENCE, requireAppPrefix } from "./app-name.ts";
 import { edgeGuard } from "./edge-guard.ts";
@@ -11,6 +11,15 @@ import { ASSET_CACHE_CONTROL, SECURITY_HEADERS } from "./src/shared/config/index
 const TRACE_SAMPLING_RATE = 0.1;
 
 const COMPATIBILITY = { date: "2026-08-25" } as const;
+
+const WEB_LIMITS = { cpuMs: 1000 } as const;
+
+const CI_TELEMETRY_LIMITS = { cpuMs: 100 } as const;
+
+const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
+  namespaceId: Math.abs(Hash.string(APP_NAME)),
+  simple: { limit: 100, period: 60 },
+});
 
 const ASSET_HEADERS = pipe(
   [
@@ -34,7 +43,8 @@ const web = Effect.gen(function* web() {
   return yield* Website.Vite("Web", {
     compatibility: COMPATIBILITY,
     logpush: true,
-    env: { BETTER_AUTH_SECRET, DB },
+    limits: WEB_LIMITS,
+    env: { API_RATE_LIMIT, BETTER_AUTH_SECRET, DB },
     observability: {
       enabled: true,
       logs: {
@@ -58,6 +68,7 @@ const ciTelemetry = Effect.gen(function* ciTelemetry() {
     main: "./ci-telemetry.worker.ts",
     compatibility: COMPATIBILITY,
     logpush: true,
+    limits: CI_TELEMETRY_LIMITS,
     env: { GITHUB_REPOSITORY },
     observability: {
       enabled: true,
