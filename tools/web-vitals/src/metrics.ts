@@ -1,4 +1,4 @@
-import { Array, Option, String, pipe } from "effect";
+import { Array, Number, Option, String, pipe } from "effect";
 import type { FlowResult } from "lighthouse";
 
 const PASSING_SCORE = 0.9;
@@ -6,6 +6,7 @@ const SCORE_DIGITS = 2;
 const SHIFT_DIGITS = 3;
 const LABEL_WIDTH = 4;
 const VALUE_WIDTH = 9;
+const HALVES = 2;
 
 const milliseconds = (value: number): string => `${Math.round(value).toString()}ms`;
 
@@ -57,6 +58,58 @@ const vitalsOf = (flow: FlowResult): readonly StepVitals[] =>
     })),
   );
 
+const medianOf = (measurements: readonly Measurement[]): Option.Option<Measurement> =>
+  pipe(
+    measurements,
+    Array.sortWith((measurement) => measurement.value, Number.Order),
+    (sorted) => pipe(sorted, Array.get(Math.floor(sorted.length / HALVES))),
+  );
+
+const medianStepOf = (runs: readonly (readonly StepVitals[])[], step: StepVitals): StepVitals => ({
+  name: step.name,
+  measurements: pipe(
+    step.measurements,
+    Array.map(({ metric }) =>
+      pipe(
+        runs,
+        Array.flatMap((steps) =>
+          pipe(
+            steps,
+            Array.findFirst((candidate) => candidate.name === step.name),
+            Option.flatMap((candidate) =>
+              pipe(
+                candidate.measurements,
+                Array.findFirst((measured) => measured.metric === metric),
+              ),
+            ),
+            Option.toArray,
+          ),
+        ),
+        medianOf,
+      ),
+    ),
+    Array.getSomes,
+  ),
+});
+
+const medianVitalsOf = (flows: readonly FlowResult[]): readonly StepVitals[] => {
+  const runs = pipe(
+    flows,
+    Array.map((flow) => vitalsOf(flow)),
+  );
+  return pipe(
+    Array.head(runs),
+    Option.match({
+      onNone: () => [],
+      onSome: (first) =>
+        pipe(
+          first,
+          Array.map((step) => medianStepOf(runs, step)),
+        ),
+    }),
+  );
+};
+
 const isPoor = (measurement: Measurement): boolean =>
   measurement.metric.core && measurement.score < PASSING_SCORE;
 
@@ -89,9 +142,9 @@ const tableOf = (steps: readonly StepVitals[]): string =>
   );
 
 const summarize = (
-  flow: FlowResult,
+  flows: readonly FlowResult[],
 ): { readonly table: string; readonly failures: readonly string[] } => {
-  const steps = vitalsOf(flow);
+  const steps = medianVitalsOf(flows);
   return { table: tableOf(steps), failures: failuresOf(steps) };
 };
 
