@@ -9,6 +9,8 @@ import { summarize } from "./metrics.ts";
 
 const REPORT_DIRECTORY = "report";
 const MINIMUM_URLS = 1;
+const FIRST_RUN = 1;
+const RUNS = 5;
 
 const taggedError = Schema.TaggedError;
 
@@ -34,16 +36,24 @@ const command = Command.make(
   ({ urls, chromeFlags }) =>
     Effect.gen(function* measure() {
       const flags = pipe(chromeFlags, String.split(" "), Array.filter(Boolean));
-      const { result, html } = yield* measureFlow(urls, flags);
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       yield* fileSystem.makeDirectory(REPORT_DIRECTORY, { recursive: true });
-      yield* fileSystem.writeFileString(path.join(REPORT_DIRECTORY, "flow.html"), html);
-      yield* fileSystem.writeFileString(
-        path.join(REPORT_DIRECTORY, "flow.json"),
-        yield* encodeJson(result),
+      const results = yield* Effect.forEach(Array.range(FIRST_RUN, RUNS), (run) =>
+        Effect.gen(function* measureRun() {
+          const { result, html } = yield* measureFlow(urls, flags);
+          yield* fileSystem.writeFileString(
+            path.join(REPORT_DIRECTORY, `flow-${run.toString()}.html`),
+            html,
+          );
+          yield* fileSystem.writeFileString(
+            path.join(REPORT_DIRECTORY, `flow-${run.toString()}.json`),
+            yield* encodeJson(result),
+          );
+          return result;
+        }),
       );
-      const { table, failures } = summarize(result);
+      const { table, failures } = summarize(results);
       yield* Console.log(table);
       return yield* Array.match(failures, {
         onEmpty: () => Effect.void,
