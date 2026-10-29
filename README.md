@@ -7,6 +7,7 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 ## 公開先
 
 - テンプレートのままのアプリ: <https://typescript-template-web-production-ntesuocc46gilfjl.masseater.workers.dev>
+- 静的な LP の見本: <https://typescript-template-landingpagjng25skxokz4cknxsbi3m7nu.masseater.workers.dev>
 
 ## 始めたときに入っているもの
 
