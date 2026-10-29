@@ -505,9 +505,6 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.2(effect@4.0.2)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@effect/tsgo':
-        specifier: catalog:stack
-        version: 0.56.1
       '@feature-sliced/steiger-plugin':
         specifier: 0.8.0
         version: 0.8.0(typescript@7.0.2)(vitest@5.0.5)
