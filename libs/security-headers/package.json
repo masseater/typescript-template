@@ -1,0 +1,20 @@
+{
+  "name": "security-headers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vp test run --passWithNoTests"
+  },
+  "dependencies": {
+    "effect": "catalog:stack"
+  },
+  "devDependencies": {
+    "typescript": "catalog:stack",
+    "vite-plus": "catalog:stack"
+  }
+}

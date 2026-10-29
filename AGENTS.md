@@ -11,6 +11,12 @@
 - `apps/web` は TanStack Start のアプリである。`alchemy.run.ts` が D1 と Worker を定義し、Cloudflare にデプロイする。
 - API は Elysia で書く。`src/app/routes/api.$.ts` が `/api/*` を `src/app/server/api.server.ts` のルーターへ渡し、各スライスのルートは `index.server.ts` からそこへ足す。
 - クライアントは `shared/api` で Eden の型から TanStack Query のクエリを作る。SSR 中は `createIsomorphicFn` がルートの `handle` を直接呼ぶ。
+- `apps/lp` は静的な LP の見本で、`apps/web` のスタックが `Website.StaticSite` でデプロイする。
+
+## 公開の静的ページ
+
+- 誰にでも見せるページで、リクエストごとに中身が変わらないものは `apps/lp` と同じ形で作る。TanStack Start のプリレンダーで HTML にし、`main` を渡さない `Website.StaticSite` で静的アセットだけとして配る。Worker の SSR、`runWorkerFirst`、R2 からの配信は使わない。
+- CSP は nonce に頼らない。`apps/lp/inline-scripts.ts` の Vite プラグインが inline の script を外部ファイルに出し、`security-headers` の `STATIC_PAGE_HEADERS` を `_headers` で付ける。
 
 ## 環境変数
 

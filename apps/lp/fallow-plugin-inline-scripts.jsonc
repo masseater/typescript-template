@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/plugin-schema.json",
+  "name": "inline-scripts",
+  "detection": { "type": "fileExists", "pattern": "vite.config.ts" },
+  "entryPoints": ["inline-scripts.ts"],
+  "entryPointRole": "support",
+}

@@ -15,6 +15,8 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 - main に push すると、verify が通ったあとに Cloudflare へデプロイする GitHub Actions
 - Claude Code で作業するときのフックと作業の決まり
 
+`apps/lp` は公開ページの見本の LP である。ビルド時に作った HTML を、Worker を通さずに配る。
+
 ## 使い方
 
 ### 前提

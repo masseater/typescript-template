@@ -1,0 +1,40 @@
+{
+  "name": "lp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "build": "vp build",
+    "typecheck": "tsc",
+    "test": "vp test run --passWithNoTests",
+    "steiger": "steiger ./src",
+    "prepare": "effect-tsgo patch --typescript --oxlint",
+    "fallow": "fallow --skip dupes --fail-on-issues --quiet --format compact && fallow dupes --fail-on-issues --quiet --format compact && fallow security --fail-on-issues --quiet"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "1.170.44",
+    "effect": "catalog:stack",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "catalog:stack"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/tsgo": "catalog:stack",
+    "@feature-sliced/steiger-plugin": "0.8.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@tanstack/react-start": "catalog:stack",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "catalog:",
+    "node-html-parser": "9.0.5",
+    "security-headers": "workspace:*",
+    "steiger": "catalog:stack",
+    "typescript": "catalog:stack",
+    "vite": "catalog:",
+    "vite-plus": "catalog:stack"
+  }
+}
