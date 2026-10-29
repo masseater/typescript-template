@@ -1,12 +1,12 @@
 import { Stack, makeRandom } from "alchemy";
 import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
-import { Array as Arr, Config, Effect, Hash, Option, Record as Rec, Schema, pipe } from "effect";
+import { Config, Effect, Hash, Option, Schema } from "effect";
+import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-headers";
 
 import { APP_NAME, CI_TELEMETRY_AUDIENCE, requireAppPrefix } from "./app-name.ts";
 import { edgeGuard } from "./edge-guard.ts";
 import { logArchive } from "./log-archive.ts";
-import { ASSET_CACHE_CONTROL, SECURITY_HEADERS } from "./src/shared/config/index.ts";
 
 const TRACE_SAMPLING_RATE = 0.1;
 
@@ -20,20 +20,6 @@ const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
   namespaceId: Math.abs(Hash.string(APP_NAME)),
   simple: { limit: 100, period: 60 },
 });
-
-const ASSET_HEADERS = pipe(
-  [
-    "/*",
-    ...pipe(
-      Rec.toEntries(SECURITY_HEADERS),
-      Arr.map(([name, value]) => `  ${name}: ${value}`),
-    ),
-    "/assets/*",
-    `  Cache-Control: ${ASSET_CACHE_CONTROL}`,
-    "",
-  ],
-  Arr.join("\n"),
-);
 
 const OWNED_ZONE = Option.none<string>();
 
@@ -55,8 +41,18 @@ const web = Effect.gen(function* web() {
       traces: { enabled: true, headSamplingRate: TRACE_SAMPLING_RATE, persist: true },
     },
     viteEnvironments: { entry: "ssr", children: ["rsc"] },
-    assets: { headers: ASSET_HEADERS },
+    assets: { headers: assetHeaders(SECURITY_HEADERS) },
   });
+});
+
+const landingPage = Website.StaticSite("LandingPage", {
+  cwd: "../lp",
+  command: "vp run build",
+  outdir: "dist/client",
+  compatibility: COMPATIBILITY,
+  logpush: true,
+  assets: { headers: assetHeaders(STATIC_PAGE_HEADERS) },
+  dev: { command: "vp dev" },
 });
 
 const ciTelemetry = Effect.gen(function* ciTelemetry() {
@@ -86,6 +82,7 @@ export default Stack(
   { providers: providers(), state: state() },
   Effect.gen(function* stack() {
     const { url } = yield* web;
+    const { url: landingPageUrl } = yield* landingPage;
     yield* Option.match(OWNED_ZONE, {
       onNone: () => Effect.void,
       onSome: (zone) =>
@@ -96,6 +93,6 @@ export default Stack(
     });
     yield* ciTelemetry;
     yield* requireAppPrefix;
-    return { url };
+    return { url, landingPageUrl };
   }),
 );
