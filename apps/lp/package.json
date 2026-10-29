@@ -11,7 +11,6 @@
     "typecheck": "tsc",
     "test": "vp test run --passWithNoTests",
     "steiger": "steiger ./src",
-    "prepare": "effect-tsgo patch --typescript --oxlint",
     "fallow": "fallow --skip dupes --fail-on-issues --quiet --format compact && fallow dupes --fail-on-issues --quiet --format compact && fallow security --fail-on-issues --quiet"
   },
   "dependencies": {
@@ -23,7 +22,6 @@
   },
   "devDependencies": {
     "@effect/platform-node": "catalog:",
-    "@effect/tsgo": "catalog:stack",
     "@feature-sliced/steiger-plugin": "0.8.0",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/react-start": "catalog:stack",
