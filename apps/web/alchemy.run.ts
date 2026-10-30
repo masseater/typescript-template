@@ -23,6 +23,8 @@ const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
 
 const OWNED_ZONE = Option.none<string>();
 
+const CF_BEACON_TOKEN = "47d660a773db4bb7a9b283aaf8f080ff";
+
 const web = Effect.gen(function* web() {
   const DB = yield* D1.Database("DB", { migrations: "./drizzle" });
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
@@ -30,7 +32,7 @@ const web = Effect.gen(function* web() {
     compatibility: COMPATIBILITY,
     logpush: true,
     limits: WEB_LIMITS,
-    env: { API_RATE_LIMIT, BETTER_AUTH_SECRET, DB },
+    env: { API_RATE_LIMIT, BETTER_AUTH_SECRET, CF_BEACON_TOKEN, DB },
     observability: {
       enabled: true,
       logs: {
@@ -47,6 +49,7 @@ const web = Effect.gen(function* web() {
 
 const landingPage = Website.StaticSite("LandingPage", {
   cwd: "../lp",
+  env: { VITE_CF_BEACON_TOKEN: CF_BEACON_TOKEN },
   command: "vp run build",
   outdir: "dist/client",
   compatibility: COMPATIBILITY,

@@ -1,2 +1,3 @@
 10049	IGNORE	(Storable and Cacheable Content)
 10109	IGNORE	(Modern Web Application)
+10017	IGNORE	(Cross-Domain JavaScript Source File Inclusion)
