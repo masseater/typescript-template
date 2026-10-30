@@ -1,5 +1,5 @@
 import { Stack, makeRandom } from "alchemy";
-import { D1, Rum, Website, Workers, providers, state } from "alchemy/Cloudflare";
+import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
 import { Config, Effect, Hash, Option, Schema } from "effect";
 import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-headers";
@@ -23,14 +23,11 @@ const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
 
 const OWNED_ZONE = Option.none<string>();
 
-const WEB_ANALYTICS_HOST = `${APP_NAME}.workers.dev`;
-
-const webAnalytics = Rum.Site("WebAnalytics", { host: WEB_ANALYTICS_HOST });
+const CF_BEACON_TOKEN = "47d660a773db4bb7a9b283aaf8f080ff";
 
 const web = Effect.gen(function* web() {
   const DB = yield* D1.Database("DB", { migrations: "./drizzle" });
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
-  const { siteToken: CF_BEACON_TOKEN } = yield* webAnalytics;
   return yield* Website.Vite("Web", {
     compatibility: COMPATIBILITY,
     logpush: true,
@@ -50,18 +47,15 @@ const web = Effect.gen(function* web() {
   });
 });
 
-const landingPage = Effect.gen(function* landingPage() {
-  const { siteToken } = yield* webAnalytics;
-  return yield* Website.StaticSite("LandingPage", {
-    cwd: "../lp",
-    env: { VITE_CF_BEACON_TOKEN: siteToken },
-    command: "vp run build",
-    outdir: "dist/client",
-    compatibility: COMPATIBILITY,
-    logpush: true,
-    assets: { headers: assetHeaders(STATIC_PAGE_HEADERS) },
-    dev: { command: "vp dev" },
-  });
+const landingPage = Website.StaticSite("LandingPage", {
+  cwd: "../lp",
+  env: { VITE_CF_BEACON_TOKEN: CF_BEACON_TOKEN },
+  command: "vp run build",
+  outdir: "dist/client",
+  compatibility: COMPATIBILITY,
+  logpush: true,
+  assets: { headers: assetHeaders(STATIC_PAGE_HEADERS) },
+  dev: { command: "vp dev" },
 });
 
 const ciTelemetry = Effect.gen(function* ciTelemetry() {
