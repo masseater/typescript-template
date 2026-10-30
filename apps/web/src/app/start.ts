@@ -3,6 +3,7 @@ import { Effect, Option, Record as Rec } from "effect";
 import { Base64 } from "effect/encoding";
 import { SECURITY_HEADERS } from "security-headers";
 
+import { withWebAnalytics } from "#/app/server/web-analytics.server";
 import { DOCUMENT_CACHE_CONTROL, SEARCH_INDEX_ORIGIN, noncePolicy } from "#/shared/config";
 
 const NONCE_BYTES = 16;
@@ -12,7 +13,7 @@ const responseHeaders = createMiddleware().server(({ next }) =>
     Effect.gen(function* secure() {
       const nonce = Base64.encode(crypto.getRandomValues(new Uint8Array(NONCE_BYTES)));
       const result = yield* Effect.promise(() => Promise.resolve(next({ context: { nonce } })));
-      const secured = new Response(result.response.body, result.response);
+      const secured = new Response(withWebAnalytics(result.response).body, result.response);
       for (const [name, value] of Rec.toEntries(SECURITY_HEADERS)) {
         secured.headers.set(name, value);
       }

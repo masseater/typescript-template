@@ -13,6 +13,17 @@ const SECURITY_HEADERS = {
 
 const ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
+const WEB_ANALYTICS_SCRIPT_ORIGIN = "https://static.cloudflareinsights.com";
+
+const WEB_ANALYTICS_REPORT_ORIGIN = "https://cloudflareinsights.com";
+
+const webAnalyticsBeacon = (token: string) =>
+  ({
+    src: `${WEB_ANALYTICS_SCRIPT_ORIGIN}/beacon.min.js`,
+    defer: true,
+    "data-cf-beacon": JSON.stringify({ token }),
+  }) as const;
+
 const contentSecurityPolicy = ({
   script,
   style,
@@ -20,10 +31,10 @@ const contentSecurityPolicy = ({
   pipe(
     [
       "default-src 'self'",
-      pipe(["script-src 'self'", ...script], Arr.join(" ")),
+      pipe(["script-src 'self'", WEB_ANALYTICS_SCRIPT_ORIGIN, ...script], Arr.join(" ")),
       pipe(["style-src 'self'", ...style], Arr.join(" ")),
       "img-src 'self' data:",
-      "connect-src 'self'",
+      `connect-src 'self' ${WEB_ANALYTICS_REPORT_ORIGIN}`,
       "object-src 'none'",
       "base-uri 'none'",
       "form-action 'self'",
@@ -52,4 +63,10 @@ const assetHeaders = (pageHeaders: Readonly<Record<string, string>>): string =>
     Arr.join("\n"),
   );
 
-export { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders, contentSecurityPolicy };
+export {
+  SECURITY_HEADERS,
+  STATIC_PAGE_HEADERS,
+  assetHeaders,
+  contentSecurityPolicy,
+  webAnalyticsBeacon,
+};

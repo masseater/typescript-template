@@ -1,5 +1,5 @@
 import { Stack, makeRandom } from "alchemy";
-import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
+import { D1, Rum, Website, Workers, providers, state } from "alchemy/Cloudflare";
 import type { InferEnv } from "alchemy/Cloudflare";
 import { Config, Effect, Hash, Option, Schema } from "effect";
 import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-headers";
@@ -23,14 +23,19 @@ const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
 
 const OWNED_ZONE = Option.none<string>();
 
+const WEB_ANALYTICS_HOST = `${APP_NAME}.workers.dev`;
+
+const webAnalytics = Rum.Site("WebAnalytics", { host: WEB_ANALYTICS_HOST });
+
 const web = Effect.gen(function* web() {
   const DB = yield* D1.Database("DB", { migrations: "./drizzle" });
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
+  const { siteToken: CF_BEACON_TOKEN } = yield* webAnalytics;
   return yield* Website.Vite("Web", {
     compatibility: COMPATIBILITY,
     logpush: true,
     limits: WEB_LIMITS,
-    env: { API_RATE_LIMIT, BETTER_AUTH_SECRET, DB },
+    env: { API_RATE_LIMIT, BETTER_AUTH_SECRET, CF_BEACON_TOKEN, DB },
     observability: {
       enabled: true,
       logs: {
@@ -45,14 +50,18 @@ const web = Effect.gen(function* web() {
   });
 });
 
-const landingPage = Website.StaticSite("LandingPage", {
-  cwd: "../lp",
-  command: "vp run build",
-  outdir: "dist/client",
-  compatibility: COMPATIBILITY,
-  logpush: true,
-  assets: { headers: assetHeaders(STATIC_PAGE_HEADERS) },
-  dev: { command: "vp dev" },
+const landingPage = Effect.gen(function* landingPage() {
+  const { siteToken } = yield* webAnalytics;
+  return yield* Website.StaticSite("LandingPage", {
+    cwd: "../lp",
+    env: { VITE_CF_BEACON_TOKEN: siteToken },
+    command: "vp run build",
+    outdir: "dist/client",
+    compatibility: COMPATIBILITY,
+    logpush: true,
+    assets: { headers: assetHeaders(STATIC_PAGE_HEADERS) },
+    dev: { command: "vp dev" },
+  });
 });
 
 const ciTelemetry = Effect.gen(function* ciTelemetry() {

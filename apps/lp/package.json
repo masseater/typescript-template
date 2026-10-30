@@ -18,6 +18,7 @@
     "effect": "catalog:stack",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "security-headers": "workspace:*",
     "tailwindcss": "catalog:stack"
   },
   "devDependencies": {
@@ -29,7 +30,6 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "catalog:",
     "node-html-parser": "9.0.5",
-    "security-headers": "workspace:*",
     "steiger": "catalog:stack",
     "typescript": "catalog:stack",
     "vite": "catalog:",
