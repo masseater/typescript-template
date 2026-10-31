@@ -50,7 +50,7 @@ catalogs:
     "@elysiajs/eden": 1.4.9
     "@openfeature/server-sdk": 1.23.0
     "@tanstack/react-query": 5.104.5
-    "@tanstack/react-start": 1.169.2
+    "@tanstack/react-start": 1.169.4
     alchemy: 2.0.0-beta.81
     better-auth: 1.7.14
     drizzle-kit: 1.0.0-rc.5-ab785fc
