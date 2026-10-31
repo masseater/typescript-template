@@ -1,4 +1,4 @@
-import { ApiToken, CloudflareEnvironment, Logpush, R2 } from "alchemy/Cloudflare";
+import { ApiToken, CloudflareEnvironment, Logpush, R2 } from "@alchemy.run/cloudflare";
 import { all, map, mapEffect } from "alchemy/Output";
 import { sha256 } from "alchemy/Util";
 import { Effect, Redacted, pipe } from "effect";
