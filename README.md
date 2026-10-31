@@ -63,7 +63,7 @@ verify が通り、dev が表示した URL を開いてアプリが出れば準�
 ### 4. GitHub の設定をそろえる
 
 Actions の secrets、Actions による PR 作成の許可、既定ブランチのルールセットは、テンプレートから引き継がれない。
-[masseater/skills](https://github.com/masseater/skills) の `setup-template` スキルの手順で設定する。
+[masseater/skills](https://github.com/masseater/skills) の `project-checklist` スキルの setup の手順で設定する。
 
 設定が済めば、main への push のたびに本番へデプロイされる。
 手元からデプロイするときは `apps/web` で `vp run deploy` を実行する。
