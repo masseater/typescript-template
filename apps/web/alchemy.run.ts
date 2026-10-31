@@ -1,6 +1,6 @@
+import { D1, Website, Workers, providers, state } from "@alchemy.run/cloudflare";
+import type { InferEnv } from "@alchemy.run/cloudflare";
 import { Stack, makeRandom } from "alchemy";
-import { D1, Website, Workers, providers, state } from "alchemy/Cloudflare";
-import type { InferEnv } from "alchemy/Cloudflare";
 import { Config, Effect, Hash, Option, Schema } from "effect";
 import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-headers";
 
