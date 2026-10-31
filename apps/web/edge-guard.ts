@@ -1,6 +1,6 @@
+import { AnalyticsEngine, Ruleset, Workers, Zone } from "@alchemy.run/cloudflare";
+import type { InferEnv } from "@alchemy.run/cloudflare";
 import { adopt } from "alchemy/AdoptPolicy";
-import { AnalyticsEngine, Ruleset, Workers, Zone } from "alchemy/Cloudflare";
-import type { InferEnv } from "alchemy/Cloudflare";
 import { Array, Effect, Record, String, pipe } from "effect";
 
 import { APP_NAME } from "./app-name.ts";
