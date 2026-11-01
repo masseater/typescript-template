@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@effect/platform-node": "catalog:",
-    "@feature-sliced/steiger-plugin": "0.8.0",
+    "@feature-sliced/steiger-plugin": "0.8.1",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/react-start": "catalog:stack",
     "@types/react": "19.3.0",
