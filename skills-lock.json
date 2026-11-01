@@ -38,7 +38,7 @@
     },
     "cloudflare-caution": {
       "source": "masseater/skills",
-      "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
+      "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/cloudflare-caution/SKILL.md",
       "computedHash": "cfd1245be207d5c1a1bef5c6d6d3d8679a5c29084abbd0ba4cfb9c3759d847b4"
@@ -150,14 +150,14 @@
     },
     "how-to-use-react": {
       "source": "masseater/skills",
-      "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
+      "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/how-to-use-react/SKILL.md",
       "computedHash": "35b28c9ea5bd6785785e7281311aa17571346d204a5e63725befd0daa81dfc3d"
     },
     "integrate": {
       "source": "masseater/skills",
-      "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
+      "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/integrate/SKILL.md",
       "computedHash": "44749b353b98ba0cb8160f9140207449dd258cca1397dbe80cd320eec5f65c0a"
@@ -199,7 +199,7 @@
     },
     "measure-dont-guess": {
       "source": "masseater/skills",
-      "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
+      "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/measure-dont-guess/SKILL.md",
       "computedHash": "3d7bf5e84ee60a7781d84578065f98cfc1c737bbfa5d875a48d4941ae0320e2e"
@@ -213,7 +213,7 @@
     },
     "project-checklist": {
       "source": "masseater/skills",
-      "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
+      "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/project-checklist/SKILL.md",
       "computedHash": "41ad17742a2ba57104c8a38e096283c7c0af7b3a69967b829a24cb54e86c97bf"
@@ -234,7 +234,7 @@
     },
     "skill-authoring": {
       "source": "masseater/skills",
-      "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
+      "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/skill-authoring/SKILL.md",
       "computedHash": "2962cfa6a1573a0388bffb1692e59f2b5a1bc7c5a4b364d4e4f14e22fe7e08f9"
