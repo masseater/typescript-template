@@ -41,7 +41,7 @@
       "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
       "sourceType": "github",
       "skillPath": "skills/cloudflare-caution/SKILL.md",
-      "computedHash": "d98a111c3f2f8778cb18106bb4015bcaa654374391aede029ecc2465691d102a"
+      "computedHash": "cfd1245be207d5c1a1bef5c6d6d3d8679a5c29084abbd0ba4cfb9c3759d847b4"
     },
     "commit-and-git": {
       "source": "philtzjp/skills",
@@ -153,14 +153,14 @@
       "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
       "sourceType": "github",
       "skillPath": "skills/how-to-use-react/SKILL.md",
-      "computedHash": "780d66e765c50278e8eef6786b7be55d2382b0e4a30c3fe109c9ac1f54360ec1"
+      "computedHash": "35b28c9ea5bd6785785e7281311aa17571346d204a5e63725befd0daa81dfc3d"
     },
     "integrate": {
       "source": "masseater/skills",
       "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
       "sourceType": "github",
       "skillPath": "skills/integrate/SKILL.md",
-      "computedHash": "09964308929f006e16387f9e685218477758273304d120625b419b13b6e0b6ee"
+      "computedHash": "44749b353b98ba0cb8160f9140207449dd258cca1397dbe80cd320eec5f65c0a"
     },
     "issue-branch-pr-flow": {
       "source": "philtzjp/skills",
@@ -202,7 +202,7 @@
       "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
       "sourceType": "github",
       "skillPath": "skills/measure-dont-guess/SKILL.md",
-      "computedHash": "d11db14de46d4f650f9f434f57c7078120f63ea5f1409d6718bb176b406405c5"
+      "computedHash": "3d7bf5e84ee60a7781d84578065f98cfc1c737bbfa5d875a48d4941ae0320e2e"
     },
     "modern-web-guidance": {
       "source": "GoogleChrome/modern-web-guidance",
@@ -216,7 +216,7 @@
       "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
       "sourceType": "github",
       "skillPath": "skills/project-checklist/SKILL.md",
-      "computedHash": "16b31583521b66890ddad0060ecb47056475660eff97c3662fb292302e8b4130"
+      "computedHash": "41ad17742a2ba57104c8a38e096283c7c0af7b3a69967b829a24cb54e86c97bf"
     },
     "refresh-skills": {
       "source": "philtzjp/skills",
@@ -237,7 +237,7 @@
       "ref": "45a600acf934116728f6d6fe11da9dba55db320e",
       "sourceType": "github",
       "skillPath": "skills/skill-authoring/SKILL.md",
-      "computedHash": "2cd8f7be50c5b9123389068074e01d72f1440af920c5ec77c1d6f5d93ffe7667"
+      "computedHash": "2962cfa6a1573a0388bffb1692e59f2b5a1bc7c5a4b364d4e4f14e22fe7e08f9"
     },
     "skill-escalation": {
       "source": "philtzjp/skills",
