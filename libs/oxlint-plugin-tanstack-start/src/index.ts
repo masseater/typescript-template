@@ -39,7 +39,7 @@ const typedContext = (context: Context, parserServices: ParserServices): TypedCo
 const withTypeInformation = (rule: TypedRule): CreateRule => ({
   meta: rule.meta,
   create: (context) =>
-    programFor(context.filename).pipe(
+    programFor({ fileName: context.filename, text: context.sourceCode.text }).pipe(
       Option.flatMap((program) =>
         Option.fromNullishOr(program.getSourceFile(context.filename)).pipe(
           Option.map((sourceFile) =>

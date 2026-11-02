@@ -121,9 +121,25 @@ export default defineConfig({
             {
               from: "package",
               package: "typescript",
-              name: ["CompilerOptions", "Node", "Program", "SourceFile"],
+              name: [
+                "CompilerHost",
+                "CompilerOptions",
+                "Node",
+                "ParsedCommandLine",
+                "Program",
+                "SourceFile",
+              ],
             },
-            { from: "package", package: "@oxlint/plugins", name: ["Context", "Node", "RuleMeta"] },
+            {
+              from: "package",
+              package: "@oxlint/plugins",
+              name: ["Context", "Node", "Rule", "RuleMeta"],
+            },
+            {
+              from: "package",
+              package: "oxlint",
+              name: ["InvalidTestCase", "Rule", "TestCases", "ValidTestCase"],
+            },
             {
               from: "package",
               package: "effect",

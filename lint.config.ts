@@ -192,6 +192,7 @@ const generated = [
   "AGENTS.md",
   "skills-lock.json",
   "CHANGELOG.md",
+  "libs/oxlint-plugin-tanstack-start/upstream/src/__tests__/**",
 ];
 
 const decisionPluginName = decisionPlugin.meta.name;

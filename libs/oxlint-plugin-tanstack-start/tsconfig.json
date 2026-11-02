@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src"],
+  "include": ["src", "upstream", "vite.config.ts"],
+  "exclude": ["upstream/src/__tests__"],
   "compilerOptions": {
     "plugins": [
       {
