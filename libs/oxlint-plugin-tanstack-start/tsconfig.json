@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "allowedUnstableApis": [
+          "@effect/platform-node/NodeServices#layer",
+          "effect/FileSystem#FileSystem",
+          "effect/Path#Path",
+
+          "effect/http/FetchHttpClient#layer",
+          "effect/observability/OtlpSerialization#layerJson",
+          "effect/observability/OtlpTracer#layerFromConfig"
+        ]
+      }
+    ]
+  }
+}
