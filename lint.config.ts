@@ -217,6 +217,13 @@ const prefixed = (
     ),
   );
 
+const pluginRules = (
+  plugin: Readonly<{
+    meta: Readonly<{ name: string }>;
+    rules: Record.ReadonlyRecord<string, unknown>;
+  }>,
+): Rules => prefixed(plugin.meta.name, plugin);
+
 const turnedOff = (rules: Rules): Record.ReadonlyRecord<string, "off"> =>
   pipe(
     rules,
@@ -267,6 +274,7 @@ export {
   eslintReactRules,
   generated,
   htmlReactRules,
+  pluginRules,
   reactHooksRules,
   requiredStack,
   restrictedImports,

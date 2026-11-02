@@ -1,4 +1,5 @@
 import baselineJs from "eslint-plugin-baseline-js";
+import tanstackStart from "oxlint-plugin-tanstack-start";
 import { defineConfig } from "vite-plus";
 
 import {
@@ -9,6 +10,7 @@ import {
   eslintReactRules,
   generated,
   htmlReactRules,
+  pluginRules,
   reactHooksRules,
   restrictedImports,
   shadcnRules,
@@ -57,6 +59,7 @@ export default defineConfig({
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
       { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
       { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
+      { name: tanstackStart.meta.name, specifier: "oxlint-plugin-tanstack-start" },
       { name: "drizzle", specifier: "eslint-plugin-drizzle" },
       { name: "react-hooks-js", specifier: "eslint-plugin-react-hooks" },
       { name: "@eslint-react", specifier: "@eslint-react/eslint-plugin" },
@@ -72,6 +75,7 @@ export default defineConfig({
       "no-comments/disallowComments": ["error", { allow: ["oxlint-disable", "eslint-disable"] }],
       ...tanstackQueryRules,
       ...tanstackRouterRules,
+      ...pluginRules(tanstackStart),
       "drizzle/enforce-delete-with-where": "error",
       "drizzle/enforce-update-with-where": "error",
       ...shadcnRules,
@@ -116,6 +120,12 @@ export default defineConfig({
             { from: "package", package: "puppeteer-core", name: ["Browser", "Page"] },
             {
               from: "package",
+              package: "typescript",
+              name: ["CompilerOptions", "Node", "Program", "SourceFile"],
+            },
+            { from: "package", package: "@oxlint/plugins", name: ["Context", "Node", "RuleMeta"] },
+            {
+              from: "package",
               package: "effect",
               name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option"],
             },
@@ -141,7 +151,13 @@ export default defineConfig({
     },
     overrides: [
       {
-        files: ["**/*.config.ts", "**/alchemy.run.ts", "**/*.worker.ts", "decision-rules.ts"],
+        files: [
+          "**/*.config.ts",
+          "**/alchemy.run.ts",
+          "**/*.worker.ts",
+          "decision-rules.ts",
+          "libs/oxlint-plugin-*/src/index.ts",
+        ],
         rules: { "import/no-default-export": "off" },
       },
       {
@@ -228,7 +244,6 @@ export default defineConfig({
         },
         dependsOn: [
           "test-all",
-          "eslint",
           "syncpack",
           "markdown-lint",
           "renovate",
@@ -240,7 +255,6 @@ export default defineConfig({
         ],
       },
       "test-all": "vp run -r test",
-      eslint: "NODE_OPTIONS=--max-old-space-size=4096 eslint --max-warnings 0 .",
       syncpack: "syncpack lint",
       "steiger-all": "vp run -r steiger",
       "db-check-all": "vp run -r db:check",
