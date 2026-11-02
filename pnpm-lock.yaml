@@ -252,8 +252,8 @@ catalogs:
       specifier: 0.23.3
       version: 0.23.3
     oxlint-plugin-eslint:
-      specifier: 1.88.0
-      version: 1.88.0
+      specifier: 1.90.0
+      version: 1.90.0
     puppeteer-core:
       specifier: 25.14.0
       version: 25.14.0
@@ -448,7 +448,7 @@ importers:
         version: 0.23.3(supports-color@7.2.0)
       oxlint-plugin-eslint:
         specifier: 'catalog:'
-        version: 1.88.0
+        version: 1.90.0
       renovate:
         specifier: catalog:stack
         version: 44.148.3(supports-color@7.2.0)(typanion@3.14.0)
@@ -8567,8 +8567,8 @@ packages:
       vite-plus:
         optional: true
 
-  oxlint-plugin-eslint@1.88.0:
-    resolution: {integrity: sha512-S67hB1/w+sRb8Qa7EBU9nSoopjZ8a/vY1pqHYBYm9rFm9H60ovpGodxPdqxI/p/OGpmPUY2ARLKPx43l5BxwGg==}
+  oxlint-plugin-eslint@1.90.0:
+    resolution: {integrity: sha512-JjQbCJZ1HuWrOA0qi1r8l6uqEdlP3Htu1XWrMNkTieGRRWLNB2nOFu7iw1MYSWODcuJR8lJn5KfoP6DujhWtiA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   oxlint-tsgolint@7.0.2004:
@@ -18848,7 +18848,7 @@ snapshots:
       '@oxfmt/binding-win32-x64-msvc': 0.73.0
       vite-plus: 1.3.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/ui@5.0.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.1)
 
-  oxlint-plugin-eslint@1.88.0: {}
+  oxlint-plugin-eslint@1.90.0: {}
 
   oxlint-tsgolint@7.0.2004:
     optionalDependencies:
