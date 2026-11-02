@@ -38,7 +38,7 @@ catalog:
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
   jose: 6.2.14
-  markdownlint-cli2: 0.23.3
+  markdownlint-cli2: 0.24.0
   chrome-launcher: 1.2.2
   lighthouse: 13.5.0
   puppeteer-core: 25.14.0
