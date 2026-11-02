@@ -48,26 +48,65 @@ const parseConfig = (configPath: string): Option.Option<ts.ParsedCommandLine> =>
     ),
   );
 
-const buildProgram = (configPath: string): Effect.Effect<Option.Option<ts.Program>> =>
+interface Overlay {
+  readonly fileName: string;
+  readonly text: string;
+}
+
+const overlayHost = (host: ts.CompilerHost, overlay: Overlay): ts.CompilerHost => ({
+  ...host,
+  fileExists: (fileName) => fileName === overlay.fileName || host.fileExists(fileName),
+  readFile: (fileName) =>
+    Option.match(
+      Option.liftPredicate(fileName, (name) => name === overlay.fileName),
+      {
+        onNone: () => host.readFile(fileName),
+        onSome: () => overlay.text,
+      },
+    ),
+  getSourceFile: (...args) => {
+    const [fileName, languageVersion] = args;
+    return Option.match(
+      Option.liftPredicate(fileName, (name) => name === overlay.fileName),
+      {
+        onNone: () => host.getSourceFile(...args),
+        onSome: () => ts.createSourceFile(fileName, overlay.text, languageVersion, true),
+      },
+    );
+  },
+});
+
+const withProjectReferences = (
+  config: ts.ParsedCommandLine,
+): Readonly<{ projectReferences?: readonly ts.ProjectReference[] }> =>
+  Option.match(Option.fromNullishOr(config.projectReferences), {
+    onNone: () => ({}),
+    onSome: (projectReferences) => ({ projectReferences }),
+  });
+
+const buildProgram = (configPath: string): Effect.Effect<Option.Option<BaseProgram>> =>
   Effect.sync(() =>
     parseConfig(configPath).pipe(
-      Option.map((config) =>
-        ts.createProgram({
+      Option.map((config) => ({
+        config,
+        program: ts.createProgram({
           rootNames: config.fileNames,
           options: config.options,
           host: cachingHost(config.options),
-          ...Option.match(Option.fromNullishOr(config.projectReferences), {
-            onNone: () => ({}),
-            onSome: (projectReferences) => ({ projectReferences }),
-          }),
+          ...withProjectReferences(config),
         }),
-      ),
+      })),
     ),
   ).pipe(Effect.withSpan("tanstack-start.build-program", { attributes: { configPath } }));
 
-const programs = new Map<string, Option.Option<ts.Program>>();
+interface BaseProgram {
+  readonly config: ts.ParsedCommandLine;
+  readonly program: ts.Program;
+}
 
-const cachedProgram = (configPath: string): Effect.Effect<Option.Option<ts.Program>> =>
+const programs = new Map<string, Option.Option<BaseProgram>>();
+
+const cachedProgram = (configPath: string): Effect.Effect<Option.Option<BaseProgram>> =>
   Option.fromNullishOr(programs.get(configPath)).pipe(
     Option.match({
       onSome: Effect.succeed,
@@ -78,26 +117,81 @@ const cachedProgram = (configPath: string): Effect.Effect<Option.Option<ts.Progr
     }),
   );
 
+const overlays = new Map<string, ts.Program>();
+
+const buildOverlayProgram = (
+  configPath: string,
+  base: BaseProgram,
+  overlay: Overlay,
+): Effect.Effect<ts.Program> =>
+  Effect.sync(() =>
+    ts.createProgram({
+      rootNames: [...new Set([...base.config.fileNames, overlay.fileName])],
+      options: base.config.options,
+      host: overlayHost(cachingHost(base.config.options), overlay),
+      oldProgram: base.program,
+      ...withProjectReferences(base.config),
+    }),
+  ).pipe(
+    Effect.tap((program) => Effect.sync(() => overlays.set(configPath, program))),
+    Effect.withSpan("tanstack-start.build-overlay-program", {
+      attributes: { fileName: overlay.fileName },
+    }),
+  );
+
+const matchesText = (program: ts.Program, overlay: Overlay): boolean =>
+  Option.fromNullishOr(program.getSourceFile(overlay.fileName)).pipe(
+    Option.exists((sourceFile) => sourceFile.getFullText() === overlay.text),
+  );
+
+const programWithText = (
+  configPath: string,
+  base: BaseProgram,
+  overlay: Overlay,
+): Effect.Effect<ts.Program> =>
+  Option.liftPredicate(base.program, (program) => matchesText(program, overlay)).pipe(
+    Option.orElse(() =>
+      Option.fromNullishOr(overlays.get(configPath)).pipe(
+        Option.filter((program) => matchesText(program, overlay)),
+      ),
+    ),
+    Option.match({
+      onSome: Effect.succeed,
+      onNone: () => buildOverlayProgram(configPath, base, overlay),
+    }),
+  );
+
 const fileExists = (fileName: string): boolean => ts.sys.fileExists(fileName);
 
 const programOfFile = (
-  fileName: string,
+  overlay: Overlay,
 ): Effect.Effect<Option.Option<ts.Program>, never, Path.Path> =>
   Effect.gen(function* findProgram() {
     const path = yield* Path.Path;
-    const configPath = Option.fromNullishOr(ts.findConfigFile(path.dirname(fileName), fileExists));
+    const configPath = Option.fromNullishOr(
+      ts.findConfigFile(path.dirname(overlay.fileName), fileExists),
+    );
     return yield* Option.match(configPath, {
       onNone: () => Effect.succeedNone,
-      onSome: cachedProgram,
+      onSome: (found) =>
+        cachedProgram(found).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () => Effect.succeedNone,
+              onSome: (base) => programWithText(found, base, overlay).pipe(Effect.asSome),
+            }),
+          ),
+        ),
     });
   });
 
-const programFor = (fileName: string): Option.Option<ts.Program> =>
-  Exit.match(runtime.runSyncExit(programOfFile(fileName)), {
+const programFor = (overlay: Overlay): Option.Option<ts.Program> =>
+  Exit.match(runtime.runSyncExit(programOfFile(overlay)), {
     onSuccess: (program) => program,
     onFailure: (cause) => {
       throw Cause.squash(cause);
     },
   });
 
+export type { Overlay };
 export { programFor };
