@@ -60,7 +60,7 @@ catalogs:
     eden-tanstack-react-query: 0.5.1
     effect: 4.0.7
     elysia: 1.4.30
-    fallow: 3.34.0
+    fallow: 3.37.0
     radix-ui: 1.7.0
     renovate: 44.148.3
     steiger: 0.7.0
