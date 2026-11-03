@@ -15,7 +15,7 @@ catalog:
   "@shadcn/lint": 0.2.3
   "@tanstack/eslint-plugin-query": 5.105.1
   "@tanstack/eslint-plugin-router": 1.162.0
-  "@r_masseater/oxlint-typed-rules": 0.0.1
+  "@r_masseater/oxlint-typed-rules": 0.0.2
   "@types/node": 26.6.6
   eslint-plugin-drizzle: 0.2.3
   eslint-plugin-react-hooks: 7.1.1
@@ -96,7 +96,7 @@ packageExtensions:
       "@steiger/toolkit": 0.2.3
 minimumReleaseAgeExclude:
   - "@r_masseater/oxlint-plugin-decision@0.0.4"
-  - "@r_masseater/oxlint-typed-rules@0.0.1"
+  - "@r_masseater/oxlint-typed-rules@0.0.2"
 audit:
   ignorePrune: true
   ignore:
