@@ -1,0 +1,178 @@
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, branch, or tag to release
+        required: false
+        default: main
+
+permissions: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      sha: ${{ steps.version.outputs.sha }}
+    steps:
+      - name: Resolve the ref to a commit
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: ${{ inputs.ref || github.ref }}
+        run: |
+          sha="$(gh api "repos/$REPO/commits/$REF" --jq .sha)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.resolve.outputs.sha }}
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cab1ab9eaff52d4857875f4f2c016e36af8f2c76 # v1.22.0
+        with:
+          cache: false
+          run-install: |
+            - args: ['--frozen-lockfile']
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+      - name: Check package versions
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          packages="$(for f in apps/*/package.json libs/*/package.json tools/*/package.json infra/*/package.json; do
+            [ -f "$f" ] && jq -e '.private != true and has("publishConfig")' "$f" >/dev/null && dirname "$f"
+          done | tr '\n' ' ')"
+          if [ -z "$packages" ]; then
+            echo "::notice::No package to publish"
+            exit 0
+          fi
+          expected=""
+          for dir in $packages; do
+            version="$(jq -r .version "$dir/package.json")"
+            if [ -z "$expected" ]; then
+              expected="$version"
+            elif [ "$version" != "$expected" ]; then
+              echo "::error::$dir version $version does not match $expected"
+              exit 1
+            fi
+          done
+          if [ "$EVENT_NAME" = "push" ] && [ "$TAG" != "v$expected" ]; then
+            echo "::error::Tag $TAG does not match package version v$expected"
+            exit 1
+          fi
+          {
+            echo "packages=$packages"
+            echo "tag=v$expected"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+      - if: steps.version.outputs.packages != ''
+        run: vp run verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      - if: steps.version.outputs.packages != ''
+        name: Pack
+        env:
+          PACKAGES: ${{ steps.version.outputs.packages }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/packages"
+          for dir in $PACKAGES; do
+            (cd "$dir" && vp pm pack --out "$RUNNER_TEMP/packages/$(basename "$dir").tgz")
+          done
+      - if: steps.version.outputs.packages != ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Check the release tag is free
+        if: github.event_name == 'workflow_dispatch' && steps.version.outputs.packages != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SHA: ${{ steps.version.outputs.sha }}
+        run: |
+          if existing="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null)" && [ "$existing" != "$SHA" ]; then
+            echo "::error::$TAG already points to $existing, not $SHA"
+            exit 1
+          fi
+      - if: steps.version.outputs.packages != ''
+        name: Publish
+        working-directory: ${{ runner.temp }}
+        env:
+          PACKAGES: ${{ steps.version.outputs.packages }}
+        run: |
+          npm --version
+          for dir in $PACKAGES; do
+            name="$(jq -r .name "$GITHUB_WORKSPACE/$dir/package.json")"
+            version="$(jq -r .version "$GITHUB_WORKSPACE/$dir/package.json")"
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already published, skipping"
+              continue
+            fi
+            npm publish "$RUNNER_TEMP/packages/$(basename "$dir").tgz" --provenance --access public
+          done
+
+  tag:
+    needs: publish
+    if: github.event_name == 'workflow_dispatch' && needs.publish.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Tag the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.publish.outputs.tag }}
+          SHA: ${{ needs.publish.outputs.sha }}
+        run: |
+          if existing="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null)"; then
+            if [ "$existing" = "$SHA" ]; then
+              echo "$TAG already points to $SHA"
+            else
+              echo "::error::$TAG already points to $existing, not $SHA"
+              exit 1
+            fi
+          else
+            gh api "repos/$REPO/git/refs" -f ref="refs/tags/$TAG" -f sha="$SHA"
+          fi
+
+  ci-telemetry:
+    needs: [publish, tag]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/ci-telemetry.sh
+            .github/scripts/cloudflare-token.sh
+            apps/web/app-name.ts
+          sparse-checkout-cone-mode: false
+      - if: github.ref == 'refs/heads/main'
+        run: .github/scripts/cloudflare-token.sh
+      - run: .github/scripts/ci-telemetry.sh
+        env:
+          GH_TOKEN: ${{ github.token }}

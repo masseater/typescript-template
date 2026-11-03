@@ -209,14 +209,14 @@
       "ref": "341268561baaff256927c931ec8215dbd30e3cee",
       "sourceType": "github",
       "skillPath": "skills/modern-web-guidance/SKILL.md",
-      "computedHash": "8e91867cc20dda14251c78c8d905847314c8c196557e1181d586a456cddcb5dc"
+      "computedHash": "c614730bccf763448d84ed2b5c71164b0ad7410a0823da3639e62e9d9bf2b641"
     },
     "project-checklist": {
       "source": "masseater/skills",
       "ref": "c65c6bebdf22be85404b0798dcbcb89cfea49d10",
       "sourceType": "github",
       "skillPath": "skills/project-checklist/SKILL.md",
-      "computedHash": "41ad17742a2ba57104c8a38e096283c7c0af7b3a69967b829a24cb54e86c97bf"
+      "computedHash": "9d4ba48afd1ea70e6bdf5ba0f2ec5004d501257abd2a03d190ecef9573943787"
     },
     "refresh-skills": {
       "source": "philtzjp/skills",

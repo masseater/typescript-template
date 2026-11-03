@@ -63,6 +63,13 @@
 - ZAP のアラートは警告も含めすぐ直す。誤検知だけを `.github/zap/rules.tsv` に書く。
 - `audit` は `vp pm audit --fix` で直す。修正版の無い勧告だけを `audit.ignore` に載せ、理由をコミットメッセージに書く。
 
+## npm に出すパッケージ
+
+- npm に出すパッケージは `private` を外して `publishConfig` を持たせる。`publish.yml` はこの 2 つで出す対象を選び、Trusted Publisher（GitHub OIDC）で `--provenance` を付けて出す。npm 側には `publish.yml` と environment `npm` を登録する。
+- release-please は `verify.yml` の `release` ジョブの `if` を自分のリポ名にし、`extra-files` でパッケージの `package.json` の version も上げる。リリースが切れると `publish.yml` を呼ぶ。
+- `vp pack` の設定に `publint: { strict: true }` と `attw: { profile: "esm-only", level: "error" }` を書き、`publint` と `@arethetypeswrong/core` を devDependencies に入れる。fallow はこの 2 つの利用を辿れないので `.fallowrc.jsonc` の `ignoreDependencies` に載せる。
+- バンドルサイズは size-limit（`@size-limit/file`）で測る。パッケージに `"size": "vp run build && size-limit"` と `size-limit` の設定を置き、ルートの `vite.config.ts` に `"size-all": "vp run -r size"` を足して verify の `dependsOn` に入れる。`vp run -r` は対象のタスクが 1 つも無いと落ちるので、テンプレートには入れていない。`limit` は今の大きさをバイト単位でちょうどに書き、増やすときは `limit` を上げてその理由をコミットメッセージに書く。
+
 ## 公開先
 
 - デプロイ先や外部公開しているもの（サイト、API、npm パッケージなど）があれば、その URL を README に一覧で載せる。
