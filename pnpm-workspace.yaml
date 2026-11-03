@@ -40,8 +40,6 @@ catalog:
   lighthouse: 13.6.0
   puppeteer-core: 25.16.0
 catalogs:
-  typescript-api:
-    typescript: 6.0.3
   stack:
     "@distilled.cloud/cloudflare": 1.0.0-rc.17
     "@effect/atom-react": 4.0.7
