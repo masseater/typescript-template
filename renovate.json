@@ -16,6 +16,11 @@
       ],
       "groupName": "effect and alchemy",
       "automerge": false
+    },
+    {
+      "description": "Remove once @tanstack/eslint-plugin-start stops deriving browser-only globals from globals.browser minus globals.node; globals 16.5.0 lists localStorage under node.",
+      "matchDepNames": ["@tanstack/eslint-plugin-start>globals"],
+      "allowedVersions": "<16.5.0"
     }
   ],
   "customManagers": [
