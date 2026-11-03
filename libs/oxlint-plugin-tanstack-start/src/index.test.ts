@@ -5,6 +5,7 @@ import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { beforeAll, describe, it } from "vite-plus/test";
 
 import plugin from "./index.ts";
+import { programFor } from "./program.ts";
 
 const FIXTURES = {
   "tsconfig.json": JSON.stringify({
@@ -53,12 +54,17 @@ const writeFixtures = Effect.gen(function* writeFixtures() {
   );
 });
 
-beforeAll(() => runtime.runPromise(writeFixtures));
-
 const fixture = (name: FixtureName): Readonly<{ filename: string; code: string }> => ({
   filename: `${FIXTURE_DIRECTORY}${name}`,
   code: FIXTURES[name],
 });
+
+const buildFixtureProgram = Effect.sync(() => {
+  const { filename, code } = fixture("render-plain.tsx");
+  programFor({ fileName: filename, text: code });
+});
+
+beforeAll(() => runtime.runPromise(writeFixtures.pipe(Effect.andThen(buildFixtureProgram))));
 
 const rule = (name: string): Rule =>
   pipe(
