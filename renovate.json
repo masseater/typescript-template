@@ -16,10 +16,6 @@
       ],
       "groupName": "effect and alchemy",
       "automerge": false
-    },
-    {
-      "matchDepNames": ["@tanstack/eslint-plugin-start>globals"],
-      "enabled": false
     }
   ],
   "customManagers": [
