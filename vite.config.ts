@@ -1,5 +1,5 @@
+import tanstackStart from "@r_masseater/oxlint-typed-rules/tanstack-start";
 import baselineJs from "eslint-plugin-baseline-js";
-import tanstackStart from "oxlint-plugin-tanstack-start";
 import { defineConfig } from "vite-plus";
 
 import {
@@ -59,7 +59,10 @@ export default defineConfig({
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
       { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
       { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
-      { name: tanstackStart.meta.name, specifier: "oxlint-plugin-tanstack-start" },
+      {
+        name: tanstackStart.meta.name,
+        specifier: "@r_masseater/oxlint-typed-rules/tanstack-start",
+      },
       { name: "drizzle", specifier: "eslint-plugin-drizzle" },
       { name: "react-hooks-js", specifier: "eslint-plugin-react-hooks" },
       { name: "@eslint-react", specifier: "@eslint-react/eslint-plugin" },
@@ -167,13 +170,7 @@ export default defineConfig({
     },
     overrides: [
       {
-        files: [
-          "**/*.config.ts",
-          "**/alchemy.run.ts",
-          "**/*.worker.ts",
-          "decision-rules.ts",
-          "libs/oxlint-plugin-*/src/index.ts",
-        ],
+        files: ["**/*.config.ts", "**/alchemy.run.ts", "**/*.worker.ts", "decision-rules.ts"],
         rules: { "import/no-default-export": "off" },
       },
       {

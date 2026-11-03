@@ -15,7 +15,7 @@ catalog:
   "@shadcn/lint": 0.2.3
   "@tanstack/eslint-plugin-query": 5.105.1
   "@tanstack/eslint-plugin-router": 1.162.0
-  "@tanstack/eslint-plugin-start": 0.1.0
+  "@r_masseater/oxlint-typed-rules": 0.0.1
   "@types/node": 26.6.6
   eslint-plugin-drizzle: 0.2.3
   eslint-plugin-react-hooks: 7.1.1
@@ -74,7 +74,6 @@ overrides:
   "@effect/sql-sqlite-do": 4.0.7
   "@effect/vitest": 4.0.7
   vite@*: "catalog:"
-  "@tanstack/eslint-plugin-start>globals": 16.5.0
   eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
   glob@>=9.0.0 <=14.0.1: ^14.0.2
   katex@>=0.11.0 <0.18.2: ^0.18.2
@@ -97,10 +96,9 @@ packageExtensions:
   "@feature-sliced/steiger-plugin":
     dependencies:
       "@steiger/toolkit": 0.2.3
-patchedDependencies:
-  "@tanstack/eslint-plugin-start@0.1.0": patches/@tanstack__eslint-plugin-start@0.1.0.patch
 minimumReleaseAgeExclude:
   - "@r_masseater/oxlint-plugin-decision@0.0.4"
+  - "@r_masseater/oxlint-typed-rules@0.0.1"
 auditConfig:
   ignoreGhsas:
     - GHSA-gcqx-w48m-w2h4
