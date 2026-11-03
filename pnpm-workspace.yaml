@@ -34,11 +34,8 @@ catalog:
   skills: 1.7.4
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
-  jose: 6.2.14
   markdownlint-cli2: 0.24.0
-  chrome-launcher: 1.2.2
-  lighthouse: 13.6.0
-  puppeteer-core: 25.16.0
+  "@r_masseater/web-vitals-flow": 0.0.0
 catalogs:
   stack:
     "@distilled.cloud/cloudflare": 1.0.0-rc.17
@@ -97,6 +94,7 @@ packageExtensions:
 minimumReleaseAgeExclude:
   - "@r_masseater/oxlint-plugin-decision@0.0.4"
   - "@r_masseater/oxlint-typed-rules@0.0.2"
+  - "@r_masseater/web-vitals-flow@0.0.0"
 audit:
   ignorePrune: true
   ignore:

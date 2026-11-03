@@ -25,7 +25,7 @@
 ## Cloudflare
 
 - Workers Paid プランを前提にする。
-- ゾーンの WAF カスタムルールと Logpush のジョブは、masseater.dev ゾーンの持ち主の masseater/masseater.dev だけが持つ。ほかのリポは `OWNED_ZONE` を入れない。
+- ゾーンの WAF カスタムルールと Logpush のジョブは、masseater.dev ゾーンの持ち主の masseater/masseater.dev だけが持つ。ほかのリポは持たない。
 - Worker にはすべて `logpush: true` を付ける。
 - Bot Fight Mode は使わない。
 
