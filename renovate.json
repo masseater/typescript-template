@@ -16,6 +16,15 @@
       ],
       "groupName": "effect and alchemy",
       "automerge": false
+    },
+    {
+      "matchDepTypes": ["pnpm.catalog.typescript-api"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "!/-dev\\./"
     }
   ],
   "customManagers": [
