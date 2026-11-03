@@ -3,15 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "@effect/platform-node": "catalog:",
-    "chrome-launcher": "catalog:",
-    "effect": "catalog:stack",
-    "lighthouse": "catalog:",
-    "puppeteer-core": "catalog:"
+  "scripts": {
+    "measure": "web-vitals-flow"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "vite-plus": "catalog:stack"
+    "@r_masseater/web-vitals-flow": "catalog:"
   }
 }

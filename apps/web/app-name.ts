@@ -9,8 +9,6 @@ const PREFIX = `${APP_NAME}-`;
 
 const ENV_PREFIX = `${pipe(APP_NAME, String.replaceAll("-", "_"))}_`;
 
-const CI_TELEMETRY_AUDIENCE = `${PREFIX}ci-telemetry`;
-
 const isFlySecret = (resource: unknown): boolean => isResourceOfType(resource, Secret.Type);
 
 const isZone = (resource: unknown): boolean => isResourceOfType(resource, Zone.Zone.Type);
@@ -57,4 +55,4 @@ const requireAppPrefix = Effect.gen(function* requireAppPrefix() {
   return offenders;
 });
 
-export { APP_NAME, CI_TELEMETRY_AUDIENCE, requireAppPrefix };
+export { APP_NAME, requireAppPrefix };
