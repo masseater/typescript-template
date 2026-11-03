@@ -16,6 +16,11 @@
       ],
       "groupName": "effect and alchemy",
       "automerge": false
+    },
+    {
+      "description": "upstream の TanStack/router が pnpm-lock.yaml の globals を 16.5.0 以上に上げたら、このルールを外して同じ版に揃える",
+      "matchDepNames": ["@tanstack/eslint-plugin-start>globals"],
+      "automerge": false
     }
   ],
   "customManagers": [
