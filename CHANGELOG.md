@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.12](https://github.com/masseater/typescript-template/compare/v0.0.11...v0.0.12) (2026-11-04)
+
+
+### Features
+
+* **audit:** 不要になった audit.ignore を verify で自動的に消す ([#338](https://github.com/masseater/typescript-template/issues/338)) ([2c77da6](https://github.com/masseater/typescript-template/commit/2c77da621b5ea872b334e88cd0d69c16a8a9b985))
+* cpu_ms の上限と API のレート制限を Worker に付ける ([#260](https://github.com/masseater/typescript-template/issues/260)) ([b2bf01d](https://github.com/masseater/typescript-template/commit/b2bf01d8186c2f749fe441720d0436a49be2d176))
+* **lint:** oxlint で TanStack Start のルールを動かし、ESLint を外す ([#324](https://github.com/masseater/typescript-template/issues/324)) ([3c90002](https://github.com/masseater/typescript-template/commit/3c900023393e90f3594def290a998f8729d1e9e7))
+* 既定で Cloudflare Web Analytics を有効にする ([#282](https://github.com/masseater/typescript-template/issues/282)) ([09638c1](https://github.com/masseater/typescript-template/commit/09638c1b4925e6ae81d189cfe5531e33a28ce06e))
+* 静的アセットだけで配る LP の見本を apps/lp に入れる ([#270](https://github.com/masseater/typescript-template/issues/270)) ([a0dd50d](https://github.com/masseater/typescript-template/commit/a0dd50d04a217f1ef322d41360ca9d083427daff))
+
 ## [0.0.11](https://github.com/masseater/typescript-template/compare/v0.0.10...v0.0.11) (2026-10-13)
 
 
