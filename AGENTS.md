@@ -39,7 +39,7 @@
 
 - PR のレビュー、PR ごとの CI・動作検証・デプロイはしない。動作は本番で確かめる。
 - マージ前に base を取り込み、手元の `vp run verify` を通してから自分でマージする。マージしてよいかは聞かない。ルールセットのバイパスや `--admin` は使わない。
-- release-please のリリース PR は `verify` を手動実行して作り直す。`up-to-date` が承認待ちで取り込むものも無ければ、ユーザーに承認を頼む。
+- release-please のリリース PR は `verify` を手動実行して作り直す。github-actions[bot] が作った PR の `up-to-date` は承認待ち（action_required）になるので、その実行を自分で再実行して通す。ユーザーに承認を頼まない。
 
 ## oxlint-plugin-decision
 
