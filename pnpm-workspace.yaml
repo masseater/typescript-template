@@ -15,14 +15,14 @@ catalog:
   "@shadcn/lint": 0.2.3
   "@tanstack/eslint-plugin-query": 5.105.1
   "@tanstack/eslint-plugin-router": 1.162.0
-  "@r_masseater/oxlint-typed-rules": 0.0.2
+  "@r_masseater/oxlint-typed-rules": 0.1.1
   "@types/node": 26.6.6
   eslint-plugin-drizzle: 0.2.3
   eslint-plugin-react-hooks: 7.1.1
   oxlint-plugin-eslint: 1.90.0
   syncpack: 15.3.3
   vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-  "@r_masseater/oxlint-plugin-decision": 0.0.4
+  "@r_masseater/oxlint-plugin-decision": 0.1.1
   eslint-plugin-no-comments: 1.2.1
   eslint-plugin-baseline-js: 0.7.7
   "@html-eslint/eslint-plugin-react": 0.67.0
@@ -65,9 +65,6 @@ catalogs:
 overrides:
   effect: "catalog:stack"
   "@effect/platform-node": "catalog:"
-  "@r_masseater/oxlint-plugin-decision>effect": 4.0.0
-  "@r_masseater/oxlint-plugin-decision>@effect/platform-node": 4.0.0
-  "@effect/platform-node@4.0.0>@effect/platform-node-shared": 4.0.0
   "@effect/platform-node-shared": 4.1.2
   "@effect/sql-d1": 4.1.2
   "@effect/sql-sqlite-do": 4.1.2
@@ -111,8 +108,8 @@ minimumReleaseAgeExclude:
   - "@distilled.cloud/fly-io@1.0.0-rc.18"
   - "@distilled.cloud/iceberg@1.0.0-rc.18"
   - alchemy@2.0.0-beta.85
-  - "@r_masseater/oxlint-plugin-decision@0.0.4"
-  - "@r_masseater/oxlint-typed-rules@0.0.2"
+  - "@r_masseater/oxlint-plugin-decision@0.1.1"
+  - "@r_masseater/oxlint-typed-rules@0.1.1"
   - "@r_masseater/web-vitals-flow@0.0.0"
 audit:
   ignorePrune: true
