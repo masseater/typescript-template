@@ -18,6 +18,11 @@
       "automerge": false
     },
     {
+      "matchDepTypes": ["pnpm-workspace.overrides"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchPackageNames": ["typescript"],
       "allowedVersions": "!/-dev\\./"
     }
