@@ -19,7 +19,6 @@ const getTodoSummary = createServerFn({ method: "GET" }).handler(() =>
       Effect.flatMap(([open, done]) =>
         Effect.promise(() => renderServerComponent(<TodoSummary open={open} done={done} />)),
       ),
-      Effect.withSpan("todo.summary"),
     ),
   ),
 );
