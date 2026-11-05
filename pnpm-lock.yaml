@@ -191,6 +191,9 @@ catalogs:
     '@r_masseater/web-vitals-flow':
       specifier: 0.0.0
       version: 0.0.0
+    '@r_masseater/workers-tracing':
+      specifier: 0.0.5
+      version: 0.0.5
     '@shadcn/lint':
       specifier: 0.2.3
       version: 0.2.3
@@ -524,6 +527,9 @@ importers:
       '@openfeature/server-sdk':
         specifier: catalog:stack
         version: 1.23.0(@openfeature/core@1.12.0)
+      '@r_masseater/workers-tracing':
+        specifier: 'catalog:'
+        version: 0.0.5(@tanstack/react-start@1.169.4(@vitejs/plugin-rsc@0.5.38(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(supports-color@7.2.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(effect@4.1.2)(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))
       '@tanstack/react-devtools':
         specifier: 0.10.14
         version: 0.10.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
@@ -3369,6 +3375,21 @@ packages:
     resolution: {integrity: sha512-fjWzciS3au0bCIu6YtjDXOlYTHU6ePhZzB4ynw3rJSvT9Hycw29hr+zPNZylbT7k/NJKFpyJU3PpJGo2VZk64Q==}
     engines: {node: '>=26'}
     hasBin: true
+
+  '@r_masseater/workers-tracing@0.0.5':
+    resolution: {integrity: sha512-WHsiVQ/AXHwUyCHok3KWMKpbg5qt5CNC46JpIyiH6TqM3TNploOVlJ27qqBoN+t7gttF79yED9u0AlotKduElA==}
+    engines: {node: '>=26'}
+    peerDependencies:
+      '@tanstack/react-start': ^1.169.4
+      effect: 4.1.2
+      elysia: ^1.4.30
+    peerDependenciesMeta:
+      '@tanstack/react-start':
+        optional: true
+      effect:
+        optional: true
+      elysia:
+        optional: true
 
   '@radix-ui/number@1.1.3':
     resolution: {integrity: sha512-Road2bidD0uu/1BGDOWNdPI06g0lIRy6IF9GZcIrDK2KGItfor8IQwQa+yM2ERgHM1MmHxaxpTzk0/Jp42lNfA==}
@@ -12950,6 +12971,12 @@ snapshots:
       - utf-8-validate
       - webpack
       - yauzl
+
+  '@r_masseater/workers-tracing@0.0.5(@tanstack/react-start@1.169.4(@vitejs/plugin-rsc@0.5.38(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(supports-color@7.2.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(effect@4.1.2)(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))':
+    optionalDependencies:
+      '@tanstack/react-start': 1.169.4(@vitejs/plugin-rsc@0.5.38(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(supports-color@7.2.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
+      effect: 4.1.2
+      elysia: 1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)
 
   '@radix-ui/number@1.1.3': {}
 

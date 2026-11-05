@@ -1,3 +1,4 @@
+import { elysiaTracing, tracedHandle } from "@r_masseater/workers-tracing/elysia";
 import { Array, Effect, pipe } from "effect";
 
 import { FeatureFlags } from "#/pages/home/config/feature-flags.server";
@@ -23,9 +24,13 @@ const listTodos = Effect.gen(function* listTodos() {
   );
 }).pipe(Effect.withSpan("todo.list"));
 
-const todoRoutes = createRouter("/api/todos").get("/", () => runRequest(listTodos));
+const todoRoutes = createRouter("/api/todos")
+  .use(elysiaTracing)
+  .get("/", () => runRequest(listTodos));
+
+const handleTodos = tracedHandle(todoRoutes.handle);
 
 type TodoRoutes = typeof todoRoutes;
 
 export type { TodoRoutes };
-export { todoRoutes };
+export { handleTodos, todoRoutes };

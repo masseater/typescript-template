@@ -5,13 +5,15 @@ import { browserClient, createQueries, serverClient } from "#/shared/api";
 
 import type { TodoRoutes } from "./routes.server";
 
-const loadTodoRoutes = (): Promise<TodoRoutes> =>
+const loadTodoHandle = (): Promise<(request: Request) => Promise<Response>> =>
   Effect.runPromise(
-    Effect.promise(() => import("./routes.server")).pipe(Effect.map((module) => module.todoRoutes)),
+    Effect.promise(() => import("./routes.server")).pipe(
+      Effect.map((module) => module.handleTodos),
+    ),
   );
 
 const client = createIsomorphicFn()
-  .server(() => serverClient<TodoRoutes>(loadTodoRoutes))
+  .server(() => serverClient<TodoRoutes>(loadTodoHandle))
   .client(() => browserClient<TodoRoutes>());
 
 const todoQueries = createQueries<TodoRoutes>(client());
