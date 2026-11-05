@@ -1,6 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "security:minimumReleaseAgeNpm", ":semanticCommits"],
+  "extends": [
+    "config:recommended",
+    "security:minimumReleaseAgeNpm",
+    ":semanticCommits",
+    "group:allNonMajor"
+  ],
   "automerge": true,
   "ignoreTests": true,
   "platformAutomerge": false,
@@ -14,8 +19,7 @@
         "@alchemy.run/**",
         "@distilled.cloud/**"
       ],
-      "groupName": "effect and alchemy",
-      "automerge": false
+      "groupName": "effect and alchemy"
     },
     {
       "matchDepTypes": ["pnpm-workspace.overrides"],
