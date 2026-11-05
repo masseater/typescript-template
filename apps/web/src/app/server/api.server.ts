@@ -1,3 +1,4 @@
+import { elysiaTracing } from "@r_masseater/workers-tracing/elysia";
 import { env } from "cloudflare:workers";
 import { Effect, Option, pipe } from "effect";
 
@@ -23,6 +24,7 @@ const rejectOverLimit = (request: Request): Promise<Response | undefined> =>
   );
 
 export const api = createRouter("")
+  .use(elysiaTracing)
   .onRequest(({ request }) => rejectOverLimit(request))
   .mount(auth.handler)
   .use(todoRoutes);

@@ -7,12 +7,14 @@ import type { AnyElysia } from "elysia";
 
 const SERVER_ORIGIN = "http://localhost";
 
-const serverClient = <App extends AnyElysia>(load: () => Promise<App>): Treaty.Create<App> =>
+const serverClient = <App extends AnyElysia>(
+  load: () => Promise<(request: Request) => Promise<Response>>,
+): Treaty.Create<App> =>
   treaty<App>(SERVER_ORIGIN, {
     fetcher: (input, init) =>
       Effect.runPromise(
         Effect.promise(load).pipe(
-          Effect.flatMap((app) => Effect.promise(() => app.handle(new Request(input, init)))),
+          Effect.flatMap((handle) => Effect.promise(() => handle(new Request(input, init)))),
         ),
       ),
   });
