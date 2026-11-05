@@ -140,7 +140,7 @@
           },
           {
             "type": "agent",
-            "prompt": "別の目でこのリポジトリの変更を審査する。自作のコードや仕組みが本当に最終手段かを判断する。CLAUDE.md の最上位原則に照らし、公式の統合手段、既存のライブラリ、ブログや issue の方針を本当に探したうえでの自作かを確かめる。必要なら自分でも探す。\n\n判定材料は `git status`・`git diff HEAD`・`git log main..HEAD -p` と、変更されたファイルおよび設定ファイルである。問題がなければ ok を true にする。問題があれば ok を false にし、reason に何が問題でどう直すべきかを具体的に書く。\n\n$ARGUMENTS",
+            "prompt": "別の目でこのリポジトリの変更を審査する。自作のコードや仕組みが本当に最終手段かを判断する。`.agents/skills/repo-conventions/SKILL.md` の「手段の選び方」に照らし、公式の統合手段、既存のライブラリ、ブログや issue の方針を本当に探したうえでの自作かを確かめる。必要なら自分でも探す。\n\n判定材料は `git status`・`git diff HEAD`・`git log main..HEAD -p` と、変更されたファイルおよび設定ファイルである。問題がなければ ok を true にする。問題があれば ok を false にし、reason に何が問題でどう直すべきかを具体的に書く。\n\n$ARGUMENTS",
             "timeout": 600
           },
           {
