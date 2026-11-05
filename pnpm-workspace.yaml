@@ -57,7 +57,7 @@ catalogs:
     elysia: 1.4.30
     fallow: 3.38.1
     radix-ui: 1.8.1
-    renovate: 44.199.0
+    renovate: 44.201.0
     steiger: 0.9.0
     tailwindcss: 4.3.3
     textlint: 15.8.0
