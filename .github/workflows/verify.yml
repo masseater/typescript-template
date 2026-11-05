@@ -143,6 +143,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
       actions: write
     concurrency:
       group: release
@@ -154,8 +155,19 @@ jobs:
           manifest-file: .github/release-please/manifest.json
           skip-github-pull-request: true
       - if: github.event_name == 'workflow_dispatch'
+        id: app-token
+        run: |
+          oidc="$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=masseater-dev-credential-broker" | jq -er .value)"
+          echo "::add-mask::$oidc"
+          token="$(curl -fsS --retry 3 -X POST -H "Authorization: Bearer $oidc" \
+            "https://credentials.masseater.dev/" | jq -er .githubToken)"
+          echo "::add-mask::$token"
+          echo "token=$token" >>"$GITHUB_OUTPUT"
+      - if: github.event_name == 'workflow_dispatch'
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
           skip-github-release: true
