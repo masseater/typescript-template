@@ -32,7 +32,7 @@ const web = Effect.gen(function* web() {
         invocationLogs: true,
         persist: true,
       },
-      traces: { enabled: true, persist: true },
+      traces: { enabled: true, persist: true, destinations: ["masseater-dev-traces"] },
     },
     viteEnvironments: { entry: "ssr", children: ["rsc"] },
     assets: { headers: assetHeaders(SECURITY_HEADERS) },
