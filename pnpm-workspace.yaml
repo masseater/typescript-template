@@ -29,7 +29,7 @@ catalog:
   "@commitlint/cli": 21.2.4
   "@commitlint/config-conventional": 21.2.4
   "@tanstack/react-query-devtools": 5.105.1
-  "@vitejs/plugin-react": 6.1.2
+  "@vitejs/plugin-react": 6.2.1
   "@vitejs/plugin-rsc": 0.5.38
   skills: 1.7.4
   "@tanstack/intent": 0.5.6
@@ -57,7 +57,7 @@ catalogs:
     elysia: 1.4.30
     fallow: 3.38.1
     radix-ui: 1.8.1
-    renovate: 44.199.0
+    renovate: 44.201.0
     steiger: 0.9.0
     tailwindcss: 4.3.3
     textlint: 15.8.0
@@ -72,7 +72,7 @@ overrides:
   vite@*: "catalog:"
   eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
   glob@>=9.0.0 <=14.0.1: ^14.0.2
-  katex@>=0.11.0 <0.18.2: ^0.18.2
+  katex@>=0.11.0 <0.18.2: ^0.19.0
   minimatch@<11.0.1: ^11.0.1
   re2js@>=2.2.0 <2.8.7: ^2.8.7
   seroval@<1.6.11: ^1.6.11
