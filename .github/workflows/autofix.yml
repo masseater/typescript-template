@@ -99,9 +99,7 @@ jobs:
           fi
           gh auth setup-git
           git push --no-verify origin "HEAD:refs/heads/$BRANCH"
-          if [ "$BRANCH" = "$HEAD_BRANCH" ]; then
-            gh workflow run verify.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
-          else
+          if [ "$BRANCH" != "$HEAD_BRANCH" ]; then
             gh pr create --base "$DEFAULT_BRANCH" --head "$BRANCH" --draft \
               --title "$(git log -1 --format=%s)" \
               --body "Fixes verify failure $FAILED_RUN_URL" ||

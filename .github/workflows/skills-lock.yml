@@ -45,7 +45,6 @@ jobs:
           gh auth setup-git
           git push origin "HEAD:refs/heads/${BRANCH}"
           gh workflow run up-to-date.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
-          gh workflow run verify.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
 
   ci-telemetry:
     needs: [rehash]
