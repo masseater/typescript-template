@@ -19,7 +19,7 @@ catalog:
   "@types/node": 26.6.6
   eslint-plugin-drizzle: 0.2.3
   eslint-plugin-react-hooks: 7.1.1
-  oxlint-plugin-eslint: 1.90.0
+  oxlint-plugin-eslint: 1.91.0
   syncpack: 15.3.3
   vite: npm:@voidzero-dev/vite-plus-core@1.4.0
   "@r_masseater/oxlint-plugin-decision": 0.1.1
@@ -57,7 +57,7 @@ catalogs:
     elysia: 1.4.30
     fallow: 3.38.1
     radix-ui: 1.8.1
-    renovate: 44.206.2
+    renovate: 44.209.0
     steiger: 0.9.0
     tailwindcss: 4.3.4
     textlint: 15.8.0
