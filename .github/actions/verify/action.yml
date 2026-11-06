@@ -4,6 +4,9 @@ inputs:
   github-token:
     description: A token that can read this repository
     required: true
+  full-history:
+    description: Whether to fetch the whole history without blobs before verify, for builds that read commit dates
+    default: "false"
 runs:
   using: composite
   steps:
@@ -30,6 +33,9 @@ runs:
         path: node_modules/.cache/oxlint-plugin-decision
         key: oxlint-plugin-decision-${{ github.sha }}
         restore-keys: oxlint-plugin-decision-
+    - if: inputs.full-history == 'true'
+      shell: bash
+      run: git fetch --unshallow --filter=blob:none origin
     - id: verify
       shell: bash
       env:
