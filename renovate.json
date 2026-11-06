@@ -29,6 +29,10 @@
     {
       "matchPackageNames": ["typescript"],
       "allowedVersions": "!/-dev\\./"
+    },
+    {
+      "matchFileNames": ["skills-lock.json"],
+      "ignoreTests": false
     }
   ],
   "customManagers": [
@@ -53,5 +57,6 @@
       "matchStrings": ["go run (?<depName>[a-z0-9./-]+)@(?<currentValue>v[0-9.]+)"],
       "datasourceTemplate": "go"
     }
-  ]
+  ],
+  "gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"]
 }
