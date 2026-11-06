@@ -24,7 +24,7 @@
   "devDependencies": {
     "@effect/platform-node": "catalog:",
     "@feature-sliced/steiger-plugin": "0.8.2",
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.4",
     "@tanstack/react-start": "catalog:stack",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
