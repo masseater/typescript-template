@@ -11,7 +11,8 @@ const StopOutput = Schema.Struct({
 
 runHook(
   Effect.gen(function* stopGate() {
-    const verify = yield* runCommand(yield* localBin("vp"), ["run", "--log", "grouped", "verify"]);
+    const vp = yield* localBin("vp");
+    const verify = yield* runCommand(vp, ["run", "--log", "grouped", "verify"]);
     if (!verify.succeeded) {
       yield* writeJson(StopOutput, {
         decision: "block",

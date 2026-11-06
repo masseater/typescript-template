@@ -1,4 +1,4 @@
-import { Array as Arr, Record as Rec, pipe } from "effect";
+import { Array as Arr, Option, Record as Rec, Schema, pipe } from "effect";
 
 const SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
@@ -17,11 +17,15 @@ const WEB_ANALYTICS_SCRIPT_ORIGIN = "https://static.cloudflareinsights.com";
 
 const WEB_ANALYTICS_REPORT_ORIGIN = "https://cloudflareinsights.com";
 
+const encodeBeacon = Schema.encodeOption(
+  Schema.fromJsonString(Schema.Struct({ token: Schema.String })),
+);
+
 const webAnalyticsBeacon = (token: string) =>
   ({
     src: `${WEB_ANALYTICS_SCRIPT_ORIGIN}/beacon.min.js`,
     defer: true,
-    "data-cf-beacon": JSON.stringify({ token }),
+    "data-cf-beacon": Option.getOrElse(encodeBeacon({ token }), () => ""),
   }) as const;
 
 const contentSecurityPolicy = ({
