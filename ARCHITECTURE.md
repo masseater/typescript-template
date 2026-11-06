@@ -31,7 +31,8 @@ TanStack Start の RSC のアプリである。
 `api/routes.server.ts` は Elysia のルートを作る。
 `api/queries.ts` はその型から Eden と TanStack Query のクエリを作り、`ui/` が描く。
 SSR の間は `createIsomorphicFn` が HTTP を通らずにルートの `handle` を呼ぶ。
-ルートの処理は Effect で書き、スライスの `runtime.server.ts` の `ManagedRuntime` で動かす。
+ルートの処理は Effect で書き、スライスの `runtime.server.ts` が `runner` から作る関数で動かす。
+`run` と `Elysia` は workers-tracing から使う。素の `Effect.runPromise` などは lint が落とす。
 `home` は ToDo の一覧を出す見本である。
 
 `src/shared` はスライスをまたいで使う部品である。

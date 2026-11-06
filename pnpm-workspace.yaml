@@ -36,7 +36,7 @@ catalog:
   "@yarnpkg/parsers": 3.1.0
   markdownlint-cli2: 0.24.0
   "@r_masseater/web-vitals-flow": 0.0.0
-  "@r_masseater/workers-tracing": 0.0.7
+  "@r_masseater/workers-tracing": 0.1.0
 catalogs:
   stack:
     "@distilled.cloud/cloudflare": 1.0.0-rc.18
@@ -124,7 +124,7 @@ minimumReleaseAgeExclude:
   - "@r_masseater/oxlint-plugin-decision@0.1.1"
   - "@r_masseater/oxlint-typed-rules@0.1.1"
   - "@r_masseater/web-vitals-flow@0.0.0"
-  - "@r_masseater/workers-tracing@0.0.7"
+  - "@r_masseater/workers-tracing@0.1.0"
 audit:
   ignorePrune: true
   ignore:

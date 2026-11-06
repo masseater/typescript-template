@@ -87,6 +87,7 @@ jobs:
         working-directory: apps/web
         env:
           TARGET_URL: ${{ vars.ZAP_TARGET_URL }}
+          WORKERS_TRACES_SINK: masseater-dev-trace-sink
 
   web-vitals:
     needs: deploy

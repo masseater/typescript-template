@@ -43,7 +43,10 @@ type WebEnv = InferEnv<typeof web>;
 export type { WebEnv };
 export default Stack(
   APP_NAME,
-  { providers: withWorkersTracing(providers()), state: state() },
+  {
+    providers: withWorkersTracing({ destinations: ["masseater-dev-traces"] })(providers()),
+    state: state(),
+  },
   Effect.gen(function* stack() {
     const { url } = yield* web;
     const { url: landingPageUrl } = yield* landingPage;

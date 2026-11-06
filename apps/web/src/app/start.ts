@@ -1,3 +1,4 @@
+import { run } from "@r_masseater/workers-tracing/effect";
 import { requestSpan, serverFnSpan } from "@r_masseater/workers-tracing/tanstack-start";
 import { createMiddleware, createStart } from "@tanstack/react-start";
 import { Effect, Option, Record as Rec } from "effect";
@@ -10,7 +11,7 @@ import { DOCUMENT_CACHE_CONTROL, SEARCH_INDEX_ORIGIN, noncePolicy } from "#/shar
 const NONCE_BYTES = 16;
 
 const responseHeaders = createMiddleware().server(({ next }) =>
-  Effect.runPromise(
+  run(
     Effect.gen(function* secure() {
       const nonce = Base64.encode(crypto.getRandomValues(new Uint8Array(NONCE_BYTES)));
       const result = yield* Effect.promise(() => Promise.resolve(next({ context: { nonce } })));

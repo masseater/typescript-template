@@ -1,5 +1,6 @@
 import { treaty } from "@elysiajs/eden";
 import type { Treaty } from "@elysiajs/eden";
+import { run } from "@r_masseater/workers-tracing/effect";
 import { createEdenOptionsProxy } from "eden-tanstack-react-query";
 import type { EdenOptionsProxy } from "eden-tanstack-react-query";
 import { Effect } from "effect";
@@ -12,7 +13,7 @@ const serverClient = <App extends AnyElysia>(
 ): Treaty.Create<App> =>
   treaty<App>(SERVER_ORIGIN, {
     fetcher: (input, init) =>
-      Effect.runPromise(
+      run(
         Effect.promise(load).pipe(
           Effect.flatMap((handle) => Effect.promise(() => handle(new Request(input, init)))),
         ),
