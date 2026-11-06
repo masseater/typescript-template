@@ -2,14 +2,10 @@ name: verify
 
 on:
   push:
-    branches: [main, "renovate/**"]
+    branches: [main]
   workflow_dispatch:
 
 permissions: {}
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   verify:
@@ -32,7 +28,7 @@ jobs:
         with:
           go-version: stable
           cache: false
-      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           BEFORE_SHA: ${{ github.event.before }}
@@ -47,7 +43,7 @@ jobs:
           path: node_modules/.cache/oxlint-plugin-decision
           key: oxlint-plugin-decision-${{ github.sha }}
           restore-keys: oxlint-plugin-decision-
-      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - if: github.event_name == 'push'
         run: vp run gitleaks
         env:
           GITLEAKS_BASE: ${{ github.event.before }}
@@ -64,7 +60,7 @@ jobs:
 
   autofix:
     needs: verify
-    if: failure() && github.event_name == 'push'
+    if: failure()
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -80,7 +76,7 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -164,7 +160,7 @@ jobs:
 
   release:
     needs: verify
-    if: github.repository == 'masseater/typescript-template' && github.ref == 'refs/heads/main'
+    if: github.repository == 'masseater/typescript-template'
     runs-on: ubuntu-latest
     permissions:
       contents: write
