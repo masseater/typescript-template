@@ -4,10 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "markdown-lint": "markdownlint-cli2 \"**/*.md\" && textlint \"**/*.md\" && git ls-files -co --exclude-standard '*.md' | git -c core.excludesFile=.textlintignore check-ignore --no-index --stdin -nv | awk '$1 == \"::\" { print $2 }' | xargs -r -n 1 -P 4 python3 \"$(skills ls --json | jq -r '.[] | select(.name == \"yomiyasu\").path')/scripts/yomiyasu_lint.py\" --strict",
-    "renovate": "renovate-config-validator --strict",
-    "fallow": "fallow --skip dupes --fail-on-issues --quiet --format compact && fallow dead-code --no-production --fail-on-issues --quiet --format compact && fallow dead-code --no-production --quiet --format json | jq -e '[.prop_drilling_chains, .thin_wrappers, .duplicate_prop_shapes] | all(length == 0)' > /dev/null && fallow dupes --fail-on-issues --quiet --format compact && fallow security --fail-on-issues --quiet",
-    "prepare": "vp config && skills experimental_install --force"
+    "prepare": "vp config && effect-tsgo patch --typescript --oxlint && skills experimental_install --force"
   },
   "devDependencies": {
     "@ast-grep/cli": "catalog:",
@@ -15,6 +12,7 @@
     "@commitlint/config-conventional": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@eslint-react/eslint-plugin": "catalog:",
+    "@feature-sliced/steiger-plugin": "0.8.2",
     "@html-eslint/eslint-plugin-react": "catalog:",
     "@r_masseater/oxlint-plugin-decision": "catalog:",
     "@r_masseater/oxlint-typed-rules": "catalog:",
@@ -34,6 +32,7 @@
     "oxlint-plugin-eslint": "catalog:",
     "renovate": "catalog:stack",
     "skills": "catalog:",
+    "steiger": "catalog:stack",
     "syncpack": "catalog:",
     "textlint": "catalog:stack",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",

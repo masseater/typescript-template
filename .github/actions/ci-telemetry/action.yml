@@ -1,0 +1,16 @@
+name: ci-telemetry
+description: Send the job and step durations of this run to the ci-telemetry Worker of masseater.dev
+inputs:
+  github-token:
+    description: A token that can read the jobs of this run
+    required: true
+runs:
+  using: composite
+  steps:
+    - if: github.ref == 'refs/heads/main'
+      shell: bash
+      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: '"$GITHUB_ACTION_PATH/ci-telemetry.sh"'

@@ -1,0 +1,42 @@
+name: verify
+description: After the repository's setup action, lint the pushed commits, scan them for secrets, and run vp run verify with the decision cache
+inputs:
+  github-token:
+    description: A token that can read this repository
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+    - if: github.event_name == 'push'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        BEFORE_SHA: ${{ github.event.before }}
+        HEAD_SHA: ${{ github.sha }}
+      run: |
+        gh auth setup-git
+        commits="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE_SHA...$HEAD_SHA" --jq .total_commits)"
+        git fetch --no-tags --depth="$((commits + 1))" origin "$HEAD_SHA"
+        vp exec commitlint --from "$BEFORE_SHA" --to "$HEAD_SHA" --git-log-args="--first-parent" --verbose
+    - if: github.event_name == 'push'
+      shell: bash
+      env:
+        GITLEAKS_BASE: ${{ github.event.before }}
+      run: vp run gitleaks
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.cache/oxlint-plugin-decision
+        key: oxlint-plugin-decision-${{ github.sha }}
+        restore-keys: oxlint-plugin-decision-
+    - id: verify
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: vp run --log grouped verify
+    - if: always() && steps.verify.outcome != 'skipped'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.cache/oxlint-plugin-decision
+        key: oxlint-plugin-decision-${{ github.sha }}
