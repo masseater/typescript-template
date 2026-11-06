@@ -192,8 +192,8 @@ catalogs:
       specifier: 0.0.0
       version: 0.0.0
     '@r_masseater/workers-tracing':
-      specifier: 0.1.0
-      version: 0.1.0
+      specifier: 0.1.1
+      version: 0.1.1
     '@shadcn/lint':
       specifier: 0.2.5
       version: 0.2.5
@@ -368,7 +368,7 @@ importers:
         version: 0.1.1
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.1.0(effect@4.1.2)(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@5.9.3))(redis@6.2.1(@opentelemetry/api@1.10.0))
+        version: 0.1.1(effect@4.1.2)(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@5.9.3))(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.2.5(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3))(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))
@@ -532,7 +532,7 @@ importers:
         version: 1.23.0(@openfeature/core@1.12.0)
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.1.0(6085bcca6db0107501e49efd9f590708)
+        version: 0.1.1(6085bcca6db0107501e49efd9f590708)
       '@tanstack/react-devtools':
         specifier: 0.10.14
         version: 0.10.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
@@ -3362,8 +3362,8 @@ packages:
     engines: {node: '>=26'}
     hasBin: true
 
-  '@r_masseater/workers-tracing@0.1.0':
-    resolution: {integrity: sha512-Q/9ghwTmFNM9Nu5zPG+MSCnU5Z2mS5AVhoegxbPqAY884TLfrJ865J6ZZLnusqIJrTUsN/y9XMdwX5Jz7NaYmQ==}
+  '@r_masseater/workers-tracing@0.1.1':
+    resolution: {integrity: sha512-7SVbCiwn+hGKdwBMAYQkk8UalDBmL+Mt1Dm3/uLevD+/Yc8F8XdSHfMFi/0ttSbs8a1Xc3KJOVFVEHU3d7WG7A==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -12802,7 +12802,7 @@ snapshots:
       - webpack
       - yauzl
 
-  '@r_masseater/workers-tracing@0.1.0(6085bcca6db0107501e49efd9f590708)':
+  '@r_masseater/workers-tracing@0.1.1(6085bcca6db0107501e49efd9f590708)':
     dependencies:
       '@distilled.cloud/cloudflare': 1.0.0-rc.18(effect@4.1.2)
       '@effect/platform-node': 4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.9.1))
@@ -12817,7 +12817,7 @@ snapshots:
       - redis
       - utf-8-validate
 
-  '@r_masseater/workers-tracing@0.1.0(effect@4.1.2)(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@5.9.3))(redis@6.2.1(@opentelemetry/api@1.10.0))':
+  '@r_masseater/workers-tracing@0.1.1(effect@4.1.2)(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@5.9.3))(redis@6.2.1(@opentelemetry/api@1.10.0))':
     dependencies:
       '@distilled.cloud/cloudflare': 1.0.0-rc.18(effect@4.1.2)
       '@effect/platform-node': 4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0))
