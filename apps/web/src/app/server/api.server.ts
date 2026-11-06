@@ -1,4 +1,4 @@
-import { elysiaTracing } from "@r_masseater/workers-tracing/elysia";
+import { run } from "@r_masseater/workers-tracing/effect";
 import { env } from "cloudflare:workers";
 import { Effect, Option, pipe } from "effect";
 
@@ -9,7 +9,7 @@ import { auth } from "#/shared/auth/index.server";
 const TOO_MANY_REQUESTS = 429;
 
 const rejectOverLimit = (request: Request): Promise<Response | undefined> =>
-  Effect.runPromise(
+  run(
     Effect.promise(() =>
       env.API_RATE_LIMIT.limit({ key: request.headers.get("cf-connecting-ip") ?? "unknown" }),
     ).pipe(
@@ -24,7 +24,6 @@ const rejectOverLimit = (request: Request): Promise<Response | undefined> =>
   );
 
 export const api = createRouter("")
-  .use(elysiaTracing)
   .onRequest(({ request }) => rejectOverLimit(request))
   .mount(auth.handler)
   .use(todoRoutes);

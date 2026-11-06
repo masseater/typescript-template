@@ -1,3 +1,4 @@
+import { run } from "@r_masseater/workers-tracing/effect";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { Effect } from "effect";
 
@@ -6,7 +7,7 @@ import { browserClient, createQueries, serverClient } from "#/shared/api";
 import type { TodoRoutes } from "./routes.server";
 
 const loadTodoHandle = (): Promise<(request: Request) => Promise<Response>> =>
-  Effect.runPromise(
+  run(
     Effect.promise(() => import("./routes.server")).pipe(
       Effect.map((module) => module.handleTodos),
     ),
