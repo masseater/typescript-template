@@ -33,6 +33,11 @@
     {
       "matchFileNames": ["skills-lock.json"],
       "ignoreTests": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["masseater/typescript-template"],
+      "enabled": false
     }
   ],
   "customManagers": [
@@ -56,6 +61,16 @@
       "managerFilePatterns": ["/^vite\\.config\\.ts$/"],
       "matchStrings": ["go run (?<depName>[a-z0-9./-]+)@(?<currentValue>v[0-9.]+)"],
       "datasourceTemplate": "go"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "uses: (?<depName>masseater/typescript-template)/\\.github/actions/[a-z-]+@(?<currentDigest>[0-9a-f]{40})"
+      ],
+      "currentValueTemplate": "main",
+      "datasourceTemplate": "git-refs",
+      "packageNameTemplate": "https://github.com/{{{depName}}}"
     }
   ],
   "gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"]

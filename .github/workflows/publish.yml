@@ -40,14 +40,9 @@ jobs:
         with:
           ref: ${{ steps.resolve.outputs.sha }}
           persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cab1ab9eaff52d4857875f4f2c016e36af8f2c76 # v1.22.0
+      - uses: $/.github/actions/setup
         with:
-          cache: false
-          run-install: |
-            - args: ['--frozen-lockfile']
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: false
+          cache: "false"
       - name: Check package versions
         id: version
         env:
@@ -163,15 +158,6 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: $/.github/actions/ci-telemetry
         with:
-          persist-credentials: false
-          sparse-checkout: |
-            .github/scripts/ci-telemetry.sh
-            .github/scripts/cloudflare-token.sh
-          sparse-checkout-cone-mode: false
-      - if: github.ref == 'refs/heads/main'
-        run: .github/scripts/cloudflare-token.sh
-      - run: .github/scripts/ci-telemetry.sh
-        env:
-          GH_TOKEN: ${{ github.token }}
+          github-token: ${{ github.token }}

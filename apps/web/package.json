@@ -6,19 +6,6 @@
   "imports": {
     "#/*": "./src/*"
   },
-  "scripts": {
-    "dev": "alchemy dev",
-    "typecheck": "tsc",
-    "test": "vp test run --passWithNoTests",
-    "steiger": "steiger ./src",
-    "db:generate": "drizzle-kit generate",
-    "prepare": "effect-tsgo patch --typescript --oxlint",
-    "auth:generate": "auth generate --config src/shared/auth/auth.server.ts --output src/shared/auth/generated/auth.table.ts --yes",
-    "fallow": "fallow --skip dupes --fail-on-issues --quiet --format compact && fallow dupes --fail-on-issues --quiet --format compact && fallow security --fail-on-issues --quiet",
-    "db:check": "drizzle-kit check && drizzle-kit generate --explain --output json | grep -q '\"status\":\"no_changes\"'",
-    "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy"
-  },
   "dependencies": {
     "@alchemy.run/cloudflare": "catalog:stack",
     "@better-auth/drizzle-adapter": "1.7.17",
@@ -54,7 +41,6 @@
     "@alchemy.run/fly": "catalog:stack",
     "@cloudflare/workers-types": "catalog:",
     "@effect/tsgo": "catalog:stack",
-    "@feature-sliced/steiger-plugin": "0.8.2",
     "@tailwindcss/vite": "4.3.4",
     "@tanstack/devtools-vite": "0.8.6",
     "@types/react": "19.3.0",
@@ -64,7 +50,6 @@
     "alchemy": "catalog:stack",
     "auth": "1.7.17",
     "drizzle-kit": "catalog:stack",
-    "steiger": "catalog:stack",
     "typescript": "catalog:stack",
     "vite": "catalog:",
     "vite-plus": "catalog:stack"

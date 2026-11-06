@@ -6,10 +6,6 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "typecheck": "tsc",
-    "test": "vp test run --passWithNoTests"
-  },
   "dependencies": {
     "effect": "catalog:stack"
   },

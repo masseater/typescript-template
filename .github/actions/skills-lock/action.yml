@@ -1,0 +1,30 @@
+name: skills-lock
+description: Rehash skills-lock.json after renovate moves a skill ref, and push the result to the renovate branch
+inputs:
+  github-token:
+    description: A token that can push and dispatch workflows
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: voidzero-dev/setup-vp@cab1ab9eaff52d4857875f4f2c016e36af8f2c76 # v1.22.0
+      with:
+        cache: true
+        run-install: |
+          - args: ['--frozen-lockfile', '--ignore-scripts']
+    - shell: bash
+      run: vp exec skills experimental_install --force --no-frozen-lockfile
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        BRANCH: ${{ github.ref_name }}
+      run: |
+        if git diff --quiet -- skills-lock.json; then
+          exit 0
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git commit -m "fix(deps): skills-lock.json のハッシュを新しい ref に合わせる" -- skills-lock.json
+        gh auth setup-git
+        git push origin "HEAD:refs/heads/${BRANCH}"
+        gh workflow run up-to-date.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"

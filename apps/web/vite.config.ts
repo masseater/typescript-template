@@ -10,6 +10,23 @@ import { SEARCH_INDEX_ORIGIN, SITEMAP_FILE } from "./src/shared/config/index.ts"
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
+  run: {
+    tasks: {
+      dev: { command: "alchemy dev", cache: false },
+      deploy: { command: "alchemy deploy", cache: false },
+      destroy: { command: "alchemy destroy", cache: false },
+      "db:generate": { command: "drizzle-kit generate", cache: false },
+      "db:check": [
+        "drizzle-kit check",
+        `drizzle-kit generate --explain --output json | grep -q '"status":"no_changes"'`,
+      ],
+      "auth:generate": {
+        command:
+          "auth generate --config src/shared/auth/auth.server.ts --output src/shared/auth/generated/auth.table.ts --yes",
+        cache: false,
+      },
+    },
+  },
   test: {
     projects: [
       { extends: true, test: { name: "app", include: ["src/**/*.test.{ts,tsx}"] } },

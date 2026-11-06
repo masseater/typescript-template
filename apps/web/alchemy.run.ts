@@ -31,7 +31,7 @@ const web = Effect.gen(function* web() {
 const landingPage = Website.StaticSite("LandingPage", {
   cwd: "../lp",
   env: { VITE_CF_BEACON_TOKEN: CF_BEACON_TOKEN },
-  command: "vp run build",
+  command: "vp build",
   outdir: "dist/client",
   logpush: true,
   assets: { headers: assetHeaders(STATIC_PAGE_HEADERS) },
