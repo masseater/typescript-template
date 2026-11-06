@@ -18,6 +18,7 @@ const cloudflareApi = CloudflareApiLive().pipe(
 runHookWith(cloudflareApi)(
   Effect.gen(function* cloudflareMcpHeaders() {
     const resolve = yield* Credentials;
-    yield* writeJson(Headers, formatHeaders(yield* resolve));
+    const credentials = yield* resolve;
+    yield* writeJson(Headers, formatHeaders(credentials));
   }),
 );

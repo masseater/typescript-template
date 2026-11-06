@@ -30,10 +30,8 @@ const externalizeAll = Effect.fn("externalizeAll")(function* externalizeAll(
   const path = yield* Path.Path;
   const directory = path.resolve(root, outDir);
   yield* fileSystem.makeDirectory(path.join(directory, SCRIPT_DIR), { recursive: true });
-  const files = pipe(
-    yield* fileSystem.readDirectory(directory, { recursive: true }),
-    Arr.filter(Str.endsWith(".html")),
-  );
+  const entries = yield* fileSystem.readDirectory(directory, { recursive: true });
+  const files = pipe(entries, Arr.filter(Str.endsWith(".html")));
   yield* pipe(
     files,
     Effect.forEach((file) => externalizeFile(directory, file)),
