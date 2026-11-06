@@ -7,7 +7,6 @@
     "group:allNonMajor"
   ],
   "automerge": true,
-  "ignoreTests": true,
   "platformAutomerge": false,
   "packageRules": [
     {
@@ -29,10 +28,6 @@
     {
       "matchPackageNames": ["typescript"],
       "allowedVersions": "!/-dev\\./"
-    },
-    {
-      "matchFileNames": ["skills-lock.json"],
-      "ignoreTests": false
     }
   ],
   "customManagers": [
