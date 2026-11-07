@@ -65,10 +65,14 @@ pnpm を直接呼ぶコマンドも止める。
 
 `verify.yml` が main への push で動く。
 verify が通ると、Alchemy で本番へデプロイし、Web Vitals を測り、release-please がリリースを作る。
-verify が落ちると `autofix.yml` が直しにかかる。
+verify が落ちると `autofix.yml` が直しにかかり、直した PR を auto-merge にして出す。
 Cloudflare のトークンは、GitHub の OIDC と引き換えに credential broker から受け取る。
 broker は masseater/masseater.dev にある。
 `pull_request` で動くのは、最新の main を取り込んでいない PR を止める `up-to-date.yml` だけである。
+bot が push するワークフローは、broker が出す GitHub App のトークンで push する。
+対象は `autofix.yml`・`skills-lock.yml`・`update-branches.yml` である。
+`GITHUB_TOKEN` で push すると `up-to-date` が承認待ちで止まり、PR がマージされないからである。
+`update-branches.yml` は main が進むたびに、auto-merge を待つ PR に main を取り込む。
 `zap.yml` は毎週、本番に ZAP をかける。
 
 ## 不変条件

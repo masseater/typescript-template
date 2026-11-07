@@ -1,8 +1,8 @@
 name: skills-lock
-description: Rehash skills-lock.json after renovate moves a skill ref, and push the result to the renovate branch
+description: Rehash skills-lock.json after renovate moves a skill ref, and push the result to the renovate branch with the GitHub App token from credentials.masseater.dev
 inputs:
-  github-token:
-    description: A token that can push and dispatch workflows
+  branch:
+    description: The renovate branch that is checked out
     required: true
 runs:
   using: composite
@@ -15,16 +15,20 @@ runs:
     - shell: bash
       run: vp exec skills experimental_install --force --no-frozen-lockfile
     - shell: bash
+      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+    - shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        BRANCH: ${{ github.ref_name }}
+        BRANCH: ${{ inputs.branch }}
       run: |
         if git diff --quiet -- skills-lock.json; then
           exit 0
         fi
+        if [ -z "${GITHUB_APP_TOKEN:-}" ]; then
+          echo "::error::credentials.masseater.dev issued no GitHub App token; a push with GITHUB_TOKEN leaves the up-to-date check waiting for approval"
+          exit 1
+        fi
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git commit -m "fix(deps): skills-lock.json のハッシュを新しい ref に合わせる" -- skills-lock.json
-        gh auth setup-git
+        GH_TOKEN="$GITHUB_APP_TOKEN" gh auth setup-git
         git push origin "HEAD:refs/heads/${BRANCH}"
-        gh workflow run up-to-date.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
