@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.13](https://github.com/masseater/typescript-template/compare/v0.0.12...v0.0.13) (2026-11-07)
+
+
+### Features
+
+* **ci:** verify action に履歴を全部取る full-history を足す ([#396](https://github.com/masseater/typescript-template/issues/396)) ([0c9f2c3](https://github.com/masseater/typescript-template/commit/0c9f2c316a486637e22878aea5e0a4a1a7f630c4))
+* gitleaks を Betterleaks v2 に移す ([#407](https://github.com/masseater/typescript-template/issues/407)) ([3b6d186](https://github.com/masseater/typescript-template/commit/3b6d1860ba392198eec363643dfe872e29523c0f))
+* **web:** trace requests, server functions and Effect with [@r](https://github.com/r)_masseater/workers-tracing ([#376](https://github.com/masseater/typescript-template/issues/376)) ([8141879](https://github.com/masseater/typescript-template/commit/814187959a562d9b29518a5a83356697dc41f2fb))
+* **web:** workers-tracing の alchemy provider で全 Worker を計装し、デプロイ後にスパンを確かめる ([#391](https://github.com/masseater/typescript-template/issues/391)) ([9070a9b](https://github.com/masseater/typescript-template/commit/9070a9b91378b2c04378234104c82f9e85cec79f))
+* **web:** トレースを masseater-dev-traces の OTLP 送信先にも出す ([#383](https://github.com/masseater/typescript-template/issues/383)) ([257f313](https://github.com/masseater/typescript-template/commit/257f31331f5fe9e6a664de18e601187039f8b1d1))
+* workers-tracing 0.1.0 に上げ、計装を外す書き方を lint で止める ([#398](https://github.com/masseater/typescript-template/issues/398)) ([77af7f6](https://github.com/masseater/typescript-template/commit/77af7f61aed85a96f10d17fa52c46a91d89aa388))
+
 ## [0.0.12](https://github.com/masseater/typescript-template/compare/v0.0.11...v0.0.12) (2026-11-04)
 
 
