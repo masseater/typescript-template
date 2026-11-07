@@ -1,0 +1,9 @@
+name: update-branches
+description: Bring every open pull request that has auto-merge on and is behind the default branch up to date, so the required up-to-date check runs again and auto-merge can finish
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+    - shell: bash
+      run: '"$GITHUB_ACTION_PATH/update-branches.sh"'

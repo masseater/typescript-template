@@ -4,29 +4,47 @@ on:
   push:
     branches: ["renovate/**"]
     paths: [skills-lock.json]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: The renovate branch whose skills-lock.json to rehash
+        required: true
+        type: string
 
 permissions: {}
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  rehash:
+  dispatch:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: gh workflow run skills-lock.yml --repo "$GITHUB_REPOSITORY" --ref main -f branch="$BRANCH"
+
+  rehash:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: skills-lock-${{ inputs.branch }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.branch }}
           persist-credentials: false
       - uses: $/.github/actions/skills-lock
         with:
-          github-token: ${{ github.token }}
+          branch: ${{ inputs.branch }}
 
   ci-telemetry:
-    needs: [rehash]
+    needs: [dispatch, rehash]
     if: always()
     runs-on: ubuntu-latest
     permissions:

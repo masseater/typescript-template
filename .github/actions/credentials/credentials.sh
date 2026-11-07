@@ -10,5 +10,6 @@ jq -r '{
   OPENROUTER_API_KEY: .openrouterApiKey,
   CLAUDE_CODE_OAUTH_TOKEN: .claudeCodeOauthToken,
   CLOUDFLARE_API_TOKEN: .token,
-  CLOUDFLARE_ACCOUNT_ID: .accountId
+  CLOUDFLARE_ACCOUNT_ID: .accountId,
+  GITHUB_APP_TOKEN: .githubToken
 } | to_entries[] | select(.value != null) | "\(.key)=\(.value)"' <<<"$response" >>"$GITHUB_ENV"

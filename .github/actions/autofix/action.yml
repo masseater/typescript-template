@@ -53,7 +53,7 @@ runs:
           The working tree is checked out on branch ${{ steps.target.outputs.branch }}.
 
           1. Read the failure with `gh run view --job ${{ steps.target.outputs.failed_job }} --log-failed`.
-          2. Fix the root cause in the code, following AGENTS.md. Do not weaken lint rules, add disable directives, or skip checks to make verify pass.
+          2. Fix the root cause in the code, following AGENTS.md. Do not weaken lint rules, add disable directives, or skip checks to make verify pass. Do not downgrade any dependency, and never move `typescript` below 7.
           3. Run `vp run verify` and repeat until it passes.
           4. Commit the fix with a Conventional Commits message whose body explains the cause. Do not push.
         claude_args: >-
@@ -63,22 +63,9 @@ runs:
     - if: steps.target.outputs.stale != 'true'
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
         BRANCH: ${{ steps.target.outputs.branch }}
         HEAD_BRANCH: ${{ inputs.branch }}
         HEAD_SHA: ${{ inputs.sha }}
         DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         FAILED_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ inputs.run-id }}
-      run: |
-        if [ "$(git rev-parse HEAD)" = "$HEAD_SHA" ]; then
-          echo "::error::Claude did not commit a fix"
-          exit 1
-        fi
-        gh auth setup-git
-        git push --no-verify origin "HEAD:refs/heads/$BRANCH"
-        if [ "$BRANCH" != "$HEAD_BRANCH" ]; then
-          gh pr create --base "$DEFAULT_BRANCH" --head "$BRANCH" --draft \
-            --title "$(git log -1 --format=%s)" \
-            --body "Fixes verify failure $FAILED_RUN_URL" ||
-            echo "::warning::Could not open a pull request; open one from $BRANCH manually"
-        fi
+      run: '"$GITHUB_ACTION_PATH/publish.sh"'

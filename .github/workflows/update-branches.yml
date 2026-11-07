@@ -1,0 +1,34 @@
+name: update-branches
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: $/.github/actions/update-branches
+
+  ci-telemetry:
+    needs: [update]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - uses: $/.github/actions/ci-telemetry
+        with:
+          github-token: ${{ github.token }}
