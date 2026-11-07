@@ -1,5 +1,5 @@
 name: skills-lock
-description: Rehash skills-lock.json after renovate moves a skill ref, and push the result to the renovate branch with the GitHub App token from credentials.masseater.dev
+description: On a renovate push, fail while skills-lock.json has stale hashes and ask main to rehash; on that workflow_dispatch, push the rehashed lock with the GitHub App token from credentials.masseater.dev
 inputs:
   branch:
     description: The renovate branch that is checked out
@@ -14,15 +14,29 @@ runs:
           - args: ['--frozen-lockfile', '--ignore-scripts']
     - shell: bash
       run: vp exec skills experimental_install --force --no-frozen-lockfile
-    - shell: bash
-      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
-    - shell: bash
+    - id: stale
+      shell: bash
       env:
+        GH_TOKEN: ${{ github.token }}
         BRANCH: ${{ inputs.branch }}
       run: |
         if git diff --quiet -- skills-lock.json; then
           exit 0
         fi
+        echo "stale=true" >> "$GITHUB_OUTPUT"
+        if [ "$GITHUB_EVENT_NAME" = push ]; then
+          gh workflow run skills-lock.yml --repo "$GITHUB_REPOSITORY" --ref main -f branch="$BRANCH"
+          echo "::error::skills-lock.json does not match the skill refs; the rehash runs from main and pushes a new commit"
+          exit 1
+        fi
+    - if: steps.stale.outputs.stale == 'true'
+      shell: bash
+      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+    - if: steps.stale.outputs.stale == 'true'
+      shell: bash
+      env:
+        BRANCH: ${{ inputs.branch }}
+      run: |
         if [ -z "${GITHUB_APP_TOKEN:-}" ]; then
           echo "::error::credentials.masseater.dev issued no GitHub App token; a push with GITHUB_TOKEN leaves the up-to-date check waiting for approval"
           exit 1

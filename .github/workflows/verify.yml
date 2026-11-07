@@ -136,12 +136,18 @@ jobs:
           echo "::add-mask::$token"
           echo "token=$token" >>"$GITHUB_OUTPUT"
       - if: github.event_name == 'workflow_dispatch'
+        id: release-pr
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
           skip-github-release: true
+      - if: steps.release-pr.outputs.pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          NUMBER: ${{ fromJSON(steps.release-pr.outputs.pr).number }}
+        run: gh pr merge "$NUMBER" --repo "$GITHUB_REPOSITORY" --squash --auto
       - if: steps.tagged.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
