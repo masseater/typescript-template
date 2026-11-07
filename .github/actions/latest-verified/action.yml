@@ -1,0 +1,22 @@
+name: latest-verified
+description: Output latest=true unless a newer push to the same branch has already passed the verify job, whose own run then deploys after this one
+inputs:
+  github-token:
+    description: Token that can read this repository's Actions runs (actions read)
+    required: true
+  verify-job:
+    description: Name of the job whose success marks a run as deployable
+    default: verify
+outputs:
+  latest:
+    description: "'true' when no newer push has passed the verify job"
+    value: ${{ steps.check.outputs.latest }}
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        VERIFY_JOB: ${{ inputs.verify-job }}
+      run: '"$GITHUB_ACTION_PATH/latest-verified.sh"'
