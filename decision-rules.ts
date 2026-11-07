@@ -27,5 +27,15 @@ export default createDecisionPlugin({
       message: "UI状態はeffect-atomだけで扱う。",
       cutoff: 0.8,
     }),
+    defineDecisionRule({
+      id: "no-hand-written-utility",
+      target: "function",
+      model: "openrouter/respan/span-01-lite",
+      question:
+        "Does this function hand-write a general-purpose utility that has nothing to do with this program's business, such as grouping or chunking an array, debounce or throttle, deep merge or deep equality, retry with backoff, date arithmetic or formatting, base64 or hex encoding, query string parsing, command line argument parsing, YAML or CSV parsing, a concurrency limit, or a cache with expiry? Answer no when the function only calls a library for that work, or when its logic is about this program's own domain.",
+      message:
+        "汎用の処理を自作せず、Effect・es-toolkit・Web API など既存のライブラリを使う（dont-it-yourself skill）。",
+      cutoff: 0.8,
+    }),
   ],
 });
