@@ -2,6 +2,7 @@ import tanstackStart from "@r_masseater/oxlint-typed-rules/tanstack-start";
 import baselineJs from "eslint-plugin-baseline-js";
 import { defineConfig } from "vite-plus";
 
+import { checks, checkTasks } from "./checks.config.ts";
 import {
   baselineJsRules,
   decisionPluginName,
@@ -21,6 +22,7 @@ import {
 import { workerRules } from "./worker-lint.config.ts";
 
 export default defineConfig({
+  ...checks,
   test: { projects: ["apps/*", "libs/*", "tools/*", "infra/*"], passWithNoTests: true },
   staged: {
     "!(*.md)": "vp check --fix",
@@ -220,6 +222,7 @@ export default defineConfig({
   run: {
     cache: true,
     tasks: {
+      ...checkTasks,
       "actions-lint": {
         command:
           'uvx --from actionlint-py@1.7.12.25 actionlint && uvx zizmor@1.32.0 $(test -n "$CLAUDE_CODE_REMOTE" && echo --no-online-audits) .github && ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows',
@@ -252,7 +255,7 @@ export default defineConfig({
         },
         dependsOn: [
           "test",
-          "syncpack",
+          "dependency-rules",
           "markdown-lint",
           "renovate",
           "actions-lint",
@@ -263,14 +266,7 @@ export default defineConfig({
         ],
       },
       test: "vp test run",
-      syncpack: "syncpack lint",
       renovate: "renovate-config-validator --strict",
-      "markdown-lint": [
-        'markdownlint-cli2 "**/*.md"',
-        'textlint "**/*.md"',
-        `git -c core.quotePath=false ls-files -co --exclude-standard '*.md' | git -c core.quotePath=false -c core.excludesFile=.textlintignore check-ignore --no-index --stdin -nv | awk -F '\\t' '$1 == "::" { print $2 }' | tr '\\n' '\\0' | xargs -0 -r -n 1 -P 4 python3 "$(skills ls --json | jq -r '.[] | select(.name == "yomiyasu").path')/scripts/yomiyasu_lint.py" --strict`,
-      ],
-      steiger: 'for src in apps/*/src; do steiger "$src" || exit 1; done',
       "db-check-all": "vp run -r db:check",
       fallow: [
         "fallow --skip dupes --fail-on-issues --quiet --format compact",
@@ -282,16 +278,6 @@ export default defineConfig({
       audit: {
         command:
           'before="$(cksum pnpm-workspace.yaml)"; vp pm audit --fix || exit; if [ "$before" != "$(cksum pnpm-workspace.yaml)" ]; then echo "vp pm audit --fix rewrote pnpm-workspace.yaml. Run vp install and commit the diff." >&2; exit 1; fi',
-        cache: false,
-      },
-      betterleaks: {
-        command:
-          'go run github.com/betterleaks/betterleaks/v2@v2.0.0-rc.7 git . --config .betterleaks.toml --redact --no-banner --revision="$(git rev-parse -q --verify "$BETTERLEAKS_BASE" || echo origin/main)..HEAD"',
-        cache: false,
-      },
-      "betterleaks:staged": {
-        command:
-          "git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ | go run github.com/betterleaks/betterleaks/v2@v2.0.0-rc.7 stdin --git-diff --config .betterleaks.toml --redact --no-banner",
         cache: false,
       },
     },

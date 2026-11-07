@@ -8,14 +8,13 @@
   },
   "devDependencies": {
     "@ast-grep/cli": "catalog:",
-    "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@eslint-react/eslint-plugin": "catalog:",
-    "@feature-sliced/steiger-plugin": "0.8.2",
     "@html-eslint/eslint-plugin-react": "catalog:",
     "@r_masseater/oxlint-plugin-decision": "catalog:",
     "@r_masseater/oxlint-typed-rules": "catalog:",
+    "@r_masseater/vp-tools": "catalog:",
     "@r_masseater/workers-tracing": "catalog:",
     "@shadcn/lint": "catalog:",
     "@tanstack/eslint-plugin-query": "catalog:",
@@ -33,16 +32,8 @@
     "oxlint-plugin-eslint": "catalog:",
     "renovate": "catalog:stack",
     "skills": "catalog:",
-    "steiger": "catalog:stack",
-    "syncpack": "catalog:",
-    "textlint": "catalog:stack",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "vite-plus": "catalog:stack"
-  },
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
   },
   "devEngines": {
     "packageManager": {

@@ -59,7 +59,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^vite\\.config\\.ts$/"],
+      "managerFilePatterns": ["/^(vite|checks)\\.config\\.ts$/"],
       "matchStrings": ["go run (?<depName>[a-z0-9./-]+)@(?<currentValue>v[0-9A-Za-z.-]+)"],
       "datasourceTemplate": "go"
     },
