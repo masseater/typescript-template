@@ -115,15 +115,10 @@
       ],
     },
     {
-      "name": "syncpack-ts",
-      "enablers": ["syncpack"],
-      "entryPoints": ["syncpack.config.ts"],
-    },
-    {
-      "name": "textlint",
-      "enablers": ["textlint"],
-      "configPatterns": [".textlintrc"],
+      "name": "vp-tools",
+      "enablers": ["@r_masseater/vp-tools"],
       "toolingDependencies": [
+        "@commitlint/config-conventional",
         "@textlint-ja/textlint-rule-preset-ai-writing",
         "textlint-rule-preset-ja-technical-writing",
       ],
@@ -144,11 +139,6 @@
       "enablers": ["@tanstack/intent"],
       "configPatterns": [".intent/hooks/*.mjs"],
       "toolingDependencies": ["@tanstack/intent"],
-    },
-    {
-      "name": "steiger",
-      "enablers": ["steiger"],
-      "alwaysUsed": ["steiger.config.{ts,js,mjs}"],
     },
   ],
   "rules": {
