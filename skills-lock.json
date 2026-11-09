@@ -216,7 +216,7 @@
       "ref": "54f4c12a57876848018ce3222d9378a4c69427ee",
       "sourceType": "github",
       "skillPath": "skills/project-checklist/SKILL.md",
-      "computedHash": "9d4ba48afd1ea70e6bdf5ba0f2ec5004d501257abd2a03d190ecef9573943787"
+      "computedHash": "b14eb9c1f908c14d5772129392e7796061bee0e80f25bf772754fea695c5ccdd"
     },
     "refresh-skills": {
       "source": "philtzjp/skills",
@@ -230,7 +230,7 @@
       "ref": "54f4c12a57876848018ce3222d9378a4c69427ee",
       "sourceType": "github",
       "skillPath": "skills/repo-conventions/SKILL.md",
-      "computedHash": "72d2b260b95db6adc3dcedd9aa2eff3b44faa822523d242f7c02b006b16c294b"
+      "computedHash": "77e4c4618f8e5e778db5798a36d29e44a94a712e81409332ff34891c994d4870"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
@@ -314,7 +314,7 @@
       "ref": "54f4c12a57876848018ce3222d9378a4c69427ee",
       "sourceType": "github",
       "skillPath": "skills/vite-plus/SKILL.md",
-      "computedHash": "9d4a3ea3a7f337728655e31faa78a8116fdb66227a3a7b1681a4ccbdf7b09b59"
+      "computedHash": "8ebe433192b92cafcf50404a4d3c27e03a64000c1b984bceac81898ca83e951b"
     },
     "workers-best-practices": {
       "source": "cloudflare/skills",

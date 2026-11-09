@@ -44,5 +44,6 @@ runs:
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git commit -m "fix(deps): skills-lock.json のハッシュを新しい ref に合わせる" -- skills-lock.json
-        GH_TOKEN="$GITHUB_APP_TOKEN" gh auth setup-git
+        export GH_TOKEN="$GITHUB_APP_TOKEN"
+        gh auth setup-git
         git push origin "HEAD:refs/heads/${BRANCH}"
