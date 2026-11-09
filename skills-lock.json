@@ -230,7 +230,7 @@
       "ref": "36f05840060cd852a04188534808dfbdaa95d211",
       "sourceType": "github",
       "skillPath": "skills/repo-conventions/SKILL.md",
-      "computedHash": "77e4c4618f8e5e778db5798a36d29e44a94a712e81409332ff34891c994d4870"
+      "computedHash": "332393d2bc04058aa675993315afe5be8d462b4ec2b6e26a010004117c08ed98"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
