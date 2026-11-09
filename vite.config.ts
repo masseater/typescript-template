@@ -222,7 +222,7 @@ export default defineConfig({
     tasks: {
       "actions-lint": {
         command:
-          'uvx --from actionlint-py@1.7.12.25 actionlint && uvx zizmor@1.32.0 $(test -n "$CLAUDE_CODE_REMOTE" && echo --no-online-audits) .github && ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows',
+          'actionlint && zizmor $(test -n "$CLAUDE_CODE_REMOTE" && echo --no-online-audits) .github && ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows',
         cache: {
           env: ["CLAUDE_CODE_REMOTE"],
           untrackedEnv: [
@@ -286,12 +286,12 @@ export default defineConfig({
       },
       betterleaks: {
         command:
-          'go run github.com/betterleaks/betterleaks/v2@v2.0.0-rc.7 git . --config .betterleaks.toml --redact --no-banner --revision="$(git rev-parse -q --verify "$BETTERLEAKS_BASE" || echo origin/main)..HEAD"',
+          'betterleaks git . --config .betterleaks.toml --redact --no-banner --revision="$(git rev-parse -q --verify "$BETTERLEAKS_BASE" || echo origin/main)..HEAD"',
         cache: false,
       },
       "betterleaks:staged": {
         command:
-          "git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ | go run github.com/betterleaks/betterleaks/v2@v2.0.0-rc.7 stdin --git-diff --config .betterleaks.toml --redact --no-banner",
+          "git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ | betterleaks stdin --git-diff --config .betterleaks.toml --redact --no-banner",
         cache: false,
       },
     },
