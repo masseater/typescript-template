@@ -1,5 +1,5 @@
-import type { ToolSections } from "@r_masseater/vp-tools";
-import fsd from "@r_masseater/vp-tools/fsd";
+import type { ToolSections } from "@r_masseater/vite-plus-adopt";
+import fsd from "@r_masseater/vite-plus-adopt/fsd";
 import { Array as Arr, pipe } from "effect";
 import type { UserConfig } from "vite-plus";
 
@@ -56,21 +56,21 @@ const checks: ToolSections = {
 };
 
 const checkTasks: NonNullable<NonNullable<UserConfig["run"]>["tasks"]> = {
-  "dependency-rules": "vp-tools dependencies",
+  "dependency-rules": "vpa dependencies",
   "markdown-lint": [
     'markdownlint-cli2 "**/*.md"',
-    "vp-tools textlint '*.md'",
-    `vp-tools textlint --print-files '*.md' | xargs -0 -r -n 1 -P 4 python3 "$(skills ls --json | jq -r '.[] | select(.name == "yomiyasu").path')/scripts/yomiyasu_lint.py" --strict`,
+    "vpa textlint '*.md'",
+    `vpa textlint --print-files '*.md' | xargs -0 -r -n 1 -P 4 python3 "$(skills ls --json | jq -r '.[] | select(.name == "yomiyasu").path')/scripts/yomiyasu_lint.py" --strict`,
   ],
-  steiger: "vp-tools steiger apps/*/src",
+  steiger: "vpa steiger apps/*/src",
   betterleaks: {
     command:
-      'vp-tools betterleaks betterleaks git . --redact --no-banner --revision="$(git rev-parse -q --verify "$BETTERLEAKS_BASE" || echo origin/main)..HEAD"',
+      'vpa betterleaks git . --redact --no-banner --revision="$(git rev-parse -q --verify "$BETTERLEAKS_BASE" || echo origin/main)..HEAD"',
     cache: false,
   },
   "betterleaks:staged": {
     command:
-      "git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ | vp-tools betterleaks betterleaks stdin --git-diff --redact --no-banner",
+      "git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ | vpa betterleaks stdin --git-diff --redact --no-banner",
     cache: false,
   },
 };
