@@ -1,5 +1,5 @@
 name: skills-lock
-description: On a renovate push, fail while skills-lock.json has stale hashes and ask main to rehash; on that workflow_dispatch, push the rehashed lock with the GitHub App token from credentials.masseater.dev
+description: On a pull request, fail while skills-lock.json has stale hashes so it cannot merge; on a renovate push, also ask main to rehash; on that workflow_dispatch, push the rehashed lock with the GitHub App token from credentials.masseater.dev
 inputs:
   branch:
     description: The renovate branch that is checked out
@@ -24,6 +24,10 @@ runs:
           exit 0
         fi
         echo "stale=true" >> "$GITHUB_OUTPUT"
+        if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+          echo "::error::skills-lock.json does not match the skill refs; wait for the rehash commit before merging"
+          exit 1
+        fi
         if [ "$GITHUB_EVENT_NAME" = push ]; then
           gh workflow run skills-lock.yml --repo "$GITHUB_REPOSITORY" --ref main -f branch="$BRANCH"
           echo "::error::skills-lock.json does not match the skill refs; the rehash runs from main and pushes a new commit"

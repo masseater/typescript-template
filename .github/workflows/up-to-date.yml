@@ -13,5 +13,25 @@ concurrency:
 jobs:
   up-to-date:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - run: "true"
+      - id: changed
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if gh api "repos/$REPO/pulls/$NUMBER/files" --paginate --jq '.[].filename' | grep -qx skills-lock.json; then
+            echo "skills-lock=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changed.outputs.skills-lock == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.changed.outputs.skills-lock == 'true'
+        uses: $/.github/actions/skills-lock
+        with:
+          branch: ${{ github.head_ref }}
