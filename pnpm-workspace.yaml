@@ -16,7 +16,7 @@ catalog:
   "@r_masseater/vite-plus-adopt": 0.2.0
   "@types/node": 26.6.6
   eslint-plugin-react-hooks: 7.1.1
-  oxlint-plugin-eslint: 1.91.0
+  oxlint-plugin-eslint: 1.92.0
   vite: npm:@voidzero-dev/vite-plus-core@1.5.0
   "@r_masseater/oxlint-plugin-decision": 0.1.1
   eslint-plugin-no-comments: 1.2.1
@@ -30,7 +30,7 @@ catalog:
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
   markdownlint-cli2: 0.24.0
-  "@r_masseater/web-vitals-flow": 0.1.0
+  "@r_masseater/web-vitals-flow": 0.1.1
   "@r_masseater/workers-tracing": 0.1.1
 catalogs:
   stack:
@@ -52,8 +52,8 @@ catalogs:
     elysia: 1.4.31
     fallow: 3.40.0
     radix-ui: 1.8.1
-    renovate: 44.221.4
-    tailwindcss: 4.3.4
+    renovate: 44.221.6
+    tailwindcss: 4.3.5
     typescript: 7.1.0-beta
     vite-plus: 1.5.0
 overrides:
