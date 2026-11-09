@@ -30,7 +30,7 @@ catalog:
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
   markdownlint-cli2: 0.24.0
-  "@r_masseater/web-vitals-flow": 0.0.7
+  "@r_masseater/web-vitals-flow": 0.1.0
   "@r_masseater/workers-tracing": 0.1.1
 catalogs:
   stack:
@@ -52,7 +52,7 @@ catalogs:
     elysia: 1.4.31
     fallow: 3.40.0
     radix-ui: 1.8.1
-    renovate: 44.221.3
+    renovate: 44.221.4
     tailwindcss: 4.3.4
     typescript: 7.1.0-beta
     vite-plus: 1.5.0
