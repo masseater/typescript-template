@@ -146,8 +146,8 @@ jobs:
       - if: steps.release-pr.outputs.pr
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          NUMBER: ${{ fromJSON(steps.release-pr.outputs.pr).number }}
-        run: gh pr merge "$NUMBER" --repo "$GITHUB_REPOSITORY" --squash --auto
+          PR: ${{ steps.release-pr.outputs.pr }}
+        run: gh pr merge "$(jq -r .number <<<"$PR")" --repo "$GITHUB_REPOSITORY" --squash --auto
       - if: steps.tagged.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
