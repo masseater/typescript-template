@@ -115,8 +115,8 @@
       ],
     },
     {
-      "name": "vp-tools",
-      "enablers": ["@r_masseater/vp-tools"],
+      "name": "vite-plus-adopt",
+      "enablers": ["@r_masseater/vite-plus-adopt"],
       "toolingDependencies": [
         "@commitlint/config-conventional",
         "@textlint-ja/textlint-rule-preset-ai-writing",

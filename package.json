@@ -13,7 +13,7 @@
     "@html-eslint/eslint-plugin-react": "catalog:",
     "@r_masseater/oxlint-plugin-decision": "catalog:",
     "@r_masseater/oxlint-typed-rules": "catalog:",
-    "@r_masseater/vp-tools": "catalog:",
+    "@r_masseater/vite-plus-adopt": "catalog:",
     "@r_masseater/workers-tracing": "catalog:",
     "@shadcn/lint": "catalog:",
     "@tanstack/intent": "catalog:",

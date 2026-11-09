@@ -24,7 +24,7 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 
 Vite+ の [`vp`](https://viteplus.dev/guide/) コマンド、Workers Paid プランの Cloudflare アカウント、
 OpenRouter の API キーが要る。
-verify の一部は `gh`、Python 3、jq と、[mise](https://mise.jdx.dev/) が `mise.toml` から入れるツールで動く。
+verify の一部は `gh`、Python 3、jq で動く。
 lint の一部は OpenRouter のキーを使う。
 
 ### 1. テンプレートからリポジトリを作る
@@ -44,7 +44,6 @@ cd <name>
 
 ```sh
 vp env on
-mise install
 vp install
 cp .env.example .env
 vp exec --filter web alchemy profile edit --add Cloudflare
