@@ -22,7 +22,7 @@ runs:
         gh auth setup-git
         commits="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE_SHA...$HEAD_SHA" --jq .total_commits)"
         git fetch --no-tags --depth="$((commits + 1))" origin "$HEAD_SHA"
-        vp exec commitlint --from "$BEFORE_SHA" --to "$HEAD_SHA" --git-log-args="--first-parent" --verbose
+        vp exec vp-tools commitlint --range "$BEFORE_SHA..$HEAD_SHA"
     - if: github.event_name == 'push'
       shell: bash
       env:
