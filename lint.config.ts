@@ -1,9 +1,9 @@
 import { presets as effectPresets } from "@effect/tsgo/oxlint-presets";
-import eslintReact from "@eslint-react/eslint-plugin";
 import htmlReact from "@html-eslint/eslint-plugin-react";
+import eslintReact from "@r_masseater/oxlint-typed-rules/react";
+import tanstackQuery from "@r_masseater/oxlint-typed-rules/tanstack-query";
+import tanstackRouter from "@r_masseater/oxlint-typed-rules/tanstack-router";
 import { plugin as shadcn } from "@shadcn/lint";
-import tanstackQuery from "@tanstack/eslint-plugin-query";
-import tanstackRouter from "@tanstack/eslint-plugin-router";
 import { Array, Record, String, Struct, pipe } from "effect";
 import baselineJs from "eslint-plugin-baseline-js";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -232,9 +232,9 @@ const turnedOff = (rules: Rules): Record.ReadonlyRecord<string, "off"> =>
 
 const decisionRules = prefixed(decisionPluginName, decisionPlugin);
 
-const tanstackQueryRules = prefixed("tanstack-query", tanstackQuery);
+const tanstackQueryRules = pluginRules(tanstackQuery);
 
-const tanstackRouterRules = prefixed("tanstack-router", tanstackRouter);
+const tanstackRouterRules = pluginRules(tanstackRouter);
 
 const shadcnRules = prefixed("shadcn", shadcn);
 
