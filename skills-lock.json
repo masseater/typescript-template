@@ -202,7 +202,7 @@
       "ref": "06e3c030243ad6e980f7986d1caa5f70361d7910",
       "sourceType": "github",
       "skillPath": "skills/measure-dont-guess/SKILL.md",
-      "computedHash": "3d7bf5e84ee60a7781d84578065f98cfc1c737bbfa5d875a48d4941ae0320e2e"
+      "computedHash": "8390e5a9bc6362168b0e6b750a139f94870e60ce19d73e32b94181cb259f67cc"
     },
     "modern-web-guidance": {
       "source": "GoogleChrome/modern-web-guidance",
@@ -216,7 +216,7 @@
       "ref": "06e3c030243ad6e980f7986d1caa5f70361d7910",
       "sourceType": "github",
       "skillPath": "skills/project-checklist/SKILL.md",
-      "computedHash": "b14eb9c1f908c14d5772129392e7796061bee0e80f25bf772754fea695c5ccdd"
+      "computedHash": "7e15421ab0adc31ee40a0c79beb783465bad0df7a6c078bf6e74d61a3a21aa37"
     },
     "refresh-skills": {
       "source": "philtzjp/skills",
@@ -230,7 +230,7 @@
       "ref": "06e3c030243ad6e980f7986d1caa5f70361d7910",
       "sourceType": "github",
       "skillPath": "skills/repo-conventions/SKILL.md",
-      "computedHash": "332393d2bc04058aa675993315afe5be8d462b4ec2b6e26a010004117c08ed98"
+      "computedHash": "5e3b35eeb57f9bcd74271f90db2421f2ce8a437e6e566835e001f89553ee91d2"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
