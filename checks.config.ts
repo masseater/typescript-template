@@ -3,7 +3,10 @@ import fsd from "@r_masseater/vite-plus-adopt/fsd";
 import { Array as Arr, pipe } from "effect";
 import type { UserConfig } from "vite-plus";
 
+import { fallow } from "./fallow.config.ts";
 import { requiredStack } from "./lint.config.ts";
+
+const MARKDOWN_IGNORES = ["AGENTS.md", ".agents/skills/**", ".claude/worktrees/**", "CHANGELOG.md"];
 
 const PUBLIC_VALUES = [String.raw`\bCF_BEACON_TOKEN = "[0-9a-f]{32}"`];
 
@@ -18,18 +21,23 @@ const checks: ToolSections = {
       Arr.join(", "),
     )}])`,
   },
-  steiger: [
-    ...fsd.configs.recommended,
-    {
-      rules: {
-        "fsd/no-cross-imports": "error",
-        "fsd/no-higher-level-imports": "error",
-        "fsd/no-wildcard-exports": "error",
+  steiger: {
+    paths: ["apps/*/src"],
+    rules: [
+      ...fsd.configs.recommended,
+      {
+        rules: {
+          "fsd/no-cross-imports": "error",
+          "fsd/no-higher-level-imports": "error",
+          "fsd/no-wildcard-exports": "error",
+        },
       },
-    },
-  ],
+    ],
+  },
+  markdownlint: { ignores: MARKDOWN_IGNORES },
+  fallow,
   textlint: {
-    ignores: ["AGENTS.md", ".agents/skills/**", ".claude/worktrees/**", "CHANGELOG.md"],
+    ignores: MARKDOWN_IGNORES,
     rules: {
       "@textlint-ja/preset-ai-writing": true,
       "preset-ja-technical-writing": {
@@ -55,24 +63,15 @@ const checks: ToolSections = {
   },
 };
 
+const markdownFiles = pipe(
+  MARKDOWN_IGNORES,
+  Arr.map((glob) => `':(glob,exclude)${glob}'`),
+  Arr.join(" "),
+);
+
 const checkTasks: NonNullable<NonNullable<UserConfig["run"]>["tasks"]> = {
-  "dependency-rules": "vpa dependencies",
-  "markdown-lint": [
-    'markdownlint-cli2 "**/*.md"',
-    "vpa textlint '*.md'",
-    `vpa textlint --print-files '*.md' | xargs -0 -r -n 1 -P 4 python3 "$(skills ls --json | jq -r '.[] | select(.name == "yomiyasu").path')/scripts/yomiyasu_lint.py" --strict`,
-  ],
-  steiger: "vpa steiger apps/*/src",
-  betterleaks: {
-    command:
-      'vpa betterleaks git . --redact --no-banner --revision="$(git rev-parse -q --verify "$BETTERLEAKS_BASE" || echo origin/main)..HEAD"',
-    cache: false,
-  },
-  "betterleaks:staged": {
-    command:
-      "git diff --cached --no-ext-diff --no-textconv --no-color --src-prefix=a/ --dst-prefix=b/ | vpa betterleaks stdin --git-diff --redact --no-banner",
-    cache: false,
-  },
+  vpa: { command: "vpa", cache: false },
+  yomiyasu: `git ls-files -z '*.md' ${markdownFiles} | xargs -0 -r -n 1 -P 4 python3 "$(skills ls --json | jq -r '.[] | select(.name == "yomiyasu").path')/scripts/yomiyasu_lint.py" --strict`,
 };
 
 export { checkTasks, checks };

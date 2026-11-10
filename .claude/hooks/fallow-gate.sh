@@ -128,12 +128,20 @@ fi
 
 TMP_JSON="$(mktemp)"
 TMP_ERR="$(mktemp)"
+CONFIG_DIR="$(mktemp -d)"
 cleanup() {
-  rm -f "$TMP_JSON" "$TMP_ERR"
+  rm -f "$TMP_JSON" "$TMP_ERR" "$CONFIG_DIR/.fallowrc.json"
+  rmdir "$CONFIG_DIR"
 }
 trap cleanup EXIT
 
-if "${RUNNER[@]}" audit --format json --quiet --explain --gate-marker agent >"$TMP_JSON" 2>"$TMP_ERR"; then
+# The fallow config lives in fallow.config.ts, so write it to a temporary file
+# for --config.
+node --input-type=module \
+  -e 'const { fallow } = await import(process.argv[1]); process.stdout.write(JSON.stringify(fallow));' \
+  "${CLAUDE_PROJECT_DIR:-$PWD}/fallow.config.ts" >"$CONFIG_DIR/.fallowrc.json"
+
+if "${RUNNER[@]}" audit --config "$CONFIG_DIR/.fallowrc.json" --format json --quiet --explain --gate-marker agent >"$TMP_JSON" 2>"$TMP_ERR"; then
   STATUS=0
 else
   STATUS=$?

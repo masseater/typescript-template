@@ -1,4 +1,4 @@
-import { Array as Arr, Effect, Schema, String as Str, pipe } from "effect";
+import { Array as Arr, Effect, Option, Schema, String as Str, pipe } from "effect";
 
 import {
   blockWhen,
@@ -9,6 +9,7 @@ import {
   runHook,
   writeJson,
 } from "./env.ts";
+import { ROOT, fallowConfigFile } from "./fallow-config.ts";
 import { HookPlatform } from "./platform.ts";
 import type { CommandResult } from "./platform.ts";
 
@@ -32,37 +33,40 @@ const locate = Effect.fn("locate")(function* locate(filePath: string) {
     [scope, platform.join(scope, name)],
     Arr.filter((dir) => dir !== ""),
   );
-  return { candidates, root };
+  return candidates;
 });
 
-const fallowTargets = Effect.fn("fallowTargets")(function* fallowTargets(
-  root: string,
-  candidates: readonly string[],
+const runFallowIn = Effect.fn("runFallowIn")(function* runFallowIn(
+  fallow: string,
+  directory: string,
 ) {
-  const platform = yield* HookPlatform;
-  const withConfig = yield* pipe(
-    candidates,
-    Effect.filter((dir: string) => platform.exists(platform.join(root, dir, ".fallowrc.jsonc"))),
-  );
-  const flags = pipe(
-    withConfig,
-    Arr.map((dir) => ["-r", dir]),
-  );
-  return [[], ...flags];
+  const configFile = yield* fallowConfigFile(directory);
+  return yield* Option.match(configFile, {
+    onNone: () => Effect.succeedNone,
+    onSome: (file) =>
+      Effect.asSome(
+        runCommand(fallow, [
+          "--changed-since",
+          "HEAD",
+          "--quiet",
+          "--format",
+          "compact",
+          "-r",
+          directory,
+          "-c",
+          file,
+        ]),
+      ),
+  });
 });
 
-const runFallow = Effect.fn("runFallow")(function* runFallow(
-  root: string,
-  candidates: readonly string[],
-) {
+const runFallow = Effect.fn("runFallow")(function* runFallow(candidates: readonly string[]) {
   const fallow = yield* localBin("fallow");
-  const targets = yield* fallowTargets(root, candidates);
   const runs = yield* Effect.forEach(
-    targets,
-    (args) =>
-      runCommand(fallow, ["--changed-since", "HEAD", "--quiet", "--format", "compact", ...args]),
+    [ROOT, ...candidates],
+    (directory) => runFallowIn(fallow, directory),
     { concurrency: "unbounded" },
-  );
+  ).pipe(Effect.map(Arr.getSomes), Effect.scoped);
   const failed = pipe(
     runs,
     Arr.filter((run) => !run.succeeded),
@@ -98,8 +102,8 @@ runHook(
   Effect.gen(function* postEdit() {
     const input = yield* readHookInput(PostToolUseInput);
     const filePath = input.tool_input.file_path ?? "";
-    const { candidates, root } = yield* locate(filePath);
-    const runs = yield* runFallow(root, candidates);
+    const candidates = yield* locate(filePath);
+    const runs = yield* runFallow(candidates);
     yield* reportDuplication(runs);
   }),
 );

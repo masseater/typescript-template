@@ -1,14 +1,20 @@
-{
-  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "production": true,
-  "typeAware": { "enabled": true, "require": "complete" },
-  "failOnParseError": true,
-  "ignoreDependencies": ["@effect/language-service"],
-  "ignorePatterns": [".claude/**"],
-  "audit": { "gate": "all" },
-  "security": {
-    "categories": {
-      "include": [
+import type { FallowConfig } from "@r_masseater/vite-plus-adopt";
+
+const fallow = {
+  production: true,
+  typeAware: {
+    enabled: true,
+    require: "complete",
+  },
+  failOnParseError: true,
+  ignoreDependencies: ["@effect/language-service", "fallow"],
+  ignorePatterns: [".claude/**"],
+  audit: {
+    gate: "all",
+  },
+  security: {
+    categories: {
+      include: [
         "angular-trusted-html",
         "cleartext-transport",
         "code-injection",
@@ -58,56 +64,121 @@
       ],
     },
   },
-  "boundaries": {
-    "zones": [
-      { "name": "apps", "autoDiscover": ["apps"] },
-      { "name": "libs", "patterns": ["libs/**"] },
-      { "name": "tools", "patterns": ["tools/**"], "autoDiscover": ["tools"] },
-      { "name": "infra", "patterns": ["infra/**"], "autoDiscover": ["infra"] },
+  boundaries: {
+    zones: [
+      {
+        name: "apps",
+        autoDiscover: ["apps"],
+      },
+      {
+        name: "libs",
+        patterns: ["libs/**"],
+      },
+      {
+        name: "tools",
+        patterns: ["tools/**"],
+        autoDiscover: ["tools"],
+      },
+      {
+        name: "infra",
+        patterns: ["infra/**"],
+        autoDiscover: ["infra"],
+      },
     ],
-    "rules": [
-      { "from": "apps", "allow": ["libs", "infra"] },
-      { "from": "libs", "allow": [] },
-      { "from": "tools", "allow": ["libs"] },
-      { "from": "infra", "allow": ["libs"] },
+    rules: [
+      {
+        from: "apps",
+        allow: ["libs", "infra"],
+      },
+      {
+        from: "libs",
+        allow: [],
+      },
+      {
+        from: "tools",
+        allow: ["libs"],
+      },
+      {
+        from: "infra",
+        allow: ["libs"],
+      },
     ],
   },
-  "duplicates": { "threshold": 1, "ignore": ["**/generated/**"] },
-  "flags": {
-    "sdkPatterns": [
-      { "function": "getBooleanValue", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getStringValue", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getNumberValue", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getObjectValue", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getBooleanDetails", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getStringDetails", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getNumberDetails", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getObjectDetails", "nameArg": 0, "provider": "OpenFeature" },
-      { "function": "getBoolean", "nameArg": 0, "provider": "OpenFeature (Effect service)" },
+  duplicates: {
+    threshold: 1,
+    ignore: ["**/generated/**"],
+  },
+  flags: {
+    sdkPatterns: [
+      {
+        function: "getBooleanValue",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getStringValue",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getNumberValue",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getObjectValue",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getBooleanDetails",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getStringDetails",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getNumberDetails",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getObjectDetails",
+        nameArg: 0,
+        provider: "OpenFeature",
+      },
+      {
+        function: "getBoolean",
+        nameArg: 0,
+        provider: "OpenFeature (Effect service)",
+      },
     ],
   },
-  "framework": [
+  framework: [
     {
-      "name": "tanstack-start-fsd",
-      "enablers": ["@tanstack/react-start"],
-      "entryPointRole": "runtime",
-      "entryPoints": [
+      name: "tanstack-start-fsd",
+      enablers: ["@tanstack/react-start"],
+      entryPointRole: "runtime",
+      entryPoints: [
         "src/app/{router,start,client,server}.{ts,tsx}",
         "src/app/server/index.{ts,tsx}",
         "src/app/routes/**/*.{ts,tsx}",
       ],
-      "alwaysUsed": ["src/app/routeTree.gen.ts"],
+      alwaysUsed: ["src/app/routeTree.gen.ts"],
     },
     {
-      "name": "alchemy",
-      "enablers": ["alchemy"],
-      "entryPoints": ["alchemy.run.ts", "*.worker.ts"],
+      name: "alchemy",
+      enablers: ["alchemy"],
+      entryPoints: ["alchemy.run.ts", "*.worker.ts"],
     },
     {
-      "name": "vite-plus",
-      "enablers": ["vite-plus"],
-      "entryPoints": ["vite.config.ts"],
-      "toolingDependencies": [
+      name: "vite-plus",
+      enablers: ["vite-plus"],
+      entryPoints: ["vite.config.ts"],
+      toolingDependencies: [
         "@ast-grep/cli",
         "eslint-plugin-drizzle",
         "eslint-plugin-no-comments",
@@ -115,33 +186,33 @@
       ],
     },
     {
-      "name": "vite-plus-adopt",
-      "enablers": ["@r_masseater/vite-plus-adopt"],
-      "toolingDependencies": [
+      name: "vite-plus-adopt",
+      enablers: ["@r_masseater/vite-plus-adopt"],
+      toolingDependencies: [
         "@commitlint/config-conventional",
         "@textlint-ja/textlint-rule-preset-ai-writing",
         "textlint-rule-preset-ja-technical-writing",
       ],
     },
     {
-      "name": "oxlint-plugin-decision",
-      "enablers": ["@r_masseater/oxlint-plugin-decision"],
-      "entryPoints": ["decision-rules.ts"],
+      name: "oxlint-plugin-decision",
+      enablers: ["@r_masseater/oxlint-plugin-decision"],
+      entryPoints: ["decision-rules.ts"],
     },
     {
-      "name": "skills",
-      "enablers": ["skills"],
-      "configPatterns": ["skills-lock.json"],
-      "toolingDependencies": ["skills"],
+      name: "skills",
+      enablers: ["skills"],
+      configPatterns: ["skills-lock.json"],
+      toolingDependencies: ["skills"],
     },
     {
-      "name": "tanstack-intent",
-      "enablers": ["@tanstack/intent"],
-      "configPatterns": [".intent/hooks/*.mjs"],
-      "toolingDependencies": ["@tanstack/intent"],
+      name: "tanstack-intent",
+      enablers: ["@tanstack/intent"],
+      configPatterns: [".intent/hooks/*.mjs"],
+      toolingDependencies: ["@tanstack/intent"],
     },
   ],
-  "rules": {
+  rules: {
     "unused-files": "error",
     "unused-exports": "error",
     "unused-types": "error",
@@ -200,4 +271,6 @@
     "route-collision": "error",
     "dynamic-segment-name-conflict": "error",
   },
-}
+} satisfies FallowConfig;
+
+export { fallow };

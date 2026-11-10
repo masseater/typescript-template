@@ -112,6 +112,26 @@ const spawnCommand = (
     ),
   );
 
+const relayLines = (
+  command: string,
+  args: readonly string[],
+  transform: (line: string) => string,
+): Effect.Effect<void, never, ChildProcessSpawner.ChildProcessSpawner | Stdio.Stdio> =>
+  Effect.gen(function* relay() {
+    const dir = yield* projectDir.pipe(Effect.orDie);
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const stdio = yield* Stdio.Stdio;
+    const stdin = stdio.stdin.pipe(
+      Stream.decodeText,
+      Stream.splitLines,
+      Stream.map((line) => `${transform(line)}\n`),
+      Stream.encodeText,
+    );
+    yield* spawner.exitCode(
+      ChildProcess.make(command, args, { cwd: dir, stdin, stdout: "inherit", stderr: "inherit" }),
+    );
+  }).pipe(Effect.orDie);
+
 const platformLayer = Layer.effect(
   HookPlatform,
   Effect.gen(function* platform() {
@@ -141,6 +161,17 @@ const platformLayer = Layer.effect(
       join: (...segments) => path.join(...segments),
       relative: (from, to) => path.relative(from, to),
       sep: path.sep,
+      writeTempFile: (name, text) =>
+        fs.makeTempDirectoryScoped({ prefix: "claude-hook-" }).pipe(
+          Effect.map((directory) => path.join(directory, name)),
+          Effect.tap((file) => fs.writeFileString(file, text)),
+          Effect.orDie,
+        ),
+      relay: (command, args, transform) =>
+        relayLines(command, args, transform).pipe(
+          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+          Effect.provideService(Stdio.Stdio, stdio),
+        ),
     });
   }),
 );

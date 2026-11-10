@@ -24,7 +24,6 @@
     "eslint-plugin-no-comments": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "fallow": "catalog:stack",
-    "markdownlint-cli2": "catalog:",
     "oxlint-plugin-eslint": "catalog:",
     "renovate": "catalog:stack",
     "skills": "catalog:",
