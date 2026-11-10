@@ -168,8 +168,8 @@ catalogs:
       specifier: 0.51.1
       version: 0.51.1
     '@cloudflare/workers-types':
-      specifier: 5.20261106.1
-      version: 5.20261106.1
+      specifier: 5.20261107.1
+      version: 5.20261107.1
     '@commitlint/config-conventional':
       specifier: 21.2.4
       version: 21.2.4
@@ -198,8 +198,8 @@ catalogs:
       specifier: 0.5.6
       version: 0.5.6
     '@tanstack/react-query-devtools':
-      specifier: 5.106.1
-      version: 5.106.1
+      specifier: 5.107.1
+      version: 5.107.1
     '@types/node':
       specifier: 26.6.6
       version: 26.6.6
@@ -253,8 +253,8 @@ catalogs:
       specifier: 1.23.0
       version: 1.23.0
     '@tanstack/react-query':
-      specifier: 5.106.1
-      version: 5.106.1
+      specifier: 5.107.1
+      version: 5.107.1
     '@tanstack/react-start':
       specifier: 1.169.4
       version: 1.169.4
@@ -283,8 +283,8 @@ catalogs:
       specifier: 1.8.1
       version: 1.8.1
     renovate:
-      specifier: 44.221.6
-      version: 44.221.6
+      specifier: 44.222.0
+      version: 44.222.0
     tailwindcss:
       specifier: 4.3.5
       version: 4.3.5
@@ -371,7 +371,7 @@ importers:
         version: 1.92.0
       renovate:
         specifier: catalog:stack
-        version: 44.221.6(supports-color@7.2.0)(typanion@3.14.0)
+        version: 44.222.0(supports-color@7.2.0)(typanion@3.14.0)
       skills:
         specifier: 'catalog:'
         version: 1.7.6
@@ -469,7 +469,7 @@ importers:
         version: 2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.2)(ws@8.22.0))(effect@4.1.2)
       '@better-auth/drizzle-adapter':
         specifier: 1.7.18
-        version: 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
+        version: 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
       '@effect/atom-react':
         specifier: catalog:stack
         version: 4.1.2(effect@4.1.2)(react@19.3.1)(scheduler@0.28.0)
@@ -490,10 +490,10 @@ importers:
         version: 0.10.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
       '@tanstack/react-query':
         specifier: catalog:stack
-        version: 5.106.1(@types/react@19.3.0)(react@19.3.1)
+        version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
-        version: 5.106.1(@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
+        version: 5.107.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -502,13 +502,13 @@ importers:
         version: 1.167.2(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-router-ssr-query':
         specifier: 1.167.3
-        version: 1.167.3(@tanstack/query-core@5.106.1)(@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.167.3(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: catalog:stack
         version: 1.169.4(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(supports-color@7.2.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
       better-auth:
         specifier: catalog:stack
-        version: 1.7.18(d32caf85b3c4ca5ad4f74d1f89da116b)
+        version: 1.7.18(92f5efd4752f4e114f389d69f2595485)
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -517,10 +517,10 @@ importers:
         version: 2.1.1
       drizzle-orm:
         specifier: catalog:stack
-        version: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
+        version: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
       eden-tanstack-react-query:
         specifier: catalog:stack
-        version: 0.5.1(@elysiajs/eden@1.4.9(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)))(@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1))(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))(react@19.3.1)
+        version: 0.5.1(@elysiajs/eden@1.4.9(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)))(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))(react@19.3.1)
       effect:
         specifier: 4.1.2
         version: 4.1.2
@@ -557,7 +557,7 @@ importers:
         version: 2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(alchemy@2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.2)(ws@8.22.0))(effect@4.1.2)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
-        version: 5.20261106.1
+        version: 5.20261107.1
       '@effect/tsgo':
         specifier: catalog:stack
         version: 0.67.4
@@ -584,7 +584,7 @@ importers:
         version: 2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.2)(ws@8.22.0)
       auth:
         specifier: 1.7.18
-        version: 1.7.18(d7906164d0b84f313914f89965bb37cb)
+        version: 1.7.18(fe94a2abe68a352d52702be9d683f206)
       drizzle-kit:
         specifier: catalog:stack
         version: 1.0.0-rc.5-ab785fc
@@ -1236,8 +1236,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@5.20261106.1':
-    resolution: {integrity: sha512-uQtZyYehF0hwImaFi0/z/BWeTC/DMKpEo+nCySs5WZwoMhnIqLnN3sVjS7GCBc222EWf+F6khsHPWIvPEaP6JA==}
+  '@cloudflare/workers-types@5.20261107.1':
+    resolution: {integrity: sha512-Q23LVprqgqdoxBYaH3YyTrtmeJZMzVarvcTZjZC6FnQIqrr+Vm/ASdWtezOQ+oq3FvhoGr1Xe7BAU3XZfkqUQw==}
 
   '@commitlint/config-conventional@21.2.4':
     resolution: {integrity: sha512-IRldtwgNmR0SySR7wizFbhRmq45lPt6H3XCNTMyVN7jrPLgi8JlTRR6Eg1HLWUQt9P1Lh3k6eY25ilDa47EE6w==}
@@ -1297,6 +1297,15 @@ packages:
 
   '@containerbase/base@14.66.5':
     resolution: {integrity: sha512-5vbXTmyX+pZzIQWKc9x0E0wkSwwPLuO+tLf0IehPt+PBTdbpmmAQ9DAKW+CypEYYvFz9Pl7w65XyjXjtgqB1Hw==}
+    engines: {node: '>=24.10.0'}
+    peerDependencies:
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@containerbase/base@14.66.6':
+    resolution: {integrity: sha512-vN2qUAEAYqyI81BEA4b4+N2qc0CBZGb+RQq5+pudYIQMe/naDuCNIr2QIjQSR5EGHvi0zlr8gXH+IWEcD2pboA==}
     engines: {node: '>=24.10.0'}
     peerDependencies:
       zod: ^4.0.0
@@ -2065,9 +2074,6 @@ packages:
   '@isaacs/fs-minipass@4.0.1':
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
-
-  '@isaacs/nonrecursive-glob-match@1.0.3':
-    resolution: {integrity: sha512-SI7kyKHq4XXDRozw+r9GlRZkia1ZkFrpLW98r2IC2Bpr8YkFGE3fvjzmxCG0x78A++69HmDNrDvSMYBZmHGpKA==}
 
   '@isaacs/nonrecursive-glob-match@1.1.0':
     resolution: {integrity: sha512-GPm/Dbvk5RLmhRnxXIa7nTpK0xtl4E0wj0MslsuNiJ1FIROU+2+9lgUC/dgF7Ey4QCWhfEsgxilMRMCdHPfDfw==}
@@ -3980,8 +3986,8 @@ packages:
     peerDependencies:
       '@redis/client': ^6.2.1
 
-  '@renovatebot/base-image@13.160.10':
-    resolution: {integrity: sha512-dt+llP6cIZl1DPy7ZjMD0vdlHAuuiNB4EeYkL+v86q5ye2DOJ9vnQ1xw9R0Xsap9dvdLTRr5Rcob7xoy7AliUA==}
+  '@renovatebot/base-image@13.161.1':
+    resolution: {integrity: sha512-juJskfxqrMY9pZUF6SWpCzgpFGN5NaR8jPrG9dD7zfIJTsRXHxrGuLbqtkBoZvAMX2uRB06Mh4P3unwvm/Znhg==}
     engines: {node: '>=24.10.0'}
     peerDependencies:
       zod: ^4.0.0
@@ -4440,11 +4446,11 @@ packages:
     resolution: {integrity: sha512-aPkUQctDzpXLSWhlx7jUDi3mInsI18xcnrK1hvIyIa88ab1ax88cACr7xU+BKMCGB4NZYNwh4SoNSEbv3RY2NA==}
     engines: {node: '>=20'}
 
-  '@tanstack/query-core@5.106.1':
-    resolution: {integrity: sha512-erYv/UACddcdgjOL2ixmFdK6tO/AVBeUcTCOtX2N51yZpDQ2U7KJ+xgB/bCNfsF3uoCDTqGHEEbDiFsIO9YUmQ==}
+  '@tanstack/query-core@5.107.1':
+    resolution: {integrity: sha512-PSyAik11oQBEVOiVy5hjZWHmoUqOXqK1WYy4v55mcxozEfKaQgpUMsgnXhWjuESzSht8JfzqMS1m6M/9CpNgvg==}
 
-  '@tanstack/query-devtools@5.106.1':
-    resolution: {integrity: sha512-SEDgVRKVTGS4mjhylu3pjIIy9waf7r6se64yoe99hFZUAumbEsuzjVz896wJMvAWGZmxjfIDPrjBad4Gri20fg==}
+  '@tanstack/query-devtools@5.107.1':
+    resolution: {integrity: sha512-cZvgIPNvsh57mM3yTTwuL2GUMmMp5XR+3k5r2UJDyStmPYCqSwZf8z7OulgA4X8vISziAG5PoykbQ1q+2zemdA==}
 
   '@tanstack/react-devtools@0.10.14':
     resolution: {integrity: sha512-wFoNpqiU03MDbY1RljhX4vMUoGWwqpa5AZthWEaJRrojBFWFoB57lzzIM5r+EPGi+BsEX+OcXkn8Zkfoe4hGiA==}
@@ -4455,18 +4461,18 @@ packages:
       react: '>=16.8'
       react-dom: '>=16.8'
 
-  '@tanstack/react-query-devtools@5.106.1':
-    resolution: {integrity: sha512-onUerFS3Ig/g+hcT08Dlb+p+rDORlBHyZCGj1mqJC7dgA5wZyw/XAdhdPFqDFRcZfPNwIJRBkuAL6BZzHacO7A==}
+  '@tanstack/react-query-devtools@5.107.1':
+    resolution: {integrity: sha512-A3q9X3iOxtlz1jU/ou7t9CFvNHT84rTMofS1YEkFcBalvwotZ/RJKPDsX1NsQVl10J8XwN0OYMSfdjgIElt0sg==}
     peerDependencies:
-      '@tanstack/react-query': ^5.106.1
+      '@tanstack/react-query': ^5.107.1
       '@types/react': ^18 || ^19
       react: ^18 || ^19
     peerDependenciesMeta:
       '@types/react':
         optional: true
 
-  '@tanstack/react-query@5.106.1':
-    resolution: {integrity: sha512-ORDvJG/DSfmlFL9lQ8GDkE0VjtQbLeRDY7BL8xjKkQFGLfjFGfNWNuteWgPqA2gPJgLLuWfQ7IX0FlsHCJriyg==}
+  '@tanstack/react-query@5.107.1':
+    resolution: {integrity: sha512-udCOOLp3ZAheUrIHLCe+ZZge6nr2ZUrGMSWcCuXsjY1Bf2JeeE09oxst97PILiCY6N8xo/7bIo3Hvz13zh06FA==}
     peerDependencies:
       '@types/react': ^18 || ^19
       react: ^18 || ^19
@@ -5952,9 +5958,6 @@ packages:
   ci-info@4.4.0:
     resolution: {integrity: sha512-77PSwercCZU2Fc4sX94eF8k8Pxte6JAwL4/ICZLFjJLqegs7kCuAsqqj/70NQF6TvDpgFjkubQB2FW2ZZddvQg==}
     engines: {node: '>=8'}
-
-  cjs-module-lexer@2.2.1:
-    resolution: {integrity: sha512-Ca8swihM+/4yKecYHY52kgJd300hi2lADU/a1RxNTRe+RJ9jvqQlESpbz9DnG9mowez8qwXHB8qYdIUw9e+F5Q==}
 
   cjs-module-lexer@2.3.0:
     resolution: {integrity: sha512-lmNyBzi6iYiqyrExTctfmjd8tInx+dHu9PBomTfH5RXS53c27JMFJgzNv5TyAnm3PgGf+MLy0+Ws41/HlVxdKQ==}
@@ -7969,10 +7972,6 @@ packages:
   minimalistic-assert@1.0.1:
     resolution: {integrity: sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==}
 
-  minimatch@11.0.3:
-    resolution: {integrity: sha512-iny/40PEGkNJQ5/Pv6z3nm6FbRAby32GeZRjCUJk2WnNDbgPSTcdI+DDvLqsgBdD4cD5sMtMheqPPnehCCa8Nw==}
-    engines: {node: 18 || 20 || >=22}
-
   minimatch@11.0.5:
     resolution: {integrity: sha512-snPlVppFcYWfLLFQGhDxUyBcHNtMlWmn3jtj7pEaO+DP8pqL0IvAzXhMYmn1z9ASNtgmwLBdFxSf4tMUB0OTKA==}
     engines: {node: 20 || >=22}
@@ -8684,8 +8683,8 @@ packages:
   remove-accents@0.5.0:
     resolution: {integrity: sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A==}
 
-  renovate@44.221.6:
-    resolution: {integrity: sha512-4/23p6T6v7qcSgrjigBcfopRFGWLAPRznFe2wgrduk+JpareCDxJ7MWR65w09YJpz/+IwpR+FGaDEnrkHfYUaQ==}
+  renovate@44.222.0:
+    resolution: {integrity: sha512-pr6ejUC8jngO3b5RYMWP3H5MzbpkaozKRLcpeR7ssP3fTrmYIdNplVtdvOBRI3Mxug4DrYCUbL4PwVS5hU8ASQ==}
     engines: {node: ^24.11.0 || ^26.13.0, pnpm: ^11.0.0}
     hasBin: true
 
@@ -10560,12 +10559,12 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.10.0
 
-  '@better-auth/drizzle-adapter@1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))':
+  '@better-auth/drizzle-adapter@1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))':
     dependencies:
       '@better-auth/core': 1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4)
       '@better-auth/utils': 0.5.1
     optionalDependencies:
-      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
+      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
 
   '@better-auth/kysely-adapter@1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(kysely@0.29.6)':
     dependencies:
@@ -10684,7 +10683,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20261026.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20261106.1': {}
+  '@cloudflare/workers-types@5.20261107.1': {}
 
   '@commitlint/config-conventional@21.2.4':
     dependencies:
@@ -10770,6 +10769,12 @@ snapshots:
     optionalDependencies:
       zod: 4.6.7
 
+  '@containerbase/base@14.66.6(zod@4.6.7)':
+    dependencies:
+      semver: 7.8.5
+    optionalDependencies:
+      zod: 4.6.7
+
   '@conventional-changelog/template@1.4.0': {}
 
   '@corvu/utils@0.4.2(solid-js@1.9.15)':
@@ -10843,7 +10848,7 @@ snapshots:
 
   '@effect/sql-d1@4.1.2(effect@4.1.2)':
     dependencies:
-      '@cloudflare/workers-types': 5.20261106.1
+      '@cloudflare/workers-types': 5.20261107.1
       effect: 4.1.2
 
   '@effect/tsgo-darwin-arm64@0.67.4':
@@ -11316,8 +11321,6 @@ snapshots:
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
       minipass: 7.1.3
-
-  '@isaacs/nonrecursive-glob-match@1.0.3': {}
 
   '@isaacs/nonrecursive-glob-match@1.1.0': {}
 
@@ -13005,9 +13008,9 @@ snapshots:
     dependencies:
       '@redis/client': 6.2.1(@opentelemetry/api@1.10.0)
 
-  '@renovatebot/base-image@13.160.10(zod@4.6.7)':
+  '@renovatebot/base-image@13.161.1(zod@4.6.7)':
     dependencies:
-      '@containerbase/base': 14.66.5(zod@4.6.7)
+      '@containerbase/base': 14.66.6(zod@4.6.7)
     optionalDependencies:
       zod: 4.6.7
 
@@ -13434,16 +13437,16 @@ snapshots:
     dependencies:
       remove-accents: 0.5.0
 
-  '@tanstack/query-core@5.106.1': {}
+  '@tanstack/query-core@5.107.1': {}
 
-  '@tanstack/query-devtools@5.106.1(csstype@3.2.3)':
+  '@tanstack/query-devtools@5.107.1(csstype@3.2.3)':
     dependencies:
       '@kobalte/core': 0.13.14(solid-js@1.9.15)
       '@solid-primitives/keyed': 1.5.3(solid-js@1.9.15)
       '@solid-primitives/resize-observer': 2.2.0(solid-js@1.9.15)
       '@solid-primitives/storage': 1.3.11(solid-js@1.9.15)
       '@tanstack/match-sorter-utils': 9.1.2
-      '@tanstack/query-core': 5.106.1
+      '@tanstack/query-core': 5.107.1
       '@tanstack/solid-virtual': 3.13.53(solid-js@1.9.15)
       clsx: 2.1.1
       goober: 2.1.19(csstype@3.2.3)
@@ -13466,19 +13469,19 @@ snapshots:
       - solid-js
       - utf-8-validate
 
-  '@tanstack/react-query-devtools@5.106.1(@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)':
+  '@tanstack/react-query-devtools@5.107.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(csstype@3.2.3)(react@19.3.1)':
     dependencies:
-      '@tanstack/query-devtools': 5.106.1(csstype@3.2.3)
-      '@tanstack/react-query': 5.106.1(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/query-devtools': 5.107.1(csstype@3.2.3)
+      '@tanstack/react-query': 5.107.1(@types/react@19.3.0)(react@19.3.1)
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
     transitivePeerDependencies:
       - csstype
 
-  '@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1)':
+  '@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.106.1
+      '@tanstack/query-core': 5.107.1
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
@@ -13494,12 +13497,12 @@ snapshots:
     transitivePeerDependencies:
       - csstype
 
-  '@tanstack/react-router-ssr-query@1.167.3(@tanstack/query-core@5.106.1)(@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@tanstack/react-router-ssr-query@1.167.3(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.39)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.106.1
-      '@tanstack/react-query': 5.106.1(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/query-core': 5.107.1
+      '@tanstack/react-query': 5.107.1(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router': 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@tanstack/router-ssr-query-core': 1.169.3(@tanstack/query-core@5.106.1)(@tanstack/router-core@1.171.39)
+      '@tanstack/router-ssr-query-core': 1.169.3(@tanstack/query-core@5.107.1)(@tanstack/router-core@1.171.39)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
     transitivePeerDependencies:
@@ -13646,9 +13649,9 @@ snapshots:
       - supports-color
       - unloader
 
-  '@tanstack/router-ssr-query-core@1.169.3(@tanstack/query-core@5.106.1)(@tanstack/router-core@1.171.39)':
+  '@tanstack/router-ssr-query-core@1.169.3(@tanstack/query-core@5.107.1)(@tanstack/router-core@1.171.39)':
     dependencies:
-      '@tanstack/query-core': 5.106.1
+      '@tanstack/query-core': 5.107.1
       '@tanstack/router-core': 1.171.39
 
   '@tanstack/router-utils@1.162.4(supports-color@7.2.0)':
@@ -14706,7 +14709,7 @@ snapshots:
       stubborn-fs: 2.0.0
       when-exit: 2.1.5
 
-  auth@1.7.18(d7906164d0b84f313914f89965bb37cb):
+  auth@1.7.18(fe94a2abe68a352d52702be9d683f206):
     dependencies:
       '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/preset-react': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
@@ -14716,7 +14719,7 @@ snapshots:
       '@better-auth/utils': 0.5.1
       '@clack/prompts': 1.8.1
       '@mrleebo/prisma-ast': 0.16.0
-      better-auth: 1.7.18(d32caf85b3c4ca5ad4f74d1f89da116b)
+      better-auth: 1.7.18(92f5efd4752f4e114f389d69f2595485)
       c12: 4.0.0-rc.2(dotenv@17.4.2)(jiti@2.7.0)
       chalk: 5.6.2
       commander: 15.0.0
@@ -14792,10 +14795,10 @@ snapshots:
 
   baseline-browser-mapping@2.11.26: {}
 
-  better-auth@1.7.18(d32caf85b3c4ca5ad4f74d1f89da116b):
+  better-auth@1.7.18(92f5efd4752f4e114f389d69f2595485):
     dependencies:
       '@better-auth/core': 1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4)
-      '@better-auth/drizzle-adapter': 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
+      '@better-auth/drizzle-adapter': 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
       '@better-auth/kysely-adapter': 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(kysely@0.29.6)
       '@better-auth/memory-adapter': 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)
       '@better-auth/mongo-adapter': 1.7.18(@better-auth/core@1.7.18(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.5(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)
@@ -14814,7 +14817,7 @@ snapshots:
     optionalDependencies:
       '@tanstack/react-start': 1.169.4(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(supports-color@7.2.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
       drizzle-kit: 1.0.0-rc.5-ab785fc
-      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
+      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       solid-js: 1.9.15
@@ -15034,8 +15037,6 @@ snapshots:
   chunk-data@0.1.0: {}
 
   ci-info@4.4.0: {}
-
-  cjs-module-lexer@2.2.1: {}
 
   cjs-module-lexer@2.3.0: {}
 
@@ -15317,9 +15318,9 @@ snapshots:
       get-tsconfig: 4.14.3
       jiti: 2.7.0
 
-  drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261106.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7):
+  drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261107.1)(@effect/sql-d1@4.1.2(effect@4.1.2))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.2)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7):
     optionalDependencies:
-      '@cloudflare/workers-types': 5.20261106.1
+      '@cloudflare/workers-types': 5.20261107.1
       '@effect/sql-d1': 4.1.2(effect@4.1.2)
       '@electric-sql/pglite': 0.3.15
       '@libsql/client': 0.17.4
@@ -15344,10 +15345,10 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  eden-tanstack-react-query@0.5.1(@elysiajs/eden@1.4.9(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)))(@tanstack/react-query@5.106.1(@types/react@19.3.0)(react@19.3.1))(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))(react@19.3.1):
+  eden-tanstack-react-query@0.5.1(@elysiajs/eden@1.4.9(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)))(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))(react@19.3.1):
     dependencies:
       '@elysiajs/eden': 1.4.9(elysia@1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta))
-      '@tanstack/react-query': 5.106.1(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/react-query': 5.107.1(@types/react@19.3.0)(react@19.3.1)
       elysia: 1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)
       react: 19.3.1
 
@@ -15355,7 +15356,7 @@ snapshots:
     dependencies:
       '@one-ini/wasm': 0.2.1
       commander: 14.0.3
-      minimatch: 11.0.3
+      minimatch: 11.0.5
       semver: 7.8.5
 
   effect@4.1.2: {}
@@ -15998,7 +15999,7 @@ snapshots:
 
   glob@14.0.3:
     dependencies:
-      minimatch: 11.0.3
+      minimatch: 11.0.5
       minipass: 7.1.3
       path-scurry: 3.0.0
 
@@ -16006,7 +16007,7 @@ snapshots:
     dependencies:
       inflight: 1.0.6
       inherits: 2.0.4
-      minimatch: 11.0.3
+      minimatch: 11.0.5
       once: 1.4.0
       path-is-absolute: 1.0.1
     optional: true
@@ -16225,7 +16226,7 @@ snapshots:
 
   import-in-the-middle@3.5.1:
     dependencies:
-      cjs-module-lexer: 2.2.1
+      cjs-module-lexer: 2.3.0
       es-module-lexer: 3.0.4
       module-details-from-path: 1.0.4
 
@@ -17293,11 +17294,6 @@ snapshots:
 
   minimalistic-assert@1.0.1: {}
 
-  minimatch@11.0.3:
-    dependencies:
-      '@isaacs/nonrecursive-glob-match': 1.0.3
-      brace-expansion: 5.0.12
-
   minimatch@11.0.5:
     dependencies:
       '@isaacs/nonrecursive-glob-match': 1.1.0
@@ -18171,7 +18167,7 @@ snapshots:
 
   remove-accents@0.5.0: {}
 
-  renovate@44.221.6(supports-color@7.2.0)(typanion@3.14.0):
+  renovate@44.222.0(supports-color@7.2.0)(typanion@3.14.0):
     dependencies:
       '@aws-sdk/client-codecommit': 3.1139.0
       '@aws-sdk/client-ec2': 3.1139.0
@@ -18204,7 +18200,7 @@ snapshots:
       '@pnpm/parse-overrides': 1001.0.4
       '@qnighy/marshal': 0.1.3
       '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-      '@renovatebot/base-image': 13.160.10(zod@4.6.7)
+      '@renovatebot/base-image': 13.161.1(zod@4.6.7)
       '@renovatebot/detect-tools': 5.0.0
       '@renovatebot/good-enough-parser': 4.0.3
       '@renovatebot/osv-offline': 4.5.10(supports-color@7.2.0)(zod@4.6.7)
@@ -18260,7 +18256,7 @@ snapshots:
       luxon: 3.7.2
       markdown-it: 15.0.3
       markdown-table: 3.0.4
-      minimatch: 11.0.3
+      minimatch: 11.0.5
       moo: 0.5.3
       ms: 2.1.3
       neotraverse: 1.0.1
