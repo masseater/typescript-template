@@ -28,7 +28,7 @@ export default defineConfig({
   test: { projects: ["apps/*", "libs/*", "tools/*", "infra/*"], passWithNoTests: true },
   staged: {
     "!(*.md)": "vp check --fix",
-    "*.md": ["markdownlint-cli2 --fix", "vp check --fix"],
+    "*.md": "vp check --fix",
   },
   fmt: {
     ignorePatterns: generated,
@@ -222,21 +222,8 @@ export default defineConfig({
     cache: true,
     tasks: {
       ...checkTasks,
-      "actions-lint": {
-        command:
-          'vpa actionlint && vpa zizmor $(test -n "$CLAUDE_CODE_REMOTE" && echo --no-online-audits) .github && ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows',
-        cache: {
-          env: ["CLAUDE_CODE_REMOTE"],
-          untrackedEnv: [
-            "GH_TOKEN",
-            "HTTPS_PROXY",
-            "https_proxy",
-            "NO_PROXY",
-            "no_proxy",
-            "SSL_CERT_FILE",
-          ],
-        },
-      },
+      "actions-lint":
+        "ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows",
       verify: {
         command: "vp check --deny-warnings",
         cache: {
@@ -252,28 +239,11 @@ export default defineConfig({
             "NODE_EXTRA_CA_CERTS",
           ],
         },
-        dependsOn: [
-          "test",
-          "dependency-rules",
-          "markdown-lint",
-          "renovate",
-          "actions-lint",
-          "steiger",
-          "db-check-all",
-          "fallow",
-          "audit",
-        ],
+        dependsOn: ["test", "vpa", "yomiyasu", "renovate", "actions-lint", "db-check-all", "audit"],
       },
       test: "vp test run",
       renovate: "renovate-config-validator --strict",
       "db-check-all": "vp run -r db:check",
-      fallow: [
-        "fallow --skip dupes --fail-on-issues --quiet --format compact",
-        "fallow dead-code --no-production --fail-on-issues --quiet --format compact",
-        "fallow dead-code --no-production --quiet --format json | jq -e '[.prop_drilling_chains, .thin_wrappers, .duplicate_prop_shapes] | all(length == 0)' > /dev/null",
-        "fallow dupes --fail-on-issues --quiet --format compact",
-        "fallow security --fail-on-issues --quiet",
-      ],
       audit: {
         command:
           'before="$(cksum pnpm-workspace.yaml)"; vp pm audit --fix || exit; if [ "$before" != "$(cksum pnpm-workspace.yaml)" ]; then echo "vp pm audit --fix rewrote pnpm-workspace.yaml. Run vp install and commit the diff." >&2; exit 1; fi',

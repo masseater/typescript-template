@@ -2,8 +2,8 @@
   "mcpServers": {
     "fallow": {
       "type": "stdio",
-      "command": "vp",
-      "args": ["exec", "fallow-mcp"]
+      "command": "node",
+      "args": [".claude/hooks/fallow-mcp.ts"]
     },
     "cloudflare-api": {
       "type": "http",
