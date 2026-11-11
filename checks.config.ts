@@ -40,6 +40,7 @@ const checks: ToolSections = {
     ignores: MARKDOWN_IGNORES,
     rules: {
       "@textlint-ja/preset-ai-writing": true,
+      "@masseater.dev/yomiyasu": true,
       "preset-ja-technical-writing": {
         "sentence-length": { max: 120 },
         "ja-no-mixed-period": { allowPeriodMarks: [":"] },
@@ -63,15 +64,8 @@ const checks: ToolSections = {
   },
 };
 
-const markdownFiles = pipe(
-  MARKDOWN_IGNORES,
-  Arr.map((glob) => `':(glob,exclude)${glob}'`),
-  Arr.join(" "),
-);
-
 const checkTasks: NonNullable<NonNullable<UserConfig["run"]>["tasks"]> = {
   vpa: { command: "vpa", cache: false },
-  yomiyasu: `git ls-files -z '*.md' ${markdownFiles} | xargs -0 -r -n 1 -P 4 sh -c 'out="$(python3 "$0" --strict - < "$1")"; status=$?; printf "%s\\n%s\\n" "$1" "$out"; exit "$status"' "$(skills ls --json | jq -r '.[] | select(.name == "yomiyasu").path')/scripts/yomiyasu_lint.py"`,
 };
 
 export { checkTasks, checks };

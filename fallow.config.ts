@@ -7,7 +7,11 @@ const fallow = {
     require: "complete",
   },
   failOnParseError: true,
-  ignoreDependencies: ["@effect/language-service", "fallow"],
+  ignoreDependencies: [
+    "@effect/language-service",
+    "@masseater.dev/textlint-rule-yomiyasu",
+    "fallow",
+  ],
   ignorePatterns: [".claude/**"],
   audit: {
     gate: "all",
