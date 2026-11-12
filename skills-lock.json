@@ -325,10 +325,10 @@
     },
     "yomiyasu": {
       "source": "nanaism/yomiyasu",
-      "ref": "b6115c6a764d76956529603ea9bb313a47b264a2",
+      "ref": "db78b9bc5e868549b517a037df7a4d1c93edac23",
       "sourceType": "github",
       "skillPath": "skills/yomiyasu/SKILL.md",
-      "computedHash": "e5bbe754bd4e1f747296f757b2232eebeefc5d695eea07a5a812b67567953920"
+      "computedHash": "efae9f5d075542c998612d061108e8fcee68147cf39f4dee1b1e549eefcfa5cc"
     }
   }
 }
