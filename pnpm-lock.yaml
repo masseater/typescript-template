@@ -195,8 +195,8 @@ catalogs:
       specifier: 0.1.1
       version: 0.1.1
     '@r_masseater/workers-tracing':
-      specifier: 0.1.1
-      version: 0.1.1
+      specifier: 0.2.0
+      version: 0.2.0
     '@shadcn/lint':
       specifier: 0.2.5
       version: 0.2.5
@@ -324,6 +324,12 @@ importers:
       '@commitlint/config-conventional':
         specifier: 'catalog:'
         version: 21.2.4
+      '@distilled.cloud/cloudflare':
+        specifier: catalog:stack
+        version: 1.0.0-rc.18(effect@4.1.2)
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@effect/tsgo':
         specifier: catalog:stack
         version: 0.67.5
@@ -332,7 +338,7 @@ importers:
         version: 0.68.0(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))
       '@masseater.dev/textlint-rule-yomiyasu':
         specifier: github:masseater/masseater.dev#path:/libs/textlint-rule-yomiyasu
-        version: https://codeload.github.com/masseater/masseater.dev/tar.gz/2a14f6deb9bda645ec29da97124e9f651b83d782#path:/libs/textlint-rule-yomiyasu(effect@4.1.2)
+        version: https://codeload.github.com/masseater/masseater.dev/tar.gz/e00e5d3420bb081609a6a042db4970938c2e63af#path:/libs/textlint-rule-yomiyasu(effect@4.1.2)
       '@r_masseater/msch':
         specifier: 'catalog:'
         version: 0.3.0(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@7.2.0)(vite-plus@1.5.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
@@ -347,7 +353,7 @@ importers:
         version: 0.3.3(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@7.2.0)(vite-plus@1.5.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.1.1(378133367ed9a40057e767d58aafeac5)
+        version: 0.2.0(7efa6acfd334cca7393158351d880f7f)
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.2.5(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))
@@ -493,7 +499,7 @@ importers:
         version: 1.23.0(@openfeature/core@1.12.0)
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.1.1(378133367ed9a40057e767d58aafeac5)
+        version: 0.2.0(7efa6acfd334cca7393158351d880f7f)
       '@tanstack/react-devtools':
         specifier: 0.10.14
         version: 0.10.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
@@ -2213,8 +2219,8 @@ packages:
   '@loaderkit/resolve@1.0.6':
     resolution: {integrity: sha512-G8FdIoF5CypfwmD9rl8BXod5HDn8JqB0CCNBXDTaRZ+yRYhARrrSToX1zg1zy9jX3zLqigsELwhT4gNtkdQAUg==}
 
-  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/2a14f6deb9bda645ec29da97124e9f651b83d782#path:/libs/textlint-rule-yomiyasu':
-    resolution: {gitHosted: true, integrity: sha512-cFWWIFMqQ2Nz6Rba+yJOctW1PlnUFn5ny5SXlew450wqHk0H7y8Dp+fG8oAVRTJ4+bKS3/9gahlwAmUhh4Jigg==, path: /libs/textlint-rule-yomiyasu, tarball: https://codeload.github.com/masseater/masseater.dev/tar.gz/2a14f6deb9bda645ec29da97124e9f651b83d782}
+  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/e00e5d3420bb081609a6a042db4970938c2e63af#path:/libs/textlint-rule-yomiyasu':
+    resolution: {gitHosted: true, integrity: sha512-JYW9XnemkYFmn4UJWXlVw+2NejzUuPecsWvTU4whjiqo52lpJ5zU1UCq1C27JlxtCisIUyJRbs9RPuHU5bXozA==, path: /libs/textlint-rule-yomiyasu, tarball: https://codeload.github.com/masseater/masseater.dev/tar.gz/e00e5d3420bb081609a6a042db4970938c2e63af}
     version: 0.0.0
     peerDependencies:
       effect: ^4.0.0
@@ -3262,18 +3268,24 @@ packages:
     engines: {node: '>=26'}
     hasBin: true
 
-  '@r_masseater/workers-tracing@0.1.1':
-    resolution: {integrity: sha512-7SVbCiwn+hGKdwBMAYQkk8UalDBmL+Mt1Dm3/uLevD+/Yc8F8XdSHfMFi/0ttSbs8a1Xc3KJOVFVEHU3d7WG7A==}
+  '@r_masseater/workers-tracing@0.2.0':
+    resolution: {integrity: sha512-0oSUrZHQM6bcykBNAJ2gwWNElT0Hpju4wOLNVeZCc6fLgFTX/1O4hWaj4oQq/xnnOtuj+So9vYVNIof3mdYJbA==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
       '@alchemy.run/cloudflare': ^2.0.0-beta.85
+      '@distilled.cloud/cloudflare': ^1.0.0-rc.18
+      '@effect/platform-node': ^4.1.2
       '@tanstack/react-start': ^1.169.4
       alchemy: ^2.0.0-beta.85
       effect: ^4.1.2
       elysia: ^1.4.30
     peerDependenciesMeta:
       '@alchemy.run/cloudflare':
+        optional: true
+      '@distilled.cloud/cloudflare':
+        optional: true
+      '@effect/platform-node':
         optional: true
       '@tanstack/react-start':
         optional: true
@@ -9276,6 +9288,7 @@ packages:
 
   tldts-core@7.4.20:
     resolution: {integrity: sha512-C630TWXZCZmLq0F2bW4QqwnaaxCQ/svpAqvJwnC4JvgEM5ohhBnGsEzTLSOXcN+xjz+kEaHS5uoWIw2klnqd0A==}
+    deprecated: Partial release, see https://github.com/remusao/tldts/issues/2735. Use >=7.4.22.
 
   tldts-icann@7.4.19:
     resolution: {integrity: sha512-lnGUR5BZm5UpNDYMBFGAr9pxS2RTUr/euXuJ9o1irR+zKhsBAFUn7quHoZt8UP/eIwykp4ye5f56bCjMBytbTg==}
@@ -11499,7 +11512,7 @@ snapshots:
     dependencies:
       '@braidai/lang': 1.1.2
 
-  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/2a14f6deb9bda645ec29da97124e9f651b83d782#path:/libs/textlint-rule-yomiyasu(effect@4.1.2)':
+  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/e00e5d3420bb081609a6a042db4970938c2e63af#path:/libs/textlint-rule-yomiyasu(effect@4.1.2)':
     dependencies:
       effect: 4.1.2
 
@@ -12276,20 +12289,16 @@ snapshots:
       - webpack
       - yauzl
 
-  '@r_masseater/workers-tracing@0.1.1(378133367ed9a40057e767d58aafeac5)':
+  '@r_masseater/workers-tracing@0.2.0(7efa6acfd334cca7393158351d880f7f)':
     dependencies:
-      '@distilled.cloud/cloudflare': 1.0.0-rc.18(effect@4.1.2)
-      '@effect/platform-node': 4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0))
       effect: 4.1.2
     optionalDependencies:
       '@alchemy.run/cloudflare': 2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.2)(ws@8.22.0))(effect@4.1.2)
+      '@distilled.cloud/cloudflare': 1.0.0-rc.18(effect@4.1.2)
+      '@effect/platform-node': 4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@tanstack/react-start': 1.169.5(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.13)(supports-color@7.2.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.31)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
       alchemy: 2.0.0-beta.85(@effect/platform-node@4.1.2(effect@4.1.2)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.5.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.2)(ws@8.22.0)
       elysia: 1.4.31(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@7.2.0))(openapi-types@12.1.3)(typescript@7.1.0-beta)
-    transitivePeerDependencies:
-      - bufferutil
-      - redis
-      - utf-8-validate
 
   '@radix-ui/number@1.1.3': {}
 
