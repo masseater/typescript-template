@@ -9,6 +9,8 @@
   "devDependencies": {
     "@ast-grep/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
+    "@distilled.cloud/cloudflare": "catalog:stack",
+    "@effect/platform-node": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@html-eslint/eslint-plugin-react": "catalog:",
     "@masseater.dev/textlint-rule-yomiyasu": "github:masseater/masseater.dev#path:/libs/textlint-rule-yomiyasu",
