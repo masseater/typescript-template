@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.0](https://github.com/masseater/typescript-template/compare/v0.0.13...v1.0.0) (2026-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* 検査を引数なしの vpa 1 回にまとめ、markdownlint と fallow の設定ファイルを消す ([#434](https://github.com/masseater/typescript-template/issues/434))
+* vp-tools を @r_masseater/vite-plus-adopt に置き換え、mise をやめる ([#429](https://github.com/masseater/typescript-template/issues/429))
+
+### Features
+
+* **ci:** verify のツールを mise.toml で宣言する ([#422](https://github.com/masseater/typescript-template/issues/422)) ([141b1fe](https://github.com/masseater/typescript-template/commit/141b1fe850560982a20c9e4e95e95c1a0e57257b))
+* vp-tools を [@r](https://github.com/r)_masseater/vite-plus-adopt に置き換え、mise をやめる ([#429](https://github.com/masseater/typescript-template/issues/429)) ([ed56db5](https://github.com/masseater/typescript-template/commit/ed56db507aa25c3ced8a2e770d24238e6622334d))
+* yomiyasu を textlint のルールにし、msch で python の使用を検出する ([#443](https://github.com/masseater/typescript-template/issues/443)) ([e669de0](https://github.com/masseater/typescript-template/commit/e669de062f955811501d237bb5795f8989dbe115))
+* ルートの設定ファイルを vite.config.ts に寄せる ([#428](https://github.com/masseater/typescript-template/issues/428)) ([38a7ea6](https://github.com/masseater/typescript-template/commit/38a7ea6baf9892c99154d38b2421fae9cedf6f84))
+* 検査を引数なしの vpa 1 回にまとめ、markdownlint と fallow の設定ファイルを消す ([#434](https://github.com/masseater/typescript-template/issues/434)) ([b664575](https://github.com/masseater/typescript-template/commit/b6645752f4cf803e72a10ea1169837aaccc2ce5a))
+
 ## [0.0.13](https://github.com/masseater/typescript-template/compare/v0.0.12...v0.0.13) (2026-11-07)
 
 
