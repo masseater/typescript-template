@@ -3,7 +3,7 @@ name: skills-lock
 on:
   push:
     branches: ["renovate/**"]
-    paths: [skills-lock.json]
+    paths: [skills-lock.json, pnpm-lock.yaml]
   workflow_dispatch:
     inputs:
       branch:
