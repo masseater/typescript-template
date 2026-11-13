@@ -9,17 +9,17 @@ catalogMode: prefer
 
 catalog:
   "@ast-grep/cli": 0.51.1
-  "@cloudflare/workers-types": 5.20261109.1
+  "@cloudflare/workers-types": 5.20261110.1
   "@effect/platform-node": 4.1.2
   "@shadcn/lint": 0.2.5
-  "@r_masseater/oxlint-typed-rules": 0.1.4
+  "@r_masseater/oxlint-typed-rules": 0.3.0
   "@r_masseater/msch": 0.3.0
   "@r_masseater/vite-plus-adopt": 0.3.3
   "@types/node": 26.6.6
   eslint-plugin-react-hooks: 7.1.1
-  oxlint-plugin-eslint: 1.92.0
-  vite: npm:@voidzero-dev/vite-plus-core@1.5.0
-  "@r_masseater/oxlint-plugin-decision": 0.1.4
+  oxlint-plugin-eslint: 1.93.0
+  vite: npm:@voidzero-dev/vite-plus-core@1.5.1
+  "@r_masseater/oxlint-plugin-decision": 0.3.0
   eslint-plugin-no-comments: 1.2.1
   eslint-plugin-baseline-js: 0.7.7
   "@html-eslint/eslint-plugin-react": 0.68.0
@@ -36,7 +36,7 @@ catalogs:
   stack:
     "@distilled.cloud/cloudflare": 1.0.0-rc.18
     "@effect/atom-react": 4.1.2
-    "@effect/tsgo": 0.67.5
+    "@effect/tsgo": 0.67.7
     "@elysiajs/eden": 1.4.9
     "@openfeature/server-sdk": 1.23.0
     "@tanstack/react-query": 5.107.1
@@ -44,18 +44,18 @@ catalogs:
     "@alchemy.run/cloudflare": 2.0.0-beta.85
     "@alchemy.run/fly": 2.0.0-beta.85
     alchemy: 2.0.0-beta.85
-    better-auth: 1.7.18
+    better-auth: 1.7.19
     drizzle-kit: 1.0.0-rc.5-ab785fc
     drizzle-orm: 1.0.0-rc.5-ab785fc
     eden-tanstack-react-query: 0.5.1
     effect: 4.1.2
     elysia: 1.4.31
-    fallow: 3.41.0
+    fallow: 3.42.0
     radix-ui: 1.8.1
-    renovate: 44.222.5
+    renovate: 44.225.2
     tailwindcss: 4.3.5
     typescript: 7.1.0-beta
-    vite-plus: 1.5.0
+    vite-plus: 1.5.1
 overrides:
   vite@*: "catalog:"
   eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
