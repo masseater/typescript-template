@@ -239,7 +239,7 @@ export default defineConfig({
             "NODE_EXTRA_CA_CERTS",
           ],
         },
-        dependsOn: ["test", "vpa", "msch", "renovate", "actions-lint", "db-check-all", "audit"],
+        dependsOn: ["test", "vpa", "msch", "actions-lint", "db-check-all", "audit"],
       },
       test: "vp test run",
       msch: {
@@ -248,7 +248,6 @@ export default defineConfig({
           untrackedEnv: ["HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy", "SSL_CERT_FILE"],
         },
       },
-      renovate: "renovate-config-validator --strict",
       "db-check-all": "vp run -r db:check",
       audit: {
         command:

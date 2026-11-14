@@ -52,7 +52,6 @@ catalogs:
     elysia: 1.4.31
     fallow: 3.42.0
     radix-ui: 1.8.1
-    renovate: 44.227.4
     tailwindcss: 4.3.5
     typescript: 7.1.0-beta
     vite-plus: 1.6.0
@@ -83,5 +82,3 @@ minimumReleaseAgeExclude:
   - "@r_masseater/msch@0.6.1"
 audit:
   ignorePrune: true
-  ignore:
-    - GHSA-gcqx-w48m-w2h4
