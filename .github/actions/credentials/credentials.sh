@@ -7,7 +7,6 @@ echo "::add-mask::$oidc"
 response="$(curl -fsS --retry 3 -X POST -H "Authorization: Bearer $oidc" "https://credentials.masseater.dev/")"
 jq -r '.[] | "::add-mask::\(.)"' <<<"$response"
 jq -r '{
-  OPENROUTER_API_KEY: .openrouterApiKey,
   CLAUDE_CODE_OAUTH_TOKEN: .claudeCodeOauthToken,
   CLOUDFLARE_API_TOKEN: .token,
   CLOUDFLARE_ACCOUNT_ID: .accountId,
