@@ -218,7 +218,7 @@ export default defineConfig({
     ],
     settings: {
       [decisionPluginName]: {
-        model: "cloudflare/@cf/aisingapore/gemma-sea-lion-v4-27b-it",
+        model: "cloudflare/@cf/qwen/qwen3.8-27b",
         timeoutMs: 50_000,
         ci: "skip",
       },
