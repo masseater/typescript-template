@@ -6,7 +6,7 @@ import type { UserConfig } from "vite-plus";
 import { fallow } from "./fallow.config.ts";
 import { requiredStack } from "./lint.config.ts";
 
-const MARKDOWN_IGNORES = ["AGENTS.md", ".agents/skills/**", ".claude/worktrees/**", "CHANGELOG.md"];
+const MARKDOWN_IGNORES = ["AGENTS.md", ".agents/skills/**", "CHANGELOG.md"];
 
 const PUBLIC_VALUES = [String.raw`\bCF_BEACON_TOKEN = "[0-9a-f]{32}"`];
 
