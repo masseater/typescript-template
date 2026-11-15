@@ -1,9 +1,11 @@
 name: update-branches
-description: Bring every open pull request that has auto-merge on and is behind the default branch up to date, so the required up-to-date check runs again and auto-merge can finish
+description: Act as the merge queue for pull requests with auto-merge on. When none is on its way to merging, bring the one that turned auto-merge on first and is behind the default branch up to date, so the required checks run once on top of the newest main and auto-merge lands it before the next one starts
 runs:
   using: composite
   steps:
     - shell: bash
       run: node "$GITHUB_ACTION_PATH/../credentials/credentials.ts"
     - shell: bash
+      env:
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       run: node "$GITHUB_ACTION_PATH/update-branches.ts"
