@@ -209,7 +209,7 @@ export default defineConfig({
       },
     ],
     settings: {
-      [decisionPluginName]: { model: "cloudflare/@cf/qwen/qwen3.8-27b" },
+      [decisionPluginName]: { model: "cloudflare/@cf/aisingapore/gemma-sea-lion-v4-27b-it" },
     },
     options: {
       typeAware: true,

@@ -7,7 +7,7 @@ export default createDecisionPlugin({
       id: "exclusive-status",
       target: "file",
       question:
-        "Does this code represent one piece of state with several boolean flags or optional fields whose combinations can contradict each other, instead of one exclusive status expressed as a discriminated union? Answer no when every state is a single exclusive status, or when the file holds no such state.",
+        "Does this code represent one piece of state with several boolean flags or optional fields whose combinations can contradict each other, instead of one exclusive status expressed as a discriminated union? Answer no when every state is a single exclusive status, or when the file holds no such state. A constant configuration object whose shape a library fixes, such as an OpenFeature flag definition, holds no state and is not a violation.",
       message: "状態は排他的なstatusを持つ判別共用体で表し、booleanフラグの組を使わない。",
       cutoff: 0.8,
     }),
@@ -23,7 +23,7 @@ export default createDecisionPlugin({
       id: "ui-state-effect-atom",
       target: "file",
       question:
-        "Does this code hold client-side UI state with something other than effect-atom, such as useState, useReducer, React context used as a store, zustand, jotai or redux? Answer no when client-side UI state is held only by effect-atom, or when the file holds none. Creating a TanStack Query QueryClient or configuring the router, which hold no UI state, is not a violation.",
+        "Does this code hold client-side UI state with something other than effect-atom, such as useState, useReducer, React context used as a store, zustand, jotai or redux? Answer no when client-side UI state is held only by effect-atom, or when the file holds none. effect-atom is Atom from effect/reactivity, read and written through @effect/atom-react hooks such as useAtomValue and useAtomSet. Creating a TanStack Query QueryClient or configuring the router, which hold no UI state, is not a violation.",
       message: "UI状態はeffect-atomだけで扱う。",
       cutoff: 0.8,
     }),
