@@ -1,7 +1,7 @@
 import { CloudflareApiLive, Credentials } from "@alchemy.run/cloudflare";
 import { formatHeaders } from "@distilled.cloud/cloudflare/Credentials";
-import { NodeServices } from "@effect/platform-node";
 import { AuthProviders } from "alchemy";
+import { PlatformServices } from "alchemy/Util/PlatformServices";
 import { Effect, Layer, Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
 
@@ -11,7 +11,7 @@ const Headers = Schema.Record(Schema.String, Schema.String);
 
 const cloudflareApi = CloudflareApiLive().pipe(
   Layer.provide(Layer.succeed(AuthProviders, {})),
-  Layer.provide(NodeServices.layer),
+  Layer.provide(PlatformServices),
   Layer.provide(FetchHttpClient.layer),
 );
 
