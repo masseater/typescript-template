@@ -1,5 +1,5 @@
 name: verify
-description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache
+description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs
 inputs:
   github-token:
     description: A token that can read this repository
@@ -27,6 +27,13 @@ runs:
         path: node_modules/.cache/oxlint-plugin-decision
         key: oxlint-plugin-decision-${{ github.sha }}
         restore-keys: oxlint-plugin-decision-
+    - id: task-cache
+      if: github.event_name != 'schedule'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.vite/task-cache
+        key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: vite-task-${{ runner.os }}-${{ runner.arch }}-
     - if: inputs.full-history == 'true'
       shell: bash
       run: git fetch --unshallow --filter=blob:none origin
@@ -41,3 +48,8 @@ runs:
       with:
         path: node_modules/.cache/oxlint-plugin-decision
         key: oxlint-plugin-decision-${{ github.sha }}
+    - if: always() && steps.verify.outcome != 'skipped' && steps.task-cache.outcome == 'success'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.vite/task-cache
+        key: ${{ steps.task-cache.outputs.cache-primary-key }}
