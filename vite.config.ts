@@ -35,8 +35,7 @@ export default defineConfig({
   msch: { workspaceAgentsMd: true },
   test: { projects: ["apps/*", "libs/*", "tools/*", "infra/*"], passWithNoTests: true },
   staged: {
-    "!(*.md)": "vp check --fix",
-    "*.md": "vp check --fix",
+    "*": "vp fmt --no-error-on-unmatched-pattern",
   },
   fmt: {
     ignorePatterns: generated,
