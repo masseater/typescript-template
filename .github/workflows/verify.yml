@@ -126,26 +126,18 @@ jobs:
           manifest-file: .github/release-please/manifest.json
           skip-github-pull-request: true
       - if: github.event_name == 'workflow_dispatch'
-        id: app-token
-        run: |
-          oidc="$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=masseater-dev-credential-broker" | jq -er .value)"
-          echo "::add-mask::$oidc"
-          token="$(curl -fsS --retry 3 -X POST -H "Authorization: Bearer $oidc" \
-            "https://credentials.masseater.dev/" | jq -er .githubToken)"
-          echo "::add-mask::$token"
-          echo "token=$token" >>"$GITHUB_OUTPUT"
+        uses: $/.github/actions/credentials
       - if: github.event_name == 'workflow_dispatch'
         id: release-pr
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ env.GITHUB_APP_TOKEN }}
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
           skip-github-release: true
       - if: steps.release-pr.outputs.pr
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ env.GITHUB_APP_TOKEN }}
           PR: ${{ steps.release-pr.outputs.pr }}
         run: gh pr merge "$(jq -r .number <<<"$PR")" --repo "$GITHUB_REPOSITORY" --squash --auto
       - if: steps.tagged.outputs.release_created == 'true'

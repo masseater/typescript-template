@@ -12,7 +12,7 @@ const fallow = {
     "@masseater.dev/textlint-rule-yomiyasu",
     "fallow",
   ],
-  ignorePatterns: [".claude/**"],
+  ignorePatterns: [".claude/**", ".github/**"],
   audit: {
     gate: "all",
   },

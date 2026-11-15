@@ -9,8 +9,8 @@ runs:
   steps:
     - if: github.ref == 'refs/heads/main'
       shell: bash
-      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+      run: node "$GITHUB_ACTION_PATH/../credentials/credentials.ts"
     - shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-      run: '"$GITHUB_ACTION_PATH/ci-telemetry.sh"'
+      run: node "$GITHUB_ACTION_PATH/ci-telemetry.ts"
