@@ -1,6 +1,7 @@
 import {
   env,
   fetchJson,
+  fetchOk,
   field,
   oidcToken,
   optionalEnv,
@@ -40,7 +41,7 @@ const jobs = run(
   .split("\n")
   .filter((line) => line !== "")
   .map((line): unknown => JSON.parse(line));
-await fetchJson(`https://${AUDIENCE}.${subdomain}.workers.dev`, {
+await fetchOk(`https://${AUDIENCE}.${subdomain}.workers.dev`, {
   method: "POST",
   headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
   body: JSON.stringify({ jobs }),
