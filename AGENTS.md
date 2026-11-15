@@ -1,4 +1,4 @@
-作業を始める前に `repo-conventions` と `vite-plus` の skill を読み、従う。どちらも masseater/skills にあり、`vp install` が `.agents/skills/` に入れる。
+`masseater-ecosystem` に従うこと。これは masseater/skills のスキルで、状況ごとに読み込むスキルを指定する。`vp install` はスキルを `.agents/skills/` に配置する。
 
 ## コマンド
 
