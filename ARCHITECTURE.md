@@ -19,30 +19,9 @@ Cloudflare Workers で動く Web アプリのテンプレートである。
 
 TanStack Start の RSC のアプリである。
 
-`alchemy.run.ts` がスタックを定義し、D1・Worker・`apps/lp` の静的サイトを作る。
-`app-name.ts` の `APP_NAME` がスタック名とリソース名の接頭辞を決め、`requireAppPrefix` がデプロイの時点でそれを確かめる。
-
-`src/app` はルートと、リクエストごとに通る処理を持つ。
-`start.ts` のミドルウェアが、すべての応答にセキュリティヘッダと nonce つきの CSP を付け、Web Analytics の beacon を差し込む。
-`routes/api.$.ts` は `/api/*` を `server/api.server.ts` の Elysia のルーターに渡す。
-このルーターがレート制限をかけ、better-auth と各スライスのルートを載せる。
-
-`src/pages/<ページ>` はページごとのスライスである。
-`api/routes.server.ts` は Elysia のルートを作る。
-`api/queries.ts` はその型から Eden と TanStack Query のクエリを作り、`ui/` が描く。
-SSR の間は `createIsomorphicFn` が HTTP を通らずにルートの `handle` を呼ぶ。
-ルートの処理は Effect で書き、スライスの `runtime.server.ts` が `runner` から作る関数で動かす。
-`run` と `Elysia` は workers-tracing から使う。素の `Effect.runPromise` などは lint が落とす。
-`home` は ToDo の一覧を出す見本である。
-
-`src/shared` はスライスをまたいで使う部品である。
-Elysia のルーターと Eden のクライアントを作る関数は `api` にある。
-better-auth は `auth`、D1 の Drizzle は `db`、shadcn/ui は `ui` にあり、ほかに `config` がある。
-
 ### `apps/lp`
 
 誰にでも見せる静的なページの見本である。
-全ページをプリレンダーし、インラインのスクリプトをハッシュつきのファイルに出して、CSP にインラインを許さずに済ませる。
 デプロイは `apps/web` のスタックが `Website.StaticSite` で行う。
 
 ### `libs/security-headers`
@@ -57,23 +36,11 @@ better-auth は `auth`、D1 の Drizzle は `db`、shadcn/ui は `ui` にあり�
 ### `.claude`
 
 Claude Code のフックで、それ自体もワークスペースの 1 つである。
-セッションの開始で依存を入れ、テンプレートの新しいリリースを知らせる。
-終了の前には `vp run verify` を走らせ、通らなければ終わらせない。
-pnpm を直接呼ぶコマンドも止める。
 
 ### `.github`
 
-`verify.yml` が main への push で動く。
-verify が通ると、Alchemy で本番へデプロイし、Web Vitals を測り、release-please がリリースを作る。
-verify が落ちると `autofix.yml` が直しにかかり、直した PR を auto-merge にして出す。
 Cloudflare のトークンは、GitHub の OIDC と引き換えに credential broker から受け取る。
 broker は masseater/masseater.dev にある。
-`pull_request` で動くのは、最新の main を取り込んでいない PR を止める `up-to-date.yml` だけである。
-bot が push するワークフローは、broker が出す GitHub App のトークンで push する。
-対象は `autofix.yml`・`skills-lock.yml`・`update-branches.yml` である。
-`GITHUB_TOKEN` で push すると `up-to-date` が承認待ちで止まり、PR がマージされないからである。
-`update-branches.yml` は main が進むたびに、auto-merge を待つ PR に main を取り込む。
-`zap.yml` は毎週、本番に ZAP をかける。
 
 ## 不変条件
 
