@@ -1,3 +1,4 @@
+import { workspaceSettings } from "@r_masseater/msch/workspace-settings";
 import tanstackStart from "@r_masseater/oxlint-typed-rules/tanstack-start";
 import baselineJs from "eslint-plugin-baseline-js";
 import { defineConfig } from "vite-plus";
@@ -23,6 +24,12 @@ import { workerRules } from "./worker-lint.config.ts";
 
 const typedRules = "@r_masseater/oxlint-typed-rules";
 
+const workspace = await workspaceSettings({
+  root: import.meta.dirname,
+  ruleSets: { decision: { ...decisionRules, ...workerRules } },
+  dependencySets: {},
+});
+
 export default defineConfig({
   ...checks,
   test: { projects: ["apps/*", "libs/*", "tools/*", "infra/*"], passWithNoTests: true },
@@ -37,7 +44,7 @@ export default defineConfig({
     sortPackageJson: true,
   },
   lint: {
-    ignorePatterns: generated,
+    ignorePatterns: [...generated, ...workspace.lint.ignorePatterns],
     plugins: [
       "eslint",
       "typescript",
@@ -170,6 +177,10 @@ export default defineConfig({
         rules: { "import/no-default-export": "off" },
       },
       {
+        files: ["**/vite.config.ts"],
+        rules: { "baseline-js/use-baseline": "off" },
+      },
+      {
         files: ["**/alchemy.*.ts"],
         rules: {
           "eslint-js/no-restricted-syntax": [
@@ -199,10 +210,7 @@ export default defineConfig({
         files: ["**/shared/ui/**"],
         rules: { "shadcn/no-restyle": "off", "react/jsx-props-no-spreading": "off" },
       },
-      {
-        files: ["apps/web/src/**/*.{ts,tsx}"],
-        rules: { ...decisionRules, ...workerRules },
-      },
+      ...workspace.lint.overrides,
       {
         files: ["**/*.test.ts"],
         rules: turnedOff(decisionRules),

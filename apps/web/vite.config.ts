@@ -10,6 +10,7 @@ import { SEARCH_INDEX_ORIGIN, SITEMAP_FILE } from "./src/shared/config/index.ts"
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
+  msch: { lint: { overrides: [{ files: ["src/**/*.{ts,tsx}"], use: ["decision"] }] } },
   run: {
     tasks: {
       dev: { command: "alchemy dev", cache: false },

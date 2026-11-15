@@ -16,8 +16,6 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 - main への push のたびに、verify を通してから Cloudflare へデプロイする GitHub Actions
 - Claude Code で作業するときのフックと作業の決まり
 
-`apps/lp` は、誰にでも見せる静的なページの見本である。
-
 ## 使い方
 
 ### 前提
@@ -33,18 +31,12 @@ gh repo create <owner>/<name> --template masseater/typescript-template \
 cd <name>
 ```
 
-### 2. アプリ名を変える
-
-`apps/web/app-name.ts` の `APP_NAME` を、リポジトリの名前に変える。
-同じ Cloudflare アカウントにある別のリポジトリと名前が重なると、互いのリソースを置き換え合う。
-
-### 3. 手元で動かす
+### 2. 手元で動かす
 
 ```sh
 vp env on
 vp install
 cp .env.example .env
-vp exec --filter web alchemy profile edit --add Cloudflare
 ```
 
 `.env` の `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_API_TOKEN` に、アカウントの ID と API トークンを書く。
@@ -52,21 +44,17 @@ Alchemy も `CLOUDFLARE_API_TOKEN` を読む。デプロイ用のトークンへ
 
 ```sh
 vp run verify
-cd apps/web && vp run dev
 ```
 
-### 4. GitHub の設定をそろえる
+アプリの名称変更、開発サーバーの起動、およびデプロイの手順は、各ワークスペースのREADMEに記載されている。
+
+### 3. GitHub の設定をそろえる
 
 Actions の secrets、Actions による PR 作成の許可、既定ブランチのルールセットは、テンプレートから引き継がれない。
 [masseater/skills](https://github.com/masseater/skills) の `project-checklist` スキルの
 setup の手順で設定する。
 
 設定が済むと、main への push のたびに本番へデプロイされる。
-手元からデプロイするときは、`apps/web` で次を実行する。
-
-```sh
-vp run deploy
-```
 
 ## テンプレートの更新を取り込む
 
