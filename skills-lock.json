@@ -216,7 +216,7 @@
       "ref": "1e63f0035cd0cc736bc132f2ff1aa31721da7985",
       "sourceType": "github",
       "skillPath": "plugins/masseater-skills/skills/project-checklist/SKILL.md",
-      "computedHash": "d6273af603fea813232fe15448894ad41c5d38b1139edc82a6ff367216f13e99"
+      "computedHash": "fb5e4dffdf2112fe9708dd72f8cd055323cc8c1889da26f397577f5188e85912"
     },
     "refresh-skills": {
       "source": "philtzjp/skills",
@@ -230,7 +230,7 @@
       "ref": "1e63f0035cd0cc736bc132f2ff1aa31721da7985",
       "sourceType": "github",
       "skillPath": "plugins/masseater-skills/skills/repo-conventions/SKILL.md",
-      "computedHash": "f6b269cace62ca32c188fe71087ae581166253dc0f7c8e178a1789944d023587"
+      "computedHash": "71275f7e23f8ba2e3a91826ad9b783cb09817cc4a0ea73c6a5a01c0fe00e1722"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
