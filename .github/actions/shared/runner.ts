@@ -1,6 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 
+const MAX_OUTPUT_BYTES = 268_435_456;
+
 export const env = (name: string): string => {
   const value = process.env[name];
   if (value === undefined || value === "") {
@@ -30,6 +32,7 @@ export const run = (
   execFileSync(command, args, {
     cwd,
     encoding: "utf8",
+    maxBuffer: MAX_OUTPUT_BYTES,
     env: { ...process.env, ...extraEnv },
     stdio: ["ignore", "pipe", "inherit"],
   }).trim();
