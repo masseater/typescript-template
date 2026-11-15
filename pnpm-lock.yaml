@@ -192,8 +192,8 @@ catalogs:
       specifier: 0.6.1
       version: 0.6.1
     '@r_masseater/oxlint-plugin-decision':
-      specifier: 0.4.0
-      version: 0.4.0
+      specifier: 0.5.0
+      version: 0.5.0
     '@r_masseater/oxlint-typed-rules':
       specifier: 0.4.1
       version: 0.4.1
@@ -344,13 +344,13 @@ importers:
         version: 0.68.0(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@masseater.dev/textlint-rule-yomiyasu':
         specifier: github:masseater/masseater.dev#path:/libs/textlint-rule-yomiyasu
-        version: https://codeload.github.com/masseater/masseater.dev/tar.gz/5fa2a6421a7da726dd51d92bb49da9a91d28f620#path:/libs/textlint-rule-yomiyasu(effect@4.1.4)
+        version: https://codeload.github.com/masseater/masseater.dev/tar.gz/2448f8daa88dca689d9d6a4c41e22fb173bb3179#path:/libs/textlint-rule-yomiyasu(effect@4.1.4)
       '@r_masseater/msch':
         specifier: 'catalog:'
         version: 0.6.1(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@r_masseater/oxlint-plugin-decision':
         specifier: 'catalog:'
-        version: 0.4.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
+        version: 0.5.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
       '@r_masseater/oxlint-typed-rules':
         specifier: 'catalog:'
         version: 0.4.1(effect@4.1.4)(typescript@7.1.0-beta)
@@ -1259,6 +1259,11 @@ packages:
     peerDependencies:
       effect: ^4.1.2
 
+  '@effect/ai-openrouter@4.1.4':
+    resolution: {integrity: sha512-xnubaIw9iGhHUcjSDVgwzcelm2bftBmTpn9lxywpJEO7KBbErqXYmLhXyARo6KH8Tz7Egut52360JEsTfWhkfg==}
+    peerDependencies:
+      effect: ^4.1.4
+
   '@effect/atom-react@4.1.4':
     resolution: {integrity: sha512-Xj58DcAzKsysHhzBCPaz2v1QAJq6NvMdGVmG7SV4zkw1RMiTZv8gaOXA1VqIRlpmvdspMwRe/BQ4eayuzRZTpQ==}
     peerDependencies:
@@ -2090,8 +2095,8 @@ packages:
   '@loaderkit/resolve@1.0.6':
     resolution: {integrity: sha512-G8FdIoF5CypfwmD9rl8BXod5HDn8JqB0CCNBXDTaRZ+yRYhARrrSToX1zg1zy9jX3zLqigsELwhT4gNtkdQAUg==}
 
-  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/5fa2a6421a7da726dd51d92bb49da9a91d28f620#path:/libs/textlint-rule-yomiyasu':
-    resolution: {gitHosted: true, integrity: sha512-LHnby8lzcxGnrNynJXDt/9fIoOMzy9TwcSbQ44tC/zyw67zoiDh2DHt0i0Eag3cTCTuV7esmEO1iLQut4DStfw==, path: /libs/textlint-rule-yomiyasu, tarball: https://codeload.github.com/masseater/masseater.dev/tar.gz/5fa2a6421a7da726dd51d92bb49da9a91d28f620}
+  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/2448f8daa88dca689d9d6a4c41e22fb173bb3179#path:/libs/textlint-rule-yomiyasu':
+    resolution: {gitHosted: true, integrity: sha512-iWqtWyJx3mPqGijeZASQRsKfuRz+fZhxYfid/hCwume5VrHXSyj7JLirdn7+BwlcP+crVww3h2pCeO1fdxA0lg==, path: /libs/textlint-rule-yomiyasu, tarball: https://codeload.github.com/masseater/masseater.dev/tar.gz/2448f8daa88dca689d9d6a4c41e22fb173bb3179}
     version: 0.0.0
     peerDependencies:
       effect: ^4.0.0
@@ -2880,6 +2885,14 @@ packages:
 
   '@r_masseater/oxlint-plugin-decision@0.4.0':
     resolution: {integrity: sha512-aQQ9xBShQS0/aHJXI35MvQqdWcj8mXO8LLcRqRZm2M/dg0Vbf99WTBOg7650fNZNeS+L+tryaJxd5uYv8wfkfw==}
+    engines: {node: '>=26'}
+    peerDependencies:
+      '@effect/platform-node-shared': ^4.1.2
+      effect: ^4.1.2
+      oxlint: '>=1.87.0'
+
+  '@r_masseater/oxlint-plugin-decision@0.5.0':
+    resolution: {integrity: sha512-qZ7BXzd4XDbuKPt+LYwdNuBtOCxo3es6BRTn/R/GbZX8vwavnoua4OWsypU0YHr0Hxu8El2wxBTrqTFomXrcSw==}
     engines: {node: '>=26'}
     peerDependencies:
       '@effect/platform-node-shared': ^4.1.2
@@ -9025,6 +9038,10 @@ snapshots:
     dependencies:
       effect: 4.1.4
 
+  '@effect/ai-openrouter@4.1.4(effect@4.1.4)':
+    dependencies:
+      effect: 4.1.4
+
   '@effect/atom-react@4.1.4(effect@4.1.4)(react@19.3.1)(scheduler@0.28.0)':
     dependencies:
       effect: 4.1.4
@@ -9682,7 +9699,7 @@ snapshots:
     dependencies:
       '@braidai/lang': 1.1.2
 
-  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/5fa2a6421a7da726dd51d92bb49da9a91d28f620#path:/libs/textlint-rule-yomiyasu(effect@4.1.4)':
+  '@masseater.dev/textlint-rule-yomiyasu@https://codeload.github.com/masseater/masseater.dev/tar.gz/2448f8daa88dca689d9d6a4c41e22fb173bb3179#path:/libs/textlint-rule-yomiyasu(effect@4.1.4)':
     dependencies:
       effect: 4.1.4
 
@@ -10132,9 +10149,9 @@ snapshots:
       oxlint: 1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       synckit: 0.12.3
 
-  '@r_masseater/oxlint-plugin-decision@0.4.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
+  '@r_masseater/oxlint-plugin-decision@0.5.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
     dependencies:
-      '@effect/ai-openrouter': 4.1.2(effect@4.1.4)
+      '@effect/ai-openrouter': 4.1.4(effect@4.1.4)
       '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
       effect: 4.1.4
       oxlint: 1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))

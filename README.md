@@ -22,10 +22,9 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 
 ### 前提
 
-Vite+ の [`vp`](https://viteplus.dev/guide/) コマンド、Workers Paid プランの Cloudflare アカウント、
-OpenRouter の API キーが要る。
+Vite+ の [`vp`](https://viteplus.dev/guide/) コマンドと、Workers Paid プランの Cloudflare アカウントが要る。
 verify の一部は `gh`、Python 3、jq で動く。
-lint の一部は OpenRouter のキーを使う。
+lint の一部は Cloudflare AI Gateway の Workers AI のモデルを使う。
 
 ### 1. テンプレートからリポジトリを作る
 
@@ -49,7 +48,8 @@ cp .env.example .env
 vp exec --filter web alchemy profile edit --add Cloudflare
 ```
 
-`.env` の `OPENROUTER_API_KEY` に OpenRouter のキーを書く。
+`.env` の `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_API_TOKEN` に、アカウントの ID と API トークンを書く。
+Alchemy も `CLOUDFLARE_API_TOKEN` を読む。デプロイ用のトークンへ Workers AI Read の権限を足して書く。
 
 ```sh
 vp run verify
