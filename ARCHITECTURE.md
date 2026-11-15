@@ -65,7 +65,7 @@ Worker はメモリに状態を持たない。
 計測は自動計装に任せる。
 Effect のスパンは Alchemy の `CloudflareTracer` を通って Workers の traces に出る。
 ログは Workers Logs に残る。
-ページの表示は Cloudflare Web Analytics が、CI のジョブの時間は `ci-telemetry.sh` が記録する。
+ページの表示は Cloudflare Web Analytics が、CI のジョブの時間は `ci-telemetry` アクションが記録する。
 
 lint の一部は oxlint-plugin-decision で、Cloudflare AI Gateway を通して Workers AI のモデルにコードを判定させる。
 モデルを呼ぶのは検査だけで、アプリは外部の API を呼ばない。
