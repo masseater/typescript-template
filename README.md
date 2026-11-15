@@ -23,7 +23,6 @@ Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロ�
 ### 前提
 
 Vite+ の [`vp`](https://viteplus.dev/guide/) コマンドと、Workers Paid プランの Cloudflare アカウントが要る。
-verify の一部は `gh`、Python 3、jq で動く。
 lint の一部は Cloudflare AI Gateway の Workers AI のモデルを使う。
 
 ### 1. テンプレートからリポジトリを作る

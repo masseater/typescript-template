@@ -15,7 +15,7 @@ export default defineConfig({
       dev: { command: "alchemy dev", cache: false },
       deploy: { command: "alchemy deploy", cache: false },
       destroy: { command: "alchemy destroy", cache: false },
-      "db:generate": { command: "drizzle-kit generate", cache: false },
+      "db:generate": "drizzle-kit generate",
       "db:check": [
         "drizzle-kit check",
         `drizzle-kit generate --explain --output json | grep -q '"status":"no_changes"'`,
@@ -23,7 +23,6 @@ export default defineConfig({
       "auth:generate": {
         command:
           "auth generate --config src/shared/auth/auth.server.ts --output src/shared/auth/generated/auth.table.ts --yes",
-        cache: false,
       },
     },
   },
