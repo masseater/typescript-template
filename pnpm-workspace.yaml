@@ -34,16 +34,16 @@ catalog:
   "@r_masseater/workers-tracing": 0.2.0
 catalogs:
   stack:
-    "@distilled.cloud/cloudflare": 1.0.0-rc.19
+    "@distilled.cloud/cloudflare": 1.0.0-rc.20
     "@effect/atom-react": 4.1.4
     "@effect/tsgo": 0.68.1
     "@elysiajs/eden": 1.4.9
     "@openfeature/server-sdk": 1.23.0
     "@tanstack/react-query": 5.107.1
     "@tanstack/react-start": 1.169.5
-    "@alchemy.run/cloudflare": 2.0.0-beta.85
-    "@alchemy.run/fly": 2.0.0-beta.85
-    alchemy: 2.0.0-beta.85
+    "@alchemy.run/cloudflare": 2.0.0-beta.87
+    "@alchemy.run/fly": 2.0.0-beta.87
+    alchemy: 2.0.0-beta.87
     better-auth: 1.7.21
     drizzle-kit: 1.0.0-rc.5-ab785fc
     drizzle-orm: 1.0.0-rc.5-ab785fc

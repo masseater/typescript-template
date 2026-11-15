@@ -11,6 +11,7 @@
           "effect/FileSystem#FileSystem",
           "effect/Path#Path",
           "effect/Stdio#Stdio",
+          "effect/crypto/SecureRandom#layerWebCrypto",
           "effect/http/FetchHttpClient#layer",
           "effect/http/HttpClient#HttpClient",
           "effect/http/HttpClientRequest",
