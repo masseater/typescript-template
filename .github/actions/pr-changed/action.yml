@@ -1,0 +1,24 @@
+name: pr-changed
+description: Output changed=true when the pull request of this run changes the given file
+inputs:
+  file:
+    description: The repository path to look for among the changed files
+    required: true
+  github-token:
+    description: A token that can read the pull request's files
+    required: true
+outputs:
+  changed:
+    description: "'true' when the pull request changes the file"
+    value: ${{ steps.check.outputs.changed }}
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      env:
+        FILE: ${{ inputs.file }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        REPO: ${{ github.repository }}
+        NUMBER: ${{ github.event.pull_request.number }}
+      run: node "$GITHUB_ACTION_PATH/pr-changed.ts"

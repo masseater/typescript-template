@@ -187,7 +187,6 @@ const generated = [
   "**/generated/**",
   "**/drizzle/**/snapshot.json",
   ".claude/skills/**",
-  ".claude/hooks/fallow-gate.sh",
   ".intent/**",
   "AGENTS.md",
   "skills-lock.json",

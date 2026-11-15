@@ -32,6 +32,7 @@ const workspace = await workspaceSettings({
 
 export default defineConfig({
   ...checks,
+  msch: { workspaceAgentsMd: true },
   test: { projects: ["apps/*", "libs/*", "tools/*", "infra/*"], passWithNoTests: true },
   staged: {
     "!(*.md)": "vp check --fix",
@@ -211,6 +212,32 @@ export default defineConfig({
         rules: { "shadcn/no-restyle": "off", "react/jsx-props-no-spreading": "off" },
       },
       ...workspace.lint.overrides,
+      {
+        files: [".github/**/*.ts"],
+        rules: {
+          "baseline-js/use-baseline": "off",
+          "effecttsgo/async-function": "off",
+          "effecttsgo/global-console": "off",
+          "effecttsgo/global-fetch": "off",
+          "effecttsgo/global-json": "off",
+          "effecttsgo/missing-pipeable-signature": "off",
+          "effecttsgo/node-builtin-import": "off",
+          "effecttsgo/prefer-effect-array": "off",
+          "effecttsgo/prefer-effect-record": "off",
+          "effecttsgo/prefer-effect-string": "off",
+          "effecttsgo/process-env": "off",
+          "eslint/no-console": "off",
+          "eslint/no-undefined": "off",
+          "import/exports-last": "off",
+          "import/group-exports": "off",
+          "import/no-nodejs-modules": "off",
+          "import/no-relative-parent-imports": "off",
+          "node/no-process-env": "off",
+          "node/no-sync": "off",
+          "oxc/no-async-await": "off",
+          "unicorn/no-process-exit": "off",
+        },
+      },
       {
         files: ["**/*.test.ts"],
         rules: turnedOff(decisionRules),

@@ -11,7 +11,7 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: '"$GITHUB_ACTION_PATH/../credentials/credentials.sh"'
+      run: node "$GITHUB_ACTION_PATH/../credentials/credentials.ts"
     - if: github.event_name == 'push'
       shell: bash
       env:
