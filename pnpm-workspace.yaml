@@ -34,7 +34,7 @@ catalog:
   "@r_masseater/workers-tracing": 0.2.0
 catalogs:
   stack:
-    "@distilled.cloud/cloudflare": 1.0.0-rc.18
+    "@distilled.cloud/cloudflare": 1.0.0-rc.19
     "@effect/atom-react": 4.1.4
     "@effect/tsgo": 0.67.7
     "@elysiajs/eden": 1.4.9
