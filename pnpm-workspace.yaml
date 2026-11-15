@@ -13,7 +13,7 @@ catalog:
   "@effect/platform-node": 4.1.4
   "@shadcn/lint": 0.2.5
   "@r_masseater/oxlint-typed-rules": 0.4.1
-  "@r_masseater/msch": 0.6.1
+  "@r_masseater/msch": 0.9.0
   "@r_masseater/vite-plus-adopt": 0.4.0
   "@types/node": 26.6.6
   eslint-plugin-react-hooks: 7.1.1
@@ -79,7 +79,7 @@ allowBuilds:
   "@openrouter/sdk": false
 minimumReleaseAgeExclude:
   - "@r_masseater/oxlint-typed-rules@0.4.0 || 0.4.1"
-  - "@r_masseater/msch@0.6.1"
+  - "@r_masseater/msch@0.9.0"
   - "@r_masseater/oxlint-plugin-decision@0.5.0"
 audit:
   ignorePrune: true
