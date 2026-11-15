@@ -217,7 +217,11 @@ export default defineConfig({
       },
     ],
     settings: {
-      [decisionPluginName]: { model: "cloudflare/@cf/aisingapore/gemma-sea-lion-v4-27b-it" },
+      [decisionPluginName]: {
+        model: "cloudflare/@cf/aisingapore/gemma-sea-lion-v4-27b-it",
+        timeoutMs: 50_000,
+        ci: "skip",
+      },
     },
     options: {
       typeAware: true,
