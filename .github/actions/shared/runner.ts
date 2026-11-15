@@ -57,11 +57,16 @@ export interface Request {
 
 export const EXIT_FAILURE = 1;
 
-export const fetchJson = async (url: string, init: Request): Promise<unknown> => {
+export const fetchOk = async (url: string, init: Request): Promise<Response> => {
   const response = await fetch(url, init);
   if (!response.ok) {
     throw new Error(`${init.method ?? "GET"} ${url} returned ${String(response.status)}`);
   }
+  return response;
+};
+
+export const fetchJson = async (url: string, init: Request): Promise<unknown> => {
+  const response = await fetchOk(url, init);
   return response.json();
 };
 
