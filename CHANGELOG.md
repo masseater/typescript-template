@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0](https://github.com/masseater/typescript-template/compare/v1.0.0...v1.1.0) (2026-11-16)
+
+
+### Features
+
+* **ci:** update-branches を 1 本ずつ通すマージキューにする ([#494](https://github.com/masseater/typescript-template/issues/494)) ([19dc927](https://github.com/masseater/typescript-template/commit/19dc927673bfa4cc8912dc7ecd89682fcac7911d))
+* **hooks:** クラウドのセッションの開始時に既定ブランチの Vite Task のキャッシュを取り込む ([#503](https://github.com/masseater/typescript-template/issues/503)) ([f70de65](https://github.com/masseater/typescript-template/commit/f70de6517d8e76ce2e5a78f9f952f7a5073b748e))
+* **lint:** lint と検査を msch のプリセットに寄せ、textlint-rule-preset-ja を npm から入れる ([#506](https://github.com/masseater/typescript-template/issues/506)) ([f028435](https://github.com/masseater/typescript-template/commit/f028435b83ce58251ec47f1044fbe875f079cb6b))
+
 ## [1.0.0](https://github.com/masseater/typescript-template/compare/v0.0.13...v1.0.0) (2026-11-13)
 
 
