@@ -15,9 +15,10 @@ const externalizeFile = Effect.fn("externalizeFile")(function* externalizeFile(
     html: yield* fileSystem.readFileString(target),
     file,
   });
-  yield* pipe(
+  yield* Effect.forEach(
     scripts,
-    Effect.forEach(({ src, code }) => fileSystem.writeFileString(path.join(outDir, src), code)),
+    ({ src, code }) => fileSystem.writeFileString(path.join(outDir, src), code),
+    { concurrency: 1 },
   );
   yield* fileSystem.writeFileString(target, html);
 });
@@ -32,10 +33,7 @@ const externalizeAll = Effect.fn("externalizeAll")(function* externalizeAll(
   yield* fileSystem.makeDirectory(path.join(directory, SCRIPT_DIR), { recursive: true });
   const entries = yield* fileSystem.readDirectory(directory, { recursive: true });
   const files = pipe(entries, Arr.filter(Str.endsWith(".html")));
-  yield* pipe(
-    files,
-    Effect.forEach((file) => externalizeFile(directory, file)),
-  );
+  yield* Effect.forEach(files, (file) => externalizeFile(directory, file), { concurrency: 1 });
 });
 
 const runInNode = (root: string, outDir: string): Promise<void> =>
