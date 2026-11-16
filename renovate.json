@@ -23,6 +23,11 @@
       "groupName": "effect and alchemy"
     },
     {
+      "description": "fallow は同じバージョンの fallow-type-aware しか読み込まない。",
+      "matchPackageNames": ["fallow", "fallow-type-aware"],
+      "groupName": "fallow"
+    },
+    {
       "matchDepTypes": ["pnpm-workspace.overrides"],
       "matchUpdateTypes": ["major"],
       "enabled": false
