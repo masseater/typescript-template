@@ -41,11 +41,10 @@ export const externalize = Effect.fn("externalize")(function* externalize({
     onNonEmpty: () => Effect.fail(InlineStyle.make({ file, reason: INLINE_STYLE_REASON })),
   });
   const inline = root.querySelectorAll("script:not([src])");
-  const scripts: readonly Script[] = yield* pipe(
+  const scripts: readonly Script[] = yield* Effect.forEach(
     inline,
-    Effect.forEach((element) =>
-      Effect.map(srcOf(element.rawText), (src) => ({ src, code: element.rawText })),
-    ),
+    (element) => Effect.map(srcOf(element.rawText), (src) => ({ src, code: element.rawText })),
+    { concurrency: "unbounded" },
   );
   const ends = pipe(
     inline,
