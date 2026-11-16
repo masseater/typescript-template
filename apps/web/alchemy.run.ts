@@ -7,8 +7,6 @@ import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-he
 
 import { APP_NAME, requireAppPrefix } from "./alchemy.app-name.ts";
 
-const WEB_LIMITS = { cpuMs: 1000 } as const;
-
 const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
   namespaceId: Math.abs(Hash.string(APP_NAME)),
   simple: { limit: 100, period: 60 },
@@ -21,7 +19,7 @@ const web = Effect.gen(function* web() {
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
   return yield* Website.Vite("Web", {
     logpush: true,
-    limits: WEB_LIMITS,
+    limits: { cpuMs: 1000 },
     env: { API_RATE_LIMIT, BETTER_AUTH_SECRET, CF_BEACON_TOKEN, DB },
     viteEnvironments: { entry: "ssr", children: ["rsc"] },
     assets: { headers: assetHeaders(SECURITY_HEADERS) },
