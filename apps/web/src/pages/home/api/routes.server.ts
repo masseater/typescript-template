@@ -23,11 +23,8 @@ const listTodos = Effect.gen(function* listTodos() {
   );
 }).pipe(Effect.withSpan("todo.list"));
 
-const todoRoutes = createRouter("/api/todos").get("/", () => runRequest(listTodos));
+export const todoRoutes = createRouter("/api/todos").get("/", () => runRequest(listTodos));
 
-const handleTodos = todoRoutes.handle;
+export const handleTodos = todoRoutes.handle;
 
-type TodoRoutes = typeof todoRoutes;
-
-export type { TodoRoutes };
-export { handleTodos, todoRoutes };
+export type TodoRoutes = typeof todoRoutes;

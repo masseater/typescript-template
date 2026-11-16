@@ -1,6 +1,6 @@
 import { Array as Arr, Option, Record as Rec, Schema, pipe } from "effect";
 
-const SECURITY_HEADERS = {
+export const SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -21,14 +21,14 @@ const encodeBeacon = Schema.encodeOption(
   Schema.fromJsonString(Schema.Struct({ token: Schema.String })),
 );
 
-const webAnalyticsBeacon = (token: string) =>
+export const webAnalyticsBeacon = (token: string) =>
   ({
     src: `${WEB_ANALYTICS_SCRIPT_ORIGIN}/beacon.min.js`,
     defer: true,
     "data-cf-beacon": Option.getOrElse(encodeBeacon({ token }), () => ""),
   }) as const;
 
-const contentSecurityPolicy = ({
+export const contentSecurityPolicy = ({
   script,
   style,
 }: Readonly<{ script: readonly string[]; style: readonly string[] }>): string =>
@@ -47,12 +47,12 @@ const contentSecurityPolicy = ({
     Arr.join("; "),
   );
 
-const STATIC_PAGE_HEADERS = {
+export const STATIC_PAGE_HEADERS = {
   ...SECURITY_HEADERS,
   "Content-Security-Policy": contentSecurityPolicy({ script: [], style: [] }),
 } as const;
 
-const assetHeaders = (pageHeaders: Readonly<Record<string, string>>): string =>
+export const assetHeaders = (pageHeaders: Readonly<Record<string, string>>): string =>
   pipe(
     [
       "/*",
@@ -66,11 +66,3 @@ const assetHeaders = (pageHeaders: Readonly<Record<string, string>>): string =>
     ],
     Arr.join("\n"),
   );
-
-export {
-  SECURITY_HEADERS,
-  STATIC_PAGE_HEADERS,
-  assetHeaders,
-  contentSecurityPolicy,
-  webAnalyticsBeacon,
-};

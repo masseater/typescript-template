@@ -17,6 +17,4 @@ const client = createIsomorphicFn()
   .server(() => serverClient<TodoRoutes>(loadTodoHandle))
   .client(() => browserClient<TodoRoutes>());
 
-const todoQueries = createQueries<TodoRoutes>(client());
-
-export { todoQueries };
+export const todoQueries = createQueries<TodoRoutes>(client());

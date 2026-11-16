@@ -3,7 +3,7 @@ import { Secret } from "@alchemy.run/fly";
 import { Stack, isResourceOfType } from "alchemy";
 import { Array as Arr, Effect, Match, Option, Record, Schema, String, pipe } from "effect";
 
-const APP_NAME = "typescript-template";
+export const APP_NAME = "typescript-template";
 
 const PREFIX = `${APP_NAME}-`;
 
@@ -32,7 +32,7 @@ const describeUnprefixed = (
     Option.toArray,
   );
 
-const requireAppPrefix = Effect.gen(function* requireAppPrefix() {
+export const requireAppPrefix = Effect.gen(function* requireAppPrefix() {
   const { name, resources } = yield* Stack;
   const offenders = [
     ...Arr.filter(
@@ -54,5 +54,3 @@ const requireAppPrefix = Effect.gen(function* requireAppPrefix() {
   }
   return offenders;
 });
-
-export { APP_NAME, requireAppPrefix };

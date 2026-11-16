@@ -3,14 +3,14 @@ import { Context, Effect, Layer } from "effect";
 
 import { flagConfiguration } from "./flag-configuration";
 
-class FeatureFlags extends Context.Service<
+export class FeatureFlags extends Context.Service<
   FeatureFlags,
   {
     readonly getBoolean: (key: string, defaultValue: boolean) => Effect.Effect<boolean>;
   }
 >()("web/pages/home/config/feature-flags.server/FeatureFlags") {}
 
-const featureFlagsLive = Layer.effect(
+export const featureFlagsLive = Layer.effect(
   FeatureFlags,
   Effect.gen(function* featureFlags() {
     yield* Effect.promise(() =>
@@ -23,5 +23,3 @@ const featureFlagsLive = Layer.effect(
     });
   }),
 );
-
-export { FeatureFlags, featureFlagsLive };

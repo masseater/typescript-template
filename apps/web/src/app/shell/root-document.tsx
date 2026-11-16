@@ -10,7 +10,7 @@ const devtoolsPlugins = [
   { name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
 ];
 
-const RootDocument = ({ children }: Readonly<{ children: ReactNode }>): ReactNode => (
+export const RootDocument = ({ children }: Readonly<{ children: ReactNode }>): ReactNode => (
   <html lang="en">
     <head>
       <meta charSet="utf-8" />
@@ -23,5 +23,3 @@ const RootDocument = ({ children }: Readonly<{ children: ReactNode }>): ReactNod
     </body>
   </html>
 );
-
-export { RootDocument };

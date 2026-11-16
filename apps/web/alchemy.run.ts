@@ -1,7 +1,7 @@
 import { D1, Website, Workers, providers, state } from "@alchemy.run/cloudflare";
 import type { InferEnv } from "@alchemy.run/cloudflare";
 import { withWorkersTracing } from "@r_masseater/workers-tracing/alchemy";
-import { Stack, makeRandom } from "alchemy";
+import { RemovalPolicy, Stack, makeRandom } from "alchemy";
 import { Effect, Hash } from "effect";
 import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-headers";
 
@@ -17,7 +17,7 @@ const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
 const CF_BEACON_TOKEN = "47d660a773db4bb7a9b283aaf8f080ff";
 
 const web = Effect.gen(function* web() {
-  const DB = yield* D1.Database("DB", { migrations: "./drizzle" });
+  const DB = yield* D1.Database("DB", { migrations: "./drizzle" }).pipe(RemovalPolicy.protect());
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
   return yield* Website.Vite("Web", {
     logpush: true,
@@ -38,9 +38,8 @@ const landingPage = Website.StaticSite("LandingPage", {
   dev: { command: "vp dev" },
 });
 
-type WebEnv = InferEnv<typeof web>;
+export type WebEnv = InferEnv<typeof web>;
 
-export type { WebEnv };
 export default Stack(
   APP_NAME,
   {

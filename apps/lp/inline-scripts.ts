@@ -46,7 +46,7 @@ const runInNode = (root: string, outDir: string): Promise<void> =>
     ),
   );
 
-const externalizeInlineScripts = (): Plugin => ({
+export const externalizeInlineScripts = (): Plugin => ({
   name: "externalize-inline-scripts",
   enforce: "post",
   buildApp: {
@@ -58,5 +58,3 @@ const externalizeInlineScripts = (): Plugin => ({
       }),
   },
 });
-
-export { externalizeInlineScripts };

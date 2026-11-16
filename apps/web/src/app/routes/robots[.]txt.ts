@@ -16,12 +16,10 @@ const body = pipe(
   Array.join("\n"),
 );
 
-const Route = createFileRoute("/robots.txt")({
+export const Route = createFileRoute("/robots.txt")({
   server: {
     handlers: {
       GET: () => new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8" } }),
     },
   },
 });
-
-export { Route };

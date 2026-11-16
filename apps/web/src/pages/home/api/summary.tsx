@@ -23,10 +23,8 @@ const getTodoSummary = createServerFn({ method: "GET" }).handler(() =>
   ),
 );
 
-const todoSummaryQuery = queryOptions({
+export const todoSummaryQuery = queryOptions({
   queryKey: ["todo-summary"],
   queryFn: () => getTodoSummary(),
   structuralSharing: false,
 });
-
-export { todoSummaryQuery };

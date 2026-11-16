@@ -3,8 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { api } from "#/app/server/api.server";
 
-const Route = createFileRoute("/api/$")({
+export const Route = createFileRoute("/api/$")({
   server: { handlers: routeHandlers(api.handle) },
 });
-
-export { Route };

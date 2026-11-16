@@ -29,9 +29,7 @@ const responseHeaders = createMiddleware().server(({ next }) =>
   ),
 );
 
-const startInstance = createStart(() => ({
+export const startInstance = createStart(() => ({
   requestMiddleware: [requestSpan, responseHeaders],
   functionMiddleware: [serverFnSpan],
 }));
-
-export { startInstance };

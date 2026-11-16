@@ -1,11 +1,11 @@
-const hero = {
+export const hero = {
   title: "typescript-template",
   lead: "Cloudflare で動く TypeScript の Web アプリを、検査・CI・デプロイがそろった状態から始める。",
   action: "GitHub で見る",
   href: "https://github.com/masseater/typescript-template",
 } as const;
 
-const features = {
+export const features = {
   title: "入っているもの",
   items: [
     {
@@ -23,7 +23,7 @@ const features = {
   ],
 } as const;
 
-const steps = {
+export const steps = {
   title: "始め方",
   items: [
     "テンプレートからリポジトリを作る",
@@ -31,5 +31,3 @@ const steps = {
     "vp run verify を通して main に push する",
   ],
 } as const;
-
-export { features, hero, steps };

@@ -4,7 +4,7 @@ import { parse } from "node-html-parser";
 
 type Script = Readonly<{ src: string; code: string }>;
 
-const SCRIPT_DIR = "assets";
+export const SCRIPT_DIR = "assets";
 
 const HASH_LENGTH = 16;
 
@@ -31,7 +31,7 @@ const srcOf = (code: string): Effect.Effect<string> =>
 const tagOf = (rawAttrs: string, src: string): string =>
   `<${pipe([`script src="${src}"`, rawAttrs], Arr.filter(Str.isNonEmpty), Arr.join(" "))}></script>`;
 
-const externalize = Effect.fn("externalize")(function* externalize({
+export const externalize = Effect.fn("externalize")(function* externalize({
   html,
   file,
 }: Readonly<{ html: string; file: string }>) {
@@ -66,5 +66,3 @@ const externalize = Effect.fn("externalize")(function* externalize({
   const tail = pipe(html, Str.slice(lastEnd));
   return { html: `${Arr.join(replaced, "")}${tail}`, scripts };
 });
-
-export { SCRIPT_DIR, externalize };
