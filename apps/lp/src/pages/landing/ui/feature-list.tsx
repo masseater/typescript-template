@@ -5,7 +5,7 @@ import { features } from "#/pages/landing/model/content";
 
 import { FeatureCard } from "./feature-card";
 
-const FeatureList = (): ReactNode => (
+export const FeatureList = (): ReactNode => (
   <section aria-labelledby="features" className="flex flex-col gap-6">
     <h2 className="text-2xl font-bold" id="features">
       {features.title}
@@ -18,5 +18,3 @@ const FeatureList = (): ReactNode => (
     </ul>
   </section>
 );
-
-export { FeatureList };

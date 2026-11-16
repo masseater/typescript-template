@@ -10,12 +10,19 @@ import { SEARCH_INDEX_ORIGIN, SITEMAP_FILE } from "./src/shared/config/index.ts"
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
-  msch: { lint: { overrides: [{ files: ["src/**/*.{ts,tsx}"], use: ["decision"] }] } },
+  msch: { lint: { overrides: [{ files: ["src/**/*.{ts,tsx}"], use: ["decision", "traced"] }] } },
   run: {
     tasks: {
       dev: { command: "alchemy dev", cache: false },
       deploy: { command: "alchemy deploy", cache: false },
       destroy: { command: "alchemy destroy", cache: false },
+      "deploy:production": {
+        command: [
+          "alchemy deploy --stage production --yes",
+          `[ -z "$TARGET_URL" ] || WORKERS_TRACES_SINK=masseater-dev-trace-sink workers-traces --request "$TARGET_URL" --expect GET --expect d1_all --wait 300`,
+        ],
+        cache: false,
+      },
       "db:generate": "drizzle-kit generate",
       "db:check": [
         "drizzle-kit check",

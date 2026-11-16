@@ -7,7 +7,7 @@ import { Option } from "effect";
 
 import { routeTree } from "./routeTree.gen";
 
-type AppRouter = Router<typeof routeTree>;
+export type AppRouter = Router<typeof routeTree>;
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -24,7 +24,7 @@ const ssrOf = createIsomorphicFn()
   )
   .client(() => ({}));
 
-const getRouter = (): AppRouter => {
+export const getRouter = (): AppRouter => {
   const queryClient = new QueryClient();
   const router = createRouter({
     routeTree,
@@ -37,6 +37,3 @@ const getRouter = (): AppRouter => {
   setupRouterSsrQueryIntegration({ router, queryClient });
   return router;
 };
-
-export type { AppRouter };
-export { getRouter };

@@ -8,7 +8,7 @@ import { useTodoFilter } from "#/pages/home/model/filter";
 import { FilterTabs } from "./filter-tabs";
 import { TodoItem } from "./todo-item";
 
-const TodoList = (): ReactNode => {
+export const TodoList = (): ReactNode => {
   const { data } = useSuspenseQuery(todoQueries.api.todos.get.queryOptions());
   const filter = useTodoFilter();
   const visible = pipe(
@@ -27,5 +27,3 @@ const TodoList = (): ReactNode => {
     </section>
   );
 };
-
-export { TodoList };

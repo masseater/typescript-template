@@ -9,26 +9,15 @@
   "devDependencies": {
     "@ast-grep/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
-    "@distilled.cloud/cloudflare": "catalog:stack",
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "catalog:stack",
-    "@html-eslint/eslint-plugin-react": "catalog:",
     "@r_masseater/msch": "catalog:",
-    "@r_masseater/oxlint-plugin-decision": "catalog:",
-    "@r_masseater/oxlint-typed-rules": "catalog:",
     "@r_masseater/textlint-rule-preset-ja": "catalog:",
-    "@r_masseater/vite-plus-adopt": "catalog:",
-    "@r_masseater/workers-tracing": "catalog:",
-    "@shadcn/lint": "catalog:",
     "@tanstack/intent": "catalog:",
     "@textlint-ja/textlint-rule-preset-ai-writing": "1.7.0",
     "@types/node": "catalog:",
     "effect": "catalog:stack",
-    "eslint-plugin-baseline-js": "catalog:",
-    "eslint-plugin-no-comments": "catalog:",
-    "eslint-plugin-react-hooks": "catalog:",
     "fallow": "catalog:stack",
-    "oxlint-plugin-eslint": "catalog:",
     "skills": "catalog:",
     "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "vite-plus": "catalog:stack"
@@ -56,7 +45,8 @@
       "@tanstack/virtual-file-routes",
       "@tanstack/router-plugin",
       "@tanstack/start-server-core",
-      "fallow"
+      "fallow",
+      "@r_masseater/msch"
     ]
   }
 }

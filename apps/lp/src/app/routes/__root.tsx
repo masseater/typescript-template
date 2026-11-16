@@ -6,7 +6,7 @@ import { RootDocument } from "#/app/shell/root-document";
 
 import appCss from "#/app/styles.css?url";
 
-const Route = createRootRoute({
+export const Route = createRootRoute({
   head: () => ({
     meta: [
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -21,5 +21,3 @@ const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
 });
-
-export { Route };

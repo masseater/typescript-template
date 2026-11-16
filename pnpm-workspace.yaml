@@ -11,18 +11,10 @@ catalog:
   "@ast-grep/cli": 0.51.2
   "@cloudflare/workers-types": 5.20261113.1
   "@effect/platform-node": 4.1.4
-  "@shadcn/lint": 0.2.5
-  "@r_masseater/oxlint-typed-rules": 0.4.1
-  "@r_masseater/msch": 0.15.0
-  "@r_masseater/vite-plus-adopt": 0.4.0
+  "@r_masseater/msch": 0.24.0
+  "@r_masseater/textlint-rule-preset-ja": 0.1.1
   "@types/node": 26.6.6
-  eslint-plugin-react-hooks: 7.1.1
-  oxlint-plugin-eslint: 1.93.0
   vite: npm:@voidzero-dev/vite-plus-core@1.6.0
-  "@r_masseater/oxlint-plugin-decision": 0.5.1
-  eslint-plugin-no-comments: 1.2.1
-  eslint-plugin-baseline-js: 0.7.7
-  "@html-eslint/eslint-plugin-react": 0.68.0
   "@commitlint/config-conventional": 21.2.4
   "@tanstack/react-query-devtools": 5.107.1
   "@vitejs/plugin-react": 6.3.0
@@ -31,8 +23,7 @@ catalog:
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
   "@r_masseater/web-vitals-flow": 0.2.0
-  "@r_masseater/workers-tracing": 0.2.0
-  "@r_masseater/textlint-rule-preset-ja": 0.1.1
+  "@r_masseater/workers-tracing": 0.3.0
 catalogs:
   stack:
     "@distilled.cloud/cloudflare": 1.0.0-rc.20
@@ -58,7 +49,6 @@ catalogs:
     vite-plus: 1.6.0
 overrides:
   vite@*: "catalog:"
-  eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
   glob@>=9.0.0 <=14.0.1: ^14.0.2
   "steiger>@feature-sliced/steiger-plugin": "-"
   "capnp-es>typescript": "-"
@@ -79,8 +69,10 @@ allowBuilds:
   re2: true
   "@openrouter/sdk": false
 minimumReleaseAgeExclude:
-  - "@r_masseater/msch@0.15.0"
-  - "@r_masseater/oxlint-plugin-decision@0.5.0 || 0.5.1"
+  - "@r_masseater/msch@0.24.0"
+  - "@r_masseater/oxlint-plugin-decision@0.6.0"
   - "@r_masseater/textlint-rule-preset-ja@0.1.1"
+  - "@r_masseater/vite-plus-adopt@0.6.0"
+  - "@r_masseater/workers-tracing@0.3.0"
 audit:
   ignorePrune: true

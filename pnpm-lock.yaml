@@ -185,33 +185,18 @@ catalogs:
     '@effect/platform-node':
       specifier: 4.1.4
       version: 4.1.4
-    '@html-eslint/eslint-plugin-react':
-      specifier: 0.68.0
-      version: 0.68.0
     '@r_masseater/msch':
-      specifier: 0.15.0
-      version: 0.15.0
-    '@r_masseater/oxlint-plugin-decision':
-      specifier: 0.5.1
-      version: 0.5.1
-    '@r_masseater/oxlint-typed-rules':
-      specifier: 0.4.1
-      version: 0.4.1
+      specifier: 0.24.0
+      version: 0.24.0
     '@r_masseater/textlint-rule-preset-ja':
       specifier: 0.1.1
       version: 0.1.1
-    '@r_masseater/vite-plus-adopt':
-      specifier: 0.4.0
-      version: 0.4.0
     '@r_masseater/web-vitals-flow':
       specifier: 0.2.0
       version: 0.2.0
     '@r_masseater/workers-tracing':
-      specifier: 0.2.0
-      version: 0.2.0
-    '@shadcn/lint':
-      specifier: 0.2.5
-      version: 0.2.5
+      specifier: 0.3.0
+      version: 0.3.0
     '@tanstack/intent':
       specifier: 0.5.6
       version: 0.5.6
@@ -230,18 +215,6 @@ catalogs:
     '@yarnpkg/parsers':
       specifier: 3.1.0
       version: 3.1.0
-    eslint-plugin-baseline-js:
-      specifier: 0.7.7
-      version: 0.7.7
-    eslint-plugin-no-comments:
-      specifier: 1.2.1
-      version: 1.2.1
-    eslint-plugin-react-hooks:
-      specifier: 7.1.1
-      version: 7.1.1
-    oxlint-plugin-eslint:
-      specifier: 1.93.0
-      version: 1.93.0
     skills:
       specifier: 1.8.1
       version: 1.8.1
@@ -315,7 +288,6 @@ catalogs:
 
 overrides:
   vite@*: npm:@voidzero-dev/vite-plus-core@1.6.0
-  eslint-plugin-react-hooks>zod-validation-error: ^5.0.0
   glob@>=9.0.0 <=14.0.1: ^14.0.2
   steiger>@feature-sliced/steiger-plugin: '-'
   capnp-es>typescript: '-'
@@ -333,39 +305,18 @@ importers:
       '@commitlint/config-conventional':
         specifier: 'catalog:'
         version: 21.2.4
-      '@distilled.cloud/cloudflare':
-        specifier: catalog:stack
-        version: 1.0.0-rc.20(effect@4.1.4)
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@effect/tsgo':
         specifier: catalog:stack
         version: 0.68.1
-      '@html-eslint/eslint-plugin-react':
-        specifier: 'catalog:'
-        version: 0.68.0(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@r_masseater/msch':
         specifier: 'catalog:'
-        version: 0.15.0(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/oxlint-plugin-decision':
-        specifier: 'catalog:'
-        version: 0.5.1(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
-      '@r_masseater/oxlint-typed-rules':
-        specifier: 'catalog:'
-        version: 0.4.1(effect@4.1.4)(typescript@7.1.0-beta)
+        version: 0.24.0(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@r_masseater/textlint-rule-preset-ja':
         specifier: 'catalog:'
         version: 0.1.1(effect@4.1.4)
-      '@r_masseater/vite-plus-adopt':
-        specifier: 'catalog:'
-        version: 0.4.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/workers-tracing':
-        specifier: 'catalog:'
-        version: 0.2.0(@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.4))(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(effect@4.1.4)(elysia@1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta))
-      '@shadcn/lint':
-        specifier: 'catalog:'
-        version: 0.2.5(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.5.6
@@ -378,21 +329,9 @@ importers:
       effect:
         specifier: catalog:stack
         version: 4.1.4
-      eslint-plugin-baseline-js:
-        specifier: 'catalog:'
-        version: 0.7.7(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
-      eslint-plugin-no-comments:
-        specifier: 'catalog:'
-        version: 1.2.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
-      eslint-plugin-react-hooks:
-        specifier: 'catalog:'
-        version: 7.1.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)
       fallow:
         specifier: catalog:stack
         version: 3.42.0
-      oxlint-plugin-eslint:
-        specifier: 'catalog:'
-        version: 1.93.0
       skills:
         specifier: 'catalog:'
         version: 1.8.1
@@ -505,7 +444,7 @@ importers:
         version: 1.23.0(@openfeature/core@1.12.0)
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.2.0(0fd88b714fea11679ed914cbbd7b68ff)
+        version: 0.3.0(0fd88b714fea11679ed914cbbd7b68ff)
       '@tanstack/react-devtools':
         specifier: 0.10.14
         version: 0.10.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(solid-js@1.9.15)
@@ -2858,8 +2797,8 @@ packages:
       yauzl:
         optional: true
 
-  '@r_masseater/msch@0.15.0':
-    resolution: {integrity: sha512-Mxgp7cDUR3NUu94bRYYxfgLdg4Jxt7+L1SICv27vUbCvwN8yw/t784XPg1y6GH/TJe6XQaOMvXXA1kHXwpd6jA==}
+  '@r_masseater/msch@0.24.0':
+    resolution: {integrity: sha512-s22RuuBqV2k8DLGrgrta70v2oa8xTwYgRT7rIGH51rBk58t/PqWr/fl4VY92NyMRBbafmoqIvaiRWL+MbY0C6Q==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -2869,20 +2808,13 @@ packages:
       vite: '*'
       vite-plus: '>=1.5.0'
 
-  '@r_masseater/oxlint-plugin-decision@0.5.1':
-    resolution: {integrity: sha512-eB2pTvfHd2bSDmgk/0PNecwPCNhhJQfP7cpYrb2lL2ATFRf4pzaczf3rknCQfsINAPXXMsNgicM4jt0COp9SPA==}
+  '@r_masseater/oxlint-plugin-decision@0.6.0':
+    resolution: {integrity: sha512-sIT3d+lmbSrFM6rmmfwgdzfK30kWCPNWFCNapZP8paj7CgRVAeLfmGcMgHMfmFLGefAAHYiseJwxXJuUg00w3w==}
     engines: {node: '>=26'}
     peerDependencies:
       '@effect/platform-node-shared': ^4.1.2
       effect: ^4.1.2
       oxlint: '>=1.87.0'
-
-  '@r_masseater/oxlint-typed-rules@0.4.0':
-    resolution: {integrity: sha512-VA8EeLGmWeYtfrsBbKleKws9sAeLOByjGl5EGx+nSYpePd6NPvwhdNj/kxDIwCDRYJwFk45GCu86Y7FBSFDSJQ==}
-    engines: {node: '>=26'}
-    peerDependencies:
-      effect: ^4.1.2
-      typescript: '>=7.1.0-beta'
 
   '@r_masseater/oxlint-typed-rules@0.4.1':
     resolution: {integrity: sha512-M3DkBJkqPtMzYQxI62+zzITzWDQ9qxnBsDEE/ktgnThsrjASH79n7LeieQRf7ze6Yaoxrcbc/ry/qB8caNtcig==}
@@ -2897,8 +2829,8 @@ packages:
     peerDependencies:
       effect: ^4.0.0
 
-  '@r_masseater/vite-plus-adopt@0.4.0':
-    resolution: {integrity: sha512-ySBeIQEVabMbdgyJARtUG/q+EVbI/UD3fu82R5YbUOlCaVBAhSKd8HHRuEdJJxCGYG9hcYLtC+ycNcDV1O8C3w==}
+  '@r_masseater/vite-plus-adopt@0.6.0':
+    resolution: {integrity: sha512-pRXu9ySC+36PtQGv4imv/XcKL5aisO+zfRx0o2iqJpSPOqMKroOAyA0vgXijmhgc2qsXvxJLe0Ejab6P6wOBkg==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -2914,8 +2846,8 @@ packages:
     peerDependencies:
       effect: ^4.1.2
 
-  '@r_masseater/workers-tracing@0.2.0':
-    resolution: {integrity: sha512-0oSUrZHQM6bcykBNAJ2gwWNElT0Hpju4wOLNVeZCc6fLgFTX/1O4hWaj4oQq/xnnOtuj+So9vYVNIof3mdYJbA==}
+  '@r_masseater/workers-tracing@0.3.0':
+    resolution: {integrity: sha512-9eNVlub/wQth+nQO8Tq5SSNkF6zi+YnriyoQO40YMLvuvLazCFFnCSR1aVz7Pb0pepFtD/8s3bDJywEWCBZcvw==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -6963,6 +6895,10 @@ packages:
     resolution: {integrity: sha512-snPlVppFcYWfLLFQGhDxUyBcHNtMlWmn3jtj7pEaO+DP8pqL0IvAzXhMYmn1z9ASNtgmwLBdFxSf4tMUB0OTKA==}
     engines: {node: 20 || >=22}
 
+  minimatch@11.0.8:
+    resolution: {integrity: sha512-nFQuYSTVrGvysVBps5Ih+0BdnYFN/Cj3C816r6+p7yK+FHrVLGE4O4N9AFwykrlNlvM2HYt+Rad1Uiro6h88Ig==}
+    engines: {node: 20 || >=22}
+
   minimizer-webpack-plugin@5.12.0:
     resolution: {integrity: sha512-PCN1x1OzFeFB2GlP91s46q7Gz8Jf16Z7M45bzpoqrYZlh12QeY6tYVM5h299wbwy1DxnQ69VFmmh8Hb2Ff8mbw==}
     engines: {node: '>= 10.13.0'}
@@ -7687,8 +7623,8 @@ packages:
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
 
-  steiger@0.9.0:
-    resolution: {integrity: sha512-J/Iw/33PaHi8Ws99ikizIKV3uLL/PGCsq2Xqsj+qGASq48EukXHrvqHDgEWJAZuKToMha8uOmbNRT6S1XumqsA==}
+  steiger@0.10.0:
+    resolution: {integrity: sha512-tZw/nlwLgiOhw1QeTluahgZdNo3r1I9WmYUXVx1BPG1GgoVJh/MBFCzA2oiXPtzi/0GamcYJtlZDAiZ2o9bEnw==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -8396,8 +8332,8 @@ packages:
   zlibjs@0.3.1:
     resolution: {integrity: sha512-+J9RrgTKOmlxFSDHo0pI1xM6BLVUv+o0ZT9ANtCxGkjIVCCUdx9alUF8Gm+dGLKbkkkidWIHFDZHDMpfITt4+w==}
 
-  zod-validation-error@5.0.0:
-    resolution: {integrity: sha512-hmk+pkyKq7Q71PiWVSDUc3VfpzpvcRHZ3QPw9yEMVvmtCekaMeOHnbr3WbxfrgEnQTv6haGP4cmv0Ojmihzsxw==}
+  zod-validation-error@4.0.2:
+    resolution: {integrity: sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -10119,13 +10055,14 @@ snapshots:
     optionalDependencies:
       yauzl: 3.4.0
 
-  '@r_masseater/msch@0.15.0(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/msch@0.24.0(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
       '@effect/tsgo': 0.68.1
       '@html-eslint/eslint-plugin-react': 0.68.0(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
-      '@r_masseater/oxlint-plugin-decision': 0.5.1(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
-      '@r_masseater/oxlint-typed-rules': 0.4.0(effect@4.1.4)(typescript@7.1.0-beta)
+      '@r_masseater/oxlint-plugin-decision': 0.6.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
+      '@r_masseater/oxlint-typed-rules': 0.4.1(effect@4.1.4)(typescript@7.1.0-beta)
+      '@r_masseater/vite-plus-adopt': 0.6.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@shadcn/lint': 0.2.5(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@vscode/tree-sitter-wasm': 0.3.1
       dockerfile-ast: 0.7.1
@@ -10150,18 +10087,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@r_masseater/oxlint-plugin-decision@0.5.1(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
+  '@r_masseater/oxlint-plugin-decision@0.6.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
     dependencies:
       '@effect/ai-openrouter': 4.1.4(effect@4.1.4)
       '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
       effect: 4.1.4
       oxlint: 1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       synckit: 0.12.3
-
-  '@r_masseater/oxlint-typed-rules@0.4.0(effect@4.1.4)(typescript@7.1.0-beta)':
-    dependencies:
-      effect: 4.1.4
-      typescript: 7.1.0-beta
 
   '@r_masseater/oxlint-typed-rules@0.4.1(effect@4.1.4)(typescript@7.1.0-beta)':
     dependencies:
@@ -10174,14 +10106,14 @@ snapshots:
       kuromojin: 3.0.1
       sentence-splitter: 5.0.3
 
-  '@r_masseater/vite-plus-adopt@0.4.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/vite-plus-adopt@0.6.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@andrewbranch/untar.js': 1.0.4
       '@commitlint/format': 21.2.3
       '@commitlint/lint': 21.2.4
       '@commitlint/load': 21.2.4(typescript@7.1.0-beta)
       '@commitlint/types': 21.2.3
-      '@effect/platform-node-shared': 4.1.2(effect@4.1.4)
+      '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
       '@loaderkit/resolve': 1.0.6
       '@textlint/config-loader': 15.8.0(supports-color@8.1.1)
       '@textlint/kernel': 15.8.0(supports-color@8.1.1)
@@ -10190,11 +10122,11 @@ snapshots:
       fastest-levenshtein: 1.0.16
       fflate: 0.8.3
       markdownlint: 0.42.1(supports-color@8.1.1)
-      minimatch: 11.0.5
+      minimatch: 11.0.8
       pluralize: 8.0.0
       semver: 7.8.6
       smol-toml: 1.9.1
-      steiger: 0.9.0
+      steiger: 0.10.0
       textlint: 15.8.0(supports-color@8.1.1)
       tsconfck: 3.1.6(typescript@7.1.0-beta)
       typescript: 7.1.0-beta
@@ -10224,7 +10156,7 @@ snapshots:
       - webpack
       - yauzl
 
-  '@r_masseater/workers-tracing@0.2.0(0fd88b714fea11679ed914cbbd7b68ff)':
+  '@r_masseater/workers-tracing@0.3.0(0fd88b714fea11679ed914cbbd7b68ff)':
     dependencies:
       effect: 4.1.4
     optionalDependencies:
@@ -10233,14 +10165,6 @@ snapshots:
       '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@tanstack/react-start': 1.169.5(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.16)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
       alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.0)
-      elysia: 1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta)
-
-  '@r_masseater/workers-tracing@0.2.0(@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.4))(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(effect@4.1.4)(elysia@1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta))':
-    dependencies:
-      effect: 4.1.4
-    optionalDependencies:
-      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.4)
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
       elysia: 1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta)
 
   '@radix-ui/number@1.1.3': {}
@@ -13232,7 +13156,7 @@ snapshots:
       eslint: 10.14.0(jiti@2.7.0)(supports-color@8.1.1)
       hermes-parser: 0.25.1
       zod: 4.6.7
-      zod-validation-error: 5.0.0(zod@4.6.7)
+      zod-validation-error: 4.0.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -13513,7 +13437,7 @@ snapshots:
 
   glob@14.0.3:
     dependencies:
-      minimatch: 11.0.5
+      minimatch: 11.0.8
       minipass: 7.1.3
       path-scurry: 3.0.0
 
@@ -14432,6 +14356,11 @@ snapshots:
       '@isaacs/nonrecursive-glob-match': 1.1.0
       brace-expansion: 5.0.12
 
+  minimatch@11.0.8:
+    dependencies:
+      '@isaacs/nonrecursive-glob-match': 1.1.0
+      brace-expansion: 5.0.12
+
   minimizer-webpack-plugin@5.12.0(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -15329,7 +15258,7 @@ snapshots:
 
   std-env@4.3.0: {}
 
-  steiger@0.9.0:
+  steiger@0.10.0:
     dependencies:
       '@clack/prompts': 0.9.1
       chokidar: 4.0.3
@@ -15345,7 +15274,6 @@ snapshots:
       prexit: 2.3.0
       yargs: 17.7.3
       zod: 4.6.7
-      zod-validation-error: 5.0.0(zod@4.6.7)
 
   stop-iteration-iterator@1.1.0:
     dependencies:
@@ -16299,7 +16227,7 @@ snapshots:
 
   zlibjs@0.3.1: {}
 
-  zod-validation-error@5.0.0(zod@4.6.7):
+  zod-validation-error@4.0.2(zod@4.6.7):
     dependencies:
       zod: 4.6.7
 

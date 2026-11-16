@@ -62,48 +62,14 @@ jobs:
       - if: steps.head.outputs.latest == 'true'
         uses: $/.github/actions/credentials
       - if: steps.head.outputs.latest == 'true'
-        run: vp exec alchemy deploy --stage production --yes
-        working-directory: apps/web
-
-  traces:
-    needs: deploy
-    if: github.event_name == 'push' && vars.ZAP_TARGET_URL != ''
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup
-      - uses: $/.github/actions/credentials
-      - run: vp exec workers-traces --request "$TARGET_URL" --expect GET --expect d1_all --wait 300
-        working-directory: apps/web
-        env:
-          TARGET_URL: ${{ vars.ZAP_TARGET_URL }}
-          WORKERS_TRACES_SINK: masseater-dev-trace-sink
-
-  web-vitals:
-    needs: deploy
-    if: github.event_name == 'push' && vars.ZAP_TARGET_URL != ''
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup
-      - run: vp run measure "$TARGET_URL"
-        working-directory: tools/web-vitals
+        run: vp run -r deploy:production
         env:
           TARGET_URL: ${{ vars.ZAP_TARGET_URL }}
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: web-vitals
-          path: tools/web-vitals/report/
+          path: tools/*/report/
           if-no-files-found: ignore
 
   release:
@@ -146,7 +112,7 @@ jobs:
         run: gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref main -f ref="$TAG"
 
   ci-telemetry:
-    needs: [verify, autofix, deploy, traces, web-vitals, release]
+    needs: [verify, autofix, deploy, release]
     if: always()
     runs-on: ubuntu-latest
     permissions:

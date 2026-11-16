@@ -7,7 +7,7 @@ import { db } from "#/shared/db/client.server";
 
 import { account, authRelations, session, user, verification } from "./generated/auth.table";
 
-const auth = betterAuth({
+export const auth = betterAuth({
   baseURL: { allowedHosts: ["*.workers.dev", "localhost:*"] },
   database: drizzleAdapter(db, {
     provider: "sqlite",
@@ -17,5 +17,3 @@ const auth = betterAuth({
   plugins: [tanstackStartCookies()],
   secret: env.BETTER_AUTH_SECRET,
 });
-
-export { auth };

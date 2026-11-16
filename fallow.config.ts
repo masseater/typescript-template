@@ -1,6 +1,8 @@
-import type { FallowConfig } from "@r_masseater/vite-plus-adopt";
+import type { ToolSections } from "@r_masseater/msch/vite";
 
-const fallow = {
+type FallowConfig = NonNullable<ToolSections["fallow"]>;
+
+export const fallow = {
   production: true,
   typeAware: {
     enabled: true,
@@ -182,26 +184,16 @@ const fallow = {
       name: "vite-plus",
       enablers: ["vite-plus"],
       entryPoints: ["vite.config.ts"],
-      toolingDependencies: [
-        "@ast-grep/cli",
-        "eslint-plugin-drizzle",
-        "eslint-plugin-no-comments",
-        "oxlint-plugin-eslint",
-      ],
+      toolingDependencies: ["@ast-grep/cli"],
     },
     {
       name: "vite-plus-adopt",
-      enablers: ["@r_masseater/vite-plus-adopt"],
+      enablers: ["@r_masseater/msch"],
       toolingDependencies: [
         "@commitlint/config-conventional",
         "@textlint-ja/textlint-rule-preset-ai-writing",
         "textlint-rule-preset-ja-technical-writing",
       ],
-    },
-    {
-      name: "oxlint-plugin-decision",
-      enablers: ["@r_masseater/oxlint-plugin-decision"],
-      entryPoints: ["decision-rules.ts"],
     },
     {
       name: "skills",
@@ -276,5 +268,3 @@ const fallow = {
     "dynamic-segment-name-conflict": "error",
   },
 } satisfies FallowConfig;
-
-export { fallow };

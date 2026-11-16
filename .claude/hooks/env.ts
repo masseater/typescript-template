@@ -36,21 +36,21 @@ const EXIT_FAILURE = 1;
 const EXIT_BLOCKING = 2;
 const DATA_FIRST_ARITY = 2;
 
-const projectDir = Config.String("CLAUDE_PROJECT_DIR").pipe(Config.withDefault("."));
+export const projectDir = Config.String("CLAUDE_PROJECT_DIR").pipe(Config.withDefault("."));
 
-const projectRoot = Effect.gen(function* projectRoot() {
+export const projectRoot = Effect.gen(function* projectRoot() {
   const platform = yield* HookPlatform;
   const directory = yield* projectDir;
   return platform.resolve(directory);
 });
 
-const localBin = Effect.fn("localBin")(function* localBin(name: string) {
+export const localBin = Effect.fn("localBin")(function* localBin(name: string) {
   const platform = yield* HookPlatform;
   const root = yield* projectRoot;
   return platform.join(root, "node_modules", ".bin", name);
 });
 
-const blockWhen = (reasons: readonly string[]): Effect.Effect<void, HookBlocked> => {
+export const blockWhen = (reasons: readonly string[]): Effect.Effect<void, HookBlocked> => {
   if (!Arr.isReadonlyArrayNonEmpty(reasons)) {
     return Effect.void;
   }
@@ -64,7 +64,7 @@ const writeTo = (sink: Sink, text: string): Effect.Effect<void, never, HookPlatf
     yield* platform.write(sink, text);
   });
 
-const writeJson: {
+export const writeJson: {
   <Codec extends Schema.Top>(
     value: Codec["Type"],
   ): (schema: Codec) => Effect.Effect<void, never, HookPlatform | Codec["EncodingServices"]>;
@@ -79,7 +79,7 @@ const writeJson: {
   ),
 );
 
-const readHookInput = <Codec extends Schema.Top>(
+export const readHookInput = <Codec extends Schema.Top>(
   schema: Codec,
 ): Effect.Effect<Codec["Type"], Schema.SchemaError, HookPlatform | Codec["DecodingServices"]> =>
   Effect.gen(function* read() {
@@ -180,7 +180,7 @@ const hookLayer = platformLayer.pipe(
   Layer.provideMerge(Layer.mergeAll(nodeServicesLayer, FetchHttpClient.layer)),
 );
 
-const runCommand: {
+export const runCommand: {
   (args: readonly string[]): (command: string) => Effect.Effect<CommandResult, never, HookPlatform>;
   (command: string, args: readonly string[]): Effect.Effect<CommandResult, never, HookPlatform>;
 } = Fn.dual(DATA_FIRST_ARITY, (command: string, args: readonly string[]) =>
@@ -190,7 +190,7 @@ const runCommand: {
   }),
 );
 
-const getJson: {
+export const getJson: {
   <Codec extends Schema.Top>(
     schema: Codec,
   ): (
@@ -233,7 +233,7 @@ const reportFailure = <Failure>(
     })}\n`,
   );
 
-const runHookWith =
+export const runHookWith =
   <Provided, LayerFailure>(layer: Layer.Layer<Provided, LayerFailure, HookPlatform>) =>
   <Value, Failure>(program: Effect.Effect<Value, Failure, HookPlatform | Provided>): void => {
     const reported = program.pipe(Effect.tapCause(reportFailure));
@@ -249,18 +249,6 @@ const runHookWith =
     });
   };
 
-const runHook = runHookWith(Layer.empty);
+export const runHook = runHookWith(Layer.empty);
 
 export type { HookBlocked };
-export {
-  blockWhen,
-  getJson,
-  localBin,
-  projectDir,
-  projectRoot,
-  readHookInput,
-  runCommand,
-  runHook,
-  runHookWith,
-  writeJson,
-};

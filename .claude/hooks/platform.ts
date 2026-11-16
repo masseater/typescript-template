@@ -1,15 +1,15 @@
 import { Context } from "effect";
 import type { Effect, Option, Schema, Scope } from "effect";
 
-type Sink = "stdout" | "stderr";
+export type Sink = "stdout" | "stderr";
 
-interface CommandResult {
+export interface CommandResult {
   readonly succeeded: boolean;
   readonly stdout: string;
   readonly output: string;
 }
 
-class HookPlatform extends Context.Service<
+export class HookPlatform extends Context.Service<
   HookPlatform,
   {
     readonly runCommand: (command: string, args: readonly string[]) => Effect.Effect<CommandResult>;
@@ -36,6 +36,3 @@ class HookPlatform extends Context.Service<
     ) => Effect.Effect<void>;
   }
 >()("claude-harness/hooks/platform/HookPlatform") {}
-
-export { HookPlatform };
-export type { CommandResult, Sink };
