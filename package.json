@@ -7,18 +7,14 @@
     "prepare": "vp config && effect-tsgo patch --typescript --oxlint && skills experimental_install --force"
   },
   "devDependencies": {
-    "@ast-grep/cli": "catalog:",
-    "@commitlint/config-conventional": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@r_masseater/msch": "catalog:",
     "@tanstack/intent": "catalog:",
-    "@textlint-ja/textlint-rule-preset-ai-writing": "1.7.0",
     "@types/node": "catalog:",
     "effect": "catalog:stack",
     "fallow": "catalog:stack",
     "skills": "catalog:",
-    "textlint-rule-preset-ja-technical-writing": "12.0.2",
     "vite-plus": "catalog:stack"
   },
   "devEngines": {

@@ -2,18 +2,18 @@
   "mcpServers": {
     "fallow": {
       "type": "stdio",
-      "command": "node",
-      "args": [".claude/src/app/hooks/fallow-mcp.ts"]
+      "command": "vp",
+      "args": ["exec", "fallow-mcp"]
     },
     "cloudflare-api": {
       "type": "http",
       "url": "https://mcp.cloudflare.com/mcp",
-      "headersHelper": "node .claude/src/app/hooks/cloudflare-mcp-headers.ts"
+      "headersHelper": "node .claude/src/app/entrypoints/cloudflare-mcp-headers.ts"
     },
     "cloudflare-observability": {
       "type": "http",
       "url": "https://observability.mcp.cloudflare.com/mcp",
-      "headersHelper": "node .claude/src/app/hooks/cloudflare-mcp-headers.ts"
+      "headersHelper": "node .claude/src/app/entrypoints/cloudflare-mcp-headers.ts"
     }
   }
 }
