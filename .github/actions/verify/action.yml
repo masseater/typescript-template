@@ -1,5 +1,5 @@
 name: verify
-description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs
+description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs, and on the default branch of a public repository publish that Vite Task cache as an artifact for cloud sessions
 inputs:
   github-token:
     description: A token that can read this repository
@@ -53,3 +53,13 @@ runs:
       with:
         path: node_modules/.vite/task-cache
         key: ${{ steps.task-cache.outputs.cache-primary-key }}
+    - id: share
+      if: always() && steps.verify.outcome != 'skipped' && github.event_name == 'push' && github.ref_name == github.event.repository.default_branch && !github.event.repository.private
+      shell: bash
+      run: tar -cf vite-task-cache.tar -C node_modules/.vite task-cache
+    - if: always() && steps.share.outcome == 'success'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        path: vite-task-cache.tar
+        archive: false
+        retention-days: 1
