@@ -284,6 +284,7 @@ export default defineConfig({
       msch: {
         command: "msch",
         cache: {
+          input: [{ auto: true }, "!**/node_modules/.cache/**"],
           untrackedEnv: ["HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy", "SSL_CERT_FILE"],
         },
       },
