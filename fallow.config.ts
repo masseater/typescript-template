@@ -9,7 +9,7 @@ const fallow = {
   failOnParseError: true,
   ignoreDependencies: [
     "@effect/language-service",
-    "@masseater.dev/textlint-rule-yomiyasu",
+    "@r_masseater/textlint-rule-preset-ja",
     "fallow",
   ],
   ignorePatterns: [".claude/**", ".github/**"],

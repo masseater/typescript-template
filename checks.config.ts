@@ -40,7 +40,7 @@ const checks: ToolSections = {
     ignores: MARKDOWN_IGNORES,
     rules: {
       "@textlint-ja/preset-ai-writing": true,
-      "@masseater.dev/yomiyasu": true,
+      "@r_masseater/preset-ja": { "no-taigendome": false },
       "preset-ja-technical-writing": {
         "sentence-length": { max: 120 },
         "ja-no-mixed-period": { allowPeriodMarks: [":"] },
