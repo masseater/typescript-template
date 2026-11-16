@@ -5,6 +5,7 @@ import {
   lint as preset,
   requiredStack,
   steigerRules,
+  textlintPresets,
   tracedRules,
 } from "@r_masseater/msch/lint";
 import type { ToolSections } from "@r_masseater/msch/vite";
@@ -94,6 +95,7 @@ const checks: ToolSections = {
   fallow,
   textlint: {
     ignores: MARKDOWN_IGNORES,
+    presets: textlintPresets,
     rules: {
       "@textlint-ja/preset-ai-writing": true,
       "@r_masseater/preset-ja": { "no-taigendome": false },

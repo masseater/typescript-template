@@ -1,7 +1,7 @@
 import { Array as Arr, Effect, Option, Schema, String as Str, pipe } from "effect";
 
-import { getJson, projectDir, runHook, writeJson } from "./env.ts";
-import { HookPlatform } from "./platform.ts";
+import { getJson, projectDir, runHook, writeJson } from "#/shared/lib/env.ts";
+import { HookPlatform } from "#/shared/lib/platform.ts";
 
 const TEMPLATE_REPOSITORY = "masseater/typescript-template";
 const MANIFEST_FILE = ".github/release-please/manifest.json";

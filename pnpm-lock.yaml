@@ -186,11 +186,8 @@ catalogs:
       specifier: 4.1.4
       version: 4.1.4
     '@r_masseater/msch':
-      specifier: 0.24.0
-      version: 0.24.0
-    '@r_masseater/textlint-rule-preset-ja':
-      specifier: 0.1.1
-      version: 0.1.1
+      specifier: 0.29.1
+      version: 0.29.1
     '@r_masseater/web-vitals-flow':
       specifier: 0.2.0
       version: 0.2.0
@@ -313,10 +310,7 @@ importers:
         version: 0.68.1
       '@r_masseater/msch':
         specifier: 'catalog:'
-        version: 0.24.0(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/textlint-rule-preset-ja':
-        specifier: 'catalog:'
-        version: 0.1.1(effect@4.1.4)
+        version: 0.29.1(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.5.6
@@ -2797,8 +2791,8 @@ packages:
       yauzl:
         optional: true
 
-  '@r_masseater/msch@0.24.0':
-    resolution: {integrity: sha512-s22RuuBqV2k8DLGrgrta70v2oa8xTwYgRT7rIGH51rBk58t/PqWr/fl4VY92NyMRBbafmoqIvaiRWL+MbY0C6Q==}
+  '@r_masseater/msch@0.29.1':
+    resolution: {integrity: sha512-WB0zqBuL+Mmbp9POt3v/H56PeUV5OKrR1VWPRqSbn4ggdyrXFUbwGwljiX73XhGRhlGVD2VCPhEiX0ConaYAQA==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -2829,8 +2823,8 @@ packages:
     peerDependencies:
       effect: ^4.0.0
 
-  '@r_masseater/vite-plus-adopt@0.6.0':
-    resolution: {integrity: sha512-pRXu9ySC+36PtQGv4imv/XcKL5aisO+zfRx0o2iqJpSPOqMKroOAyA0vgXijmhgc2qsXvxJLe0Ejab6P6wOBkg==}
+  '@r_masseater/vite-plus-adopt@0.8.1':
+    resolution: {integrity: sha512-t/vPs9shFwnWozjo3WkH6V/h2Vbtkn5OeaBBzy04pD3JG7bt+QMK24C8531q18eWB/wDDjTen8BOffCBaNE3SA==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -6891,10 +6885,6 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  minimatch@11.0.5:
-    resolution: {integrity: sha512-snPlVppFcYWfLLFQGhDxUyBcHNtMlWmn3jtj7pEaO+DP8pqL0IvAzXhMYmn1z9ASNtgmwLBdFxSf4tMUB0OTKA==}
-    engines: {node: 20 || >=22}
-
   minimatch@11.0.8:
     resolution: {integrity: sha512-nFQuYSTVrGvysVBps5Ih+0BdnYFN/Cj3C816r6+p7yK+FHrVLGE4O4N9AFwykrlNlvM2HYt+Rad1Uiro6h88Ig==}
     engines: {node: 20 || >=22}
@@ -9254,7 +9244,7 @@ snapshots:
     dependencies:
       '@eslint/object-schema': 3.0.5
       debug: 4.4.3(supports-color@8.1.1)
-      minimatch: 11.0.5
+      minimatch: 11.0.8
     transitivePeerDependencies:
       - supports-color
 
@@ -10055,14 +10045,15 @@ snapshots:
     optionalDependencies:
       yauzl: 3.4.0
 
-  '@r_masseater/msch@0.24.0(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/msch@0.29.1(@effect/tsgo@0.68.1)(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
       '@effect/tsgo': 0.68.1
       '@html-eslint/eslint-plugin-react': 0.68.0(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@r_masseater/oxlint-plugin-decision': 0.6.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.93.0(oxlint-tsgolint@7.0.2006)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
       '@r_masseater/oxlint-typed-rules': 0.4.1(effect@4.1.4)(typescript@7.1.0-beta)
-      '@r_masseater/vite-plus-adopt': 0.6.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/textlint-rule-preset-ja': 0.1.1(effect@4.1.4)
+      '@r_masseater/vite-plus-adopt': 0.8.1(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@shadcn/lint': 0.2.5(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@vscode/tree-sitter-wasm': 0.3.1
       dockerfile-ast: 0.7.1
@@ -10106,7 +10097,7 @@ snapshots:
       kuromojin: 3.0.1
       sentence-splitter: 5.0.3
 
-  '@r_masseater/vite-plus-adopt@0.6.0(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/vite-plus-adopt@0.8.1(@voidzero-dev/vite-plus-core@1.6.0(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.6.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@andrewbranch/untar.js': 1.0.4
       '@commitlint/format': 21.2.3
@@ -10117,6 +10108,7 @@ snapshots:
       '@loaderkit/resolve': 1.0.6
       '@textlint/config-loader': 15.8.0(supports-color@8.1.1)
       '@textlint/kernel': 15.8.0(supports-color@8.1.1)
+      '@textlint/utils': 15.8.0
       cjs-module-lexer: 2.3.0
       effect: 4.1.4
       fastest-levenshtein: 1.0.16
@@ -13205,7 +13197,7 @@ snapshots:
       imurmurhash: 0.1.4
       is-glob: 4.0.3
       json-stable-stringify-without-jsonify: 1.0.1
-      minimatch: 11.0.5
+      minimatch: 11.0.8
       natural-compare: 1.4.0
       optionator: 0.9.4
     optionalDependencies:
@@ -14350,11 +14342,6 @@ snapshots:
     optional: true
 
   mime@4.1.2: {}
-
-  minimatch@11.0.5:
-    dependencies:
-      '@isaacs/nonrecursive-glob-match': 1.1.0
-      brace-expansion: 5.0.12
 
   minimatch@11.0.8:
     dependencies:

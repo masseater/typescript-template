@@ -6,7 +6,7 @@ import { Effect, Layer, Schema } from "effect";
 import { SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
-import { runHookWith, writeJson } from "./env.ts";
+import { runHookWith, writeJson } from "#/shared/lib/env.ts";
 
 const Headers = Schema.Record(Schema.String, Schema.String);
 

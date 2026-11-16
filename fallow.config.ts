@@ -9,11 +9,7 @@ export const fallow = {
     require: "complete",
   },
   failOnParseError: true,
-  ignoreDependencies: [
-    "@effect/language-service",
-    "@r_masseater/textlint-rule-preset-ja",
-    "fallow",
-  ],
+  ignoreDependencies: ["@effect/language-service", "fallow"],
   ignorePatterns: [".claude/**", ".github/**"],
   audit: {
     gate: "all",

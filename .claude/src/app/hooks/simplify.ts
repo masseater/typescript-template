@@ -2,7 +2,7 @@ import { layer as nodeServicesLayer } from "@effect/platform-node/NodeServices";
 import { Effect, FileSystem, Path, Stream, String as Str } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
-import { blockWhen, projectRoot, runHookWith } from "./env.ts";
+import { blockWhen, projectRoot, runHookWith } from "#/shared/lib/env.ts";
 
 const WORKTREES = "/.claude/worktrees/";
 const NO_COMMITS = "0";
