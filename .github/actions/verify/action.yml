@@ -1,5 +1,5 @@
 name: verify
-description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs, and on the default branch of a public repository publish that Vite Task cache and the tool caches under every node_modules/.cache as an artifact for cloud sessions
+description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs, from /home/user/<repository> where cloud sessions check out so that cache keys hold the same paths, and on the default branch of a public repository publish those caches as an artifact for cloud sessions
 inputs:
   github-token:
     description: A token that can read this repository
@@ -45,7 +45,12 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         VPA_BASE: ${{ github.event.before }}
-      run: vp run --log grouped verify
+      run: |
+        root="/home/user/${GITHUB_REPOSITORY#*/}"
+        sudo mkdir -p "$root"
+        sudo mount --bind "$GITHUB_WORKSPACE" "$root"
+        cd "$root"
+        PATH="${PATH//"$GITHUB_WORKSPACE"/$root}" vp run --log grouped verify
     - if: always() && steps.verify.outcome != 'skipped'
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
