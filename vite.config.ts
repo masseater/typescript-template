@@ -1,265 +1,142 @@
-import { workspaceSettings } from "@r_masseater/msch/workspace-settings";
-import tanstackStart from "@r_masseater/oxlint-typed-rules/tanstack-start";
-import baselineJs from "eslint-plugin-baseline-js";
-import { defineConfig } from "vite-plus";
-
-import { checks, checkTasks } from "./checks.config.ts";
 import {
-  baselineJsRules,
-  decisionPluginName,
   decisionRules,
-  effectRules,
-  eslintReactRules,
+  decisionTestRules,
   generated,
-  htmlReactRules,
-  pluginRules,
-  reactHooksRules,
-  restrictedImports,
-  shadcnRules,
-  tanstackQueryRules,
-  tanstackRouterRules,
-  turnedOff,
-} from "./lint.config.ts";
-import { workerRules } from "./worker-lint.config.ts";
+  lint as preset,
+  requiredStack,
+  steigerRules,
+  tracedRules,
+} from "@r_masseater/msch/lint";
+import type { ToolSections } from "@r_masseater/msch/vite";
+import { workspaceSettings } from "@r_masseater/msch/workspace-settings";
+import type { RuleSets } from "@r_masseater/msch/workspace-settings";
+import { Array as Arr, pipe } from "effect";
+import { defineConfig } from "vite-plus";
+import type { UserConfig } from "vite-plus";
 
-const typedRules = "@r_masseater/oxlint-typed-rules";
+import { fallow } from "./fallow.config.ts";
+
+type LintConfig = NonNullable<UserConfig["lint"]>;
+
+const ruleSets: RuleSets = { decision: decisionRules, traced: tracedRules };
 
 const workspace = await workspaceSettings({
   root: import.meta.dirname,
-  ruleSets: { decision: { ...decisionRules, ...workerRules } },
+  ruleSets,
   dependencySets: {},
 });
+
+const overrides = [
+  {
+    files: [...workspace.lint.shadcnUi],
+    rules: { "react/jsx-props-no-spreading": "off" },
+  },
+  {
+    files: [...workspace.lint.publicEntries],
+    rules: { "import/no-default-export": "off" },
+  },
+  ...workspace.lint.overrides,
+  {
+    files: [".github/**/*.ts"],
+    rules: {
+      "baseline-js/use-baseline": "off",
+      "effecttsgo/async-function": "off",
+      "effecttsgo/global-console": "off",
+      "effecttsgo/global-fetch": "off",
+      "effecttsgo/global-json": "off",
+      "effecttsgo/missing-pipeable-signature": "off",
+      "effecttsgo/node-builtin-import": "off",
+      "effecttsgo/prefer-effect-array": "off",
+      "effecttsgo/prefer-effect-record": "off",
+      "effecttsgo/prefer-effect-string": "off",
+      "effecttsgo/process-env": "off",
+      "eslint/no-console": "off",
+      "eslint/no-undefined": "off",
+      "import/no-relative-parent-imports": "off",
+      "node/no-process-env": "off",
+      "node/no-sync": "off",
+      "oxc/no-async-await": "off",
+      "unicorn/no-process-exit": "off",
+    },
+  },
+  {
+    files: ["**/*.test.ts"],
+    rules: decisionTestRules,
+  },
+] satisfies LintConfig["overrides"];
+
+const lint = {
+  ...preset,
+  ignorePatterns: [...generated, ...workspace.lint.ignorePatterns],
+  overrides: [...preset.overrides, ...overrides],
+} satisfies LintConfig;
+
+const MARKDOWN_IGNORES = ["AGENTS.md", ".agents/skills/**", "CHANGELOG.md"];
+
+const PUBLIC_VALUES = [String.raw`\bCF_BEACON_TOKEN = "[0-9a-f]{32}"`];
+
+const checks: ToolSections = {
+  commitlint: { extends: ["@commitlint/config-conventional"] },
+  dependencyRules: { banned: requiredStack, peerRanges: "intersect" },
+  betterleaks: {
+    extend: { useDefault: true },
+    filter: `matchesAny(finding.line, [${pipe(
+      PUBLIC_VALUES,
+      Arr.map((pattern) => `\`${pattern}\``),
+      Arr.join(", "),
+    )}])`,
+  },
+  steiger: {
+    paths: ["apps/*/src"],
+    rules: steigerRules,
+  },
+  markdownlint: { ignores: MARKDOWN_IGNORES },
+  fallow,
+  textlint: {
+    ignores: MARKDOWN_IGNORES,
+    rules: {
+      "@textlint-ja/preset-ai-writing": true,
+      "@r_masseater/preset-ja": { "no-taigendome": false },
+      "preset-ja-technical-writing": {
+        "sentence-length": { max: 120 },
+        "ja-no-mixed-period": { allowPeriodMarks: [":"] },
+        "no-mix-dearu-desumasu": { preferInBody: "である", preferInList: "である" },
+        "max-kanji-continuous-len": {
+          max: 6,
+          allow: [
+            "外国電子決済手段",
+            "電子決済手段等取引業",
+            "前払式支払手段",
+            "犯罪収益移転防止法",
+            "事業者間取引適正化等法",
+            "個人情報保護法",
+            "特定商取引法",
+            "電気通信利用役務",
+            "特定業務委託事業者",
+          ],
+        },
+      },
+    },
+  },
+};
 
 export default defineConfig({
   ...checks,
   msch: { workspaceAgentsMd: true },
-  test: { projects: ["apps/*", "libs/*", "tools/*", "infra/*"], passWithNoTests: true },
+  test: { projects: [...workspace.testProjects], passWithNoTests: true },
   staged: {
     "*": "vp fmt --no-error-on-unmatched-pattern",
   },
   fmt: {
-    ignorePatterns: generated,
+    ignorePatterns: lint.ignorePatterns,
     sortImports: true,
     sortTailwindcss: true,
     sortPackageJson: true,
   },
-  lint: {
-    ignorePatterns: [...generated, ...workspace.lint.ignorePatterns],
-    plugins: [
-      "eslint",
-      "typescript",
-      "unicorn",
-      "oxc",
-      "import",
-      "react",
-      "react-perf",
-      "jsx-a11y",
-      "jsdoc",
-      "promise",
-      "node",
-      "effecttsgo",
-    ],
-    categories: {
-      correctness: "error",
-      suspicious: "error",
-      pedantic: "error",
-      perf: "error",
-      style: "error",
-      restriction: "error",
-      nursery: "error",
-    },
-    jsPlugins: [
-      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
-      { name: "tanstack-query", specifier: `${typedRules}/tanstack-query` },
-      { name: "tanstack-router", specifier: `${typedRules}/tanstack-router` },
-      { name: tanstackStart.meta.name, specifier: `${typedRules}/tanstack-start` },
-      { name: "drizzle", specifier: `${typedRules}/drizzle` },
-      { name: "react-hooks-js", specifier: "eslint-plugin-react-hooks" },
-      { name: "@eslint-react", specifier: `${typedRules}/react` },
-      { name: "shadcn", specifier: "@shadcn/lint" },
-      { name: "no-comments", specifier: "eslint-plugin-no-comments" },
-      { name: "baseline-js", specifier: "eslint-plugin-baseline-js" },
-      { name: "@html-eslint/react", specifier: "@html-eslint/eslint-plugin-react" },
-      { name: decisionPluginName, specifier: "./decision-rules.ts" },
-      { name: "eslint-js", specifier: "oxlint-plugin-eslint" },
-    ],
-    rules: {
-      "vite-plus/prefer-vite-plus-imports": "error",
-      "no-comments/disallowComments": ["error", { allow: ["oxlint-disable", "eslint-disable"] }],
-      ...tanstackQueryRules,
-      ...tanstackRouterRules,
-      ...pluginRules(tanstackStart),
-      "drizzle/enforce-delete-with-where": "error",
-      "drizzle/enforce-update-with-where": "error",
-      ...shadcnRules,
-      ...baselineJsRules,
-      ...baselineJs.configs.recommended().rules,
-      ...htmlReactRules,
-      ...reactHooksRules,
-      ...eslintReactRules,
-      ...effectRules,
-      "eslint/sort-imports": "off",
-      "eslint/sort-keys": "off",
-      "import/no-named-export": "off",
-      "import/prefer-default-export": "off",
-      "react/react-in-jsx-scope": "off",
-      "eslint/no-undef": "off",
-      "typescript/promise-function-async": "off",
-      "react/forbid-component-props": "off",
-      "oxc/no-rest-spread-properties": "off",
-      "node/no-top-level-await": "off",
-      "eslint/one-var": ["error", "never"],
-      "eslint/no-restricted-imports": ["error", restrictedImports],
-      "typescript/prefer-readonly-parameter-types": [
-        "error",
-        {
-          ignoreInferredTypes: true,
-          allow: [
-            { from: "lib", name: "Request" },
-            { from: "lib", name: "Response" },
-            { from: "package", package: "@tanstack/query-core", name: "QueryClient" },
-            {
-              from: "package",
-              package: "react",
-              name: ["ReactNode", "ButtonHTMLAttributes", "ClassAttributes"],
-            },
-            { from: "package", package: "clsx", name: "ClassValue" },
-            {
-              from: "package",
-              package: "typescript",
-              name: [
-                "CompilerHost",
-                "CompilerOptions",
-                "Node",
-                "ParsedCommandLine",
-                "Program",
-                "SourceFile",
-              ],
-            },
-            {
-              from: "package",
-              package: "@oxlint/plugins",
-              name: ["Context", "Node", "Rule", "RuleMeta"],
-            },
-            {
-              from: "package",
-              package: "oxlint",
-              name: ["InvalidTestCase", "Rule", "TestCases", "ValidTestCase"],
-            },
-            {
-              from: "package",
-              package: "effect",
-              name: ["Cause", "Context", "Effect", "Exit", "Layer", "Option"],
-            },
-          ],
-        },
-      ],
-      "eslint/no-duplicate-imports": ["error", { allowSeparateTypeImports: true }],
-      "react/function-component-definition": [
-        "error",
-        { namedComponents: "arrow-function", unnamedComponents: "arrow-function" },
-      ],
-      "eslint/new-cap": [
-        "error",
-        {
-          capIsNewExceptions: ["App", "CloudflareApiLive", "Secret", "Stack"],
-          capIsNewExceptionPattern: String.raw`^(Config|Context|Data|Schema|AnalyticsEngine|ApiToken|D1|Logpush|R2|Ruleset|Rules|Website|Workers|Zone)\.`,
-        },
-      ],
-      "typescript/no-empty-interface": ["error", { allowSingleExtends: true }],
-      "typescript/no-empty-object-type": ["error", { allowInterfaces: "with-single-extends" }],
-      "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
-      "react/only-export-components": ["error", { allowExportNames: ["Route"] }],
-    },
-    overrides: [
-      {
-        files: ["**/*.config.ts", "**/alchemy.run.ts", "**/*.worker.ts", "decision-rules.ts"],
-        rules: { "import/no-default-export": "off" },
-      },
-      {
-        files: ["**/vite.config.ts"],
-        rules: { "baseline-js/use-baseline": "off" },
-      },
-      {
-        files: ["**/alchemy.*.ts"],
-        rules: {
-          "eslint-js/no-restricted-syntax": [
-            "error",
-            {
-              selector:
-                'CallExpression[callee.name="Stack"]:not([arguments.0.name="APP_NAME"]):not([arguments.0.type="TemplateLiteral"][arguments.0.quasis.0.value.raw=""][arguments.0.expressions.0.name="PREFIX"])',
-              message:
-                "スタック名には app-name.ts の APP_NAME か、PREFIX で始まるテンプレートリテラルを渡す",
-            },
-            {
-              selector:
-                'Program:not(:has(YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
-              message:
-                "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
-            },
-            {
-              selector:
-                'CallExpression[callee.name="Stack"] > .arguments:nth-child(3):not(:has(FunctionExpression > BlockStatement > ExpressionStatement:nth-last-child(2) > YieldExpression[delegate=true] > Identifier.argument[name="requireAppPrefix"]))',
-              message:
-                "スタックの最後で app-name.ts の requireAppPrefix を yield* して、リソース名の prefix を検査する",
-            },
-          ],
-        },
-      },
-      {
-        files: ["**/shared/ui/**"],
-        rules: { "shadcn/no-restyle": "off", "react/jsx-props-no-spreading": "off" },
-      },
-      ...workspace.lint.overrides,
-      {
-        files: [".github/**/*.ts"],
-        rules: {
-          "baseline-js/use-baseline": "off",
-          "effecttsgo/async-function": "off",
-          "effecttsgo/global-console": "off",
-          "effecttsgo/global-fetch": "off",
-          "effecttsgo/global-json": "off",
-          "effecttsgo/missing-pipeable-signature": "off",
-          "effecttsgo/node-builtin-import": "off",
-          "effecttsgo/prefer-effect-array": "off",
-          "effecttsgo/prefer-effect-record": "off",
-          "effecttsgo/prefer-effect-string": "off",
-          "effecttsgo/process-env": "off",
-          "eslint/no-console": "off",
-          "eslint/no-undefined": "off",
-          "import/exports-last": "off",
-          "import/group-exports": "off",
-          "import/no-nodejs-modules": "off",
-          "import/no-relative-parent-imports": "off",
-          "node/no-process-env": "off",
-          "node/no-sync": "off",
-          "oxc/no-async-await": "off",
-          "unicorn/no-process-exit": "off",
-        },
-      },
-      {
-        files: ["**/*.test.ts"],
-        rules: turnedOff(decisionRules),
-      },
-    ],
-    settings: {
-      [decisionPluginName]: {
-        model: "cloudflare/@cf/qwen/qwen3.8-27b",
-        timeoutMs: 50_000,
-        ci: "skip",
-      },
-    },
-    options: {
-      typeAware: true,
-      typeCheck: true,
-      denyWarnings: true,
-      reportUnusedDisableDirectives: "error",
-    },
-  },
+  lint,
   run: {
     cache: true,
     tasks: {
-      ...checkTasks,
       "actions-lint":
         "ast-grep scan --rule .github/rules/no-full-history-checkout.yml .github/workflows",
       verify: {
@@ -278,16 +155,17 @@ export default defineConfig({
             "NODE_EXTRA_CA_CERTS",
           ],
         },
-        dependsOn: ["test", "vpa", "msch", "actions-lint", "db-check-all", "audit"],
+        dependsOn: [
+          ...workspace.tasks.verify,
+          "test",
+          "msch",
+          "actions-lint",
+          "db-check-all",
+          "audit",
+        ],
       },
       test: "vp test run",
-      msch: {
-        command: "msch",
-        cache: {
-          input: [{ auto: true }, "!**/node_modules/.cache/**"],
-          untrackedEnv: ["HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy", "SSL_CERT_FILE"],
-        },
-      },
+      msch: { command: "msch", cache: false },
       "db-check-all": "vp run -r db:check",
       audit: {
         command:

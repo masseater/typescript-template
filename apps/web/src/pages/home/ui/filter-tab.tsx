@@ -12,7 +12,7 @@ const variantOf = (selected: boolean): "default" | "outline" => {
   return "outline";
 };
 
-const FilterTab = ({ filter }: Readonly<{ filter: TodoFilter }>): ReactNode => {
+export const FilterTab = ({ filter }: Readonly<{ filter: TodoFilter }>): ReactNode => {
   const current = useTodoFilter();
   const setCurrent = useSelectTodoFilter();
   const select = useCallback(() => {
@@ -24,5 +24,3 @@ const FilterTab = ({ filter }: Readonly<{ filter: TodoFilter }>): ReactNode => {
     </Button>
   );
 };
-
-export { FilterTab };

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { steps } from "#/pages/landing/model/content";
 
-const StepList = (): ReactNode => (
+export const StepList = (): ReactNode => (
   <section aria-labelledby="steps" className="flex flex-col gap-6">
     <h2 className="text-2xl font-bold" id="steps">
       {steps.title}
@@ -16,5 +16,3 @@ const StepList = (): ReactNode => (
     </ol>
   </section>
 );
-
-export { StepList };

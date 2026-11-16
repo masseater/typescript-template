@@ -1,1 +1,1 @@
-vp exec vpa --commit-msg "$1"
+vp exec msch --commit-msg "$1"

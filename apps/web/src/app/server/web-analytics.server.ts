@@ -26,11 +26,9 @@ const injectBeacon = (response: Response): Response =>
     })
     .transform(response);
 
-const withWebAnalytics = (response: Response): Response =>
+export const withWebAnalytics = (response: Response): Response =>
   pipe(
     Option.fromNullishOr(response.headers.get("Content-Type")),
     Option.filter(Str.startsWith("text/html")),
     Option.match({ onNone: () => response, onSome: () => injectBeacon(response) }),
   );
-
-export { withWebAnalytics };

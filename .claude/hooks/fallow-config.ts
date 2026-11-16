@@ -4,7 +4,7 @@ import { fallow } from "typescript-template/fallow.config.ts";
 
 import { HookPlatform } from "./platform.ts";
 
-const ROOT = ".";
+export const ROOT = ".";
 
 type FallowConfig = Readonly<Record<string, unknown>>;
 
@@ -37,7 +37,7 @@ const writeConfig = (
     return yield* platform.writeTempFile(".fallowrc.json", text);
   });
 
-const fallowConfigFile = (
+export const fallowConfigFile = (
   directory: string,
 ): Effect.Effect<Option.Option<string>, never, HookPlatform | Scope.Scope> =>
   Rec.get(fallowConfigs, directory).pipe(
@@ -47,7 +47,7 @@ const fallowConfigFile = (
     }),
   );
 
-const fallowConfigFiles: Effect.Effect<
+export const fallowConfigFiles: Effect.Effect<
   Readonly<Record<string, string>>,
   never,
   HookPlatform | Scope.Scope
@@ -57,5 +57,3 @@ const fallowConfigFiles: Effect.Effect<
     Rec.map((config) => writeConfig(config)),
   ),
 );
-
-export { ROOT, fallowConfigFile, fallowConfigFiles };
