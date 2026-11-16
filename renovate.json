@@ -9,7 +9,6 @@
   "automerge": true,
   "configMigration": true,
   "ignoreTests": true,
-  "platformAutomerge": false,
   "rollbackPrs": false,
   "packageRules": [
     {
