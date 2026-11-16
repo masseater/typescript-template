@@ -3,17 +3,17 @@
     "fallow": {
       "type": "stdio",
       "command": "node",
-      "args": [".claude/hooks/fallow-mcp.ts"]
+      "args": [".claude/src/app/hooks/fallow-mcp.ts"]
     },
     "cloudflare-api": {
       "type": "http",
       "url": "https://mcp.cloudflare.com/mcp",
-      "headersHelper": "node .claude/hooks/cloudflare-mcp-headers.ts"
+      "headersHelper": "node .claude/src/app/hooks/cloudflare-mcp-headers.ts"
     },
     "cloudflare-observability": {
       "type": "http",
       "url": "https://observability.mcp.cloudflare.com/mcp",
-      "headersHelper": "node .claude/hooks/cloudflare-mcp-headers.ts"
+      "headersHelper": "node .claude/src/app/hooks/cloudflare-mcp-headers.ts"
     }
   }
 }

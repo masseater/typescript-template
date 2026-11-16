@@ -1,8 +1,8 @@
 import { Effect, Option, Predicate, Record as Rec, Schema, pipe } from "effect";
 
-import { localBin, projectRoot, runHook } from "./env.ts";
-import { ROOT, fallowConfigFiles } from "./fallow-config.ts";
-import { HookPlatform } from "./platform.ts";
+import { localBin, projectRoot, runHook } from "#/shared/lib/env.ts";
+import { ROOT, fallowConfigFiles } from "#/shared/lib/fallow-config.ts";
+import { HookPlatform } from "#/shared/lib/platform.ts";
 
 const JsonObject = Schema.Record(Schema.String, Schema.Unknown);
 

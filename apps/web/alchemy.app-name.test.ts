@@ -6,7 +6,7 @@ import { inMemoryState } from "alchemy/State";
 import { Effect, Exit, Layer, Match, Redacted, String, pipe } from "effect";
 import { expect, test } from "vite-plus/test";
 
-import { APP_NAME, requireAppPrefix } from "./app-name.ts";
+import { APP_NAME, requireAppPrefix } from "./alchemy.app-name.ts";
 
 const ENV_PREFIX = `${pipe(APP_NAME, String.replaceAll("-", "_"))}_`;
 

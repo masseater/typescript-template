@@ -12,7 +12,6 @@
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "catalog:stack",
     "@r_masseater/msch": "catalog:",
-    "@r_masseater/textlint-rule-preset-ja": "catalog:",
     "@tanstack/intent": "catalog:",
     "@textlint-ja/textlint-rule-preset-ai-writing": "1.7.0",
     "@types/node": "catalog:",

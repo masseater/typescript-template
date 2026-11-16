@@ -35,4 +35,4 @@ export class HookPlatform extends Context.Service<
       transform: (line: string) => string,
     ) => Effect.Effect<void>;
   }
->()("claude-harness/hooks/platform/HookPlatform") {}
+>()("claude-harness/shared/lib/platform/HookPlatform") {}

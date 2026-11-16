@@ -31,7 +31,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/block-pnpm.ts"],
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/src/app/hooks/block-pnpm.ts"],
             "timeout": 10,
             "statusMessage": "pnpm の直接実行を確認中"
           }
@@ -80,7 +80,10 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["--use-env-proxy", "${CLAUDE_PROJECT_DIR}/.claude/hooks/template-release.ts"],
+            "args": [
+              "--use-env-proxy",
+              "${CLAUDE_PROJECT_DIR}/.claude/src/app/hooks/template-release.ts"
+            ],
             "timeout": 10,
             "statusMessage": "テンプレートの新しいリリースを確認中"
           }
@@ -96,7 +99,7 @@
             "command": "node",
             "args": [
               "--env-file-if-exists=${CLAUDE_PROJECT_DIR}/.env",
-              "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit.ts"
+              "${CLAUDE_PROJECT_DIR}/.claude/src/app/hooks/post-edit.ts"
             ],
             "timeout": 300,
             "statusMessage": "fallow で変更を検査中"
@@ -112,7 +115,7 @@
             "asyncRewake": true,
             "timeout": 3600,
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/simplify.ts"]
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/src/app/hooks/simplify.ts"]
           }
         ]
       }
@@ -125,7 +128,7 @@
             "command": "node",
             "args": [
               "--env-file-if-exists=${CLAUDE_PROJECT_DIR}/.env",
-              "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-gate.ts"
+              "${CLAUDE_PROJECT_DIR}/.claude/src/app/hooks/stop-gate.ts"
             ],
             "timeout": 1800,
             "statusMessage": "vp run verify を実行中"

@@ -27,7 +27,7 @@ export const steps = {
   title: "始め方",
   items: [
     "テンプレートからリポジトリを作る",
-    "apps/web/app-name.ts のアプリ名を変える",
+    "apps/web/alchemy.app-name.ts のアプリ名を変える",
     "vp run verify を通して main に push する",
   ],
 } as const;

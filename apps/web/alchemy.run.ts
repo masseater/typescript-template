@@ -5,7 +5,7 @@ import { RemovalPolicy, Stack, makeRandom } from "alchemy";
 import { Effect, Hash } from "effect";
 import { SECURITY_HEADERS, STATIC_PAGE_HEADERS, assetHeaders } from "security-headers";
 
-import { APP_NAME, requireAppPrefix } from "./app-name.ts";
+import { APP_NAME, requireAppPrefix } from "./alchemy.app-name.ts";
 
 const WEB_LIMITS = { cpuMs: 1000 } as const;
 

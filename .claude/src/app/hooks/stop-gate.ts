@@ -1,6 +1,6 @@
 import { Effect, Schema, String as Str, pipe } from "effect";
 
-import { localBin, runCommand, runHook, writeJson } from "./env.ts";
+import { localBin, runCommand, runHook, writeJson } from "#/shared/lib/env.ts";
 
 const REPORTED_OUTPUT_LENGTH = 6000;
 
