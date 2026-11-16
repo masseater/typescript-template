@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect, Option, Schema, Scope } from "effect";
+import type { Effect, Option, Schema } from "effect";
 
 export type Sink = "stdout" | "stderr";
 
@@ -25,14 +25,5 @@ export class HookPlatform extends Context.Service<
     readonly join: (...segments: readonly string[]) => string;
     readonly relative: (from: string, to: string) => string;
     readonly sep: string;
-    readonly writeTempFile: (
-      name: string,
-      text: string,
-    ) => Effect.Effect<string, never, Scope.Scope>;
-    readonly relay: (
-      command: string,
-      args: readonly string[],
-      transform: (line: string) => string,
-    ) => Effect.Effect<void>;
   }
 >()("claude-harness/shared/lib/platform/HookPlatform") {}
