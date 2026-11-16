@@ -9,7 +9,7 @@ catalogMode: prefer
 
 catalog:
   "@ast-grep/cli": 0.51.2
-  "@cloudflare/workers-types": 5.20261112.1
+  "@cloudflare/workers-types": 5.20261113.1
   "@effect/platform-node": 4.1.4
   "@shadcn/lint": 0.2.5
   "@r_masseater/oxlint-typed-rules": 0.4.1
