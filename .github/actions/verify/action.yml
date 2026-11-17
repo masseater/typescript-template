@@ -5,7 +5,7 @@ inputs:
     description: A token that can read this repository
     required: true
   full-history:
-    description: Whether to fetch the whole history without blobs before verify, for builds that read commit dates
+    description: Whether to fetch the whole history before verify, for builds that read commit dates and checks that read the changes of past commits
     default: "false"
   share:
     description: Whether this job publishes the caches for cloud sessions, so that only one job of a run does
@@ -39,7 +39,7 @@ runs:
         restore-keys: vite-task-${{ runner.os }}-${{ runner.arch }}-
     - if: inputs.full-history == 'true'
       shell: bash
-      run: git fetch --unshallow --filter=blob:none origin
+      run: git fetch --unshallow origin
     - id: verify
       shell: bash
       env:
