@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config && effect-tsgo patch --typescript --oxlint && skills experimental_install --force"
+    "prepare": "vp config && effect-tsgo patch --typescript --oxlint && msch --prepare"
   },
   "devDependencies": {
     "@effect/platform-node": "catalog:",
@@ -15,7 +15,6 @@
     "effect": "catalog:stack",
     "fallow": "catalog:stack",
     "fallow-type-aware": "catalog:stack",
-    "skills": "catalog:",
     "vite-plus": "catalog:stack"
   },
   "devEngines": {
