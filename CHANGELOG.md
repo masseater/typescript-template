@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/masseater/typescript-template/compare/v1.1.0...v1.2.0) (2026-11-17)
+
+
+### Features
+
+* **ci:** auto-merge の無い PR の up-to-date を落とし、マージを update-branches のキュー経由に限る ([#526](https://github.com/masseater/typescript-template/issues/526)) ([41e4b86](https://github.com/masseater/typescript-template/commit/41e4b86c3a3cce08f6cbe8623d32adafdac0a903))
+* **deps:** パッケージを Takumi Guard のレジストリから入れる ([#527](https://github.com/masseater/typescript-template/issues/527)) ([658aa37](https://github.com/masseater/typescript-template/commit/658aa372c19251becc42be7a04114a7195b38607))
+* msch 0.32.0 の repositoryConfig でルートの設定を組み、fallow を .fallowrc.jsonc に移す ([#517](https://github.com/masseater/typescript-template/issues/517)) ([6d59994](https://github.com/masseater/typescript-template/commit/6d59994d7d782f7f95b1d18778061241c2727781))
+
 ## [1.1.0](https://github.com/masseater/typescript-template/compare/v1.0.0...v1.1.0) (2026-11-16)
 
 
