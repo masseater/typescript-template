@@ -14,10 +14,13 @@ const QUEUED = `.[] | select(.autoMergeRequest != null and (.isDraft | not)) | [
   .autoMergeRequest.enabledAt,
   .mergeStateStatus,
   ([.statusCheckRollup[]
-    | select((.conclusion // .state) as $result
+    | {name: (.name // .context), result: (.conclusion // .state), at: (.startedAt // .createdAt // "")}]
+    | group_by(.name)
+    | map(max_by(.at))
+    | map(select(.result as $result
       | ["ACTION_REQUIRED", "CANCELLED", "ERROR", "FAILURE", "STARTUP_FAILURE", "TIMED_OUT"]
-      | index($result))
-    | (.name // .context)] | join(","))
+      | index($result)) | .name)
+    | join(","))
 ] | @tsv`;
 const SETTLED = new Set(["BEHIND", "DIRTY"]);
 const UNKNOWN_RETRIES = 6;
