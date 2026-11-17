@@ -17,3 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: $/.github/actions/auto-merge-gate
+
+  wake:
+    needs: [up-to-date]
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.auto_merge
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run update-branches.yml --repo "$GITHUB_REPOSITORY" --ref "$DEFAULT_BRANCH"
