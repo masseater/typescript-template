@@ -2,6 +2,8 @@ name: up-to-date
 
 on:
   pull_request:
+    types:
+      [opened, synchronize, reopened, ready_for_review, auto_merge_enabled, auto_merge_disabled]
   workflow_dispatch:
 
 permissions: {}
@@ -14,4 +16,16 @@ jobs:
   up-to-date:
     runs-on: ubuntu-latest
     steps:
-      - run: "true"
+      - uses: $/.github/actions/auto-merge-gate
+
+  wake:
+    needs: [up-to-date]
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.auto_merge
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run update-branches.yml --repo "$GITHUB_REPOSITORY" --ref "$DEFAULT_BRANCH"

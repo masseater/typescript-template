@@ -1,0 +1,7 @@
+name: auto-merge-gate
+description: Fail the pull request's check until auto-merge is on, so every pull request merges through the update-branches queue instead of being merged by hand. Private repositories, which cannot turn auto-merge on under the Free plan, pass
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: node "$GITHUB_ACTION_PATH/auto-merge-gate.ts"
