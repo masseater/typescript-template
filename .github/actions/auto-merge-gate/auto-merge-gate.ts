@@ -1,17 +1,14 @@
 import { readFileSync } from "node:fs";
 
-import { EXIT_FAILURE, env, field, ghJson } from "../shared/runner.ts";
+import { EXIT_FAILURE, env, field } from "../shared/runner.ts";
 
 const event: unknown = JSON.parse(readFileSync(env("GITHUB_EVENT_PATH"), "utf8"));
 const pullRequest = field(event, "pull_request");
-if (pullRequest === undefined) {
-  process.exit();
-}
-if (field(pullRequest, "auto_merge") !== null) {
-  process.exit();
-}
-const repository = ghJson([`repos/${env("GITHUB_REPOSITORY")}`], env("GH_TOKEN"));
-if (field(repository, "allow_auto_merge") !== true) {
+const allowAutoMerge = field(field(event, "repository"), "allow_auto_merge");
+console.log(
+  `auto_merge: ${JSON.stringify(field(pullRequest, "auto_merge"))}, allow_auto_merge: ${String(allowAutoMerge)}`,
+);
+if (field(pullRequest, "auto_merge") !== null || allowAutoMerge === false) {
   process.exit();
 }
 console.log(
