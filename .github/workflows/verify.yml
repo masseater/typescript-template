@@ -7,6 +7,9 @@ on:
 
 permissions: {}
 
+env:
+  TAKUMI_GUARD_TOKEN: ${{ secrets.TAKUMI_GUARD_TOKEN }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
