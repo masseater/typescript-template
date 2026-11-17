@@ -4,7 +4,8 @@
     "config:recommended",
     "security:minimumReleaseAgeNpm",
     ":semanticCommits",
-    "group:allNonMajor"
+    "group:allNonMajor",
+    "github>masseater/masseater.dev//libs/vite-plus-adopt/renovate"
   ],
   "automerge": true,
   "configMigration": true,
@@ -32,10 +33,6 @@
       "allowedVersions": "/^(?:[7-9]|[1-9][0-9]+)\\.[0-9]+\\.[0-9]+(?:-(?:beta|rc)[0-9.]*)?$/"
     },
     {
-      "matchFileNames": ["skills-lock.json"],
-      "ignoreTests": false
-    },
-    {
       "matchManagers": ["github-actions"],
       "matchPackageNames": ["masseater/typescript-template"],
       "enabled": false
@@ -48,15 +45,6 @@
     }
   ],
   "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^skills-lock\\.json$/"],
-      "matchStrings": [
-        "\"source\": \"(?<depName>[^\"]+)\",\\s*\"ref\": \"(?<currentDigest>[0-9a-f]{40})\",\\s*\"sourceType\": \"github\""
-      ],
-      "datasourceTemplate": "git-refs",
-      "packageNameTemplate": "https://github.com/{{{depName}}}"
-    },
     {
       "customType": "regex",
       "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],

@@ -10,13 +10,12 @@ catalogMode: prefer
 catalog:
   "@cloudflare/workers-types": 5.20261113.1
   "@effect/platform-node": 4.1.4
-  "@r_masseater/msch": 0.32.0
+  "@r_masseater/msch": 0.34.0
   "@types/node": 26.6.6
   vite: npm:@voidzero-dev/vite-plus-core@1.6.0
   "@tanstack/react-query-devtools": 5.107.1
   "@vitejs/plugin-react": 6.3.0
   "@vitejs/plugin-rsc": 0.5.39
-  skills: 1.8.1
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
   "@r_masseater/web-vitals-flow": 0.2.0
@@ -65,9 +64,9 @@ allowBuilds:
   re2: true
   "@openrouter/sdk": false
 minimumReleaseAgeExclude:
-  - "@r_masseater/msch@0.32.0"
+  - "@r_masseater/msch@0.34.0"
   - "@r_masseater/oxlint-plugin-decision@0.8.0"
-  - "@r_masseater/vite-plus-adopt@0.6.0 || 0.8.1"
+  - "@r_masseater/vite-plus-adopt@0.9.0"
   - "@r_masseater/workers-tracing@0.3.0"
   - "@r_masseater/textlint-rule-preset-ja@0.1.1"
 audit:
