@@ -21,6 +21,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
+        with:
+          session-path: "true"
       - uses: $/.github/actions/verify
         with:
           github-token: ${{ github.token }}
