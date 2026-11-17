@@ -47,14 +47,14 @@ runs:
         VPA_BASE: ${{ github.event.before }}
       run: |
         root="/home/user/${GITHUB_REPOSITORY#*/}"
-        moved="$(realpath "$GITHUB_WORKSPACE")"
-        if [ "$moved" != "$root" ]; then
+        if [ "$GITHUB_WORKSPACE" -ef "$root" ]; then
+          cd "$root"
+          export PATH="${PATH//"$GITHUB_WORKSPACE"/$root}"
+        else
           sudo mkdir -p "$root"
           sudo mount --bind "$GITHUB_WORKSPACE" "$root"
-        fi
-        cd "$root"
-        export PATH="${PATH//"$GITHUB_WORKSPACE"/$root}"
-        if [ "$moved" != "$root" ]; then
+          cd "$root"
+          export PATH="${PATH//"$GITHUB_WORKSPACE"/$root}"
           vp install --frozen-lockfile
         fi
         node "$GITHUB_ACTION_PATH/verify.ts"
