@@ -3,12 +3,11 @@ import { readFileSync } from "node:fs";
 import { EXIT_FAILURE, env, field } from "../shared/runner.ts";
 
 const event: unknown = JSON.parse(readFileSync(env("GITHUB_EVENT_PATH"), "utf8"));
-const pullRequest = field(event, "pull_request");
-const allowAutoMerge = field(field(event, "repository"), "allow_auto_merge");
-console.log(
-  `auto_merge: ${JSON.stringify(field(pullRequest, "auto_merge"))}, allow_auto_merge: ${String(allowAutoMerge)}`,
-);
-if (field(pullRequest, "auto_merge") !== null || allowAutoMerge === false) {
+if (field(field(event, "pull_request"), "auto_merge") !== null) {
+  process.exit();
+}
+if (field(field(event, "repository"), "private") === true) {
+  console.log("Private repositories on the Free plan cannot turn auto-merge on");
   process.exit();
 }
 console.log(
