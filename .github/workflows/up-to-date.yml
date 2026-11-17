@@ -2,6 +2,8 @@ name: up-to-date
 
 on:
   pull_request:
+    types:
+      [opened, synchronize, reopened, ready_for_review, auto_merge_enabled, auto_merge_disabled]
   workflow_dispatch:
 
 permissions: {}
@@ -14,4 +16,6 @@ jobs:
   up-to-date:
     runs-on: ubuntu-latest
     steps:
-      - run: "true"
+      - uses: $/.github/actions/auto-merge-gate
+        with:
+          github-token: ${{ github.token }}

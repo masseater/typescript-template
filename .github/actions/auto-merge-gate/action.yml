@@ -1,0 +1,13 @@
+name: auto-merge-gate
+description: Fail the pull request's check until auto-merge is on, so every pull request merges through the update-branches queue instead of being merged by hand. Repositories that cannot turn auto-merge on pass
+inputs:
+  github-token:
+    description: A token that can read the repository's settings
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: node "$GITHUB_ACTION_PATH/auto-merge-gate.ts"
