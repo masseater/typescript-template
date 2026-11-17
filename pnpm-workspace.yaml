@@ -5,6 +5,8 @@ packages:
   - tools/*
   - .claude
 
+registry: https://npm.flatt.tech/
+
 catalogMode: prefer
 
 catalog:
