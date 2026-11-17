@@ -15,27 +15,10 @@ Cloudflare Workers で動く Web アプリのテンプレートである。
 
 ## コードマップ
 
-### `apps/web`
-
-TanStack Start の RSC のアプリである。
-
-### `apps/lp`
-
-誰にでも見せる静的なページの見本である。
-デプロイは `apps/web` のスタックが `Website.StaticSite` で行う。
-
-### `libs/security-headers`
-
-セキュリティヘッダと CSP を組み立てる。
-`apps/web` と `apps/lp` が同じ値を使うために切り出してある。
-
-### `tools/web-vitals`
-
-本番の Web Vitals を `@r_masseater/web-vitals-flow` で測る。
-
-### `.claude`
-
-Claude Code のフックで、それ自体もワークスペースの 1 つである。
+ワークスペースの一覧は pnpm-workspace.yaml にあり、それぞれの役割は各 package.json と README にある。
+`apps/` はデプロイするアプリ、`libs/` は複数のアプリが使う部品、`tools/` は開発と計測のための道具である。
+誰にでも見せる静的なページは、それを配るアプリのスタックが `Website.StaticSite` でデプロイする。
+`.claude` は Claude Code のフックで、それ自体もワークスペースの 1 つである。
 
 ### `.github`
 
