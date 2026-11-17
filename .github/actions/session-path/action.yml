@@ -1,0 +1,11 @@
+name: session-path
+description: Right after checkout, move the checkout to /home/user/<repository>, where cloud sessions check out, and leave a link at the workspace, so that the one install of the setup action and every later step run under the paths that cache keys hold, and the package store still hard links into the checkout
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        root="/home/user/${GITHUB_REPOSITORY#*/}"
+        sudo mkdir -p "${root%/*}"
+        sudo mv "$GITHUB_WORKSPACE" "$root"
+        ln -s "$root" "$GITHUB_WORKSPACE"

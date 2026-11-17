@@ -1,5 +1,5 @@
 name: verify
-description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs, from /home/user/<repository> where cloud sessions check out so that cache keys hold the same paths, going on with each task verify depends on after a failure so that the cache fills, and on the default branch of a public repository publish those caches as an artifact for cloud sessions
+description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs, from /home/user/<repository> where cloud sessions check out so that cache keys hold the same paths (the checkout that the session-path action moved there, or else a bind mount with a second install), going on with each task verify depends on after a failure so that the cache fills, and on the default branch of a public repository publish those caches as an artifact for cloud sessions
 inputs:
   github-token:
     description: A token that can read this repository
@@ -47,11 +47,16 @@ runs:
         VPA_BASE: ${{ github.event.before }}
       run: |
         root="/home/user/${GITHUB_REPOSITORY#*/}"
-        sudo mkdir -p "$root"
-        sudo mount --bind "$GITHUB_WORKSPACE" "$root"
+        moved="$(realpath "$GITHUB_WORKSPACE")"
+        if [ "$moved" != "$root" ]; then
+          sudo mkdir -p "$root"
+          sudo mount --bind "$GITHUB_WORKSPACE" "$root"
+        fi
         cd "$root"
         export PATH="${PATH//"$GITHUB_WORKSPACE"/$root}"
-        vp install --frozen-lockfile
+        if [ "$moved" != "$root" ]; then
+          vp install --frozen-lockfile
+        fi
         node "$GITHUB_ACTION_PATH/verify.ts"
     - if: always() && steps.verify.outcome != 'skipped'
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
