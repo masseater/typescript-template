@@ -145,6 +145,6 @@ export default defineConfig({
       skills: ["shadcn"],
     },
   },
-  markdownlint: { ignores: ["AGENTS.md", ".agents/skills/**", "CHANGELOG.md"] },
+  markdownlint: { ignores: ["**/AGENTS.md", "**/CLAUDE.md", ".agents/skills/**"] },
   msch: { workspaceAgentsMd: true },
 });

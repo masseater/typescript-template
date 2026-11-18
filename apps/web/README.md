@@ -1,5 +1,7 @@
 # web
 
+Cloudflare Workers で動く Web アプリで、SSR と `/api/*` を 1 つの Worker で受け、データを D1 に置く。
+
 ## アプリ名を変える
 
 `alchemy.app-name.ts` の `APP_NAME` を、リポジトリの名前に変える。

@@ -1,7 +1,6 @@
 # web
 
-- テストを 1 つだけ走らせるときは、
-  このワークスペースで `vp test run <ファイル>` を実行する。
-- D1 のスキーマは `*.table.ts` に書き、
-  このワークスペースで `vp run db:generate` を実行してマイグレーションを作る。
-  better-auth のテーブルは `vp run auth:generate` で生成する。
+The web app: one Cloudflare Worker that serves SSR and `/api/*`, with its data in D1.
+
+- To run one test, run `vp test run <file>` in this workspace.
+- Write D1 schemas in `*.table.ts` and run `vp run db:generate` in this workspace to create the migration. Generate the better-auth tables with `vp run auth:generate`.

@@ -3,9 +3,7 @@ import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { env } from "cloudflare:workers";
 
-import { db } from "#/shared/db/client.server";
-
-import { account, authRelations, session, user, verification } from "./generated/auth.table";
+import { account, authRelations, db, session, user, verification } from "#/shared/db/index.server";
 
 export const auth = betterAuth({
   baseURL: { allowedHosts: ["*.workers.dev", "localhost:*"] },

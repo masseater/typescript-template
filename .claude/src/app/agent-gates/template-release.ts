@@ -4,12 +4,12 @@ import { getJson, projectDir, runHook, writeJson } from "#/shared/lib/env.ts";
 import { HookPlatform } from "#/shared/lib/platform.ts";
 
 const TEMPLATE_REPOSITORY = "masseater/typescript-template";
-const MANIFEST_FILE = ".github/release-please/manifest.json";
+const MANIFEST_FILE = "package.json";
 const REQUEST_TIMEOUT = "5 seconds";
 const NOTES_LENGTH = 4000;
 const WORKTREE_SEGMENT = "/.claude/worktrees/";
 
-const Manifest = Schema.Struct({ ".": Schema.String });
+const Manifest = Schema.Struct({ version: Schema.String });
 
 const Release = Schema.Struct({
   tag_name: Schema.String,
@@ -32,7 +32,7 @@ const currentVersion = Effect.gen(function* currentVersion() {
     .readFile(platform.join(directory, MANIFEST_FILE))
     .pipe(Effect.flatMap((found) => Effect.fromOption(found)));
   const manifest = yield* Schema.decodeEffect(Schema.fromJsonString(Manifest))(text);
-  return `v${manifest["."]}`;
+  return `v${manifest.version}`;
 });
 
 const latestRelease = getJson(
