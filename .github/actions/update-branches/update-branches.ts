@@ -20,9 +20,9 @@ const QUEUED = `.[] | select(.autoMergeRequest != null and (.isDraft | not)) | [
   .autoMergeRequest.enabledAt,
   .mergeStateStatus,
   ([.statusCheckRollup[]
-    | {name: (.name // .context), result: (.conclusion // .state // ""), at: (.startedAt // .createdAt // "")}]
+    | {name: (.name // .context), result: (if (.status // "COMPLETED") == "COMPLETED" then (.conclusion // .state // "") else "PENDING" end), at: (.startedAt // .createdAt // "")}]
     | group_by(.name)
-    | map(max_by(.at) | "\\(.name)=\\(.result)=\\(.at)")
+    | map((map(select(.result == "PENDING")) | first) // max_by(.at) | "\\(.name)=\\(.result)=\\(.at)")
     | join(","))
 ] | @tsv`;
 const SETTLED = new Set(["BEHIND", "DIRTY"]);
