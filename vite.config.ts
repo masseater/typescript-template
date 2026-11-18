@@ -111,7 +111,7 @@ export default defineConfig({
       skills: ["systematic-debugging", "verification-before-completion"],
     },
     "philtzjp/skills": {
-      commit: "1d04a001f2828883fed2094497e5a58555d63f0a",
+      commit: "3cf41172166f2868bfcfe7a10e01a753e3cbcea0",
       root: ".agents/skills",
       skills: [
         "analytics",
