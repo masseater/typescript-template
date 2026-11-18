@@ -27,7 +27,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-      id-token: write
     steps:
       - uses: $/.github/actions/ci-telemetry
         with:

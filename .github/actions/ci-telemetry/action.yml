@@ -1,16 +1,19 @@
 name: ci-telemetry
-description: Send the job and step durations of this run to the ci-telemetry Worker of masseater.dev
+description: Keep the durations of this run as an artifact named telemetry-run-<attempt>, in one OpenTelemetry trace written as OTLP JSON (ci.jsonl) with a span for the run, each job, each step, each step inside a composite action and each vp task, read from the jobs of the run and their logs
 inputs:
   github-token:
-    description: A token that can read the jobs of this run
+    description: A token that can read the jobs of this run and their logs
     required: true
 runs:
   using: composite
   steps:
-    - if: github.ref == 'refs/heads/main'
-      shell: bash
-      run: node "$GITHUB_ACTION_PATH/../credentials/credentials.ts"
     - shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        CI_TELEMETRY_FILES: ${{ runner.temp }}/ci-telemetry
       run: node "$GITHUB_ACTION_PATH/ci-telemetry.ts"
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: telemetry-run-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/ci-telemetry/
+        retention-days: 30
