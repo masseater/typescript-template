@@ -10,14 +10,16 @@ interface Check {
 
 interface PullRequest {
   readonly number: string;
+  readonly head: string;
   readonly enabledAt: string;
   readonly mergeStateStatus: string;
   readonly checks: readonly Check[];
 }
 
-const QUEUED = `.[] | select(.autoMergeRequest != null and (.isDraft | not)) | [
+const OPEN = `.[] | select(.isDraft | not) | [
   (.number | tostring),
-  .autoMergeRequest.enabledAt,
+  .headRefOid,
+  (.autoMergeRequest.enabledAt // ""),
   .mergeStateStatus,
   ([.statusCheckRollup[]
     | {name: (.name // .context), result: (if (.status // "COMPLETED") == "COMPLETED" then (.conclusion // .state // "") else "PENDING" end), at: (.startedAt // .createdAt // "")}]
@@ -63,9 +65,11 @@ const parseCheck = (entry: string): Check => {
 };
 
 const parse = (line: string): PullRequest => {
-  const [number = "", enabledAt = "", mergeStateStatus = "", checks = ""] = line.split("\t");
+  const [number = "", head = "", enabledAt = "", mergeStateStatus = "", checks = ""] =
+    line.split("\t");
   return {
     number,
+    head,
     enabledAt,
     mergeStateStatus,
     checks: checks
@@ -76,7 +80,7 @@ const parse = (line: string): PullRequest => {
   };
 };
 
-const listQueued = async (retries: number): Promise<readonly PullRequest[]> => {
+const listOpen = async (retries: number): Promise<readonly PullRequest[]> => {
   const pulls = gh([
     "pr",
     "list",
@@ -87,13 +91,13 @@ const listQueued = async (retries: number): Promise<readonly PullRequest[]> => {
     "--limit",
     LIST_LIMIT,
     "--json",
-    "number,isDraft,mergeStateStatus,autoMergeRequest,statusCheckRollup",
+    "number,isDraft,headRefOid,mergeStateStatus,autoMergeRequest,statusCheckRollup",
     "--jq",
-    QUEUED,
+    OPEN,
   ]).map((line) => parse(line));
   if (retries > NONE && pulls.some((pull) => pull.mergeStateStatus === "UNKNOWN")) {
     await sleep(RETRY_DELAY_MS);
-    return listQueued(retries - ONE);
+    return listOpen(retries - ONE);
   }
   return pulls;
 };
@@ -117,25 +121,55 @@ const ejectReason = (pull: PullRequest): string | undefined => {
   return undefined;
 };
 
+const comment = (pull: PullRequest, body: string): void => {
+  gh(["pr", "comment", pull.number, "--repo", repository, "--body", body]);
+};
+
+const marker = (pull: PullRequest): string =>
+  `<!-- update-branches:${pull.mergeStateStatus}:${pull.head} -->`;
+
+const reportConflict = (pull: PullRequest): void => {
+  try {
+    const bodies = gh([
+      "api",
+      "--paginate",
+      `repos/${repository}/issues/${pull.number}/comments`,
+      "--jq",
+      ".[].body",
+    ]);
+    if (bodies.some((body) => body.includes(marker(pull)))) {
+      return;
+    }
+    comment(
+      pull,
+      `${marker(pull)}\nThis pull request conflicts with \`${defaultBranch}\`, and it is not in the merge queue because auto-merge is off. GitHub runs no checks on a conflicting pull request, so nothing moves it. Merge \`${defaultBranch}\` into this branch and resolve the conflict, then turn auto-merge on (\`gh pr merge --auto --squash\`) to join the queue.`,
+    );
+    console.log(`::warning::#${pull.number} conflicts with ${defaultBranch} outside the queue`);
+  } catch {
+    console.log(`::warning::Could not report the conflict on pull request #${pull.number}`);
+  }
+};
+
 const eject = (pull: PullRequest, reason: string): void => {
   try {
     gh(["pr", "merge", pull.number, "--repo", repository, "--disable-auto"]);
-    gh([
-      "pr",
-      "comment",
-      pull.number,
-      "--repo",
-      repository,
-      "--body",
-      `Removed from the merge queue because ${reason}. The rest of the queue moves on without this pull request. Fix it on this branch, then turn auto-merge on again (\`gh pr merge --auto --squash\`) to rejoin the queue at the back.`,
-    ]);
+    comment(
+      pull,
+      `${marker(pull)}\nRemoved from the merge queue because ${reason}. The rest of the queue moves on without this pull request. Fix it on this branch, then turn auto-merge on again (\`gh pr merge --auto --squash\`) to rejoin the queue at the back.`,
+    );
     console.log(`::warning::Removed #${pull.number} from the queue: ${reason}`);
   } catch {
     console.log(`::warning::Could not remove pull request #${pull.number} from the queue`);
   }
 };
 
-const queued = await listQueued(UNKNOWN_RETRIES);
+const open = await listOpen(UNKNOWN_RETRIES);
+for (const pull of open) {
+  if (pull.enabledAt === "" && pull.mergeStateStatus === "DIRTY") {
+    reportConflict(pull);
+  }
+}
+const queued = open.filter((pull) => pull.enabledAt !== "");
 const ejected = new Set(
   queued.flatMap((pull) => {
     const reason = ejectReason(pull);
@@ -160,7 +194,10 @@ const next = waiting.find((pull) => {
     gh(["pr", "update-branch", pull.number, "--repo", repository]);
     return true;
   } catch {
-    console.log(`::warning::Could not update pull request #${pull.number}`);
+    eject(
+      pull,
+      `GitHub refused to merge \`${defaultBranch}\` into it (\`gh pr update-branch\` failed; see the update-branches run log for the error)`,
+    );
     return false;
   }
 });
