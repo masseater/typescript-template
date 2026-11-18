@@ -1,5 +1,5 @@
 name: update-branches
-description: Act as the merge queue for pull requests with auto-merge on. Remove a pull request that conflicts with the default branch or fails a required check from the queue by turning its auto-merge off, and comment the reason on it. When no other pull request is on its way to merging, bring the one that turned auto-merge on first and is behind the default branch up to date, so the required checks run once on top of the newest main and auto-merge lands it before the next one starts
+description: Act as the merge queue for pull requests with auto-merge on. Remove a pull request that conflicts with the default branch, fails a required check, or cannot be brought up to date from the queue by turning its auto-merge off, and comment the reason on it. Comment once per head commit on a conflicting pull request that is outside the queue, so whoever watches it hears about the conflict. When no other pull request is on its way to merging, bring the one that turned auto-merge on first and is behind the default branch up to date, so the required checks run once on top of the newest main and auto-merge lands it before the next one starts
 runs:
   using: composite
   steps:
