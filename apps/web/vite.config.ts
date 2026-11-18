@@ -30,7 +30,7 @@ export default defineConfig({
       ],
       "auth:generate": {
         command:
-          "auth generate --config src/shared/auth/auth.server.ts --output src/shared/auth/generated/auth.table.ts --yes",
+          "auth generate --config src/shared/auth/auth.server.ts --output src/shared/db/generated/auth.table.ts --yes",
       },
     },
   },

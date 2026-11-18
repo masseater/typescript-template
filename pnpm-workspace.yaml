@@ -12,7 +12,7 @@ catalogMode: prefer
 catalog:
   "@cloudflare/workers-types": 5.20261115.1
   "@effect/platform-node": 4.1.4
-  "@r_masseater/msch": 0.38.1
+  "@r_masseater/msch": 0.48.0
   "@types/node": 26.6.6
   vite: npm:@voidzero-dev/vite-plus-core@1.6.0
   "@tanstack/react-query-devtools": 5.107.1
@@ -47,12 +47,12 @@ catalogs:
     typescript: 7.1.0-beta
     vite-plus: 1.6.0
 overrides:
-  vite@*: "catalog:"
-  glob@>=9.0.0 <=14.0.1: ^14.0.2
-  "capnp-es>typescript": "-"
-  katex@>=0.11.0 <0.18.2: ^0.19.0
-  minimatch@<11.0.1: ^11.0.1
-  seroval@<1.6.11: ^1.6.11
+  vite@*: "catalog:" # exit: unused
+  glob@>=9.0.0 <=14.0.1: ^14.0.2 # exit: unused
+  "capnp-es>typescript": "-" # exit: npm:capnp-es drops typescript || npm:capnp-es allows typescript@>=7
+  katex@>=0.11.0 <0.18.2: ^0.19.0 # exit: unused
+  minimatch@<11.0.1: ^11.0.1 # exit: unused
+  seroval@<1.6.11: ^1.6.11 # exit: unused
 peerDependencyRules:
   allowAny:
     - vite
@@ -66,8 +66,24 @@ allowBuilds:
   re2: true
   "@openrouter/sdk": false
 minimumReleaseAgeExclude:
-  - "@r_masseater/msch@0.38.1"
+  - "@r_masseater/msch@0.48.0"
   - "@r_masseater/oxlint-plugin-decision@0.8.0"
   - "@r_masseater/vite-plus-adopt@0.10.2"
+  - "@r_masseater/fu4-linux-x64-gnu@0.1.0"
+  - "@r_masseater/fu4-win32-x64-msvc@0.1.0"
+  - "@r_masseater/fu4@0.1.0"
+  - "@r_masseater/h56m-linux-x64-gnu@0.1.0"
+  - "@r_masseater/h56m-presets@0.1.0"
+  - "@r_masseater/h56m-win32-x64-msvc@0.1.0"
+  - "@r_masseater/h56m@0.1.0"
+  - "@r_masseater/textlint-rule-preset-ja@0.2.0"
+  - "@r_masseater/wism-linux-x64-gnu@0.2.0"
+  - "@r_masseater/wism-presets@0.1.0"
+  - "@r_masseater/wism-win32-x64-msvc@0.2.0"
+  - "@r_masseater/wism@0.2.0"
+  - "@r_masseater/y8-linux-x64-gnu@0.1.0 || 0.2.0"
+  - "@r_masseater/y8-presets@0.1.0 || 0.2.0"
+  - "@r_masseater/y8-win32-x64-msvc@0.1.0 || 0.2.0"
+  - "@r_masseater/y8@0.1.0 || 0.2.0"
 audit:
   ignorePrune: true

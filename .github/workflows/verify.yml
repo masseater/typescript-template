@@ -77,47 +77,8 @@ jobs:
           path: tools/*/report/
           if-no-files-found: ignore
 
-  release:
-    needs: verify
-    if: github.repository == 'masseater/typescript-template'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
-      actions: write
-    concurrency:
-      group: release
-    steps:
-      - id: tagged
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        with:
-          config-file: .github/release-please/config.json
-          manifest-file: .github/release-please/manifest.json
-          skip-github-pull-request: true
-      - if: github.event_name == 'workflow_dispatch'
-        uses: $/.github/actions/credentials
-      - if: github.event_name == 'workflow_dispatch'
-        id: release-pr
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        with:
-          token: ${{ env.GITHUB_APP_TOKEN }}
-          config-file: .github/release-please/config.json
-          manifest-file: .github/release-please/manifest.json
-          skip-github-release: true
-      - if: steps.release-pr.outputs.pr
-        env:
-          GH_TOKEN: ${{ env.GITHUB_APP_TOKEN }}
-          PR: ${{ steps.release-pr.outputs.pr }}
-        run: gh pr merge "$(jq -r .number <<<"$PR")" --repo "$GITHUB_REPOSITORY" --squash --auto
-      - if: steps.tagged.outputs.release_created == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tagged.outputs.tag_name }}
-        run: gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref main -f ref="$TAG"
-
   ci-telemetry:
-    needs: [verify, autofix, deploy, release]
+    needs: [verify, autofix, deploy]
     if: always()
     runs-on: ubuntu-latest
     permissions:

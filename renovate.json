@@ -5,7 +5,8 @@
     "security:minimumReleaseAgeNpm",
     ":semanticCommits",
     "group:allNonMajor",
-    "github>masseater/masseater.dev//libs/vite-plus-adopt/renovate"
+    "github>masseater/masseater.dev//libs/vite-plus-adopt/renovate",
+    "github>masseater/masseater.dev//libs/msch/renovate"
   ],
   "automerge": true,
   "configMigration": true,

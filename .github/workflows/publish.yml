@@ -1,14 +1,12 @@
 name: publish
 
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
     inputs:
-      ref:
-        description: Commit, branch, or tag to release
-        required: false
-        default: main
+      workspace:
+        description: Workspace directory to publish, such as . or libs/example
+        required: true
+        type: string
 
 permissions: {}
 
@@ -16,85 +14,188 @@ env:
   TAKUMI_GUARD_TOKEN: ${{ secrets.TAKUMI_GUARD_TOKEN }}
 
 concurrency:
-  group: publish
+  group: publish-${{ inputs.workspace }}
   cancel-in-progress: false
 
 jobs:
-  publish:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      plan: ${{ steps.plan.outputs.plan }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - id: plan
+        run: vp exec msch-publish plan "$WORKSPACE"
+        env:
+          WORKSPACE: ${{ inputs.workspace }}
+          GH_TOKEN: ${{ github.token }}
+
+  native:
+    needs: plan
+    if: fromJSON(needs.plan.outputs.plan).native[0] != null
+    name: native (${{ matrix.platform.target }})
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: ${{ fromJSON(needs.plan.outputs.plan).native }}
+    runs-on: ${{ matrix.platform.runner }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          cache: "false"
+      - run: vp run --filter "./$DIRECTORY" native
+        env:
+          DIRECTORY: ${{ fromJSON(needs.plan.outputs.plan).directory }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native@${{ matrix.platform.target }}
+          path: ${{ fromJSON(needs.plan.outputs.plan).directory }}/native/*.node
+          if-no-files-found: error
+
+  build:
+    needs: plan
+    if: fromJSON(needs.plan.outputs.plan).builds[0] != null
+    name: build (${{ matrix.platform.os }})
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: ${{ fromJSON(needs.plan.outputs.plan).builds }}
+    runs-on: ${{ matrix.platform.runner }}
+    environment: ${{ fromJSON(needs.plan.outputs.plan).environment }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - run: vp run --filter "./$DIRECTORY" "release:$OS"
+        env:
+          DIRECTORY: ${{ fromJSON(needs.plan.outputs.plan).directory }}
+          OS: ${{ matrix.platform.os }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release@${{ matrix.platform.os }}
+          path: ${{ fromJSON(needs.plan.outputs.plan).directory }}/release-assets
+          if-no-files-found: error
+          compression-level: 0
+
+  check:
+    needs: [plan, build]
+    if: fromJSON(needs.plan.outputs.plan).checks[0] != null
+    name: check (${{ matrix.platform.os }})
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: ${{ fromJSON(needs.plan.outputs.plan).checks }}
+    runs-on: ${{ matrix.platform.runner }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release@${{ matrix.platform.os }}
+          path: ${{ fromJSON(needs.plan.outputs.plan).directory }}/release-assets
+      - run: vp run --filter "./$DIRECTORY" "release:check:$OS"
+        env:
+          DIRECTORY: ${{ fromJSON(needs.plan.outputs.plan).directory }}
+          OS: ${{ matrix.platform.os }}
+
+  npm:
+    needs: [plan, native, build, check]
+    if: >-
+      !cancelled() && fromJSON(needs.plan.outputs.plan).npm
+      && contains(fromJSON('["success", "skipped"]'), needs.native.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.build.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.check.result)
     runs-on: ubuntu-latest
     environment: npm
     permissions:
       contents: read
       id-token: write
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
-      sha: ${{ steps.version.outputs.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
       - uses: $/.github/actions/setup
         with:
           cache: "false"
-      - name: Check package versions
-        id: version
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          TAG: ${{ github.ref_name }}
-        run: node .github/scripts/publish/versions.ts
-      - if: steps.version.outputs.packages != ''
-        run: vp run verify
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - if: steps.version.outputs.packages != ''
-        name: Pack
-        env:
-          PACKAGES: ${{ steps.version.outputs.packages }}
-        run: node .github/scripts/publish/pack.ts
-      - if: steps.version.outputs.packages != ''
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
-      - name: Check the release tag is free
-        if: github.event_name == 'workflow_dispatch' && steps.version.outputs.packages != ''
+      - if: needs.native.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: native@*
+          path: ${{ fromJSON(needs.plan.outputs.plan).directory }}/native
+          merge-multiple: true
+      - run: vp exec msch-publish npm "$DIRECTORY"
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          TAG: ${{ steps.version.outputs.tag }}
-          SHA: ${{ steps.version.outputs.sha }}
-        run: node .github/scripts/publish/release-tag.ts
-      - if: steps.version.outputs.packages != ''
-        name: Publish
-        env:
-          PACKAGES: ${{ steps.version.outputs.packages }}
-        run: node .github/scripts/publish/npm-publish.ts
+          DIRECTORY: ${{ fromJSON(needs.plan.outputs.plan).directory }}
 
-  tag:
-    needs: publish
-    if: github.event_name == 'workflow_dispatch' && needs.publish.outputs.tag != ''
+  release:
+    needs: [plan, build, check, npm]
+    if: >-
+      !cancelled() && (fromJSON(needs.plan.outputs.plan).npm || fromJSON(needs.plan.outputs.plan).release
+        || !fromJSON(needs.plan.outputs.plan).tagged)
+      && contains(fromJSON('["success", "skipped"]'), needs.build.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.check.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.npm.result)
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.publish.outputs.sha }}
           persist-credentials: false
-          sparse-checkout: .github
-      - name: Tag the release
+      - uses: $/.github/actions/setup
+      - if: fromJSON(needs.plan.outputs.plan).builds[0] != null
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release@*
+          path: ${{ fromJSON(needs.plan.outputs.plan).directory }}/release-assets
+          merge-multiple: true
+      - id: release
+        run: vp exec msch-publish release "$DIRECTORY"
         env:
-          MODE: create
+          DIRECTORY: ${{ fromJSON(needs.plan.outputs.plan).directory }}
           GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          TAG: ${{ needs.publish.outputs.tag }}
-          SHA: ${{ needs.publish.outputs.sha }}
-        run: node .github/scripts/publish/release-tag.ts
+      - if: fromJSON(needs.plan.outputs.plan).hook
+        run: vp run --filter "./$DIRECTORY" release:publish
+        env:
+          DIRECTORY: ${{ fromJSON(needs.plan.outputs.plan).directory }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
 
   ci-telemetry:
-    needs: [publish, tag]
+    needs: [plan, native, build, check, npm, release]
     if: always()
     runs-on: ubuntu-latest
     permissions:

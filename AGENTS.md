@@ -1,9 +1,16 @@
-`masseater-ecosystem` に従うこと。これは masseater/skills のスキルで、状況ごとに読み込むスキルを指定する。`vp install` はスキルを `.agents/skills/` に配置する。
+# typescript-template
 
-## コマンド
+A template for apps that run on Cloudflare Workers and keep their data in D1. Follow `masseater-ecosystem`, a skill in masseater/skills that says which skills to load in each situation. `vp install` puts the skills in `.agents/skills/`.
 
-- `vp run verify` が検査をまとめて流す。pre-push フックと Stop フックも同じ verify を走らせる。
+## Tech stack
 
-## 構成
+The base stack is TypeScript 7, Effect, Alchemy and Cloudflare.
 
-- 構成と、依存してよい向きは ARCHITECTURE.md にある。ワークスペースを変更する前に、そのワークスペースの AGENTS.md があれば読む。ワークスペースや層の境界、不変条件が変わるときだけ ARCHITECTURE.md を直す。
+## Commands
+
+- `vp run verify` runs every check. The pre-push hook and the Stop hook run the same verify.
+- To release the template, bump `version` in the root `package.json` in a PR, merge it, and dispatch the `publish` workflow with the workspace `.`.
+
+## Rules
+
+- ARCHITECTURE.md says which way dependencies may point. Read a workspace's AGENTS.md, if it has one, before changing that workspace. Update ARCHITECTURE.md only when workspace or layer boundaries or invariants change.

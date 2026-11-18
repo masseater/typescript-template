@@ -10,6 +10,7 @@
     "plugins": [
       {
         "name": "@effect/language-service",
+        "diagnostics": false,
         "allowedUnstableApis": [
           "@effect/platform-node/NodeServices#layer",
           "effect/FileSystem#FileSystem",
