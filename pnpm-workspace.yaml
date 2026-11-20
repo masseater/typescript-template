@@ -10,7 +10,7 @@ registry: https://npm.flatt.tech/
 catalogMode: prefer
 
 catalog:
-  "@cloudflare/workers-types": 5.20261116.1
+  "@cloudflare/workers-types": 5.20261117.1
   "@effect/platform-node": 4.1.4
   "@r_masseater/msch": 0.48.0
   "@types/node": 26.6.6
@@ -21,12 +21,12 @@ catalog:
   "@tanstack/intent": 0.5.6
   "@yarnpkg/parsers": 3.1.0
   "@r_masseater/web-vitals-flow": 0.2.0
-  "@r_masseater/workers-tracing": 0.3.0
+  "@r_masseater/workers-tracing": 0.5.0
 catalogs:
   stack:
     "@distilled.cloud/cloudflare": 1.0.0-rc.20
     "@effect/atom-react": 4.1.4
-    "@effect/tsgo": 0.69.0
+    "@effect/tsgo": 0.70.0
     "@elysiajs/eden": 1.4.9
     "@openfeature/server-sdk": 1.23.0
     "@tanstack/react-query": 5.107.1
@@ -45,7 +45,7 @@ catalogs:
     radix-ui: 1.8.1
     tailwindcss: 4.3.5
     typescript: 7.1.0-beta
-    vite-plus: 1.6.0
+    vite-plus: 1.7.0
 overrides:
   vite@*: "catalog:" # exit: unused
   glob@>=9.0.0 <=14.0.1: ^14.0.2 # exit: unused
