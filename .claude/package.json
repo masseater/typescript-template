@@ -2,6 +2,7 @@
   "name": "claude-harness",
   "version": "0.0.0",
   "private": true,
+  "description": "Claude Code hooks and agent gates for this repository: session start setup, verify on stop, and checks on tool calls.",
   "type": "module",
   "imports": {
     "#/*": "./src/*"
