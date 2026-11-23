@@ -101,7 +101,7 @@ export default defineConfig({
       skills: ["typescript-discriminated-unions", "typescript-variables"],
     },
     "nanaism/yomiyasu": {
-      commit: "49a2c536ada1519e686eff43427021153af7efdc",
+      commit: "ddf365b5d5b36a7aa4ffab798dce1b694dbb1afd",
       root: "skills",
       skills: ["yomiyasu"],
     },
