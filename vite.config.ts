@@ -140,7 +140,7 @@ export default defineConfig({
       ],
     },
     "shadcn-ui/ui": {
-      commit: "bfa64ff4d1cb7317d2403ecb176df6826d4caffc",
+      commit: "055aa6b7837b1808456a24beb4c97a677864aa82",
       root: "skills",
       skills: ["shadcn"],
     },
