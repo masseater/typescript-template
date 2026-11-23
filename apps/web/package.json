@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@alchemy.run/cloudflare": "catalog:stack",
-    "@better-auth/drizzle-adapter": "1.7.26",
+    "@better-auth/drizzle-adapter": "1.7.27",
     "@effect/atom-react": "catalog:stack",
     "@elysiajs/eden": "catalog:stack",
     "@openfeature/core": "1.12.0",
@@ -49,7 +49,7 @@
     "@vitejs/plugin-react": "catalog:",
     "@vitejs/plugin-rsc": "catalog:",
     "alchemy": "catalog:stack",
-    "auth": "1.7.26",
+    "auth": "1.7.27",
     "drizzle-kit": "catalog:stack",
     "typescript": "catalog:stack",
     "vite": "catalog:",
