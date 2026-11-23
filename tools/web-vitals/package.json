@@ -2,6 +2,7 @@
   "name": "web-vitals",
   "version": "0.0.0",
   "private": true,
+  "description": "Measures Web Vitals of the deployed web app with web-vitals-flow after each production deploy.",
   "type": "module",
   "devDependencies": {
     "@r_masseater/web-vitals-flow": "catalog:"

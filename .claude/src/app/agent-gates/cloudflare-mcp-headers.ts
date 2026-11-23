@@ -1,6 +1,6 @@
 import { CloudflareApiLive, Credentials } from "@alchemy.run/cloudflare";
 import { formatHeaders } from "@distilled.cloud/cloudflare/Credentials";
-import { NodeServices } from "@effect/platform-node";
+import { layer as nodeServices } from "@effect/platform-node/NodeServices";
 import { AuthProviders } from "alchemy";
 import { Effect, Layer, Schema } from "effect";
 import { SecureRandom } from "effect/crypto";
@@ -12,7 +12,7 @@ const Headers = Schema.Record(Schema.String, Schema.String);
 
 const cloudflareApi = CloudflareApiLive().pipe(
   Layer.provide(Layer.succeed(AuthProviders, {})),
-  Layer.provide(NodeServices.layer),
+  Layer.provide(nodeServices),
   Layer.provide(FetchHttpClient.layer),
   Layer.provide(SecureRandom.layerWebCrypto),
 );

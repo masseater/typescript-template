@@ -35,6 +35,7 @@ export default defineConfig({
     },
   },
   test: {
+    isolate: true,
     projects: [
       { extends: true, test: { name: "app", include: ["src/**/*.test.{ts,tsx}"] } },
       { extends: false, test: { name: "alchemy", include: ["*.test.ts"] } },

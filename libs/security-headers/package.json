@@ -2,6 +2,7 @@
   "name": "security-headers",
   "version": "0.0.0",
   "private": true,
+  "description": "Security response headers and a Content-Security-Policy builder shared by the apps.",
   "type": "module",
   "exports": {
     ".": "./src/app/index.ts"

@@ -2,6 +2,8 @@
 
 Cloudflare Workers で動く Web アプリで、SSR と `/api/*` を 1 つの Worker で受け、データを D1 に置く。
 
+テンプレート自身は <https://typescript-template-web-production-ntesuocc46gilfjl.masseater.workers.dev> に配信している。
+
 ## アプリ名を変える
 
 `alchemy.app-name.ts` の `APP_NAME` を、リポジトリの名前に変える。

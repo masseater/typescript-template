@@ -53,6 +53,16 @@
   "customManagers": [
     {
       "customType": "regex",
+      "managerFilePatterns": ["/^\\.claude/settings\\.json$/"],
+      "matchStrings": [
+        "\"repo\": \"(?<depName>masseater/cc-jev-teacher)\",\\s+\"ref\": \"(?<currentDigest>[a-f0-9]{40})\""
+      ],
+      "currentValueTemplate": "main",
+      "packageNameTemplate": "https://github.com/{{depName}}",
+      "datasourceTemplate": "git-refs"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
       "matchStrings": [
         "uses: (?<depName>masseater/typescript-template)/\\.github/actions/[a-z-]+@(?<currentDigest>[0-9a-f]{40})"
