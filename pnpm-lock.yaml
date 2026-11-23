@@ -177,8 +177,8 @@ catalogs:
       specifier: 5.20261120.1
       version: 5.20261120.1
     '@effect/platform-node':
-      specifier: 4.1.4
-      version: 4.1.4
+      specifier: 4.1.5
+      version: 4.1.5
     '@r_masseater/msch':
       specifier: 0.53.0
       version: 0.53.0
@@ -220,8 +220,8 @@ catalogs:
       specifier: 1.0.0-rc.20
       version: 1.0.0-rc.20
     '@effect/atom-react':
-      specifier: 4.1.4
-      version: 4.1.4
+      specifier: 4.1.5
+      version: 4.1.5
     '@effect/tsgo':
       specifier: 0.73.2
       version: 0.73.2
@@ -253,8 +253,8 @@ catalogs:
       specifier: 0.5.1
       version: 0.5.1
     effect:
-      specifier: 4.1.4
-      version: 4.1.4
+      specifier: 4.1.5
+      version: 4.1.5
     elysia:
       specifier: 1.4.32
       version: 1.4.32
@@ -291,13 +291,13 @@ importers:
     devDependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+        version: 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@effect/tsgo':
         specifier: catalog:stack
         version: 0.73.2
       '@r_masseater/msch':
         specifier: 'catalog:'
-        version: 0.53.0(@effect/tsgo@0.73.2)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(markdownlint@0.42.1(supports-color@8.1.1))(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+        version: 0.53.0(@effect/tsgo@0.73.2)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(markdownlint@0.42.1(supports-color@8.1.1))(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.5.6
@@ -306,7 +306,7 @@ importers:
         version: 26.6.6
       effect:
         specifier: catalog:stack
-        version: 4.1.4
+        version: 4.1.5
       fallow:
         specifier: catalog:stack
         version: 3.44.0
@@ -321,22 +321,22 @@ importers:
     dependencies:
       '@alchemy.run/cloudflare':
         specifier: catalog:stack
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
       '@distilled.cloud/cloudflare':
         specifier: catalog:stack
-        version: 1.0.0-rc.20(effect@4.1.4)
+        version: 1.0.0-rc.20(effect@4.1.5)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+        version: 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@yarnpkg/parsers':
         specifier: 'catalog:'
         version: 3.1.0
       alchemy:
         specifier: catalog:stack
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
       effect:
         specifier: catalog:stack
-        version: 4.1.4
+        version: 4.1.5
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -349,7 +349,7 @@ importers:
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       effect:
         specifier: catalog:stack
-        version: 4.1.4
+        version: 4.1.5
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -365,7 +365,7 @@ importers:
     devDependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+        version: 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@tailwindcss/vite':
         specifier: 4.3.5
         version: 4.3.5(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
@@ -398,13 +398,13 @@ importers:
     dependencies:
       '@alchemy.run/cloudflare':
         specifier: catalog:stack
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
       '@better-auth/drizzle-adapter':
         specifier: 1.7.26
-        version: 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
+        version: 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
       '@effect/atom-react':
         specifier: catalog:stack
-        version: 4.1.4(effect@4.1.4)(react@19.3.1)(scheduler@0.28.0)
+        version: 4.1.5(effect@4.1.5)(react@19.3.1)(scheduler@0.28.0)
       '@elysiajs/eden':
         specifier: catalog:stack
         version: 1.4.9(elysia@1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta))
@@ -416,7 +416,7 @@ importers:
         version: 1.23.0(@openfeature/core@1.12.0)
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.5.0(b0057ff5e27ff2d39a4ae1c040087b50)
+        version: 0.5.0(9eecd27d2dcb20d1e4866c7c9372e657)
       '@tanstack/react-devtools':
         specifier: 0.10.15
         version: 0.10.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -440,7 +440,7 @@ importers:
         version: 1.169.7(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.16)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
       better-auth:
         specifier: catalog:stack
-        version: 1.7.26(969c38843fa0d97ede9c22883a86bdcf)
+        version: 1.7.26(78d1d65cb222d9805f109f862a0270e2)
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -449,13 +449,13 @@ importers:
         version: 2.1.1
       drizzle-orm:
         specifier: catalog:stack
-        version: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
+        version: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
       eden-tanstack-react-query:
         specifier: catalog:stack
         version: 0.5.1(@elysiajs/eden@1.4.9(elysia@1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta)))(@tanstack/react-query@5.108.1(@types/react@19.3.0)(react@19.3.1))(elysia@1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta))(react@19.3.1)
       effect:
         specifier: catalog:stack
-        version: 4.1.4
+        version: 4.1.5
       elysia:
         specifier: catalog:stack
         version: 1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta)
@@ -486,7 +486,7 @@ importers:
     devDependencies:
       '@alchemy.run/fly':
         specifier: catalog:stack
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20261120.1
@@ -513,10 +513,10 @@ importers:
         version: 0.5.39(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       alchemy:
         specifier: catalog:stack
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
       auth:
         specifier: 1.7.26
-        version: 1.7.26(31f5c133496d48fc168e2bef968c5766)
+        version: 1.7.26(44707b5e4d5ea2fb1179f6a7d5776d6a)
       drizzle-kit:
         specifier: catalog:stack
         version: 1.0.0-rc.5-ab785fc
@@ -534,7 +534,7 @@ importers:
     dependencies:
       effect:
         specifier: catalog:stack
-        version: 4.1.4
+        version: 4.1.5
     devDependencies:
       typescript:
         specifier: catalog:stack
@@ -547,7 +547,7 @@ importers:
     devDependencies:
       '@r_masseater/web-vitals-flow':
         specifier: 'catalog:'
-        version: 0.2.0(effect@4.1.4)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))(yauzl@3.4.0)
+        version: 0.2.0(effect@4.1.5)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))(yauzl@3.4.0)
 
 packages:
 
@@ -1099,10 +1099,10 @@ packages:
   '@dual-bundle/import-meta-resolve@4.2.1':
     resolution: {integrity: sha512-id+7YRUgoUX6CgV0DtuhirQWodeeA7Lf4i2x71JS/vtA5pRb/hIGWlw+G6MeXvsM+MXrz0VAydTGElX1rAfgPg==}
 
-  '@effect/atom-react@4.1.4':
-    resolution: {integrity: sha512-Xj58DcAzKsysHhzBCPaz2v1QAJq6NvMdGVmG7SV4zkw1RMiTZv8gaOXA1VqIRlpmvdspMwRe/BQ4eayuzRZTpQ==}
+  '@effect/atom-react@4.1.5':
+    resolution: {integrity: sha512-7bFJUOa4hatIE4LD4EmuOSS7+jNniZxaltX3TRExBCYAFqMd6vjZs9G/Ez3u24oUaJnkschmjfG3EwVzzebgig==}
     peerDependencies:
-      effect: ^4.1.4
+      effect: ^4.1.5
       react: '>=19.0.0 <20.0.0'
       scheduler: '>=0.25.0 <0.29.0'
 
@@ -1118,11 +1118,24 @@ packages:
     peerDependencies:
       effect: ^4.1.4
 
+  '@effect/platform-node-shared@4.1.5':
+    resolution: {integrity: sha512-JzlrYe4uKaBFTWihBRXo2pDjkUVB39kQpKdGfXdbp7Co5sKT8hbcjOmdB5pg/WOYESdGTddd3fxD4lwlZELbZQ==}
+    engines: {node: '>=22.19.0'}
+    peerDependencies:
+      effect: ^4.1.5
+
   '@effect/platform-node@4.1.4':
     resolution: {integrity: sha512-h7QExTPq/RfYtHP/8tMlgfBvqYsuJKhxfkU6w0+NaF/ihqQ8Y3GH9t28ltupQjoqMM7P6W5gy8rOji7F0qVrmg==}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       effect: ^4.1.4
+      redis: '>=5.1.0 <7.0.0'
+
+  '@effect/platform-node@4.1.5':
+    resolution: {integrity: sha512-tFnRvxF9EKc3oU17sDHj1JeLP+TL/IkaOEl3IUk2EjgMS0x7AWs0ioUXjdNKLb3Z1LdjVfMf/DxsNh9PW5FFAg==}
+    engines: {node: '>=22.19.0'}
+    peerDependencies:
+      effect: ^4.1.5
       redis: '>=5.1.0 <7.0.0'
 
   '@effect/sql-d1@4.1.4':
@@ -5980,8 +5993,8 @@ packages:
       elysia: ^1.3.0
       react: ^18.0.0 || >=19.0.3 <19.1.0 || >=19.1.4 <19.2.0 || >=19.2.3 <20.0.0
 
-  effect@4.1.4:
-    resolution: {integrity: sha512-Tgrv/9FN+TZYyOn8XSli+fVqAfwDrDAkiX5Uu9vztINb675VTQdhD0gWI5Kzvhlh9QqzjZvw72iugqw5pwoghQ==}
+  effect@4.1.5:
+    resolution: {integrity: sha512-xyR20KhQI0vg2gD8ILUSQRTTESEYJ0JKdP+QD8J37xbwPTqXRxFM/l0+vUVD9fuSvoYruoTqyt33C4FZv1s4TQ==}
 
   effector@23.4.4:
     resolution: {integrity: sha512-QkZboRN28K/iwxigDhlJcI3ux3aNbt8kYGGH/GkqWG0OlGeyuBhb7PdM89Iu+ogV8Lmz16xIlwnXR2UNWI6psg==}
@@ -8597,6 +8610,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.23.0:
+    resolution: {integrity: sha512-wCkmX8QMOrKjgO8HW2WyDbTSGeqkocxgDzS9iR79rEAexty6/2qzilx3Ag8Tqf9ykop3irLKle0MtVn5qjVnoQ==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@1.0.0:
     resolution: {integrity: sha512-Hl0ZOAs672vg+06kfujwRhoS6/jehvULrlFkuF2dRu6pHgA8U06h3xqNIqNNU1LTXPcedxByAR4GS6pwQK0mgA==}
     engines: {node: '>=20'}
@@ -8680,20 +8705,20 @@ packages:
 
 snapshots:
 
-  '@alchemy.run/acme@2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)':
+  '@alchemy.run/acme@2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/acme': 1.0.0-rc.20(effect@4.1.4)
-      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
-      effect: 4.1.4
+      '@distilled.cloud/acme': 1.0.0-rc.20(effect@4.1.5)
+      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
+      effect: 4.1.5
 
-  '@alchemy.run/cloudflare-runtime@2.0.0-beta.87(@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.4))(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(rolldown@1.2.16)':
+  '@alchemy.run/cloudflare-runtime@2.0.0-beta.87(@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.5))(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(rolldown@1.2.16)':
     dependencies:
       '@alchemy.run/node-utils': 2.0.0-beta.87
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261026.1)
-      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.4)
+      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.5)
       '@puppeteer/browsers': 3.2.6(yauzl@3.4.0)
       capnp-es: 0.0.16
-      effect: 4.1.4
+      effect: 4.1.5
       magic-string: 0.30.21
       mime: 4.1.2
       sharp: 0.35.5(@types/node@26.6.6)
@@ -8701,33 +8726,33 @@ snapshots:
       workerd: 1.20261026.1
       yauzl: 3.4.0
     optionalDependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       rolldown: 1.2.16
       vite: '@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)'
     transitivePeerDependencies:
       - '@types/node'
       - proxy-agent
 
-  '@alchemy.run/cloudflare@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)':
+  '@alchemy.run/cloudflare@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)':
     dependencies:
-      '@alchemy.run/acme': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
-      '@alchemy.run/cloudflare-runtime': 2.0.0-beta.87(@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.4))(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(rolldown@1.2.16)
-      '@alchemy.run/docker': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
-      '@alchemy.run/sql': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
-      '@distilled.cloud/aws': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/aws4signer': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/iceberg': 1.0.0-rc.20(effect@4.1.4)
-      '@effect/sql-d1': 4.1.4(effect@4.1.4)
-      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
-      effect: 4.1.4
+      '@alchemy.run/acme': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
+      '@alchemy.run/cloudflare-runtime': 2.0.0-beta.87(@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.5))(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(rolldown@1.2.16)
+      '@alchemy.run/docker': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
+      '@alchemy.run/sql': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
+      '@distilled.cloud/aws': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/aws4signer': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/iceberg': 1.0.0-rc.20(effect@4.1.5)
+      '@effect/sql-d1': 4.1.4(effect@4.1.5)
+      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
+      effect: 4.1.5
       pathe: 2.0.3
       picomatch: 4.0.7
       rolldown: 1.2.16
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       vite: '@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)'
     transitivePeerDependencies:
       - '@effect/sql-libsql'
@@ -8738,25 +8763,25 @@ snapshots:
       - pg
       - proxy-agent
 
-  '@alchemy.run/docker@2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)':
+  '@alchemy.run/docker@2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)':
     dependencies:
-      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
-      effect: 4.1.4
+      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
+      effect: 4.1.5
       rolldown: 1.2.16
 
-  '@alchemy.run/fly@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)':
+  '@alchemy.run/fly@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)':
     dependencies:
-      '@alchemy.run/docker': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
-      '@alchemy.run/redis': 2.0.0-beta.87(effect@4.1.4)
-      '@alchemy.run/sql': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
-      '@distilled.cloud/aws': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/fly-io': 1.0.0-rc.20(effect@4.1.4)
-      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
-      effect: 4.1.4
+      '@alchemy.run/docker': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
+      '@alchemy.run/redis': 2.0.0-beta.87(effect@4.1.5)
+      '@alchemy.run/sql': 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
+      '@distilled.cloud/aws': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/fly-io': 1.0.0-rc.20(effect@4.1.5)
+      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
+      effect: 4.1.5
       rolldown: 1.2.16
     optionalDependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
     transitivePeerDependencies:
       - '@effect/platform-bun'
       - '@effect/sql-libsql'
@@ -8769,18 +8794,18 @@ snapshots:
       chokidar: 5.0.0
       rolldown: 1.2.16
 
-  '@alchemy.run/redis@2.0.0-beta.87(effect@4.1.4)':
+  '@alchemy.run/redis@2.0.0-beta.87(effect@4.1.5)':
     dependencies:
-      effect: 4.1.4
+      effect: 4.1.5
 
   '@alchemy.run/sigil@0.1.0-alpha.4(@types/react@19.3.0)':
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@alchemy.run/sql@2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)':
+  '@alchemy.run/sql@2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)':
     dependencies:
-      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
-      effect: 4.1.4
+      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
+      effect: 4.1.5
 
   '@andrewbranch/untar.js@1.0.4': {}
 
@@ -9032,12 +9057,12 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.10.0
 
-  '@better-auth/drizzle-adapter@1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))':
+  '@better-auth/drizzle-adapter@1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))':
     dependencies:
       '@better-auth/core': 1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4)
       '@better-auth/utils': 0.5.1
     optionalDependencies:
-      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
+      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
 
   '@better-auth/kysely-adapter@1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(kysely@0.29.6)':
     dependencies:
@@ -9226,90 +9251,109 @@ snapshots:
       '@floating-ui/dom': 1.8.0
       solid-js: 1.9.15
 
-  '@distilled.cloud/acme@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/acme@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
-  '@distilled.cloud/aws4signer@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/aws4signer@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
-  '@distilled.cloud/aws@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/aws@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/s3': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/s3': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
-  '@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/cloudflare@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/s3': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/s3': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
-  '@distilled.cloud/core@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/core@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      effect: 4.1.4
+      effect: 4.1.5
 
-  '@distilled.cloud/fly-io@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/fly-io@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
-  '@distilled.cloud/iceberg@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/iceberg@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
-  '@distilled.cloud/s3@1.0.0-rc.20(effect@4.1.4)':
+  '@distilled.cloud/s3@1.0.0-rc.20(effect@4.1.5)':
     dependencies:
-      '@distilled.cloud/aws4signer': 1.0.0-rc.20(effect@4.1.4)
-      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.4)
-      effect: 4.1.4
+      '@distilled.cloud/aws4signer': 1.0.0-rc.20(effect@4.1.5)
+      '@distilled.cloud/core': 1.0.0-rc.20(effect@4.1.5)
+      effect: 4.1.5
 
   '@drizzle-team/brocli@0.12.1': {}
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
-  '@effect/atom-react@4.1.4(effect@4.1.4)(react@19.3.1)(scheduler@0.28.0)':
+  '@effect/atom-react@4.1.5(effect@4.1.5)(react@19.3.1)(scheduler@0.28.0)':
     dependencies:
-      effect: 4.1.4
+      effect: 4.1.5
       react: 19.3.1
       scheduler: 0.28.0
 
-  '@effect/platform-node-shared@4.1.2(effect@4.1.4)':
+  '@effect/platform-node-shared@4.1.2(effect@4.1.5)':
     dependencies:
       '@types/ws': 8.18.2
-      effect: 4.1.4
+      effect: 4.1.5
       ws: 8.22.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node-shared@4.1.4(effect@4.1.4)':
+  '@effect/platform-node-shared@4.1.4(effect@4.1.5)':
     dependencies:
       '@types/ws': 8.18.2
-      effect: 4.1.4
+      effect: 4.1.5
       ws: 8.22.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))':
+  '@effect/platform-node-shared@4.1.5(effect@4.1.5)':
     dependencies:
-      '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
-      effect: 4.1.4
+      '@types/ws': 8.18.2
+      effect: 4.1.5
+      ws: 8.23.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@effect/platform-node@4.1.4(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))':
+    dependencies:
+      '@effect/platform-node-shared': 4.1.4(effect@4.1.5)
+      effect: 4.1.5
       redis: 6.2.1(@opentelemetry/api@1.10.0)
       undici: 8.12.4
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/sql-d1@4.1.4(effect@4.1.4)':
+  '@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))':
+    dependencies:
+      '@effect/platform-node-shared': 4.1.5(effect@4.1.5)
+      effect: 4.1.5
+      redis: 6.2.1(@opentelemetry/api@1.10.0)
+      undici: 8.12.4
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@effect/sql-d1@4.1.4(effect@4.1.5)':
     dependencies:
       '@cloudflare/workers-types': 5.20261120.1
-      effect: 4.1.4
+      effect: 4.1.5
 
   '@effect/tsgo-darwin-arm64@0.73.2':
     optional: true
@@ -10624,11 +10668,11 @@ snapshots:
   '@r_masseater/fu4-linux-x64-gnu@0.1.0':
     optional: true
 
-  '@r_masseater/fu4-presets@0.1.0(@r_masseater/fu4@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))':
+  '@r_masseater/fu4-presets@0.1.0(@r_masseater/fu4@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))':
     dependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
-      '@r_masseater/fu4': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      effect: 4.1.4
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@r_masseater/fu4': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      effect: 4.1.5
     transitivePeerDependencies:
       - bufferutil
       - redis
@@ -10637,10 +10681,10 @@ snapshots:
   '@r_masseater/fu4-win32-x64-msvc@0.1.0':
     optional: true
 
-  '@r_masseater/fu4@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/fu4@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
-      effect: 4.1.4
+      '@effect/platform-node': 4.1.4(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      effect: 4.1.5
       vite: '@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)'
       vite-plus: 1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)
     optionalDependencies:
@@ -10654,17 +10698,17 @@ snapshots:
   '@r_masseater/h56m-linux-x64-gnu@0.1.0':
     optional: true
 
-  '@r_masseater/h56m-presets@0.1.0(@r_masseater/h56m@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
+  '@r_masseater/h56m-presets@0.1.0(@r_masseater/h56m@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
     dependencies:
-      '@r_masseater/h56m': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/h56m': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
 
   '@r_masseater/h56m-win32-x64-msvc@0.1.0':
     optional: true
 
-  '@r_masseater/h56m@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/h56m@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
-      effect: 4.1.4
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      effect: 4.1.5
     optionalDependencies:
       '@r_masseater/h56m-linux-x64-gnu': 0.1.0
       '@r_masseater/h56m-win32-x64-msvc': 0.1.0
@@ -10675,10 +10719,10 @@ snapshots:
       - redis
       - utf-8-validate
 
-  '@r_masseater/msch@0.53.0(@effect/tsgo@0.73.2)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(markdownlint@0.42.1(supports-color@8.1.1))(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/msch@0.53.0(@effect/tsgo@0.73.2)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(markdownlint@0.42.1(supports-color@8.1.1))(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@commitlint/config-conventional': 21.2.4
-      '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
+      '@effect/platform-node-shared': 4.1.4(effect@4.1.5)
       '@effect/tsgo': 0.73.2
       '@html-eslint/eslint-plugin-react': 0.68.0(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@pnpm/deps.path': 1101.0.9
@@ -10687,25 +10731,25 @@ snapshots:
       '@pnpm/workspace.projects-reader': 1101.1.7(@pnpm/logger@1100.0.0)
       '@pnpm/workspace.workspace-manifest-reader': 1100.3.2
       '@pnpm/workspace.workspace-manifest-writer': 1100.2.11
-      '@r_masseater/fu4': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/fu4-presets': 0.1.0(@r_masseater/fu4@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
-      '@r_masseater/h56m': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/h56m-presets': 0.1.0(@r_masseater/h56m@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
-      '@r_masseater/oxlint-plugin-decision': 0.8.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
-      '@r_masseater/oxlint-typed-rules': 0.4.1(effect@4.1.4)(typescript@7.1.0-beta)
-      '@r_masseater/textlint-rule-preset-ja': 0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)
-      '@r_masseater/vite-plus-adopt': 0.10.2(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/wism': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/wism-presets': 0.1.0(@r_masseater/wism@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)
-      '@r_masseater/y8': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      '@r_masseater/y8-presets': 0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)
+      '@r_masseater/fu4': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/fu4-presets': 0.1.0(@r_masseater/fu4@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@r_masseater/h56m': 0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/h56m-presets': 0.1.0(@r_masseater/h56m@0.1.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
+      '@r_masseater/oxlint-plugin-decision': 0.8.0(@effect/platform-node-shared@4.1.4(effect@4.1.5))(effect@4.1.5)(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))
+      '@r_masseater/oxlint-typed-rules': 0.4.1(effect@4.1.5)(typescript@7.1.0-beta)
+      '@r_masseater/textlint-rule-preset-ja': 0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)
+      '@r_masseater/vite-plus-adopt': 0.10.2(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/wism': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/wism-presets': 0.1.0(@r_masseater/wism@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)
+      '@r_masseater/y8': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      '@r_masseater/y8-presets': 0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)
       '@shadcn/lint': 0.2.5(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       '@tanstack/intent': 0.5.6
       '@textlint-ja/textlint-rule-preset-ai-writing': 1.7.0
       '@vscode/tree-sitter-wasm': 0.3.1
       dockerfile-ast: 0.7.1
       domhandler: 6.0.1
-      effect: 4.1.4
+      effect: 4.1.5
       eslint-plugin-baseline-js: 0.7.7(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       eslint-plugin-no-comments: 1.2.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)
@@ -10730,32 +10774,32 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@r_masseater/oxlint-plugin-decision@0.8.0(@effect/platform-node-shared@4.1.4(effect@4.1.4))(effect@4.1.4)(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
+  '@r_masseater/oxlint-plugin-decision@0.8.0(@effect/platform-node-shared@4.1.4(effect@4.1.5))(effect@4.1.5)(oxlint@1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))':
     dependencies:
-      '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
-      effect: 4.1.4
+      '@effect/platform-node-shared': 4.1.4(effect@4.1.5)
+      effect: 4.1.5
       oxlint: 1.94.0(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       synckit: 0.12.3
 
-  '@r_masseater/oxlint-typed-rules@0.4.1(effect@4.1.4)(typescript@7.1.0-beta)':
+  '@r_masseater/oxlint-typed-rules@0.4.1(effect@4.1.5)(typescript@7.1.0-beta)':
     dependencies:
-      effect: 4.1.4
+      effect: 4.1.5
       typescript: 7.1.0-beta
 
-  '@r_masseater/textlint-rule-preset-ja@0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)':
+  '@r_masseater/textlint-rule-preset-ja@0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)':
     dependencies:
-      '@r_masseater/y8': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      effect: 4.1.4
+      '@r_masseater/y8': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      effect: 4.1.5
       sentence-splitter: 5.1.0
 
-  '@r_masseater/vite-plus-adopt@0.10.2(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/vite-plus-adopt@0.10.2(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(supports-color@8.1.1)(typescript@7.1.0-beta)(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@andrewbranch/untar.js': 1.0.4
       '@commitlint/format': 21.2.3
       '@commitlint/lint': 21.2.4
       '@commitlint/load': 21.2.4(typescript@7.1.0-beta)
       '@commitlint/types': 21.2.3
-      '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
+      '@effect/platform-node-shared': 4.1.4(effect@4.1.5)
       '@loaderkit/resolve': 1.0.6
       '@pnpm/logger': 1100.0.0
       '@pnpm/workspace.projects-reader': 1101.1.7(@pnpm/logger@1100.0.0)
@@ -10765,7 +10809,7 @@ snapshots:
       '@textlint/utils': 15.8.0
       chokidar: 6.0.0
       cjs-module-lexer: 2.3.0
-      effect: 4.1.4
+      effect: 4.1.5
       effector: 23.4.4
       empathic: 2.1.0
       fastest-levenshtein: 1.0.16
@@ -10792,11 +10836,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@r_masseater/web-vitals-flow@0.2.0(effect@4.1.4)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))(yauzl@3.4.0)':
+  '@r_masseater/web-vitals-flow@0.2.0(effect@4.1.5)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))(yauzl@3.4.0)':
     dependencies:
-      '@effect/platform-node-shared': 4.1.2(effect@4.1.4)
+      '@effect/platform-node-shared': 4.1.2(effect@4.1.5)
       chrome-launcher: 1.2.3(supports-color@8.1.1)
-      effect: 4.1.4
+      effect: 4.1.5
       lighthouse: 13.6.0(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))(yauzl@3.4.0)
       puppeteer-core: 25.16.0(yauzl@3.4.0)
     transitivePeerDependencies:
@@ -10811,19 +10855,19 @@ snapshots:
   '@r_masseater/wism-linux-x64-gnu@0.2.0':
     optional: true
 
-  '@r_masseater/wism-presets@0.1.0(@r_masseater/wism@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)':
+  '@r_masseater/wism-presets@0.1.0(@r_masseater/wism@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)':
     dependencies:
-      '@r_masseater/wism': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      effect: 4.1.4
+      '@r_masseater/wism': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      effect: 4.1.5
       minimatch: 11.0.8
 
   '@r_masseater/wism-win32-x64-msvc@0.2.0':
     optional: true
 
-  '@r_masseater/wism@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/wism@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
-      effect: 4.1.4
+      '@effect/platform-node': 4.1.4(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      effect: 4.1.5
       vite: '@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)'
       vite-plus: 1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)
     optionalDependencies:
@@ -10834,33 +10878,33 @@ snapshots:
       - redis
       - utf-8-validate
 
-  '@r_masseater/workers-tracing@0.5.0(b0057ff5e27ff2d39a4ae1c040087b50)':
+  '@r_masseater/workers-tracing@0.5.0(9eecd27d2dcb20d1e4866c7c9372e657)':
     dependencies:
-      effect: 4.1.4
+      effect: 4.1.5
     optionalDependencies:
-      '@alchemy.run/cloudflare': 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1))(effect@4.1.4)
-      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.4)
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@alchemy.run/cloudflare': 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/node@26.6.6)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1))(effect@4.1.5)
+      '@distilled.cloud/cloudflare': 1.0.0-rc.20(effect@4.1.5)
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       '@tanstack/react-start': 1.169.7(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.16)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
-      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1)
+      alchemy: 2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1)
       elysia: 1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta)
 
   '@r_masseater/y8-linux-x64-gnu@0.2.0':
     optional: true
 
-  '@r_masseater/y8-presets@0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.4)':
+  '@r_masseater/y8-presets@0.2.0(@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(effect@4.1.5)':
     dependencies:
-      '@r_masseater/y8': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
-      effect: 4.1.4
+      '@r_masseater/y8': 0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+      effect: 4.1.5
       minimatch: 11.0.8
 
   '@r_masseater/y8-win32-x64-msvc@0.2.0':
     optional: true
 
-  '@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/y8@0.2.0(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(markdownlint@0.42.1(supports-color@8.1.1))(redis@6.2.1(@opentelemetry/api@1.10.0))(vite-plus@1.7.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/ui@5.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
-      effect: 4.1.4
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      effect: 4.1.5
       minimatch: 11.0.8
       yaml: 2.9.1
     optionalDependencies:
@@ -13033,12 +13077,12 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.4)(ws@8.22.1):
+  alchemy@2.0.0-beta.87(@effect/platform-node@4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0)))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(effect@4.1.5)(ws@8.22.1):
     dependencies:
       '@alchemy.run/node-utils': 2.0.0-beta.87
       '@alchemy.run/sigil': 0.1.0-alpha.4(@types/react@19.3.0)
       capnweb: 0.12.0
-      effect: 4.1.4
+      effect: 4.1.5
       fflate: 0.8.3
       pathe: 2.0.3
       picomatch: 4.0.7
@@ -13046,7 +13090,7 @@ snapshots:
       tinyglobby: 0.2.17
       yaml: 2.9.1
     optionalDependencies:
-      '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.2.1(@opentelemetry/api@1.10.0))
+      '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
       vite: '@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)'
       ws: 8.22.1
     transitivePeerDependencies:
@@ -13125,7 +13169,7 @@ snapshots:
       stubborn-fs: 2.0.0
       when-exit: 2.1.5
 
-  auth@1.7.26(31f5c133496d48fc168e2bef968c5766):
+  auth@1.7.26(44707b5e4d5ea2fb1179f6a7d5776d6a):
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/preset-react': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
@@ -13135,7 +13179,7 @@ snapshots:
       '@better-auth/utils': 0.5.1
       '@clack/prompts': 1.8.1
       '@mrleebo/prisma-ast': 0.16.0
-      better-auth: 1.7.26(969c38843fa0d97ede9c22883a86bdcf)
+      better-auth: 1.7.26(78d1d65cb222d9805f109f862a0270e2)
       c12: 4.0.0-rc.2(dotenv@17.4.2)(jiti@2.7.0)
       chalk: 5.6.2
       commander: 15.0.0
@@ -13198,10 +13242,10 @@ snapshots:
 
   baseline-browser-mapping@2.11.26: {}
 
-  better-auth@1.7.26(969c38843fa0d97ede9c22883a86bdcf):
+  better-auth@1.7.26(78d1d65cb222d9805f109f862a0270e2):
     dependencies:
       '@better-auth/core': 1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4)
-      '@better-auth/drizzle-adapter': 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
+      '@better-auth/drizzle-adapter': 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))
       '@better-auth/kysely-adapter': 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)(kysely@0.29.6)
       '@better-auth/memory-adapter': 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)
       '@better-auth/mongo-adapter': 1.7.26(@better-auth/core@1.7.26(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.10.0)(better-call@1.4.6(zod@4.6.7))(jose@6.2.14)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.5.1)
@@ -13220,7 +13264,7 @@ snapshots:
     optionalDependencies:
       '@tanstack/react-start': 1.169.7(@vitejs/plugin-rsc@0.5.39(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.16)(supports-color@8.1.1)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@26.6.6))(uglify-js@3.19.3))
       drizzle-kit: 1.0.0-rc.5-ab785fc
-      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
+      drizzle-orm: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       solid-js: 1.9.15
@@ -13621,15 +13665,15 @@ snapshots:
       get-tsconfig: 4.14.3
       jiti: 2.7.0
 
-  drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.4))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.4)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7):
+  drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20261120.1)(@effect/sql-d1@4.1.4(effect@4.1.5))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.10.0)(@sinclair/typebox@0.34.52)(effect@4.1.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7):
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261120.1
-      '@effect/sql-d1': 4.1.4(effect@4.1.4)
+      '@effect/sql-d1': 4.1.4(effect@4.1.5)
       '@electric-sql/pglite': 0.3.15
       '@libsql/client': 0.17.4
       '@opentelemetry/api': 1.10.0
       '@sinclair/typebox': 0.34.52
-      effect: 4.1.4
+      effect: 4.1.5
       valibot: 1.5.0(typescript@7.1.0-beta)
       zod: 4.6.7
 
@@ -13646,7 +13690,7 @@ snapshots:
       elysia: 1.4.32(@sinclair/typebox@0.34.52)(exact-mirror@0.2.9(@sinclair/typebox@0.34.52))(file-type@22.1.1(supports-color@8.1.1))(openapi-types@12.1.3)(typescript@7.1.0-beta)
       react: 19.3.1
 
-  effect@4.1.4: {}
+  effect@4.1.5: {}
 
   effector@23.4.4: {}
 
@@ -16908,6 +16952,8 @@ snapshots:
       signal-exit: 4.1.0
 
   ws@8.22.1: {}
+
+  ws@8.23.0: {}
 
   wsl-utils@1.0.0:
     dependencies:
