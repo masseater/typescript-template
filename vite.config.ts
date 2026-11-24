@@ -86,7 +86,7 @@ export default defineConfig({
       skills: ["feature-sliced-design"],
     },
     "GoogleChrome/modern-web-guidance": {
-      commit: "64a6d708f5a43f2cd3fde5d4d7db3905ba1bdf65",
+      commit: "2b4aa13a72dd47cd135b06ce5abfccd92e19b24f",
       root: "skills",
       skills: ["modern-web-guidance"],
     },
