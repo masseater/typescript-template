@@ -43,7 +43,7 @@ runs:
       shell: bash
       run: node "$GITHUB_ACTION_PATH/../credentials/credentials.ts"
     - if: steps.target.outputs.stale != 'true'
-      uses: anthropics/claude-code-action@acfe7992852970efb4fee683d63d628e3e52df67 # v1.0.286
+      uses: anthropics/claude-code-action@eb56b6666facdbd501035f4a0269d8caee2e7a8b # v1.0.289
       with:
         claude_code_oauth_token: ${{ env.CLAUDE_CODE_OAUTH_TOKEN }}
         github_token: ${{ inputs.github-token }}
