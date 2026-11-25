@@ -91,7 +91,7 @@ export default defineConfig({
       skills: ["modern-web-guidance"],
     },
     "masseater/skills": {
-      commit: "c9a1510277ba5448da3a0e09730ce03823ab25f8",
+      commit: "9d812c205624a013fd80c045411aa78249a1c2e6",
       root: "plugins/masseater-skills/skills",
       skills: "all",
     },
