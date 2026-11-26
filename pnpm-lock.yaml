@@ -196,8 +196,8 @@ catalogs:
       specifier: 0.2.0
       version: 0.2.0
     '@r_masseater/workers-tracing':
-      specifier: 0.5.0
-      version: 0.5.0
+      specifier: 0.6.0
+      version: 0.6.0
     '@tanstack/intent':
       specifier: 0.5.6
       version: 0.5.6
@@ -425,7 +425,7 @@ importers:
         version: 1.23.0(@openfeature/core@1.12.0)
       '@r_masseater/workers-tracing':
         specifier: 'catalog:'
-        version: 0.5.0(9eecd27d2dcb20d1e4866c7c9372e657)
+        version: 0.6.0(9eecd27d2dcb20d1e4866c7c9372e657)
       '@tanstack/react-devtools':
         specifier: 0.10.15
         version: 0.10.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -3096,9 +3096,9 @@ packages:
       vite: '*'
       vite-plus: '>=1.5.0'
 
-  '@r_masseater/workers-tracing@0.5.0':
-    resolution: {integrity: sha512-zWD0w0oDTX2acsPugg4TBEKdyUcte9Uac11eGh/4SIg+DoanEitv/Ka2ZH/unC34AWaldbAd+6knvJgrOWlsiQ==}
-    engines: {node: '>=26'}
+  '@r_masseater/workers-tracing@0.6.0':
+    resolution: {integrity: sha512-GVG1tm+TH0kSi89DdABLNTan2auZX1PCgo/i1ArGmraKvpa4D5biQ+vxmXEt+48Ogzy3mJgrpsHYyRaYSE7dhw==}
+    engines: {node: v26.13.1}
     hasBin: true
     peerDependencies:
       '@alchemy.run/cloudflare': ^2.0.0-beta.85
@@ -11084,7 +11084,7 @@ snapshots:
       - redis
       - utf-8-validate
 
-  '@r_masseater/workers-tracing@0.5.0(9eecd27d2dcb20d1e4866c7c9372e657)':
+  '@r_masseater/workers-tracing@0.6.0(9eecd27d2dcb20d1e4866c7c9372e657)':
     dependencies:
       effect: 4.1.5
     optionalDependencies:
