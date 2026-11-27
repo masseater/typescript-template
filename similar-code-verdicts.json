@@ -1,0 +1,14 @@
+{
+  "schema_version": "1",
+  "verdicts": [
+    {
+      "candidate_id": "similar-code:candidate:v1:6839947be5b779d8604d7e00b553f7aeb812c7b0ca693fbca26533a7864881e2",
+      "review_key": "similar-code:review:v1:e78fd602f49bd1b38628746d6b30439f0b5de36797f953e8f964ca09b077026f",
+      "candidate_worthy": false,
+      "behaviorally_equivalent": false,
+      "refactor_safe": false,
+      "outcome": "related-but-distinct",
+      "rationale": "The web app root document adds the atom registry and the devtools, and the lp root document sets lang to ja; they share only the html, head and body skeleton."
+    }
+  ]
+}

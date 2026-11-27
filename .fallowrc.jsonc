@@ -6,7 +6,7 @@
     "require": "complete",
   },
   "failOnParseError": true,
-  "ignoreDependencies": ["@effect/language-service", "fallow"],
+  "ignoreDependencies": ["@effect/language-service", "fallow", "fallow-similar-code"],
   "ignorePatterns": [".claude/**", ".github/**"],
   "audit": {
     "gate": "all",
