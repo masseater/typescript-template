@@ -13,6 +13,7 @@ interface PullRequest {
   readonly head: string;
   readonly enabledAt: string;
   readonly mergeStateStatus: string;
+  readonly bot: boolean;
   readonly checks: readonly Check[];
 }
 
@@ -21,6 +22,7 @@ const OPEN = `.[] | select(.isDraft | not) | [
   .headRefOid,
   (.autoMergeRequest.enabledAt // ""),
   .mergeStateStatus,
+  (.author.is_bot | tostring),
   ([.statusCheckRollup[]
     | {name: (.name // .context), result: (if (.status // "COMPLETED") == "COMPLETED" then (.conclusion // .state // "") else "PENDING" end), at: (.startedAt // .createdAt // "")}]
     | group_by(.name)
@@ -30,6 +32,8 @@ const OPEN = `.[] | select(.isDraft | not) | [
 const SETTLED = new Set(["BEHIND", "DIRTY"]);
 const BROKEN = ["ERROR", "FAILURE", "STARTUP_FAILURE", "TIMED_OUT"] as const;
 const BLOCKING = [...BROKEN, "ACTION_REQUIRED", "CANCELLED"] as const;
+const RED = new Set(["failure", "startup_failure", "timed_out"]);
+const LATEST_VERIFY = `[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0] // {} | "\\(.conclusion // "")\t\\(.html_url // "")"`;
 const UNKNOWN_RETRIES = 6;
 const RETRY_DELAY_MS = 5000;
 const NONE = 0;
@@ -45,6 +49,7 @@ if (token === undefined) {
 }
 const repository = env("GITHUB_REPOSITORY");
 const defaultBranch = env("DEFAULT_BRANCH");
+const verifyWorkflow = env("VERIFY_WORKFLOW");
 const gh = (args: readonly string[]): readonly string[] =>
   run("gh", args, { env: { GH_TOKEN: token } })
     .split("\n")
@@ -65,13 +70,14 @@ const parseCheck = (entry: string): Check => {
 };
 
 const parse = (line: string): PullRequest => {
-  const [number = "", head = "", enabledAt = "", mergeStateStatus = "", checks = ""] =
+  const [number = "", head = "", enabledAt = "", mergeStateStatus = "", bot = "", checks = ""] =
     line.split("\t");
   return {
     number,
     head,
     enabledAt,
     mergeStateStatus,
+    bot: bot === "true",
     checks: checks
       .split(",")
       .filter((entry) => entry !== "")
@@ -163,6 +169,22 @@ const eject = (pull: PullRequest, reason: string): void => {
   }
 };
 
+const redVerify = (): string | undefined => {
+  try {
+    const [latest = ""] = gh([
+      "api",
+      `repos/${repository}/actions/workflows/${verifyWorkflow}/runs?branch=${defaultBranch}&status=completed&per_page=20`,
+      "--jq",
+      LATEST_VERIFY,
+    ]);
+    const [conclusion = "", url = ""] = latest.split("\t");
+    return RED.has(conclusion) ? url : undefined;
+  } catch {
+    console.log(`::warning::Could not read the latest ${verifyWorkflow} run on ${defaultBranch}`);
+    return undefined;
+  }
+};
+
 const open = await listOpen(UNKNOWN_RETRIES);
 for (const pull of open) {
   if (pull.enabledAt === "" && pull.mergeStateStatus === "DIRTY") {
@@ -186,8 +208,15 @@ if (inFlight.length > NONE) {
   console.log(`Waiting for ${inFlight.map((pull) => `#${pull.number}`).join(", ")} to merge`);
   process.exit();
 }
+const red = redVerify();
+if (red !== undefined) {
+  console.log(
+    `::warning::${verifyWorkflow} is red on ${defaultBranch} (${red}); bot pull requests wait until it passes`,
+  );
+}
 const waiting = remaining
   .filter((pull) => pull.mergeStateStatus === "BEHIND" && passing(pull))
+  .filter((pull) => red === undefined || !pull.bot)
   .toSorted((left, right) => left.enabledAt.localeCompare(right.enabledAt));
 const next = waiting.find((pull) => {
   try {

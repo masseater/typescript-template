@@ -53,6 +53,7 @@ jobs:
       id-token: write
     concurrency:
       group: deploy
+      queue: max
     steps:
       - id: head
         uses: $/.github/actions/latest-verified
