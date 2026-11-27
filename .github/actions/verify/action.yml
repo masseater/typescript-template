@@ -2,7 +2,7 @@ name: verify
 description: After the repository's setup action, fetch the pushed commits and run vp run verify against them with the decision cache and the Vite Task cache of earlier runs, from /home/user/<repository> where cloud sessions check out so that cache keys hold the same paths (the checkout that the setup action moved there with session-path, or else a bind mount with a second install), going on with each task verify depends on after a failure so that the cache fills, and on the default branch of a public repository publish those caches as an artifact for cloud sessions
 inputs:
   github-token:
-    description: A token that can read this repository
+    description: A token that can read this repository, and its Actions caches when shards is more than 1
     required: true
   full-history:
     description: Whether to fetch the whole history before verify, for builds that read commit dates and checks that read the changes of past commits
@@ -36,12 +36,18 @@ runs:
         path: node_modules/.cache/oxlint-plugin-decision
         key: oxlint-plugin-decision-${{ github.sha }}
         restore-keys: oxlint-plugin-decision-
+    - id: durations
+      if: inputs.shards != '1'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: node "$GITHUB_ACTION_PATH/durations-key.ts"
     - if: inputs.shards != '1'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/verify-durations
-        key: verify-durations-${{ github.run_id }}
-        restore-keys: verify-durations-
+        key: ${{ steps.durations.outputs.key }}
     - id: task-cache
       if: github.event_name != 'schedule'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

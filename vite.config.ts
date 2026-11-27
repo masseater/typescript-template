@@ -58,9 +58,9 @@ export default defineConfig({
       ...workspace.testProjects,
       {
         test: {
-          name: "update-branches",
-          root: ".github/actions/update-branches",
-          include: ["*.test.ts"],
+          name: "actions",
+          root: ".github/actions",
+          include: ["*/*.test.ts"],
         },
       },
     ],
