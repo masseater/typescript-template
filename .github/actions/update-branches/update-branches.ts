@@ -33,7 +33,7 @@ const SETTLED = new Set(["BEHIND", "DIRTY"]);
 const BROKEN = ["ERROR", "FAILURE", "STARTUP_FAILURE", "TIMED_OUT"] as const;
 const BLOCKING = [...BROKEN, "ACTION_REQUIRED", "CANCELLED"] as const;
 const RED = new Set(["failure", "startup_failure", "timed_out"]);
-const LATEST_VERIFY = `[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0] // {} | "\\(.conclusion // "")\t\\(.html_url // "")"`;
+const RECENT_RUNS = "10";
 const UNKNOWN_RETRIES = 6;
 const RETRY_DELAY_MS = 5000;
 const NONE = 0;
@@ -50,6 +50,7 @@ if (token === undefined) {
 const repository = env("GITHUB_REPOSITORY");
 const defaultBranch = env("DEFAULT_BRANCH");
 const verifyWorkflow = env("VERIFY_WORKFLOW");
+const verifyJob = env("VERIFY_JOB");
 const gh = (args: readonly string[]): readonly string[] =>
   run("gh", args, { env: { GH_TOKEN: token } })
     .split("\n")
@@ -169,21 +170,32 @@ const eject = (pull: PullRequest, reason: string): void => {
   }
 };
 
+const settledVerify = (run: string): string | undefined => {
+  const [latest] = gh([
+    "api",
+    `repos/${repository}/actions/runs/${run}/jobs?per_page=100`,
+    "--jq",
+    `.jobs[] | select(.name == ${JSON.stringify(verifyJob)} and .status == "completed" and .conclusion != "cancelled" and .conclusion != "skipped") | "\\(.conclusion)\t\\(.html_url)"`,
+  ]);
+  return latest;
+};
+
 const redVerify = (): string | undefined => {
   try {
-    const [latest = ""] = gh([
+    const runs = gh([
       "api",
-      `repos/${repository}/actions/workflows/${verifyWorkflow}/runs?branch=${defaultBranch}&status=completed&per_page=20`,
+      `repos/${repository}/actions/workflows/${verifyWorkflow}/runs?branch=${defaultBranch}&per_page=${RECENT_RUNS}`,
       "--jq",
-      LATEST_VERIFY,
+      ".workflow_runs[].id",
     ]);
+    const latest = runs.map((run) => settledVerify(run)).find((job) => job !== undefined) ?? "";
     const [conclusion = "", url = ""] = latest.split("\t");
     if (RED.has(conclusion)) {
       return url;
     }
     return undefined;
   } catch {
-    console.log(`::warning::Could not read the latest ${verifyWorkflow} run on ${defaultBranch}`);
+    console.log(`::warning::Could not read the latest ${verifyJob} job on ${defaultBranch}`);
     return undefined;
   }
 };
