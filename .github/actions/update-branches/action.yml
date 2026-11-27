@@ -1,5 +1,5 @@
 name: update-branches
-description: Act as the merge queue for pull requests with auto-merge on. Remove a pull request that conflicts with the default branch, fails a required check, or cannot be brought up to date from the queue by turning its auto-merge off, and comment the reason on it. Comment once per head commit on a conflicting pull request that is outside the queue, so whoever watches it hears about the conflict. When no other pull request is on its way to merging, bring the one that turned auto-merge on first and is behind the default branch up to date, so the required checks run once on top of the newest main and auto-merge lands it before the next one starts
+description: Act as the merge queue. Every pull request that is not a draft joins by itself. Merge the ones whose required checks passed and that do not conflict, bottom of a stack first, in one burst, and retarget a stacked pull request to the default branch when the one below it has merged. A pull request waits for any open pull request whose head it contains or whose branch it targets. Comment once per head commit on a pull request that conflicts or fails a required check
 inputs:
   verify-workflow:
     description: Workflow file that runs the verify job on the default branch

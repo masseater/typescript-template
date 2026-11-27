@@ -53,6 +53,19 @@ export default defineConfig({
     },
     run: { tasks: { "db-check-all": "vp run -r db:check" } },
   }),
+  test: {
+    projects: [
+      ...workspace.testProjects,
+      {
+        test: {
+          name: "update-branches",
+          root: ".github/actions/update-branches",
+          include: ["*.test.ts"],
+        },
+      },
+    ],
+    passWithNoTests: true,
+  },
   skills: {
     "artouc/stop-describe-ui": {
       commit: "251a859f6e40645030e1ae69fa4b501c851eac9c",

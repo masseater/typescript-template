@@ -2,21 +2,39 @@ name: up-to-date
 
 on:
   pull_request:
-    types:
-      [opened, synchronize, reopened, ready_for_review, auto_merge_enabled, auto_merge_disabled]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions: {}
 
+env:
+  TAKUMI_GUARD_TOKEN: ${{ secrets.TAKUMI_GUARD_TOKEN }}
+
 jobs:
   up-to-date:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: $/.github/actions/auto-merge-gate
+      - id: lockfile
+        if: github.event_name == 'pull_request'
+        uses: $/.github/actions/pr-changed
+        with:
+          file: pnpm-lock.yaml
+          github-token: ${{ github.token }}
+      - if: steps.lockfile.outputs.changed == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.lockfile.outputs.changed == 'true'
+        uses: $/.github/actions/setup
+        with:
+          cache: "false"
 
   wake:
     needs: [up-to-date]
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.auto_merge
+    if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       actions: write
