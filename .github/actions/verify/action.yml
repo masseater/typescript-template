@@ -10,6 +10,12 @@ inputs:
   share:
     description: Whether this job publishes the caches for cloud sessions, so that only one job of a run does
     default: "true"
+  shard:
+    description: Which of the shards this job runs, counted from 0
+    default: "0"
+  shards:
+    description: How many jobs split the tasks verify depends on, each running its share and reporting it for verify-shards to check
+    default: "1"
 runs:
   using: composite
   steps:
@@ -30,12 +36,18 @@ runs:
         path: node_modules/.cache/oxlint-plugin-decision
         key: oxlint-plugin-decision-${{ github.sha }}
         restore-keys: oxlint-plugin-decision-
+    - if: inputs.shards != '1'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/verify-durations
+        key: verify-durations-${{ github.run_id }}
+        restore-keys: verify-durations-
     - id: task-cache
       if: github.event_name != 'schedule'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: node_modules/.vite/task-cache
-        key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+        key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.shard }}
         restore-keys: vite-task-${{ runner.os }}-${{ runner.arch }}-
     - if: inputs.full-history == 'true'
       shell: bash
@@ -45,6 +57,10 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         VPA_BASE: ${{ github.event.before }}
+        VERIFY_SHARD: ${{ inputs.shard }}
+        VERIFY_SHARDS: ${{ inputs.shards }}
+        VERIFY_DURATIONS: ${{ runner.temp }}/verify-durations/durations.json
+        VERIFY_SHARD_REPORT: ${{ runner.temp }}/verify-shard/report.json
       run: |
         root="/home/user/${GITHUB_REPOSITORY#*/}"
         moved=true
@@ -67,6 +83,12 @@ runs:
       with:
         path: node_modules/.vite/task-cache
         key: ${{ steps.task-cache.outputs.cache-primary-key }}
+    - if: always() && inputs.shards != '1' && steps.verify.outcome != 'skipped'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: verify-shard-${{ inputs.shard }}
+        path: ${{ runner.temp }}/verify-shard/report.json
+        retention-days: 1
     - id: share
       if: always() && inputs.share == 'true' && steps.verify.outcome != 'skipped' && github.event_name == 'push' && github.ref_name == github.event.repository.default_branch && !github.event.repository.private
       shell: bash
