@@ -2,7 +2,7 @@ name: up-to-date
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
   workflow_dispatch:
 
 permissions: {}
@@ -23,14 +23,19 @@ jobs:
         with:
           file: pnpm-lock.yaml
           github-token: ${{ github.token }}
-      - if: steps.lockfile.outputs.changed == 'true'
+      - if: github.event_name == 'pull_request'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - if: steps.lockfile.outputs.changed == 'true'
+      - if: github.event_name == 'pull_request'
         uses: $/.github/actions/setup
         with:
-          cache: "false"
+          cache: ${{ steps.lockfile.outputs.changed != 'true' }}
+      - if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: vp exec msch --message "$TITLE (#$NUMBER)"
 
   wake:
     needs: [up-to-date]
