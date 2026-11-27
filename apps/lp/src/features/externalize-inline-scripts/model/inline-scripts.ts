@@ -37,11 +37,11 @@ const externalizeAll = Effect.fn("externalizeAll")(function* externalizeAll(
 });
 
 const runInNode = (root: string, outDir: string): Promise<void> =>
-  Effect.runPromise(
-    Layer.build(nodeServices).pipe(
-      Effect.flatMap((context) => Effect.provideContext(externalizeAll(root, outDir), context)),
-      Effect.scoped,
-    ),
+  nodeServices.pipe(
+    Layer.build,
+    Effect.flatMap((context) => Effect.provideContext(externalizeAll(root, outDir), context)),
+    Effect.scoped,
+    Effect.runPromise,
   );
 
 export const externalizeInlineScripts = (): Plugin => ({

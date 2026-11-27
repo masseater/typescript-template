@@ -178,7 +178,10 @@ const redVerify = (): string | undefined => {
       LATEST_VERIFY,
     ]);
     const [conclusion = "", url = ""] = latest.split("\t");
-    return RED.has(conclusion) ? url : undefined;
+    if (RED.has(conclusion)) {
+      return url;
+    }
+    return undefined;
   } catch {
     console.log(`::warning::Could not read the latest ${verifyWorkflow} run on ${defaultBranch}`);
     return undefined;
