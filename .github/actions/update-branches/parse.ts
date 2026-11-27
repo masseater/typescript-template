@@ -34,7 +34,11 @@ const parseCheck = (entry: unknown): Check => {
   return { name, result: firstText(entry, ["conclusion", "state"]), at };
 };
 
-export const parsePull = (value: unknown, required: ReadonlySet<string>): PullRequest => ({
+export const parsePull = (
+  value: unknown,
+  required: ReadonlySet<string>,
+  commits: readonly string[],
+): PullRequest => ({
   number: Number(field(value, "number")),
   draft: field(value, "isDraft") === true,
   branch: text(value, "headRefName"),
@@ -43,7 +47,7 @@ export const parsePull = (value: unknown, required: ReadonlySet<string>): PullRe
   createdAt: text(value, "createdAt"),
   state: text(value, "mergeStateStatus"),
   bot: field(field(value, "author"), "is_bot") === true,
-  commits: items(value, "commits").map((commit) => text(commit, "oid")),
+  commits,
   checks: latestChecks(
     items(value, "statusCheckRollup").map((entry) => parseCheck(entry)),
     required,

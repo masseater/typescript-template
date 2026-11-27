@@ -1,15 +1,25 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { ghText, repository } from "./context.ts";
+import { field } from "../shared/runner.ts";
+import { gh, ghText, repository } from "./context.ts";
 import { parsePull } from "./parse.ts";
 import type { PullRequest } from "./queue.ts";
 
 const FIELDS =
-  "number,isDraft,headRefName,headRefOid,baseRefName,createdAt,mergeStateStatus,author,statusCheckRollup,commits";
+  "number,isDraft,headRefName,headRefOid,baseRefName,createdAt,mergeStateStatus,author,statusCheckRollup";
 const LIST_LIMIT = "200";
 const RETRY_DELAY_MS = 5000;
 const NONE = 0;
 const ONE = 1;
+
+const commitsOf = (number: number): readonly string[] =>
+  gh([
+    "api",
+    "--paginate",
+    `repos/${repository}/pulls/${String(number)}/commits`,
+    "--jq",
+    ".[].sha",
+  ]);
 
 const listOf = (value: unknown): readonly unknown[] => {
   if (Array.isArray(value)) {
@@ -36,7 +46,9 @@ export const listOpen = async (
       FIELDS,
     ]),
   );
-  const pulls = listOf(parsed).map((entry) => parsePull(entry, required));
+  const pulls = listOf(parsed).map((entry) =>
+    parsePull(entry, required, commitsOf(Number(field(entry, "number")))),
+  );
   if (retries > NONE && pulls.some((pull) => pull.state === "UNKNOWN")) {
     await sleep(RETRY_DELAY_MS);
     return listOpen(required, retries - ONE);

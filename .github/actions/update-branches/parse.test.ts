@@ -4,6 +4,7 @@ import { parsePull } from "./parse.ts";
 
 const REQUIRED = new Set(["up-to-date"]);
 const NUMBER = 1574;
+const COMMITS = ["aaa", "bbb"];
 
 const LISTED = {
   number: NUMBER,
@@ -14,7 +15,6 @@ const LISTED = {
   createdAt: "2026-11-27T00:00:00Z",
   mergeStateStatus: "CLEAN",
   author: { is_bot: true, login: "renovate" },
-  commits: [{ oid: "aaa" }, { oid: "bbb" }],
   statusCheckRollup: [
     {
       __typename: "CheckRun",
@@ -35,7 +35,7 @@ const LISTED = {
 };
 
 test("a listed pull request becomes the queue's view of it", () => {
-  expect(parsePull(LISTED, REQUIRED)).toStrictEqual({
+  expect(parsePull(LISTED, REQUIRED, COMMITS)).toStrictEqual({
     number: NUMBER,
     draft: false,
     branch: "feature",
@@ -50,7 +50,7 @@ test("a listed pull request becomes the queue's view of it", () => {
 });
 
 test("a check that has not completed counts as pending, and unrequired ones are dropped", () => {
-  const both = parsePull(LISTED, new Set(["up-to-date", "verify", "ci/other"]));
+  const both = parsePull(LISTED, new Set(["up-to-date", "verify", "ci/other"]), COMMITS);
   expect(both.checks.map((check) => `${check.name}=${check.result}`)).toStrictEqual([
     "up-to-date=SUCCESS",
     "verify=PENDING",
@@ -59,7 +59,7 @@ test("a check that has not completed counts as pending, and unrequired ones are 
 });
 
 test("a pull request with no author flag, commits or checks still parses", () => {
-  const bare = parsePull({ ...LISTED, author: {}, commits: [], statusCheckRollup: [] }, REQUIRED);
+  const bare = parsePull({ ...LISTED, author: {}, statusCheckRollup: [] }, REQUIRED, []);
   expect(bare.bot).toBe(false);
   expect(bare.commits).toStrictEqual([]);
   expect(bare.checks).toStrictEqual([]);
