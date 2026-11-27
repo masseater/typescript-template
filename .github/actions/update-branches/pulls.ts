@@ -12,11 +12,11 @@ const RETRY_DELAY_MS = 5000;
 const NONE = 0;
 const ONE = 1;
 
-const commitsOf = (number: number): readonly string[] =>
+const commitsOf = (entry: unknown): readonly string[] =>
   gh([
     "api",
     "--paginate",
-    `repos/${repository}/pulls/${String(number)}/commits`,
+    `repos/${repository}/pulls/${String(field(entry, "number"))}/commits`,
     "--jq",
     ".[].sha",
   ]);
@@ -46,9 +46,7 @@ export const listOpen = async (
       FIELDS,
     ]),
   );
-  const pulls = listOf(parsed).map((entry) =>
-    parsePull(entry, required, commitsOf(Number(field(entry, "number")))),
-  );
+  const pulls = listOf(parsed).map((entry) => parsePull(entry, required, commitsOf(entry)));
   if (retries > NONE && pulls.some((pull) => pull.state === "UNKNOWN")) {
     await sleep(RETRY_DELAY_MS);
     return listOpen(required, retries - ONE);
