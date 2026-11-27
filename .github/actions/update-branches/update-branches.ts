@@ -170,10 +170,10 @@ const eject = (pull: PullRequest, reason: string): void => {
   }
 };
 
-const settledVerify = (run: string): string | undefined => {
+const settledVerify = (runId: string): string | undefined => {
   const [latest] = gh([
     "api",
-    `repos/${repository}/actions/runs/${run}/jobs?per_page=100`,
+    `repos/${repository}/actions/runs/${runId}/jobs?per_page=100`,
     "--jq",
     `.jobs[] | select(.name == ${JSON.stringify(verifyJob)} and .status == "completed" and .conclusion != "cancelled" and .conclusion != "skipped") | "\\(.conclusion)\t\\(.html_url)"`,
   ]);
@@ -188,7 +188,7 @@ const redVerify = (): string | undefined => {
       "--jq",
       ".workflow_runs[].id",
     ]);
-    const latest = runs.map((run) => settledVerify(run)).find((job) => job !== undefined) ?? "";
+    const latest = runs.map((runId) => settledVerify(runId)).find((job) => job !== undefined) ?? "";
     const [conclusion = "", url = ""] = latest.split("\t");
     if (RED.has(conclusion)) {
       return url;
