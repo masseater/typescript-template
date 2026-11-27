@@ -77,6 +77,18 @@ jobs:
           path: tools/*/report/
           if-no-files-found: ignore
 
+  queue:
+    needs: [verify]
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run update-branches.yml --repo "$GITHUB_REPOSITORY" --ref "$DEFAULT_BRANCH"
+
   ci-telemetry:
     needs: [verify, autofix, deploy]
     if: always()
