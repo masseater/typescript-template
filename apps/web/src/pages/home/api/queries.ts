@@ -4,11 +4,11 @@ import { Effect } from "effect";
 
 import { browserClient, createQueries, serverClient } from "#/shared/api";
 
-import type { TodoRoutes } from "./routes.server";
+import type { TodoRoutes } from "./routes.server.ts";
 
 const loadTodoHandle = (): Promise<(request: Request) => Promise<Response>> =>
   run(
-    Effect.promise(() => import("./routes.server")).pipe(
+    Effect.promise(() => import("./routes.server.ts")).pipe(
       Effect.map((module) => module.handleTodos),
     ),
   );

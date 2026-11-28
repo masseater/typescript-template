@@ -5,8 +5,8 @@ import type { ReactNode } from "react";
 import { todoQueries } from "#/pages/home/api/queries";
 import { useTodoFilter } from "#/pages/home/model/filter";
 
-import { FilterTabs } from "./filter-tabs";
-import { TodoItem } from "./todo-item";
+import { FilterTabs } from "./filter-tabs.tsx";
+import { TodoItem } from "./todo-item.tsx";
 
 export const TodoList = (): ReactNode => {
   const { data } = useSuspenseQuery(todoQueries.api.todos.get.queryOptions());

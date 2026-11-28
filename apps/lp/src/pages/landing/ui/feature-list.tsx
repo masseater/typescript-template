@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { features } from "#/pages/landing/model/content";
 
-import { FeatureCard } from "./feature-card";
+import { FeatureCard } from "./feature-card.tsx";
 
 export const FeatureList = (): ReactNode => (
   <section aria-labelledby="features" className="flex flex-col gap-6">

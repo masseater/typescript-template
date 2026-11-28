@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import type { TodoFilter } from "#/pages/home/model/filter";
 
-import { FilterTab } from "./filter-tab";
+import { FilterTab } from "./filter-tab.tsx";
 
 const FILTERS: readonly TodoFilter[] = ["all", "open", "done"];
 
