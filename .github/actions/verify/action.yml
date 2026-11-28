@@ -43,11 +43,27 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
         DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       run: node "$GITHUB_ACTION_PATH/durations-key.ts"
-    - if: inputs.shards != '1'
+    - id: durations-restore
+      if: inputs.shards != '1'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/verify-durations
         key: ${{ steps.durations.outputs.key }}
+    - id: durations-wait
+      if: inputs.shards != '1' && steps.durations-restore.outputs.cache-hit != 'true' && !endsWith(steps.durations.outputs.key, '-none')
+      shell: bash
+      run: sleep 20
+    - id: durations-retry
+      if: steps.durations-wait.outcome == 'success'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/verify-durations
+        key: ${{ steps.durations.outputs.key }}
+    - if: steps.durations-wait.outcome == 'success' && steps.durations-retry.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        KEY: ${{ steps.durations.outputs.key }}
+      run: echo "::error::The durations cache $KEY is listed but could not be restored, so this shard would split differently from the others" && exit 1
     - id: task-cache
       if: github.event_name != 'schedule'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
