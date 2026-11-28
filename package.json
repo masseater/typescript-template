@@ -30,9 +30,6 @@
   },
   "intent": {
     "skills": [
-      "@tanstack/devtools-vite",
-      "@tanstack/react-start",
-      "drizzle-kit",
       "@tanstack/devtools",
       "@tanstack/devtools-event-client",
       "@tanstack/match-sorter-utils",
@@ -40,9 +37,7 @@
       "@tanstack/start-client-core",
       "@tanstack/virtual-file-routes",
       "@tanstack/router-plugin",
-      "@tanstack/start-server-core",
-      "fallow",
-      "@r_masseater/msch"
+      "@tanstack/start-server-core"
     ]
   }
 }
