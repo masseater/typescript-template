@@ -196,8 +196,8 @@ catalogs:
       specifier: 1.12.0
       version: 1.12.0
     '@r_masseater/msch':
-      specifier: 0.60.1
-      version: 0.60.1
+      specifier: 0.63.0
+      version: 0.63.0
     '@r_masseater/web-vitals-flow':
       specifier: 0.2.0
       version: 0.2.0
@@ -366,7 +366,7 @@ importers:
         version: 0.73.4
       '@r_masseater/msch':
         specifier: 'catalog:'
-        version: 0.60.1(@andrewbranch/untar.js@1.0.4)(@effect/tsgo@0.73.4)(@loaderkit/resolve@1.0.6)(@voidzero-dev/vite-plus-core@8.3.8001(@types/node@26.6.9)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(cjs-module-lexer@2.3.0)(effect@4.1.5)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(fflate@0.8.3)(markdownlint@0.42.1(supports-color@8.1.1))(minimatch@11.0.9)(oxlint@1.94.0(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(validate-npm-package-name@8.0.0)(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
+        version: 0.63.0(@andrewbranch/untar.js@1.0.4)(@effect/tsgo@0.73.4)(@loaderkit/resolve@1.0.6)(@voidzero-dev/vite-plus-core@8.3.8001(@types/node@26.6.9)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(cjs-module-lexer@2.3.0)(effect@4.1.5)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(fflate@0.8.3)(markdownlint@0.42.1(supports-color@8.1.1))(minimatch@11.0.9)(oxlint@1.94.0(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(validate-npm-package-name@8.0.0)(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.5.6
@@ -2996,8 +2996,8 @@ packages:
       vite:
         optional: true
 
-  '@r_masseater/msch@0.60.1':
-    resolution: {integrity: sha512-ZznoLSP0sdggF4NMcBMo3RFBHasD0OJ7EPCac9EN//tvzKrBQ+MyskUmY4CDahFJDwE+7Xkd4ELWz97kx4xhwA==}
+  '@r_masseater/msch@0.63.0':
+    resolution: {integrity: sha512-EpICEm7Qldb8F9FGHaFXkdzeEaixYRhMGdtr1F/ksURRO7U432XrA04Ez8Dn4/hR3qNlXbWiC6wgjMVOixWfUw==}
     engines: {node: '>=26.13.1'}
     hasBin: true
     peerDependencies:
@@ -10528,7 +10528,7 @@ snapshots:
       - redis
       - utf-8-validate
 
-  '@r_masseater/msch@0.60.1(@andrewbranch/untar.js@1.0.4)(@effect/tsgo@0.73.4)(@loaderkit/resolve@1.0.6)(@voidzero-dev/vite-plus-core@8.3.8001(@types/node@26.6.9)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(cjs-module-lexer@2.3.0)(effect@4.1.5)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(fflate@0.8.3)(markdownlint@0.42.1(supports-color@8.1.1))(minimatch@11.0.9)(oxlint@1.94.0(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(validate-npm-package-name@8.0.0)(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
+  '@r_masseater/msch@0.63.0(@andrewbranch/untar.js@1.0.4)(@effect/tsgo@0.73.4)(@loaderkit/resolve@1.0.6)(@voidzero-dev/vite-plus-core@8.3.8001(@types/node@26.6.9)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))(cjs-module-lexer@2.3.0)(effect@4.1.5)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(fflate@0.8.3)(markdownlint@0.42.1(supports-color@8.1.1))(minimatch@11.0.9)(oxlint@1.94.0(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1)))(redis@6.2.1(@opentelemetry/api@1.10.0))(supports-color@8.1.1)(typescript@7.1.0-beta)(validate-npm-package-name@8.0.0)(vite-plus@1.8.0(@opentelemetry/api@1.10.0)(@types/node@26.6.9)(@vitest/ui@5.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(typescript@7.1.0-beta)(yaml@2.9.1))':
     dependencies:
       '@commitlint/config-conventional': 21.2.4
       '@effect/platform-node': 4.1.5(effect@4.1.5)(redis@6.2.1(@opentelemetry/api@1.10.0))
