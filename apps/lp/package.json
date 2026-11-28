@@ -8,21 +8,21 @@
     "#/*": "./src/*"
   },
   "dependencies": {
-    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-router": "catalog:",
     "effect": "catalog:stack",
-    "react": "19.3.1",
-    "react-dom": "19.3.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "security-headers": "workspace:*",
     "tailwindcss": "catalog:stack"
   },
   "devDependencies": {
     "@effect/platform-node": "catalog:",
-    "@tailwindcss/vite": "4.3.5",
+    "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:stack",
-    "@types/react": "19.3.1",
-    "@types/react-dom": "19.3.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "node-html-parser": "9.0.7",
+    "node-html-parser": "catalog:",
     "typescript": "catalog:stack",
     "vite": "catalog:",
     "vite-plus": "catalog:stack"
