@@ -1,7 +1,7 @@
 import { OpenFeature, TypedInMemoryProvider } from "@openfeature/server-sdk";
 import { Context, Effect, Layer } from "effect";
 
-import { flagConfiguration } from "./flag-configuration";
+import { flagConfiguration } from "./flag-configuration.ts";
 
 export class FeatureFlags extends Context.Service<
   FeatureFlags,

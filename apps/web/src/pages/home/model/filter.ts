@@ -1,7 +1,7 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 
-import type { todo } from "./todo.table";
+import type { todo } from "./todo.table.ts";
 
 export type TodoFilter = "all" | (typeof todo.$inferSelect)["status"];
 

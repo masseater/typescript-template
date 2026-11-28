@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { todoQueries } from "./queries";
-import { todoSummaryQuery } from "./summary";
+import { todoQueries } from "./queries.ts";
+import { todoSummaryQuery } from "./summary.tsx";
 
 export const loadHomePage = (queryClient: QueryClient): Promise<unknown> =>
   Promise.all([

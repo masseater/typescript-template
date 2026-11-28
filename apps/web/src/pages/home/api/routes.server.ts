@@ -5,7 +5,7 @@ import { todo } from "#/pages/home/model/todo.table";
 import { createRouter } from "#/shared/api/index.server";
 import { db } from "#/shared/db/index.server";
 
-import { runRequest } from "./runtime.server";
+import { runRequest } from "./runtime.server.ts";
 
 const listTodos = Effect.gen(function* listTodos() {
   const flags = yield* FeatureFlags;

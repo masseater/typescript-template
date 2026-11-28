@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 import { todoSummaryQuery } from "#/pages/home/api/summary";
 
-import { SessionBadge } from "./session-badge";
-import { TodoList } from "./todo-list";
+import { SessionBadge } from "./session-badge.tsx";
+import { TodoList } from "./todo-list.tsx";
 
 const TITLE = "Todos";
 

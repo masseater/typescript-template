@@ -1,1 +1,1 @@
-export { auth } from "./auth.server";
+export { auth } from "./auth.server.ts";

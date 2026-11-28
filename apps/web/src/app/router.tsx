@@ -5,7 +5,7 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 import { createIsomorphicFn, getGlobalStartContext } from "@tanstack/react-start";
 import { Option } from "effect";
 
-import { routeTree } from "./routeTree.gen";
+import { routeTree } from "./routeTree.gen.ts";
 
 export type AppRouter = Router<typeof routeTree>;
 
