@@ -14,8 +14,14 @@ const API_RATE_LIMIT = Workers.RateLimit("API_RATE_LIMIT", {
 
 const CF_BEACON_TOKEN = "47d660a773db4bb7a9b283aaf8f080ff";
 
+const JAPAN_DATABASE_HINT = "apac";
+
 const web = Effect.gen(function* web() {
-  const DB = yield* D1.Database("DB", { migrations: "./drizzle" }).pipe(RemovalPolicy.protect());
+  yield* D1.Database("DB", { migrations: "./drizzle" }).pipe(RemovalPolicy.destroy());
+  const DB = yield* D1.Database("DBJapan", {
+    migrations: "./drizzle",
+    primaryLocationHint: JAPAN_DATABASE_HINT,
+  }).pipe(RemovalPolicy.protect());
   const BETTER_AUTH_SECRET = yield* makeRandom("BetterAuthSecret");
   return yield* Website.Vite("Web", {
     logpush: true,
