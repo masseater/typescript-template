@@ -17,7 +17,6 @@ const CF_BEACON_TOKEN = "47d660a773db4bb7a9b283aaf8f080ff";
 const JAPAN_DATABASE_HINT = "apac";
 
 const web = Effect.gen(function* web() {
-  yield* D1.Database("DB", { migrations: "./drizzle" }).pipe(RemovalPolicy.destroy());
   const DB = yield* D1.Database("DBJapan", {
     migrations: "./drizzle",
     primaryLocationHint: JAPAN_DATABASE_HINT,
