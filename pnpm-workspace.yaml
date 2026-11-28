@@ -13,7 +13,7 @@ catalog:
   "@cloudflare/workers-types": 5.20261125.1
   "@effect/platform-node": 4.1.5
   "@r_masseater/msch": 0.60.1
-  "@types/node": 26.6.8
+  "@types/node": 26.6.9
   vite: npm:@voidzero-dev/vite-plus-core@8.3.8001
   "@tanstack/react-query-devtools": 5.108.4
   "@vitejs/plugin-react": 6.3.0
