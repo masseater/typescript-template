@@ -7,7 +7,7 @@ import type { Span, Step } from "./log-spans.ts";
 import { spansOfLog } from "./log-spans.ts";
 
 const JOBS_FILTER = `.jobs[] | select(.completed_at != null) | {id: (.id | tostring), name, conclusion,
-  started_at, completed_at, runner_name: (.runner_name // ""), workflow_name, head_sha,
+  created_at, started_at, completed_at, runner_name: (.runner_name // ""), workflow_name, head_sha,
   head_branch: (.head_branch // ""),
   steps: [.steps[]? | select(.started_at != null and .completed_at != null)
     | {name, conclusion, started_at, completed_at}]}`;
@@ -58,9 +58,13 @@ const logOf = (job: unknown): string => {
     return "";
   }
   try {
-    return run("gh", ["api", `repos/${repository}/actions/jobs/${id}/logs`], {
-      env: { GH_TOKEN: token },
-    });
+    return run(
+      "gh",
+      ["api", "--allow-escape-sequences", `repos/${repository}/actions/jobs/${id}/logs`],
+      {
+        env: { GH_TOKEN: token },
+      },
+    );
   } catch {
     console.log(`::notice::job ${id} has no log to read`);
     return "";
@@ -96,7 +100,16 @@ const spansOfJob = (job: unknown): readonly Span[] => {
     attributes: { "github.step.conclusion": step.conclusion },
     failed: step.conclusion === "failure",
   }));
-  return [jobSpan, ...stepSpans, ...spansOfLog(jobSpan.key, steps, logOf(job))];
+  const queued: Span = {
+    key: `${jobSpan.key}/queued`,
+    parent: RUN,
+    name: `${name} (queued)`,
+    start: nanosOf(stringField(job, "created_at")),
+    end: jobSpan.start,
+    attributes: { "cicd.pipeline.task.name": name, "cicd.pipeline.task.run.id": id },
+    failed: false,
+  };
+  return [queued, jobSpan, ...stepSpans, ...spansOfLog(jobSpan.key, steps, logOf(job))];
 };
 
 const resultOfRun = (spans: readonly Span[]): string => {
@@ -160,7 +173,7 @@ if (first === undefined) {
   process.exit();
 }
 const jobSpans = jobs.flatMap((job) => spansOfJob(job));
-const starts = jobs.map((job) => stringField(job, "started_at")).toSorted();
+const starts = jobs.map((job) => stringField(job, "created_at")).toSorted();
 const ends = jobs.map((job) => stringField(job, "completed_at")).toSorted();
 const workflow = stringField(first, "workflow_name");
 const result = resultOfRun(jobSpans);

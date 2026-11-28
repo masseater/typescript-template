@@ -1,5 +1,5 @@
 name: ci-telemetry
-description: Keep the durations of this run as an artifact named telemetry-run-<attempt>, in one OpenTelemetry trace written as OTLP JSON (ci.jsonl) with a span for the run, each job, each step, each step inside a composite action and each vp task, read from the jobs of the run and their logs
+description: Keep the durations of this run as an artifact named telemetry-run-<attempt>, in one OpenTelemetry trace written as OTLP JSON (ci.jsonl) with a span for the run, each job and the time it waited before it started, each step, each step inside a composite action and each vp task, read from the jobs of the run and their logs
 inputs:
   github-token:
     description: A token that can read the jobs of this run and their logs
