@@ -1,6 +1,6 @@
 # typescript-template
 
-A template for apps that run on Cloudflare Workers and keep their data in D1. Follow `masseater-ecosystem`, a skill in masseater/skills that says which skills to load in each situation. `vp install` puts the skills in `.agents/skills/`.
+A template for apps that run on Cloudflare Workers and keep their data in D1. Follow `masseater-style`, a skill in masseater/skills that says which skills to load in each situation. `vp install` puts the skills in `.agents/skills/`.
 
 ## Tech stack
 
